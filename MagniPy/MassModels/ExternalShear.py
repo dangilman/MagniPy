@@ -1,6 +1,6 @@
 import numpy as np
 
-class Shear:
+class Shear_lens:
 
     def def_angle(self,xgrid,ygrid,shear,shear_theta):
 
@@ -13,3 +13,13 @@ class Shear:
         sheary = e2 * xgrid - e1 * ygrid
 
         return shearx,sheary
+
+class Shear:
+
+    def params(self,shear,shear_theta):
+
+        subkwargs = {}
+        subkwargs['shear'] = shear
+        subkwargs['shear_theta'] = shear_theta
+
+        return subkwargs

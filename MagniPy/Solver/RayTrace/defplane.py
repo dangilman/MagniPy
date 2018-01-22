@@ -1,6 +1,6 @@
 import numpy as np
-from magnipy.LensModels.grid_location import Local
-from magnipy.LensModels import NFW,PJaffe,PTmass,SIE
+from magnipy.MassModels.grid_location import Local
+from magnipy.MassModels import NFW,PJaffe,PTmass,SIE
 from DarkHalo.Cosmo import cosmo
 
 

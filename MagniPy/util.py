@@ -45,3 +45,148 @@ def identify(x,y,RE):
             return 2
         else:
             return 1
+
+def read_dat_file(fname):
+
+    x_srcSIE, y_srcSIE = [], []
+
+    with open(fname, 'r') as f:
+
+        nextline = False
+        dosrc = False
+        doimg = False
+        count = 0
+        readcount = 0
+
+        for line in f:
+            row = line.split(" ")
+            row_split = filter(None, row)
+            if row_split[0] == 'alpha':
+                macromodel = row_split
+
+                continue
+
+            if row_split[0] == 'Source':
+                nextline = True
+                dosrc = True
+                src = []
+                continue
+
+            if nextline and dosrc:
+
+                for item in row:
+                    try:
+                        src.append(float(item))
+                    except ValueError:
+                        continue
+                x_srcSIE.append(src[0])
+                y_srcSIE.append(src[1])
+                nextline = False
+                dosrc = False
+                continue
+
+            if row_split[0] == 'images:\n':
+                nextline = True
+                doimg = True
+                count = 0
+                x, y, f, t = [], [], [], []
+                continue
+
+            if nextline and doimg:
+
+                count += 1
+                numbers = []
+                for item in row:
+                    try:
+                        numbers.append(float(item))
+                    except ValueError:
+                        continue
+
+                x.append(numbers[4])
+                y.append(numbers[5])
+                f.append(numbers[6])
+                t.append(numbers[7])
+
+                if int(count) == 4:
+
+                    t = np.array(t)
+
+                    if min(t) < 0:
+                        t += -1 * min(t)
+
+                    xpos = x
+                    ypos = y
+                    fr = np.array(f) * max(np.array(f)) ** -1
+                    tdel = np.array(t)
+
+                    return xpos, ypos, fr, t, macromodel, [x_srcSIE[0], y_srcSIE[0]]
+
+
+def read_gravlens_out(fnames):
+
+    vector = []
+
+    if isinstance(fnames,list):
+
+        for fname in fnames:
+            with open(fname, 'r') as f:
+                lines = f.readlines()
+            f.close()
+
+            imgline = lines[1].split(' ')
+            numimg = int(imgline[1])
+            xpos, ypos, mag, tdelay = [], [], [], []
+
+            for i in range(0, numimg):
+                data = lines[2 + i].split(' ')
+                data = filter(None, data)
+                xpos.append(float(data[0]))
+                ypos.append(float(data[1]))
+                mag.append(np.absolute(float(data[2])))
+                tdelay.append(float(data[3]))
+            vector.append([np.array(xpos), np.array(ypos), np.array(mag), np.array(tdelay), numimg])
+    else:
+        with open(fnames, 'r') as f:
+            lines = f.readlines()
+        f.close()
+
+        imgline = lines[1].split(' ')
+        numimg = int(imgline[1])
+        xpos, ypos, mag, tdelay = [], [], [], []
+
+        for i in range(0, numimg):
+            data = lines[2 + i].split(' ')
+            data = filter(None, data)
+            xpos.append(float(data[0]))
+            ypos.append(float(data[1]))
+            mag.append(np.absolute(float(data[2])))
+            tdelay.append(float(data[3]))
+        vector.append([np.array(xpos), np.array(ypos), np.array(mag), np.array(tdelay), numimg])
+
+    return vector
+
+
+def read_chain_out(fname, N=1):
+    nimg, srcx, srcy, x1, y1, m1, t1, x2, y2, m2, t2, x3, y3, m3, t3, x4, y4, m4, t4 = np.loadtxt(fname, unpack=True)
+
+    return nimg, [srcx, srcy], [x1, x2, x3, x4], [y1, y2, y3, y4], [m1, m2, m3, m4], [t1, t2, t3, t4]
+
+
+def shr_convert(e1,e2,polar_to_cart = True):
+
+    if e1 == 0:
+        e1 += 1e-9
+    if e2 == 0:
+        e2 += 1e-9
+
+    if polar_to_cart:
+
+        magnitude = np.sqrt(e1**2+e2**2)
+        angle = 0.5*np.arctan2(e2,e1)*180*np.pi**-1
+        return magnitude,angle
+    else:
+
+        xcomp = e1*np.cos(2*e2*np.pi*180**-1)
+        ycomp = e1*np.sin(2*e2*np.pi*180**-1)
+        return xcomp,ycomp
+
