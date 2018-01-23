@@ -190,3 +190,57 @@ def shr_convert(e1,e2,polar_to_cart = True):
         ycomp = e1*np.sin(2*e2*np.pi*180**-1)
         return xcomp,ycomp
 
+def array2image(array, nx=0, ny=0):
+    """
+    returns the information contained in a 1d array into an n*n 2d array (only works when lenght of array is n**2)
+
+    :param array: image values
+    :type array: array of size n**2
+    :returns:  2d array
+    :raises: AttributeError, KeyError
+    """
+    if nx == 0 or ny == 0:
+        n = int(np.sqrt(len(array)))
+        if n**2 != len(array):
+            raise ValueError("lenght of input array given as %s is not square of integer number!" %(len(array)))
+        nx, ny = n, n
+    image = array.reshape(int(nx), int(ny))
+    return image
+
+
+def image2array(image):
+    """
+    returns the information contained in a 2d array into an n*n 1d array
+
+    :param array: image values
+    :type array: array of size (n,n)
+    :returns:  1d array
+    :raises: AttributeError, KeyError
+    """
+    nx, ny = image.shape  # find the size of the array
+    imgh = np.reshape(image, nx*ny)  # change the shape to be 1d
+    return imgh
+
+def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
+    """
+
+    :param numPix: number of pixels per axis
+    :param deltapix: pixel size
+    :param subgrid_res: sub-pixel resolution (default=1)
+    :return: x, y position information in two 1d arrays
+    """
+
+    numPix_eff = numPix*subgrid_res
+    deltapix_eff = deltapix/float(subgrid_res)
+    a = np.arange(numPix_eff)
+    matrix = np.dstack(np.meshgrid(a, a)).reshape(-1, 2)
+    if left_lower is True:
+        x_grid = matrix[:, 0]*deltapix
+        y_grid = matrix[:, 1]*deltapix
+    else:
+        x_grid = (matrix[:, 0] - (numPix_eff-1)/2.)*deltapix_eff
+        y_grid = (matrix[:, 1] - (numPix_eff-1)/2.)*deltapix_eff
+    shift = (subgrid_res-1)/(2.*subgrid_res)*deltapix
+    return array2image(x_grid - shift), array2image(y_grid - shift)
+
+

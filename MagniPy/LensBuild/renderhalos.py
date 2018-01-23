@@ -124,7 +124,7 @@ class HaloGen(Cosmo):
 
             for i in range(0, self.Nhalos):
                 subhalos.append(
-                    Deflector(subclass=lensmod, lensclass=lensclass, trunc=self.rtrunc[i], xcoord=self.xpos[i],
+                    Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos,subclass=lensmod, lensclass=lensclass, trunc=self.rtrunc[i], xcoord=self.xpos[i],
                               ycoord=self.ypos[i], mass=self.masses[i], redshift=zplane,
                               mhm=model['args'][sub_mod_index][0]))
 

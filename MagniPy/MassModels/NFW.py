@@ -6,7 +6,7 @@ class NFW_lens:
     def __init__(self,ks=None,x0=None,y0=None,rs=None,rt=None):
         pass
 
-    def def_angle(self,x_grid,y_grid,x0=None,y0=None,rs=None,ks=None,rt=None):
+    def def_angle(self,x_grid,y_grid,x0=None,y0=None,rs=None,ks=None,rt=None,shear=None,shear_theta=None):
 
         assert rs > 0
 
