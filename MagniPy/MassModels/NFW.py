@@ -1,26 +1,34 @@
 import numpy as np
 from MagniPy.LensBuild.cosmology import Cosmo
 
-class NFW_lens:
+class NFW(Cosmo):
 
-    def __init__(self,ks=None,x0=None,y0=None,rs=None,rt=None):
-        pass
+    def __init__(self,z1=0.5,z2=1.5,c_turnover=True):
+        """
+        adopting a standard cosmology, other cosmologies not yet implemented
+        :param z1: lens redshift
+        :param z2: source redshift
+        :param h: little h
+        """
+        Cosmo.__init__(self, zd=z1, zsrc=z2)
 
-    def def_angle(self,x_grid,y_grid,x0=None,y0=None,rs=None,ks=None,rt=None,shear=None,shear_theta=None):
+        self.c_turnover=c_turnover
+
+    def def_angle(self, x_grid, y_grid, x=None, y=None, rs=None, ks=None, rt=None, shear=None, shear_theta=None, **kwargs):
 
         assert rs > 0
 
-        x = x_grid - x0
-        y = y_grid - y0
-        tau = rt*rs**-1
+        x = x_grid - x
+        y = y_grid - y
+        tau = rt * rs ** -1
 
         r = np.sqrt(x ** 2 + y ** 2 + 0.0000000000001)
-        xnfw = r*rs**-1
+        xnfw = r * rs ** -1
 
         softening = 0.0001
         xnfw[np.where(xnfw<softening)]=softening
 
-        magdef = 4*ks*rs*self.t_fac(xnfw,tau)*xnfw**-1
+        magdef = 4*ks * rs * self.t_fac(xnfw, tau) * xnfw ** -1
 
         return magdef * x * r ** -1, magdef * y * r ** -1
 
@@ -62,23 +70,7 @@ class NFW_lens:
             r = np.sqrt(self.x**2+self.y**2)
         return 2*ks*(1-self.F(r*rs**-1))*((r*rs**-1)**2-1)**-1
 
-class NFW(Cosmo):
-
-    #pcrit = 2.77536627e+11
-
-    def __init__(self,z1=0.5,z2=1.5,c_turnover=True,cosmology=''):
-        """
-        adopting a standard cosmology, other cosmologies not yet implemented
-        :param z1: lens redshift
-        :param z2: source redshift
-        :param h: little h
-        """
-        Cosmo.__init__(self, zd=z1, zsrc=z2)
-
-        self.c_turnover=c_turnover
-
-
-    def params(self, mass=float, mhm=None):
+    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None):
 
         assert mhm is not None
         assert mass is not None
@@ -95,7 +87,20 @@ class NFW(Cosmo):
         subkwargs['rs'] = rs
         subkwargs['c'] = c
         subkwargs['mass'] = mass
-        return subkwargs
+        subkwargs['lenstronomy_name'] = 'NFW'
+        subkwargs['x'] = x
+        subkwargs['y'] = y
+
+        if trunc is None:
+            subkwargs['rt'] = 100*rs
+        else:
+            subkwargs['rt'] = trunc
+
+        lenstronomy_params = {}
+        lenstronomy_params['Rs'] = rs
+        lenstronomy_params['theta_Rs'] = rsdef
+
+        return subkwargs,lenstronomy_params
 
     def M200(self, Rs, rho0, c):
         """

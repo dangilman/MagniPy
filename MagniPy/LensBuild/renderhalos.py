@@ -21,8 +21,7 @@ class HaloGen(Cosmo):
         #if self.use_lenstronomy_halos:
         #    from lenstronomy.LensModel.Profiles import *
 
-    def add_single_plane(self,zplane,model,sub_mod_index,filter_spatial=False,filter_spatial_2 = False,near_x = False, near_y=False,
-                         mindis=.5, masscut_low=0, masscut_high=10 ** 11, between_low=float,between_high=float,dz=float):
+    def add_single_plane(self, zplane, model, sub_mod_index, dz=float):
 
         subhalos =[]
 
@@ -32,7 +31,7 @@ class HaloGen(Cosmo):
         if spatial == 'uniformflat':
             Rmax_2d = model['spatial'][sub_mod_index][1][0]
             trunc_rad = model['spatial'][sub_mod_index][1][1]
-            self.spatial = Uniform(Rmax_2d*self.D_ratio([0,zplane],[0,self.z1]))
+            self.spatial = Uniform(Rmax_2d*self.D_ratio([0,zplane],[0,self.zd]))
 
         elif spatial == 'uniformnfw':
             Rmax_2d = model['spatial'][sub_mod_index][1][0]
@@ -72,20 +71,7 @@ class HaloGen(Cosmo):
 
             r3d, xpos, ypos = self.spatial.draw(N=Nhalos)
 
-            if filter_spatial:
-
-                inds = spatial.filter_spatial(xpos, ypos, r3d, near_x, near_y, masses, mindis,
-                                                            masscut_low, self.Nsub)
-                self.xpos, self.ypos, self.r3d, self.Nhalos, self.masses = xpos[inds], ypos[inds], r3d[inds], len(
-                    inds), masses[inds]
-
-            elif filter_spatial_2:
-                inds = spatial.filter_spatial_2(xpos, ypos, r3d, near_x, near_y, masses, mindis,
-                                                              between_low, between_high, self.Nsub)
-                self.xpos, self.ypos, self.r3d, self.Nhalos, self.masses = xpos[inds], ypos[inds], r3d[inds], len(
-                    inds), masses[inds]
-            else:
-                self.xpos, self.ypos, self.r3d, self.Nhalos, self.masses = xpos, ypos, r3d, np.shape(masses)[
+            self.xpos, self.ypos, self.r3d, self.Nhalos, self.masses = xpos, ypos, r3d, np.shape(masses)[
                     0], masses
 
             if trunc_rad is None:
@@ -107,7 +93,17 @@ class HaloGen(Cosmo):
                     c_turnover = True
 
                 lensmod = NFW.NFW(z1=self.zd,z2=self.zsrc,c_turnover=c_turnover)
-                lensclass = NFW.NFW_lens()
+
+            elif prof == 'NFW':
+
+                if model['args'][sub_mod_index][1] == 0:
+                    c_turnover = False
+                else:
+                    c_turnover = True
+
+                lensmod = NFW.NFW(z1=self.zd,z2=self.zsrc,c_turnover=c_turnover)
+
+                self.rtrunc = 1000*np.ones_like(self.rtrunc)
 
             elif prof == 'pjaffe':
                 raise StandardError('Pjaffe subhalos not yet implemented')
@@ -117,15 +113,16 @@ class HaloGen(Cosmo):
                 else:
                     core = model['args'][sub_mod_index][1]
 
-                lensclass = PJaffe.Pjaffe_lens()
+                lensmod = PJaffe()
 
             else:
-                raise ValueError('supply valid mass profile for halos')
+
+                raise ValueError('profile '+prof+' not valid, supply valid mass profile for halos')
 
             for i in range(0, self.Nhalos):
                 subhalos.append(
-                    Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos,subclass=lensmod, lensclass=lensclass, trunc=self.rtrunc[i], xcoord=self.xpos[i],
-                              ycoord=self.ypos[i], mass=self.masses[i], redshift=zplane,
+                    Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos, subclass=lensmod, trunc=self.rtrunc[i], x=self.xpos[i],
+                              y=self.ypos[i], mass=self.masses[i], redshift=zplane,
                               mhm=model['args'][sub_mod_index][0]))
 
         else:

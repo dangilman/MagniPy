@@ -38,21 +38,66 @@ class GravlensInput:
 
         outputfile_name = []
 
-        if self.header.routine == 'randomize':
-
-            extra_commands['randomize'] = ['randomize 5 ' + self.outfile_path + self.filename + '_rand' +
-                                           str(self.dataindex) + '\n','0 1.2\n-0.025 0.025\n-0.025 0.025\n-0.1 0.1'
-                                                                          '\n-0.1 0.1\n-0.1 0.1\n-0.1 0.1\n',
-                                           'set gridflag = 1\nset chimode = 1\n','setlens '+ self.outfile_path + self.filename + '_rand' +
-                                           str(self.dataindex)+'.start\n','optimize '+self.outfile_path+self.identifier+str(0)]
-
-
         for n,system in enumerate(self.systems):
 
             if srcx is None and srcy is None:
                 outputfile_name.append(self.outfile_path + self.identifier + str(n)+'.dat')
             else:
                 outputfile_name.append(self.outfile_path + self.identifier + str(n) + '.txt')
+
+
+            if self.header.routine == 'randomize':
+
+                extra_commands = {}
+
+                extra_commands['randomize'] = ['randomize 5 ' + self.outfile_path + self.filename + '_rand' + str(self.dataindex) + '\n']
+
+                ranges = ''
+
+                for object in system.single_models:
+
+                    if object.lensmodel.tovary and object.lensmodel.profname=='SIE':
+
+                        for i,flag in enumerate(object.lensmodel.varyflags):
+
+                            if float(flag)==1:
+
+                                if i==0:
+
+                                    ranges+='0 1.2\n'
+
+                                elif i==1:
+
+                                    ranges+='-.025,.025\n'
+
+                                elif i == 2:
+
+                                    ranges += '-.025,.025\n'
+
+                                elif i == 3:
+
+                                    ranges += '-.1,.1\n'
+
+                                elif i == 4:
+
+                                    ranges += '-.1,.1\n'
+
+                                elif i == 5:
+
+                                    ranges += '-.1,.1\n'
+
+                                elif i == 6:
+
+                                    ranges += '-.1,.1\n'
+
+                        extra_commands['randomize'] += [ranges]
+
+                        extra_commands['randomize'] += ['set gridflag = 1\nset chimode = 1\n',
+                            'setlens ' + self.outfile_path + self.filename + '_rand' +
+                            str(self.dataindex) + '.start\n',
+                            'optimize ' + self.outfile_path + self.identifier + str(0)]
+
+                    break
 
             self._write_lensmodel(full_lensmodel=system,extra_commands=extra_commands,
                                   outfile=self.outfile_path+self.identifier+str(n),srcx=srcx,srcy=srcy)
@@ -178,17 +223,12 @@ class SingleModel:
         elif self.name == 'SIE':
 
             name = 'alpha'
-            lensparams[0] = self.lensmodel.args['b']
+            lensparams[0] = self.lensmodel.args['R_ein']
             lensparams[1], lensparams[2] = self.lensmodel.args['x'], self.lensmodel.args['y']
-            lensparams[3],lensparams[4] = self.lensmodel.args['ellip'], self.lensmodel.args['ellip_theta']
-
-            lensparams[5],lensparams[6] = self.lensmodel.args['shear'],self.lensmodel.args['shear_theta']
+            lensparams[3],lensparams[4] = polar_to_cart(self.lensmodel.args['ellip'], self.lensmodel.args['ellip_theta'])
+            lensparams[5], lensparams[6] = polar_to_cart(self.lensmodel.args['shear'],self.lensmodel.args['shear_theta'])
 
             lensparams[9]=1
-
-            lensparams[3], lensparams[4] = shr_convert(lensparams[3], lensparams[4],polar_to_cart=False)
-            lensparams[5], lensparams[6] = shr_convert(lensparams[5], lensparams[6], polar_to_cart=False)
-
 
         if multiplane:
             lensparams.append(self.lensmodel.args['z'])

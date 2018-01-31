@@ -116,7 +116,7 @@ def read_dat_file(fname):
 
                     xpos = x
                     ypos = y
-                    fr = np.array(f) * max(np.array(f)) ** -1
+                    fr = np.array(f)
                     tdel = np.array(t)
 
                     return xpos, ypos, fr, t, macromodel, [x_srcSIE[0], y_srcSIE[0]]
@@ -172,23 +172,18 @@ def read_chain_out(fname, N=1):
     return nimg, [srcx, srcy], [x1, x2, x3, x4], [y1, y2, y3, y4], [m1, m2, m3, m4], [t1, t2, t3, t4]
 
 
-def shr_convert(e1,e2,polar_to_cart = True):
+def polar_to_cart(ellip, theta, polar_to_cart = True):
 
-    if e1 == 0:
-        e1 += 1e-9
-    if e2 == 0:
-        e2 += 1e-9
+    xcomp = ellip*np.cos(2*theta*np.pi*180**-1)
+    ycomp = ellip*np.sin(2*theta*np.pi*180**-1)
+    return xcomp,ycomp
 
-    if polar_to_cart:
+def cart_to_polar(e1, e2, polar_to_cart = True):
 
-        magnitude = np.sqrt(e1**2+e2**2)
-        angle = 0.5*np.arctan2(e2,e1)*180*np.pi**-1
-        return magnitude,angle
+    if e1==0:
+        return 0,0
     else:
-
-        xcomp = e1*np.cos(2*e2*np.pi*180**-1)
-        ycomp = e1*np.sin(2*e2*np.pi*180**-1)
-        return xcomp,ycomp
+        return np.sqrt(e1**2+e2**2),0.5*np.arctan2(e2,e1)*180*np.pi**-1
 
 def array2image(array, nx=0, ny=0):
     """

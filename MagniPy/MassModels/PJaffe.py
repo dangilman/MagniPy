@@ -1,7 +1,11 @@
 import numpy as np
 from MagniPy.LensBuild.cosmology import Cosmo
 
-class PJaffe_lens:
+class Pjaffe(Cosmo):
+
+    def __init__(self,z1=0.5,z2=1.5,cosmology=''):
+
+        Cosmo.__init__(self, zd=z1, zsrc=z2)
 
     def convergence(self,rcore,rtrunc,r=False):
         if r is False:
@@ -19,12 +23,6 @@ class PJaffe_lens:
         magdef = b*(np.sqrt(1+(rcore*r**-1)**2)-np.sqrt(1+(rtrunc*r**-1)**2)+(rtrunc-rcore)*r**-1)
 
         return magdef*x*r**-1,magdef*y*r**-1
-
-class Pjaffe(Cosmo):
-
-    def __init__(self,z1=0.5,z2=1.5,cosmology=''):
-
-        Cosmo.__init__(self, zd=z1, zsrc=z2)
 
     def params(self,M,rt,rc=0):
 

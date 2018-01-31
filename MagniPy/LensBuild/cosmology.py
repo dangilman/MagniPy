@@ -24,6 +24,7 @@ class Cosmo:
             self.rhoc_physical = self.cosmo.critical_density0.value * 0.001 * self.M_sun**-1 * (100**3) * self.Mpc**3 # [M_sun Mpc^-3]
             self.rhoc = self.rhoc_physical*self.h**-2
             self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
+            self.kpc_convert = self.kpc_per_asec(zd)
 
     def D_A(self,z1,z2):
 
@@ -65,6 +66,17 @@ class Cosmo:
         return v_p.value*angualr_area*dz * density * (1 - self.cosmo.Ob(zplane) - self.cosmo.Ode(zplane))
         #print v_p.value*dz*angualr_area
 
+    def T_xy(self, z_observer, z_source):
+        """
+
+        :param z_observer: observer
+        :param z_source: source
+        :return: transverse comoving distance in units of Mpc
+        """
+        T_xy = self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer)
+        return T_xy.value
+
+
 class ParticleMasses:
 
     def __init__(self,h=0.7):
@@ -100,6 +112,3 @@ class ParticleMasses:
             return massstring
         else:
             return masses
-
-
-

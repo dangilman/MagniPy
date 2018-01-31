@@ -96,5 +96,5 @@ class SersNFW:
 
         ks, sersnorm = self.normalizations(Rein, re, n, f, r0fac, rsfac)
 
-        return self.nfw.def_angle(x0=x0,y0=y0,rs=rs,ks=ks)+self.sers.def_angle(x0=x0,y0=y0,n=n,re=re,ke=sersnorm,
-                                                                               ellip=ellip,ellip_PA=ellip_PA)
+        return self.nfw.def_angle(x0=x0, y0=y0, rs=rs, ks=ks) + self.sers.def_angle(x0=x0, y0=y0, n=n, re=re, ke=sersnorm,
+                                                                                    ellip=ellip, ellip_PA=ellip_PA)

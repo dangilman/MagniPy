@@ -1,12 +1,17 @@
 import LensBuild.lens_assemble as build
 import LensBuild.renderhalos as halo_gen
-from Solver.GravlensWrap.gravlens_to_kwargs import translate
-from Solver.lensdata import LensData
-from MagniPy.util import *
-from MagniPy.Solver.GravlensWrap.generate_input import *
+from LensBuild.spatial_distribution import *
+from LensBuild.cosmology import Cosmo
 from MagniPy.Solver.GravlensWrap._call import *
+from MagniPy.Solver.GravlensWrap.generate_input import *
 from MagniPy.Solver.LenstronomyWrap.generate_input import *
 from MagniPy.Solver.RayTrace import raytrace
+from MagniPy.lensdata import Data
+from Solver.GravlensWrap.gravlens_to_kwargs import translate
+from lenstronomy.LensModel.lens_model import LensModel
+from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+import time
+
 
 class Magnipy:
 
@@ -15,29 +20,34 @@ class Magnipy:
 
     """
 
-    def __init__(self,zmain,zsrc,main_lens_profile=[]):
+    def __init__(self,zmain,zsrc,main_lens_profile=[],use_lenstronomy_halos=False):
 
         self.zmain = zmain
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc, cosmo='FlatLambdaCDM')
+        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc, cosmo='FlatLambdaCDM',use_lenstronomy_halos=use_lenstronomy_halos)
         self.lens_systems = []
+        self.cosmo = Cosmo(zd=zmain,zsrc=zsrc)
 
-    def print_system(self,system_index):
+    def print_system(self,system_index,component_index=None):
 
         system = self.lens_systems[system_index]
-
-        for component in system.lens_components:
-            component.print_args()
+        if component_index is not None:
+            system.lens_components[component_index].print_args()
+        else:
+            for component in system.lens_components:
+                component.print_args()
 
     def reset(self):
 
         self.lens_systems = []
+        self.halos = None
+        self.main = None
 
-    def update_system(self,system_index,component_index,newkwargs):
+    def update_system(self,system_index,component_index,newkwargs,method):
 
-        self.lens_systems[system_index].lens_components[component_index].update(**newkwargs)
+        self.lens_systems[system_index].lens_components[component_index].update(method=method,**newkwargs)
 
-    def build_system(self,main=None,halo_model=None,realization=None,multiplane=None):
+    def build_system(self,main=None,additional_halos=None,multiplane=None):
 
         """
         This routine sets up the lens model. It assembles a "system", which is a list of Deflector instances
@@ -52,47 +62,47 @@ class Magnipy:
 
         newsystem = build.LensSystem(multiplane=multiplane)
 
-        self._set_main(main_model=None,main=main)
-        self._set_halos(halo_model,realization)
+        newsystem.main_lens(main)
 
-        newsystem.main_lens(self.main)
-        if self.halos is not None:
-            newsystem.halos(self.halos)
+        if additional_halos is not None:
+            newsystem.halos(additional_halos)
+
         self.lens_systems.append(newsystem)
 
+    def _spatial_halo_filter(self, halos, xpos=None, ypos=None, mindis=None, masscut_low=None):
 
-    def _set_main(self,main_model=None,main=None):
+        newhalos = filter_spatial(halos, xpos=xpos, ypos=ypos, mindis=mindis, masscut_low=masscut_low)
 
-        self.main_set = True
-        self.main = main
+        return newhalos
 
-    def _set_halos(self,halo_model=None,realization=None):
-
-        if halo_model is None:
-            self.halos_set = True
-            self.halos = realization
-        elif realization is not None:
-            self.halos_set = True
-            self.lens_halos.substructure_init(model=halo_model)
-            self.halos = self.lens_halos.draw_subhalos(N_real=1)[0]
-
-    def generate_halos(self,halomodel,Nrealizations=1):
+    def generate_halos(self,halomodel,Nrealizations=1,spatial_filter=False,**spatial_kwargs):
 
         self.lens_halos.substructure_init(halomodel)
-        return self.lens_halos.draw_subhalos(N_real=Nrealizations)
+        realizations = self.lens_halos.draw_subhalos(N_real=Nrealizations)
+
+        if spatial_filter:
+            newrealizations = []
+            for realization in realizations:
+                newrealizations.append(self._spatial_halo_filter(realization, **spatial_kwargs))
+            return newrealizations
+        else:
+            return realizations
+
 
     def optimize_4imgs(self, data2fit=[], method=str, sigmas=[], identifier='', opt_routine=None,
-                       return_fluxes = True, return_positions = False,source_sigma=float,gridsize=int,res=0.001,source_shape='GAUSSIAN',
-                       source_size=float):
+                       ray_trace = True, return_positions = False, gridsize=int, res=0.0005, source_shape='GAUSSIAN',
+                       source_size=float, print_mag=False):
 
         # opt_routine:
         # basic: gridflag = 0, chimode = 0; optimizes in source plane, fast
         # full: gridflag = 1, chimode = 1; optimizes in image plane, flow
         # randomize: does a randomize command command followed by full
-        assert opt_routine is not None
+
+        d2fit = [data2fit.x, data2fit.y, data2fit.m, data2fit.t]
 
         if method == 'lensmodel':
 
+            assert opt_routine is not None
             solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
                                    pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
                                    identifier=identifier)
@@ -106,76 +116,111 @@ class Magnipy:
                     full.populate(SingleModel(lensmodel=model))
                 solver.add_lens_system(full)
 
-            outputfile = solver.write_all(data=data2fit, zlens=self.zmain, zsrc=self.zsrc, opt_routine=opt_routine)
+            outputfile = solver.write_all(data=d2fit, zlens=self.zmain, zsrc=self.zsrc, opt_routine=opt_routine)
 
             call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
                            path_2_lensmodel=path_2_lensmodel)
 
-            lensdata = []
-            macromodels = []
+            lensdata,macromodels = [],[]
 
-            for i, name in enumerate(outputfile):
+            for i,name in enumerate(outputfile):
 
                 xvals, yvals, mag_gravlens, tvals, macrovals, srcvals = read_dat_file(fname=name)
 
-                data = LensData(x=xvals, y=yvals, m=mag_gravlens, t=tvals, source=srcvals)
+                lensdata.append(Data(x=xvals, y=yvals, m=mag_gravlens, t=tvals, source=srcvals))
 
                 newmacromodel = translate(macrovals)
 
                 macromodels.append(newmacromodel)
 
-                self.update_system(system_index=i, component_index=0, newkwargs=newmacromodel)
+                self.update_system(system_index=i, component_index=0, newkwargs=newmacromodel, method='lensmodel')
 
-                if return_fluxes:
+            t0 = time.time()
 
-                    ray_shooter = raytrace.RayTrace(xsrc=srcvals[0], ysrc=srcvals[0], multiplane=self.lens_systems.multiplane,
-                                                    gridsize=gridsize,res=res,source_shape=source_shape,source_size=source_size)
-                    data.m = ray_shooter.compute_mag(data.x,data.y,self.lens_systems[i])
+            if ray_trace:
 
-                lensdata.append(data)
+                for i, name in enumerate(outputfile):
 
-            return self.lens_systems,lensdata
+                    if print_mag:
+                        print 'computing mag #: ',i+1
+
+                    ray_shooter = raytrace.RayTrace(xsrc=lensdata[i].srcx,ysrc=lensdata[i].srcy,gridsize=gridsize,
+                                                    source_size=source_size,res=res,source_shape=source_shape,
+                                                    cosmology=self.cosmo.cosmo,zsrc=self.zsrc)
+
+                    magnification = ray_shooter.compute_mag(xpos=lensdata[i].x,ypos=lensdata[i].y,
+                                                            lens_system=self.lens_systems[i],print_mag=False)
+
+                    lensdata[i].set_mag(magnification)
+
+                    lensdata[i].sort_by_pos(data2fit.x, data2fit.y)
+
+
+            return lensdata, self.lens_systems,(time.time() - t0)
 
         elif method == 'lenstronomy':
 
-            lenstronomywrap = LenstronomyWrap()
-
             data = []
+
+            T = 0
 
             for i, system in enumerate(self.lens_systems):
 
-                lenstronomywrap.assemble(system, include_shear=False)
+                lenstronomywrap = LenstronomyWrap(multiplane=system.multiplane,cosmo=self.cosmo.cosmo, z_source=self.zsrc)
 
-                kwargs_fit = lenstronomywrap.optimize_lensmodel(data2fit[0], data2fit[1])
+                lenstronomywrap.assemble(system)
 
-                self.update_system(system_index=i, component_index=0, newkwargs=kwargs_fit)
+                #print self.lens_systems[0].lens_components[0].lenstronomy_args
 
-                lenstronomywrap.update_lensparams(system_index=0, newkwargs=kwargs_fit)
+                kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1])
 
-                lensModel = LensModel(lenstronomywrap.lens_model_list)
+                #print self.lens_systems[0].lens_components[0].lenstronomy_args
+                #exit(1)
 
-                xsrc,ysrc = lensModel.ray_shooting(x_image, y_image, lenstronomywrap.lens_model_params)
+                self.update_system(system_index=i, component_index=0, newkwargs=kwargs_fit,method='lenstronomy')
 
-                x_image, y_image = lenstronomywrap.solve_leq(xsrc=xsrc,ysrc=ysrc)
+                lenstronomywrap.update_lensparams(component_index=0, newkwargs=kwargs_fit)
 
-                newdata = LensData(x=x_image, y=y_image, m=None, t=None, source=[xsrc, ysrc])
+                lensModel = lenstronomywrap.model
 
-                if return_fluxes:
+                xsrc, ysrc = lensModel.ray_shooting(d2fit[0], d2fit[1], lenstronomywrap.lens_model_params)
 
-                    lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomywrap.lens_model_list)
-                    fluxes = lensModelExtensions.magnification_finite(x_pos = x_image,
-                                                                      y_pos=y_image,kwargs_lens=lenstronomywrap.lens_model_params,
-                                                                      source_sigma=source_sigma,window_size=gridsize,
-                                                                      grid_number=gridsize*res**-1,shape=source_shape)
-                    newdata.m = fluxes
+                x_image, y_image = lenstronomywrap.solve_leq(xsrc=np.mean(xsrc),ysrc=np.mean(ysrc))
+
+
+                newdata = Data(x=x_image, y=y_image, m=None, t=None, source=[xsrc, ysrc])
+
+                t0 = time.time()
+
+                if ray_trace:
+
+                    if print_mag:
+                        print 'computing mag #: ',i+1
+
+                    lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomywrap.lens_model_list,
+                                                              z_source=self.zsrc, redshift_list=system.redshift_list,
+                                                              cosmo=self.cosmo.cosmo, multi_plane=system.multiplane)
+
+                    fluxes = lensModelExtensions.magnification_finite(x_pos=x_image,
+                                                                      y_pos=y_image,
+                                                                      kwargs_lens=lenstronomywrap.lens_model_params,
+                                                                      source_sigma=source_size, window_size=gridsize,
+                                                                      grid_number=gridsize * res ** -1,
+                                                                      shape=source_shape)
+
+                    newdata.set_mag(fluxes)
+
+                    newdata.sort_by_pos(data2fit.x, data2fit.y)
+
+                    T += time.time() - t0
 
                 data.append(newdata)
 
-            return self.lens_systems,data
+            return data, self.lens_systems, T
 
+    def solve_4imgs(self, method=str, sigmas=[], identifier='', srcx=None, srcy=None, gridsize=.1,
+                    res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,time_ray_trace=False):
 
-    def solve_4imgs(self, method=str, sigmas=[], identifier='',srcx=None,srcy=None,source_sigma=float,gridsize=int,
-                    res=0.001,source_shape='GAUSSIAN',return_fluxes=True,source_size=float):
 
         if method == 'lensmodel':
 
@@ -187,55 +232,79 @@ class Magnipy:
 
             for i,system in enumerate(self.lens_systems):
                 full = FullModel(multiplane=system.multiplane)
-                for i, model in enumerate(system.lens_components):
+                for model in system.lens_components:
                     full.populate(SingleModel(lensmodel=model))
                 solver.add_lens_system(full)
 
-                outputfile = solver.write_all(data=None, zlens=self.zmain, zsrc=self.zsrc,srcx=srcx,srcy=srcy)
+            outputfile = solver.write_all(data=None, zlens=self.zmain, zsrc=self.zsrc,srcx=srcx,srcy=srcy)
 
-                call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
-                               path_2_lensmodel=path_2_lensmodel)
+            call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
+                           path_2_lensmodel=path_2_lensmodel)
 
-                x,y,m,t,nimg = read_gravlens_out(fnames=outputfile)[0]
-                lensdata = LensData(x=x, y=y, m=m, t=t, source=[srcx,srcy])
+            lens_data = read_gravlens_out(fnames=outputfile)
 
-                if return_fluxes:
+            t0 = time.time()
 
-                    ray_shooter = raytrace.RayTrace(xsrc=srcx, ysrc=srcy, multiplane=self.lens_systems.multiplane,
-                                                    gridsize=gridsize,res=res,source_shape=source_shape,source_size=source_size)
-                    lensdata.m = ray_shooter.compute_mag(data.x,data.y,self.lens_systems[i])
+            for i,system in enumerate(self.lens_systems):
+                x, y, m, t, nimg = lens_data[i]
+                data.append(Data(x=x,y=y,m=m,t=t, source=[srcx, srcy]))
 
-                data.append(lensdata)
+                if ray_trace:
 
-            return data
+                    if print_mag:
+                        print 'computing mag #: ',i+1
+
+                    ray_shooter = raytrace.RayTrace(xsrc=srcx, ysrc=srcy, multiplane=self.lens_systems[i].multiplane,
+                                                    gridsize=gridsize,res=res,source_shape=source_shape,
+                                                    source_size=source_size,cosmology = self.cosmo.cosmo,zsrc=self.zsrc)
+
+                    fluxes = ray_shooter.compute_mag(data[i].x,data[i].y,self.lens_systems[i])
+
+                    data[i].set_mag(fluxes)
+
+                    data[i].sort_by_pos(x, y)
+
+            return data,(time.time()-t0)
 
         elif method == 'lenstronomy':
-
-            lenstronomywrap = LenstronomyWrap()
 
             data = []
 
             for i, system in enumerate(self.lens_systems):
-                lenstronomywrap.assemble(system, include_shear=False)
+
+                lenstronomywrap = LenstronomyWrap(multiplane=system.multiplane, cosmo=self.cosmo.cosmo,
+                                                  z_source=self.zsrc)
+
+                lenstronomywrap.assemble(system)
 
                 x_image,y_image = lenstronomywrap.solve_leq(xsrc=srcx,ysrc=srcy)
 
-                newdata = LensData(x=x_image, y=y_image, m=None, t=None, source=[srcx, srcy])
+                data.append(Data(x=x_image, y=y_image, m=None, t=None, source=[srcx, srcy]))
 
-                if return_fluxes:
+            t0 = time.time()
 
-                    lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomywrap.lens_model_list)
-                    fluxes = lensModelExtensions.magnification_finite(x_pos=x_image,
-                                                                      y_pos=y_image,
+            if raytrace:
+                for i, system in enumerate(self.lens_systems):
+
+                    if print_mag:
+                        print 'computing mag #: ',i+1
+
+                    lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomywrap.lens_model_list,
+                                                              z_source=self.zsrc, redshift_list=system.redshift_list,
+                                                              cosmo=self.cosmo.cosmo,multi_plane=system.multiplane)
+
+                    fluxes = lensModelExtensions.magnification_finite(x_pos=data[i].x,
+                                                                      y_pos=data[i].y,
                                                                       kwargs_lens=lenstronomywrap.lens_model_params,
-                                                                      source_sigma=source_sigma, window_size=gridsize,
+                                                                      source_sigma=source_size, window_size=gridsize,
                                                                       grid_number=gridsize * res ** -1,
                                                                       shape=source_shape)
-                    newdata.m = fluxes
+                    data[i].set_mag(fluxes)
 
-                data.append(newdata)
+                    data[i].sort_by_pos(data[i].x, data[i].y)
 
-            return data
+
+            return data,(time.time()-t0)
 
 
 

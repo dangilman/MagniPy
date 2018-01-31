@@ -1,28 +1,43 @@
 from MagniPy.LensBuild.cosmology import Cosmo
+import numpy as np
 
 class PointMass(Cosmo):
 
     #pcrit = 2.77536627e+11
 
-    def __init__(self,z1=0.5,z2=1.5,h=0.7,c_turnover=True):
+    def __init__(self,z1=0.5,z2=1.5,c_turnover=True):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
         :param z2: source redshift
         :param h: little h
         """
-        Cosmo.__init__(self, z1=z1, z2=z2)
+        Cosmo.__init__(self, zd=z1, zsrc=z2)
         self.c_turnover=c_turnover
 
-    def params(self,M):
+    def def_angle(self, x_grid, y_grid, x=None, y=None, R_ein = None, **kwargs):
+
+        x = x_grid - x
+        y = y_grid - y
+
+        r = np.sqrt(x ** 2 + y ** 2 + 0.0000000000001)
+        magdef = R_ein**2*r**-1
+
+        return magdef * x * r ** -1, magdef * y * r ** -1
+
+    def params(self,x,y,M):
         subkwargs = {}
         subkwargs['b'] = self.R_ein(M)
-        return subkwargs
+        subkwargs['x'] = x
+        subkwargs['y'] = y
+
+        lenstronomy_params = {}
+        lenstronomy_params['R_ein'] = subkwargs['b']
+        lenstronomy_params['x'] = x
+        lenstronomy_params['y'] = y
+
+        return subkwargs,lenstronomy_params
 
     def R_ein(self,M):
-        #print self.D_ds*self.D_d**-1*self.D_s**-1
-        return (M*self.G*self.c**-2*self.kpc_per_asec(self.zd)**-1*self.D_ds*self.D_d**-1*self.D_s**-1*1000)**.5
-
-p = PointMass()
-
-print 1000*p.R_ein(10**7)
+        const = 4*self.G*self.D_ds*(self.c**2*self.D_d*self.D_s)**-1*(self.kpc_convert*self.arcsec**-1)**2 # [Msun ^-1 arcsec ^ 2]
+        return (M*const)**.5

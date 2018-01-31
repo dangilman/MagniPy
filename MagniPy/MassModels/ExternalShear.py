@@ -1,10 +1,8 @@
 import numpy as np
 
-class Shear_lens:
+class Shear:
 
     def def_angle(self,xgrid,ygrid,shear,shear_theta):
-
-        shear_theta += -90
 
         phi = np.arctan2(ygrid, xgrid)
         e1, e2 = shear * np.cos(2 * (phi - shear_theta * np.pi / 180)), shear * np.sin(
@@ -14,12 +12,14 @@ class Shear_lens:
 
         return shearx,sheary
 
-class Shear:
-
     def params(self,shear,shear_theta):
 
         subkwargs = {}
         subkwargs['shear'] = shear
         subkwargs['shear_theta'] = shear_theta
 
-        return subkwargs
+        lenstronomy_args = {}
+        lenstronomy_args['shear'] = shear
+        lenstronomy_args['shear_theta'] = shear_theta
+
+        return subkwargs,lenstronomy_args

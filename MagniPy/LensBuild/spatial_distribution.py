@@ -123,7 +123,8 @@ def Runi(N, Rmax, Rmaxz = None):
 
     return np.sqrt(xrand ** 2 + yrand ** 2 + zrand ** 2), xrand, yrand
 
-def filter_spatial(xsub, ysub, r3d, xpos, ypos, masses, mindis, masscut_low,Nsub):
+def filter_spatial(deflector_list,xpos,ypos,mindis,masscut_low):
+    #filter_spatial(xsub, ysub, r3d, xpos, ypos, masses, mindis, masscut_low, Nsub)
     """
     :param xsub: sub x coords
     :param ysub: sub y coords
@@ -132,35 +133,24 @@ def filter_spatial(xsub, ysub, r3d, xpos, ypos, masses, mindis, masscut_low,Nsub
     :param mindis: max 2d distance
     :return: filtered subhalos
     """
+    newlist = []
 
-    if Nsub==1:
-        keep=False
+    for deflector in deflector_list:
+
+        x,y = deflector.args['x'],deflector.args['y']
+
         for i in range(0,len(xpos)):
 
-            r =np.sqrt((xsub[0]-xpos[i])**2+(ysub[0]-ypos[i])**2)
+            dr = ((x - xpos[i])**2 + (y - ypos[i])**2)**.5
 
-            if masses[0]>=masscut_low or r<mindis:
-                keep=True
+            if dr<=mindis or deflector.args['mass']>=masscut_low:
+
+                newlist.append(deflector)
+
                 break
 
+    return newlist
 
-        if keep:
-            return [0]
-        else:
-            return []
-    else:
-        inds = []
-
-        for j in range(0,Nsub-1):
-            for i in range(0,len(xpos)):
-                r = np.sqrt((xsub[j] - xpos[i]) ** 2 + (ysub[j] - ypos[i]) ** 2)
-
-                if masses[j]>=masscut_low or r<mindis:
-
-                    inds.append(j)
-                    break
-
-        return inds
 
 def filter_spatial_2(xsub, ysub, r3d, xpos, ypos, masses, mindis, between_low, between_high, Nsub):
     """
