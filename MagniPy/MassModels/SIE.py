@@ -67,6 +67,26 @@ class SIE(Cosmo):
     def convergence(self, rcore, rtrunc):
         return None
 
+    def translate_to_lensmodel(self, **args):
+
+        newargs = {}
+        newargs['R_ein'] = args['theta_E']
+        newargs['ellip'] = 1 - args['q']
+        newargs['ellip_theta'] = args['phi_G']*180*np.pi**-1
+        newargs['x'] = args['center_x']
+        newargs['y'] = args['center_y']
+        return newargs
+
+    def translate_to_lenstronomy(self, **args):
+
+        newargs = {}
+        newargs['q'] = 1-args['ellip']
+        newargs['theta_E'] = args['R_ein']
+        newargs['phi_G'] = (args['ellip_theta']-90)*np.pi*180**-1
+        newargs['center_x'] = args['x']
+        newargs['center_y'] = args['y']
+        return newargs
+
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
                y = None, shear=0, shear_theta=0,trunc=None):
 
@@ -85,8 +105,10 @@ class SIE(Cosmo):
         lenstronomy_params = {}
         lenstronomy_params['theta_E'] = R_ein
         lenstronomy_params['q'] = 1 - ellip
-        lenstronomy_params['phi_G'] = ellip_theta*-1 - 90
+        lenstronomy_params['phi_G'] = ellip_theta*np.pi*180**-1
         lenstronomy_params['gamma'] = 2
+        lenstronomy_params['center_x'] = x
+        lenstronomy_params['center_y'] = y
 
         return subparams,lenstronomy_params
 

@@ -50,7 +50,7 @@ class GravlensInput:
 
                 extra_commands = {}
 
-                extra_commands['randomize'] = ['randomize 5 ' + self.outfile_path + self.filename + '_rand' + str(self.dataindex) + '\n']
+                extra_commands['randomize'] = ['randomize 10 ' + self.outfile_path + self.filename + '_rand' + str(self.dataindex) + '\n']
 
                 ranges = ''
 
@@ -212,13 +212,21 @@ class SingleModel:
 
         name,lensparams = '',[0]*10
 
-        if self.name == 'NFW':
+        if self.name == 'TNFW':
             name = 'tnfw3'
             lensparams[0] = self.lensmodel.args['ks']
             lensparams[1],lensparams[2] = self.lensmodel.args['x'],self.lensmodel.args['y']
             lensparams[7] = self.lensmodel.args['rs']
             lensparams[8] = self.lensmodel.args['rt']*lensparams[7]**-1
             lensparams[9] = 1
+
+        if self.name == 'NFW':
+            name = 'nfw'
+            lensparams[0] = self.lensmodel.args['ks']
+            lensparams[1],lensparams[2] = self.lensmodel.args['x'],self.lensmodel.args['y']
+            lensparams[7] = self.lensmodel.args['rs']
+            lensparams[8] = 0
+            lensparams[9] = 0
 
         elif self.name == 'SIE':
 

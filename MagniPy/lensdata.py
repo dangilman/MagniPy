@@ -13,19 +13,34 @@ class Data:
             self.set_t(t)
         else:
             self.t = None
-        self.set_src(source[0],source[1])
+        if source is not None:
+            self.set_src(source[0],source[1])
 
     def sort_by_pos(self,x,y):
 
-        dr = np.sqrt(np.array(self.x - x)**2 + np.array(self.y - y)**2)
+        import itertools
 
-        inds = np.argsort(dr)
-        self.x = self.x[inds]
-        self.y = self.y[inds]
+        x_self = np.array(list(itertools.permutations(self.x)))
+        y_self = np.array(list(itertools.permutations(self.y)))
+
+        indexes = [0,1,2,3]
+        index_iterations = list(itertools.permutations(indexes))
+        delta_r = []
+        for i in range(0,int(len(x_self))):
+            dr = 0
+            for j in range(0,int(len(x_self[0]))):
+                dr += (x_self[i][j] - x[j])**2 + (y_self[i][j] - y[j])**2
+
+            delta_r.append(dr**.5)
+
+        min_indexes = np.array(index_iterations[np.argmin(delta_r)])
+
+        self.set_pos(self.x[min_indexes],self.y[min_indexes])
+
         if self.m is not None:
-            self.m = self.m[inds]
+            self.set_mag(self.m[min_indexes])
         if self.t is not None:
-            self.t = self.t[inds]
+            self.set_t(self.t[min_indexes])
 
     def set_pos(self,x,y):
 
@@ -58,5 +73,7 @@ class Data:
     def all(self):
 
         return [self.x,self.y,self.m,self.t]
+
+
 
 

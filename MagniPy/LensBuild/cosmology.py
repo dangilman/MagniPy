@@ -1,3 +1,4 @@
+from scipy.integrate import quad
 import numpy as np
 import astropy.cosmology as C
 
@@ -59,12 +60,15 @@ class Cosmo:
             epsilon_crit = (self.c**2*(4*np.pi*self.G)**-1)*(D_s*D_ds**-1*D_d**-1)
         return epsilon_crit
 
-    def DMmass_inplane(self,angualr_area,zplane,dz):
+    def E_z(self,z):
+        return (self.cosmo.Om(z)*(1+z)**-3 + self.cosmo.Ode(z))**.5
 
-        v_p = self.cosmo.differential_comoving_volume(zplane+dz)
-        density = self.cosmo.critical_density(zplane).value*0.001 * self.M_sun**-1 * (100**3) * self.Mpc**3
-        return v_p.value*angualr_area*dz * density * (1 - self.cosmo.Ob(zplane) - self.cosmo.Ode(zplane))
-        #print v_p.value*dz*angualr_area
+    def f_z(self,z):
+
+        I = quad(self.E_z,0,z)[0]
+        I2 = quad(self.E_z,0,self.zd)[0]
+
+        return (1+z)**-2*self.E_z(z)**-1*(I**2*I2**-2)
 
     def T_xy(self, z_observer, z_source):
         """
@@ -112,3 +116,6 @@ class ParticleMasses:
             return massstring
         else:
             return masses
+
+
+

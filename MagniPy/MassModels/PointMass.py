@@ -26,17 +26,14 @@ class PointMass(Cosmo):
         return magdef * x * r ** -1, magdef * y * r ** -1
 
     def params(self,x,y,M):
+
         subkwargs = {}
-        subkwargs['b'] = self.R_ein(M)
+        subkwargs['R_ein'] = self.R_ein(M)
         subkwargs['x'] = x
         subkwargs['y'] = y
 
-        lenstronomy_params = {}
-        lenstronomy_params['R_ein'] = subkwargs['b']
-        lenstronomy_params['x'] = x
-        lenstronomy_params['y'] = y
 
-        return subkwargs,lenstronomy_params
+        return subkwargs,subkwargs
 
     def R_ein(self,M):
         const = 4*self.G*self.D_ds*(self.c**2*self.D_d*self.D_s)**-1*(self.kpc_convert*self.arcsec**-1)**2 # [Msun ^-1 arcsec ^ 2]

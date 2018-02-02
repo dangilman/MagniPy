@@ -29,7 +29,6 @@ class Pjaffe(Cosmo):
         subkwargs = {}
         subkwargs['name'] = 'Pjaffe'
         subkwargs['b'] = self.b(M,rt,rc)
-        subkwargs['mass'] = np.log10(M)
 
         return subkwargs
 

@@ -53,9 +53,9 @@ class Deflector:
 
         self.has_shear = False
 
+        self.subclass = subclass
+
         self.args,self.lenstronomy_args = subclass.params(**lens_kwargs)
-        self.lenstronomy_args['center_x'] = lens_kwargs['x']
-        self.lenstronomy_args['center_y'] = lens_kwargs['y']
 
         if 'shear' in self.args:
             if self.args['shear'] != 0:
@@ -106,8 +106,13 @@ class Deflector:
 
             self.args.update(**newparams)
 
+            self.lenstronomy_args.update(**self.subclass.translate_to_lenstronomy(**self.args))
+
         elif method =='lenstronomy':
 
             self.lenstronomy_args.update(**newparams)
+
+            self.args.update(**self.subclass.translate_to_lensmodel(**self.lenstronomy_args))
+
         else:
             raise ValueError('must specify which set of kwargs to update')

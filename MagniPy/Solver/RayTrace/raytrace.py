@@ -36,6 +36,36 @@ class RayTrace:
         self.x_grid_0, self.y_grid_0 = make_grid(numPix=self.gridsize * self.res ** -1, deltapix=self.res)
         self.y_grid_0 *= -1
 
+    def get_images(self,xpos,ypos,lens_system,print_mag=False):
+
+        assert self.multiplane is False
+
+        images,magnifications = [],[]
+
+        for i in range(0,len(xpos)):
+
+            x_loc = xpos[i]*np.ones_like(self.x_grid_0)+self.x_grid_0
+            y_loc = ypos[i]*np.ones_like(self.y_grid_0)+self.y_grid_0
+
+            xdef = np.zeros_like(x_loc)
+            ydef = np.zeros_like(y_loc)
+
+            for count,deflector in enumerate(lens_system.lens_components):
+
+                xplus,yplus = deflector.lensing.def_angle(x_loc,y_loc,**deflector.args)
+
+                xdef+=xplus
+                ydef+=yplus
+
+            x_source = x_loc - xdef
+            y_source = y_loc - ydef
+
+            source_light = self.source.source_profile(betax=x_source, betay=y_source)
+            magnifications.append(np.sum(source_light)*self.res**2)
+            images.append(source_light * (int(np.shape(source_light)[0]) ** 2 * np.sum(source_light)) ** -1)
+
+        return magnifications,images
+
     def compute_mag(self,xpos,ypos,lens_system,print_mag=False):
 
         if self.multiplane is False:

@@ -1,6 +1,7 @@
 from cosmology import Cosmo
 from spatial_distribution import *
 from massfunctions import *
+from MagniPy.MassModels import TNFW
 from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
 from MagniPy.LensBuild.lens_assemble import Deflector
@@ -92,7 +93,7 @@ class HaloGen(Cosmo):
                 else:
                     c_turnover = True
 
-                lensmod = NFW.NFW(z1=self.zd,z2=self.zsrc,c_turnover=c_turnover)
+                lensmod = TNFW.TNFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover)
 
             elif prof == 'NFW':
 
@@ -101,7 +102,7 @@ class HaloGen(Cosmo):
                 else:
                     c_turnover = True
 
-                lensmod = NFW.NFW(z1=self.zd,z2=self.zsrc,c_turnover=c_turnover)
+                lensmod = NFW.NFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover)
 
                 self.rtrunc = 1000*np.ones_like(self.rtrunc)
 

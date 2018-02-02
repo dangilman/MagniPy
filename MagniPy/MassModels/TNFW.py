@@ -1,7 +1,7 @@
 import numpy as np
 from MagniPy.LensBuild.cosmology import Cosmo
 
-class NFW(Cosmo):
+class TNFW(Cosmo):
 
     def __init__(self,z1=0.5,z2=1.5,c_turnover=True):
         """
@@ -14,12 +14,13 @@ class NFW(Cosmo):
 
         self.c_turnover=c_turnover
 
-    def def_angle(self, x_grid, y_grid, x=None, y=None, rs=None, ks=None, **kwargs):
+    def def_angle(self, x_grid, y_grid, x=None, y=None, rs=None, ks=None, rt=None, shear=None, shear_theta=None, **kwargs):
 
         assert rs > 0
 
         x = x_grid - x
         y = y_grid - y
+        tau = rt * rs ** -1
 
         r = np.sqrt(x ** 2 + y ** 2 + 0.0000000000001)
         xnfw = r * rs ** -1
@@ -27,8 +28,7 @@ class NFW(Cosmo):
         softening = 0.0001
         xnfw[np.where(xnfw<softening)]=softening
 
-
-        magdef = 4 * ks * rs * xnfw**-1 *(np.log(0.5*xnfw) + self.F(xnfw))
+        magdef = 4*ks * rs * self.t_fac(xnfw, tau) * xnfw ** -1
 
         return magdef * x * r ** -1, magdef * y * r ** -1
 
@@ -51,6 +51,15 @@ class NFW(Cosmo):
             else:
                 return (x ** 2 - 1) ** -.5 * np.arctan((x ** 2 - 1) ** .5)
 
+    def L(self,x,tau):
+
+        return np.log(x*(tau+np.sqrt(tau**2+x**2))**-1)
+
+    def t_fac(self, x, tau):
+        return tau ** 2 * (tau ** 2 + 1) ** -2 * (
+        (tau ** 2 + 1 + 2 * (x ** 2 - 1)) * self.F(x) + tau * np.pi + (tau ** 2 - 1) * np.log(tau) +
+        np.sqrt(tau ** 2 + x ** 2) * (-np.pi + self.L(x, tau) * (tau ** 2 - 1) * tau ** -1))
+
     def convergence(self,r=None,ks=None,rs=None,xy=None):
         if xy is not None:
             assert isinstance(xy,list)
@@ -61,28 +70,29 @@ class NFW(Cosmo):
             r = np.sqrt(self.x**2+self.y**2)
         return 2*ks*(1-self.F(r*rs**-1))*((r*rs**-1)**2-1)**-1
 
-    def translate_to_lensmodel(self,**args):
+    def translate_to_lensmodel(self, **args):
 
         newargs = {}
         newargs['rs'] = args['Rs']
-        newargs['ks'] = args['theta_Rs']*(4*args['Rs']*(np.log(0.5)+1))**-1
+        newargs['ks'] = args['theta_Rs'] * (4 * args['Rs'] * (np.log(0.5) + 1)) ** -1
         newargs['x'] = args['center_x']
         newargs['y'] = args['center_y']
         return newargs
 
-    def translate_to_lenstronomy(self,**args):
+    def translate_to_lenstronomy(self, **args):
 
         newargs = {}
         newargs['Rs'] = args['rs']
-        newargs['theta_Rs'] = 4 * args['ks']*args['Rs'] * (np.log(0.5) + 1)
+        newargs['theta_Rs'] = 4 * args['ks'] * args['Rs'] * (np.log(0.5) + 1)
         newargs['center_x'] = args['x']
         newargs['center_x'] = args['y']
         return newargs
 
-    def params(self, x=None,y=None,mass=float, mhm=None ,trunc = None):
+    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None):
 
         assert mhm is not None
         assert mass is not None
+        assert trunc is not None
 
         c = self.nfw_concentration(mass, mhm)
 
@@ -91,18 +101,20 @@ class NFW(Cosmo):
         ks = rsdef*(4*rs*(np.log(0.5)+1))**-1
 
         subkwargs = {}
-        subkwargs['name'] = 'NFW'
+        subkwargs['name'] = 'TNFW'
         subkwargs['ks'] = ks
         subkwargs['rs'] = rs
         subkwargs['c'] = c
         subkwargs['mass'] = mass
-        subkwargs['lenstronomy_name'] = 'NFW'
+        subkwargs['lenstronomy_name'] = 'tNFW'
         subkwargs['x'] = x
         subkwargs['y'] = y
+        subkwargs['rt'] = trunc
 
         lenstronomy_params = {}
         lenstronomy_params['Rs'] = rs
         lenstronomy_params['theta_Rs'] = rsdef
+        lenstronomy_params['t'] = trunc
         lenstronomy_params['center_x'] = x
         lenstronomy_params['center_y'] = y
 
@@ -227,3 +239,13 @@ class NFW(Cosmo):
         c = self.nfw_concentration(m200,mhm=mhm)
         rho0, Rs, r200 = self.nfwParam_physical(m200,c)
         return 4*np.pi*rho0*Rs**3*(np.log(1+c)-c*(1+c)**-1)
+
+
+    def f(tau):
+        return tau ** 2 * (tau ** 2 + 1) ** -2 * ((tau ** 2 - 1) * np.log(tau) + tau * np.pi - tau ** 2 - 1)
+
+    def tau_factor(x, t):
+        return t ** 2 * ((1 + x) * (1 + t ** 2) ** 2) ** -1 * (
+        -x * (1 + t ** 2) + 2 * (1 + x) * t * np.arctan(x * t ** -1) + (1 + x) * (t ** 2 - 1) * np.log(
+            t * (1 + x)) - 0.5 * (1 + x) * (-1 + t ** 2) * np.log(x ** 2 + t ** 2))
+
