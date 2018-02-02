@@ -106,7 +106,7 @@ class TNFW(Cosmo):
         subkwargs['rs'] = rs
         subkwargs['c'] = c
         subkwargs['mass'] = mass
-        subkwargs['lenstronomy_name'] = 'tNFW'
+        subkwargs['lenstronomy_name'] = 'NFW'
         subkwargs['x'] = x
         subkwargs['y'] = y
         subkwargs['rt'] = trunc
@@ -114,7 +114,7 @@ class TNFW(Cosmo):
         lenstronomy_params = {}
         lenstronomy_params['Rs'] = rs
         lenstronomy_params['theta_Rs'] = rsdef
-        lenstronomy_params['t'] = trunc
+        #lenstronomy_params['t'] = trunc
         lenstronomy_params['center_x'] = x
         lenstronomy_params['center_y'] = y
 

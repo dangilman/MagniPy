@@ -305,7 +305,6 @@ class Magnipy:
                     if print_mag:
                         print 'computing mag #: ',i+1
 
-
                     fluxes = self.do_raytrace_lenstronomy(lens_system=system, xpos=data[i].x, ypos=data[i].y,
                                                           source_size=source_size,gridsize=gridsize,
                                                           res=res, source_shape=source_shape,zsrc=self.zsrc,

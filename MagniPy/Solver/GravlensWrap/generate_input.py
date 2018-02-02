@@ -208,6 +208,20 @@ class SingleModel:
 
         self.tovary = lensmodel.tovary
 
+    def _get_tovary(self, vary_type='optimize'):
+
+        if self.tovary:
+            if vary_type == 'optimize':
+                vary_string = ''
+                for arg in self.lensmodel.varyflags:
+                    vary_string += str(arg) + ' '
+
+                return vary_string
+            else:
+                raise ValueError('set up randomize.')
+        else:
+            return '0 0 0 0 0 0 0 0 0 0'
+
     def _get_model(self,multiplane=False):
 
         name,lensparams = '',[0]*10
@@ -238,6 +252,13 @@ class SingleModel:
 
             lensparams[9]=1
 
+        elif self.name == 'ptmass':
+
+            name = 'ptmass'
+            lensparams[0] = self.lensmodel.args['R_ein']
+            lensparams[1], lensparams[2] = self.lensmodel.args['x'], self.lensmodel.args['y']
+            lensparams[3],lensparams[4],lensparams[5],lensparams[6],lensparams[7],lensparams[8],lensparams[9] = 0,0,0,0,0,0,0
+
         if multiplane:
             lensparams.append(self.lensmodel.args['z'])
 
@@ -247,20 +268,6 @@ class SingleModel:
             model += str(element)+' '
 
         return model
-
-    def _get_tovary(self, vary_type='optimize'):
-
-        if self.tovary:
-            if vary_type == 'optimize':
-                vary_string = ''
-                for arg in self.lensmodel.varyflags:
-                    vary_string += str(arg) + ' '
-
-                return vary_string
-            else:
-                raise ValueError('set up randomize.')
-        else:
-            return '0 0 0 0 0 0 0 0 0 0'
 
 
 class Header:

@@ -74,9 +74,9 @@ class NFW(Cosmo):
 
         newargs = {}
         newargs['Rs'] = args['rs']
-        newargs['theta_Rs'] = 4 * args['ks']*args['Rs'] * (np.log(0.5) + 1)
+        newargs['theta_Rs'] = 4 * args['ks']*newargs['Rs'] * (np.log(0.5) + 1)
         newargs['center_x'] = args['x']
-        newargs['center_x'] = args['y']
+        newargs['center_y'] = args['y']
         return newargs
 
     def params(self, x=None,y=None,mass=float, mhm=None ,trunc = None):

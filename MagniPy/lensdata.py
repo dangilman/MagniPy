@@ -26,6 +26,7 @@ class Data:
         indexes = [0,1,2,3]
         index_iterations = list(itertools.permutations(indexes))
         delta_r = []
+
         for i in range(0,int(len(x_self))):
             dr = 0
             for j in range(0,int(len(x_self[0]))):

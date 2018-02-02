@@ -50,9 +50,9 @@ class SolveRoutines(Magnipy):
                                                     source_shape=source_shape,source_size=source_size,print_mag=print_mag)
 
 
-        optimized_data, newsystem = self.fit_srcplane(macromodel=macromodel,datatofit=datatofit,realizations=realizations,multiplane=multiplane,method=method,
-                          ray_trace=ray_trace,sigmas=sigmas,identifier=identifier,srcx=srcx,srcy=srcy,gridsize=gridsize,res=res,
-                          source_shape=source_shape,source_size=source_size,print_mag=print_mag)
+        optimized_data, newsystem = self.fit_src_plane(macromodel=macromodel, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
+                                                       ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, gridsize=gridsize, res=res,
+                                                       source_shape=source_shape, source_size=source_size, print_mag=print_mag)
 
         return optimized_data,newsystem
 
@@ -78,15 +78,16 @@ class SolveRoutines(Magnipy):
 
         return optimized_data,macromodel
 
-    def fit_srcplane(self,macromodel,datatofit,realizations,multiplane,method=None,ray_trace=None, sigmas=None,
-                             identifier=None,srcx=None, srcy=None, gridsize=None,res=None,
-                             source_shape='GAUSSIAN', source_size=None, print_mag=False):
+    def fit_src_plane(self, macromodel, datatofit, realizations, multiplane, method=None, ray_trace=None, sigmas=None,
+                      identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
+                      source_shape='GAUSSIAN', source_size=None, print_mag=False):
 
         # uses source plane chi^2
 
         assert method is not None
         assert method in ['lensmodel', 'lenstronomy']
 
+        self.reset()
 
         if realizations is not None:
             for real in realizations:
@@ -99,6 +100,7 @@ class SolveRoutines(Magnipy):
                                           res=res, source_shape=source_shape, ray_trace=ray_trace,
                                           source_size=source_size, print_mag=print_mag, opt_routine='basic')
         lenssystems = self.lens_systems
+
         self.reset()
 
         return optimized_data,lenssystems

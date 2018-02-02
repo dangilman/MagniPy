@@ -24,7 +24,7 @@ class Pjaffe(Cosmo):
 
         return magdef*x*r**-1,magdef*y*r**-1
 
-    def params(self,M,rt,rc=0):
+    def params(self,M,rt,rc=0,**kwargs):
 
         subkwargs = {}
         subkwargs['name'] = 'Pjaffe'
