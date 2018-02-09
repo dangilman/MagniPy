@@ -1,11 +1,17 @@
 import numpy as np
 from MagniPy.LensBuild.cosmology import Cosmo
 
-class Pjaffe(Cosmo):
+class Pjaffe:
 
-    def __init__(self,z1=0.5,z2=1.5,cosmology=''):
+    def __init__(self,z1=0.5,z2=1.5,cosmology=None):
 
-        Cosmo.__init__(self, zd=z1, zsrc=z2)
+        if cosmology is None:
+
+            self.cosmology = Cosmo(zd=z1,zsrc=z2)
+
+        else:
+            self.cosmology = cosmology
+
 
     def convergence(self,rcore,rtrunc,r=False):
         if r is False:
@@ -29,12 +35,16 @@ class Pjaffe(Cosmo):
         subkwargs = {}
         subkwargs['name'] = 'Pjaffe'
         subkwargs['b'] = self.b(M,rt,rc)
+        subkwargs['rt'] = None
+
+        otherkwargs ={}
+        otherkwargs['mass'] = M
 
         return subkwargs
 
     def b(self,M,rt,rc):
 
-        return M*((rt-rc)*self.sigmacrit*np.pi)**-1
+        return M*((rt-rc)*self.cosmology.sigmacrit*np.pi)**-1
 
 
 

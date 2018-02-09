@@ -1,4 +1,48 @@
 import numpy as np
+from lensdata import Data
+
+def read_data(filename=''):
+
+    nimg,srcx,srcy,xpos1,ypos1,m1,t1,xpos2,ypos2,m2,t2,\
+    xpos3,ypos3,m3,t3,xpos4,ypos4,m4,t4 = np.loadtxt(filename,unpack=True)
+
+    if isinstance(xpos3,float):
+        return [Data(x=[xpos1,xpos2,xpos3,xpos4],y=[ypos1,ypos2,ypos3,ypos4],m=[m1,m2,m3,m4],
+                    t=[t1,t2,t3,t4],source=[srcx,srcy])]
+    else:
+        data = []
+        for i in range(0,len(xpos1)):
+            data.append(Data(x=[xpos1[i],xpos2[i],xpos3[i],xpos4[i]],y=[ypos1[i],ypos2[i],ypos3[i],ypos4[i]],
+                             m=[m1[i],m2[i],m3[i],m4[i]],t=[t1[i],t2[i],t3[i],t4[i]],source=[srcx[i],srcy[i]]))
+        return data
+
+
+def write_data(filename='',data_list=[],mode='append'):
+
+    def single_line(dset=classmethod):
+        lines = ''
+        lines += str(dset.nimg)+' '+str(dset.srcx)+' '+str(dset.srcy)+' '
+
+        for i in range(0,int(dset.nimg)):
+
+            for value in [dset.x[i],dset.y[i],dset.m[i],dset.t[i]]:
+                if value is None:
+                    lines += '0 '
+                else:
+                    lines += str(value)+' '
+
+        return lines+'\n'
+
+    if mode=='append':
+        with open(filename,'a') as f:
+            for dataset in data_list:
+
+                f.write(single_line(dataset))
+    else:
+        with open(filename,'w') as f:
+            for dataset in data_list:
+                f.write(single_line(dataset))
+
 
 def integrate_profile(profname,limit,inspheres=False,**kwargs):
     if profname=='nfw':
@@ -19,8 +63,6 @@ def integrate_profile(profname,limit,inspheres=False,**kwargs):
         return np.pi*limit*b
 
 def rotate(xcoords,ycoords,angle):
-    angle*=np.pi*180**-1
-    #angle+=-np.pi*.5
 
     return xcoords*np.cos(angle)+ycoords*np.sin(angle),-xcoords*np.sin(angle)+ycoords*np.cos(angle)
 
@@ -165,7 +207,6 @@ def read_gravlens_out(fnames):
 
     return vector
 
-
 def read_chain_out(fname, N=1):
     nimg, srcx, srcy, x1, y1, m1, t1, x2, y2, m2, t2, x3, y3, m3, t3, x4, y4, m4, t4 = np.loadtxt(fname, unpack=True)
 
@@ -202,7 +243,6 @@ def array2image(array, nx=0, ny=0):
     image = array.reshape(int(nx), int(ny))
     return image
 
-
 def image2array(image):
     """
     returns the information contained in a 2d array into an n*n 1d array
@@ -238,4 +278,40 @@ def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
     shift = (subgrid_res-1)/(2.*subgrid_res)*deltapix
     return array2image(x_grid - shift), array2image(y_grid - shift)
 
+def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, masscut_low=10 ** 7,
+                       zmain=None):
+    """
+    :param xsub: sub x coords
+    :param ysub: sub y coords
+    :param x_filter: img x coords
+    :param y_filter: img y coords
+    :param mindis: max 2d distance
+    :return: filtered subhalos
+    """
+    keep_index = []
 
+    for index, deflector in enumerate(lens_components):
+
+        if not deflector.is_subhalo:
+            keep_index.append(index)
+            continue
+
+        if zmain != deflector.redshift:
+            keep_index.append(index)
+            continue
+
+        x, y = deflector.args['center_x'], deflector.args['center_y']
+
+        for i in range(0, len(x_filter)):
+
+            dr = ((x - x_filter[i]) ** 2 + (y - y_filter[i]) ** 2) ** .5
+
+            if dr <= mindis or deflector.other_args['mass'] >= masscut_low:
+                keep_index.append(index)
+
+                break
+
+    newcomponents = [lens_components[i] for i in keep_index]
+    new_redshift_list = [lens_components[i].redshift for i in keep_index]
+
+    return newcomponents, new_redshift_list

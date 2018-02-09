@@ -1,6 +1,9 @@
 from MagniPy.MassModels.SIE import *
 from MagniPy.MassModels.ExternalShear import *
 from cosmology import Cosmo
+from MagniPy.util import polar_to_cart,cart_to_polar
+from copy import deepcopy
+from MagniPy.LensBuild.spatial_distribution import *
 
 class LensSystem:
 
@@ -19,6 +22,7 @@ class LensSystem:
     def main_lens(self, deflector_main):
         self.lens_components += [deflector_main]
         self.main = deflector_main
+        self.zmain = self.main.redshift
 
         self._redshift_list(deflector_main)
 
@@ -32,87 +36,126 @@ class LensSystem:
             for object in halos:
                 self._redshift_list(object)
 
-    def update_component(self, component_index=int, newkwargs={}):
+    def update_component(self, component_index=int, newkwargs={}, method = ''):
 
         component = self.lens_components[component_index]
 
-        self.lens_components[component_index] = component.update(**newkwargs)
+        self.lens_components[component_index] = component.update(method=method,**newkwargs)
 
     def _redshift_list(self,component):
 
-        self.redshift_list.append(component.args['z'])
+        self.redshift_list.append(component.redshift)
+
 
 
 class Deflector:
 
     def __init__(self, subclass=classmethod, use_lenstronomy_halos = False,
-                 redshift=float, tovary=False, varyflags = None,
+                 redshift=float, tovary=False, varyflags = None, is_subhalo = False,
                  **lens_kwargs):
 
         self.tovary = tovary
 
         self.has_shear = False
 
+        self.is_subhalo = is_subhalo
+
         self.subclass = subclass
 
-        self.args,self.lenstronomy_args = subclass.params(**lens_kwargs)
+        self.args,self.other_args = subclass.params(**lens_kwargs)
 
-        if 'shear' in self.args:
-            if self.args['shear'] != 0:
-                self.has_shear = True
+        self.profname = self.other_args['name']
 
-        self.args['z'] = redshift
+        self.redshift = redshift
 
         self.lensing = subclass
-
-        self.profname = self.args['name']
 
         if self.tovary:
             self.varyflags = varyflags
         else:
             self.varyflags = ['0'] * 10
 
+        if 'shear' in lens_kwargs:
+            assert 'shear_theta' in lens_kwargs
+            self.has_shear = True
+            self.shear = lens_kwargs['shear']
+            self.shear_theta = lens_kwargs['shear_theta']
+            self.e1,self.e2 = polar_to_cart(self.shear,self.shear_theta)
+        elif 'e1' in lens_kwargs:
+            assert 'e2' in lens_kwargs
+            self.has_shear = True
+            self.shear = lens_kwargs['shear']
+            self.shear_theta = lens_kwargs['shear_theta']
+            self.e1, self.e2 = polar_to_cart(self.shear, self.shear_theta)
+        elif 'e2' in lens_kwargs:
+            assert 'e1' in lens_kwargs
+            self.has_shear = True
+            self.e1 = lens_kwargs['e1']
+            self.e2 = lens_kwargs['e2']
+            self.shear,self.shear_theta = cart_to_polar(self.e1,self.e2)
 
-    def print_args(self,method=None):
+        if self.has_shear:
+            from MagniPy.MassModels.ExternalShear import Shear
+            self.Shear = Shear()
 
-        if method is None:
-            print 'lenstronomy kwargs: '
+    def print_args(self):
 
-            for item in self.lenstronomy_args:
-                print item+': '+str(self.lenstronomy_args[item])
-
-            print 'gravlens kwargs: '
-
-            for item in self.args:
-                print item+': '+str(self.args[item])
-
-        elif method=='lenstronomy':
-            print 'lenstronomy kwargs: '
-
-            for item in self.lenstronomy_args:
-                print item + ': ' + str(self.lenstronomy_args[item])
-
-        elif method=='lensmodel':
-
-            print 'gravlens kwargs: '
-
-            for item in self.args:
-                print item + ': ' + str(self.args[item])
+        for item in self.args:
+            print item+': '+str(self.args[item])
+        for item in self.other_args:
+            print item+': '+str(self.other_args[item])
+        if self.has_shear:
+            print 'shear: ',self.shear
+            print 'shear PA: ',self.shear_theta
+            print 'e1: ', self.e1
+            print 'e2: ', self.e2
 
 
-    def update(self,method='',**newparams):
+    def get_def_angle(self,method='',x_loc=None,y_loc=None):
 
-        if method == 'lensmodel':
+        if method=='lensmodel':
 
-            self.args.update(**newparams)
+            return self.lensing.def_angle(x_loc,y_loc,**self.args)
 
-            self.lenstronomy_args.update(**self.subclass.translate_to_lenstronomy(**self.args))
+        elif method == 'lenstronomy':
 
-        elif method =='lenstronomy':
+            if self.has_shear:
+                from lenstronomy.LensModel.Profiles.external_shear import ExternalShear
+                e1,e2 = polar_to_cart(self.args['shear'],self.args['lenstronomy_shear_theta'])
+                ext_shear = ExternalShear()
+                xshear,yshear = ext_shear.derivatives(x_loc,y_loc,e1,e2)
 
-            self.lenstronomy_args.update(**newparams)
+            if self.args['lenstronomy_name']=='SPEMD':
+                from lenstronomy.LensModel.Profiles.sie import SIE
+                sie = SIE()
+                xdef,ydef = sie.derivatives(x_loc,y_loc,self.lenstronomy_args['theta_E'],self.lenstronomy_args['q'],
+                                            self.lenstronomy_args['phi_G'])
 
-            self.args.update(**self.subclass.translate_to_lensmodel(**self.lenstronomy_args))
+            try:
+                return xdef+xshear,ydef+yshear
+            except:
+                return xdef,ydef
 
-        else:
-            raise ValueError('must specify which set of kwargs to update')
+
+    def update(self, method=None,**newparams):
+
+        assert method is not None
+
+        for param in newparams:
+            if param in self.args:
+                self.args[param] = newparams[param]
+
+        if self.has_shear:
+
+            if 'shear' in newparams:
+                assert 'shear_theta' in newparams
+                self.shear = newparams['shear']
+                self.shear_theta = newparams['shear_theta']
+                self.e1, self.e2 = polar_to_cart(self.shear, self.shear_theta)
+
+            elif 'e1' in newparams:
+                assert 'e2' in newparams
+                self.e1 = newparams['e1']
+                self.e2 = newparams['e2']
+                self.shear, self.shear_theta = cart_to_polar(self.e1, self.e2)
+

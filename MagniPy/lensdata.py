@@ -4,6 +4,11 @@ class Data:
 
     def __init__(self,x,y,m,t,source):
 
+        self.decimals_pos = 4
+        self.decimals_mag = 3
+        self.decimals_time = 1
+        self.decimals_src = 4
+
         self.set_pos(x,y)
         if m is not None:
             self.set_mag(m)
@@ -12,9 +17,12 @@ class Data:
         if t is not None:
             self.set_t(t)
         else:
-            self.t = None
+            self.set_t(None)
         if source is not None:
             self.set_src(source[0],source[1])
+        else:
+            self.set_source(None,None)
+
 
     def sort_by_pos(self,x,y):
 
@@ -45,19 +53,29 @@ class Data:
 
     def set_pos(self,x,y):
 
-        self.x,self.y = np.array(x),np.array(y)
+        self.x,self.y = np.round(np.array(x),self.decimals_pos),np.round(np.array(y),self.decimals_pos)
+        self.nimg = len(self.x)
 
     def set_mag(self,mag):
 
-        self.m = np.array(mag)*np.max(mag)**-1
+        if mag is None:
+            self.mag = None
+        else:
+            self.m = np.round(np.array(mag)*np.max(mag)**-1,self.decimals_mag)
 
     def set_t(self,t):
 
-        self.t = np.array(t)
+        if t is None:
+            self.t = None
+        else:
+            self.t = np.round(np.array(t),self.decimals_time)
 
     def set_src(self,srcx,srcy):
 
-        self.srcx,self.srcy = srcx,srcy
+        if srcx is None or srcy is None:
+            self.srcx,self.srcy = None,None
+        else:
+            self.srcx,self.srcy = np.round(srcx,self.decimals_src),np.round(srcy,self.decimals_src)
 
     def flux_ratios(self,index):
 

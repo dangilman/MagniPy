@@ -2,7 +2,7 @@ import numpy as np
 
 class Shear:
 
-    def def_angle(self,xgrid,ygrid,shear,shear_theta):
+    def def_angle(self, xgrid, ygrid, shear, shear_theta):
 
         phi = np.arctan2(ygrid, xgrid)
         e1, e2 = shear * np.cos(2 * (phi - shear_theta * np.pi / 180)), shear * np.sin(

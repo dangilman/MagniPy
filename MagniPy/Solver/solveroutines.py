@@ -1,5 +1,7 @@
 from MagniPy.magnipy import Magnipy
 from RayTrace.raytrace import RayTrace
+from LenstronomyWrap.generate_input import LenstronomyWrap
+import copy
 
 class SolveRoutines(Magnipy):
     """
@@ -8,144 +10,158 @@ class SolveRoutines(Magnipy):
 
     def solve_lens_equation(self,full_system=None,macromodel=None,realizations=None,multiplane=None,method=None,ray_trace=None, sigmas=None,
                              identifier=None,srcx=None, srcy=None, gridsize=None,res=None,
-                             source_shape='GAUSSIAN', source_size=None, print_mag=False):
+                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None,filter_subhalos=False,
+                            filter_by_pos=False,filter_kwargs={}):
 
-        self.reset()
+
+        lens_systems = []
 
         if full_system is None:
             assert macromodel is not None
             if realizations is not None:
                 for real in realizations:
-                    self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane)
+                    lens_systems.append(self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane,
+                                                          filter_by_pos=filter_by_pos,**filter_kwargs))
+            else:
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=None,multiplane=multiplane))
 
         else:
-            assert macromodel is None
 
-            self.build_system(main=full_system.lens_components[0],additional_halos=full_system.lens_components[1:])
-
+            lens_systems.append(copy.deepcopy(full_system))
 
         assert method is not None
         assert method in ['lensmodel', 'lenstronomy']
 
 
 
-        data = self.solve_4imgs(method=method,sigmas=sigmas,identifier=identifier,srcx=srcx,srcy=srcy,gridsize=gridsize,
+        data = self.solve_4imgs(lens_systems=lens_systems,method=method,sigmas=sigmas,identifier=identifier,srcx=srcx,srcy=srcy,gridsize=gridsize,
                                 res=res,source_shape=source_shape,ray_trace=ray_trace,source_size=source_size)
-        self.reset()
 
+        if sort_by_pos is not None:
+            data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)
         return data
 
 
     def two_step_optimize(self,macromodel,datatofit,realizations,multiplane,method=None,ray_trace=None, sigmas=None,
                              identifier=None,srcx=None, srcy=None, gridsize=None,res=None,
-                             source_shape='GAUSSIAN', source_size=None, print_mag=False):
+                             source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
+                          filter_by_position=False, filter_kwargs={}):
 
         # optimizes the macromodel first, then uses it to optimize with additional halos in the lens model
         assert method is not None
         assert method in ['lensmodel','lenstronomy']
 
-        _,macromodel = self.macromodel_initialize(macromodel=macromodel,datatofit=datatofit,realizations=realizations,
+        _,macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel),datatofit=datatofit,
                                                     multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
                                                     identifier=identifier,srcx=srcx,srcy=srcy,gridsize=gridsize,res=res,
-                                                    source_shape=source_shape,source_size=source_size,print_mag=print_mag)
+                                                    source_shape=source_shape,source_size=source_size,print_mag=print_mag,
+                                                       filter_by_position=filter_by_position,filter_kwargs=filter_kwargs)
 
 
-        optimized_data, newsystem = self.fit_src_plane(macromodel=macromodel, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
+        optimized_data, newsystem = self.fit_src_plane(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
                                                        ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, gridsize=gridsize, res=res,
-                                                       source_shape=source_shape, source_size=source_size, print_mag=print_mag)
+                                                       source_shape=source_shape, source_size=source_size, print_mag=print_mag,raytrace_with=raytrace_with,
+                                                       filter_by_position=filter_by_position,filter_kwargs=filter_kwargs)
+
 
         return optimized_data,newsystem
 
-    def macromodel_initialize(self,macromodel,datatofit,realizations,multiplane,method=None,ray_trace=None, sigmas=None,
+    def macromodel_initialize(self,macromodel,datatofit,multiplane,method=None,ray_trace=None, sigmas=None,
                              identifier=None,srcx=None, srcy=None, gridsize=None,res=None,
-                             source_shape='GAUSSIAN', source_size=None, print_mag=False):
+                             source_shape='GAUSSIAN', source_size=None, print_mag=False,filter_by_position=False,
+                              filter_kwargs={}):
 
         # fits just a single macromodel profile to the data
 
         assert method is not None
         assert method in ['lensmodel','lenstronomy']
 
-        self.reset()
+        lens_systems = []
 
-        self.build_system(main=macromodel, additional_halos=None, multiplane=multiplane)
+        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=None, multiplane=multiplane,
+                                              filter_by_position=filter_by_position,**filter_kwargs))
 
-        optimized_data, model = self.optimize_4imgs(data2fit=datatofit, method=method,
+        optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems,data2fit=datatofit, method=method,
                                                          sigmas=sigmas, identifier=identifier, gridsize=gridsize,
                                                          res=res, source_shape=source_shape, ray_trace=False,
                                                          source_size=source_size, print_mag=print_mag, opt_routine='randomize')
-        macromodel = model[0].lens_components[0]
-        self.reset()
+        newmacromodel = model[0].lens_components[0]
 
-        return optimized_data,macromodel
+        return optimized_data,newmacromodel
 
-    def fit_src_plane(self, macromodel, datatofit, realizations, multiplane, method=None, ray_trace=None, sigmas=None,
+    def fit_src_plane(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=None, sigmas=None,
                       identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
-                      source_shape='GAUSSIAN', source_size=None, print_mag=False):
+                      source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,filter_by_position=False,
+                              filter_kwargs={}):
 
         # uses source plane chi^2
 
         assert method is not None
         assert method in ['lensmodel', 'lenstronomy']
 
-        self.reset()
+        lens_systems= []
 
         if realizations is not None:
             for real in realizations:
-                self.build_system(main=macromodel,additional_halos=real,multiplane=multiplane)
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,multiplane=multiplane,
+                                                      filter_by_position=filter_by_position,**filter_kwargs))
         else:
-            self.build_system(main=macromodel,multiplane=multiplane)
+            lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
-        optimized_data, model = self.optimize_4imgs(data2fit=datatofit, method=method,
+        optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems,data2fit=datatofit, method=method,
                                           sigmas=sigmas, identifier=identifier, gridsize=gridsize,
                                           res=res, source_shape=source_shape, ray_trace=ray_trace,
-                                          source_size=source_size, print_mag=print_mag, opt_routine='basic')
-        lenssystems = self.lens_systems
+                                          source_size=source_size, print_mag=print_mag, opt_routine='basic', raytrace_with=raytrace_with)
 
-        self.reset()
+        return optimized_data,model
 
-        return optimized_data,lenssystems
-
-    def fit_imgplane(self, macromodel, datatofit, realizations, multiplane, method=None, ray_trace=None,
-                         sigmas=None,
-                         identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
-                         source_shape='GAUSSIAN', source_size=None, print_mag=False):
+    def fit_imgplane(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=None, sigmas=None,
+                      identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
+                      source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,filter_by_position=False,
+                              filter_kwargs={}):
 
         # uses image plane chi^2; quite slow
 
         assert method is not None
-        assert method in ['lensmodel']
+        assert method in ['lensmodel', 'lenstronomy']
 
-        for real in realizations:
-            self.build_system(main=macromodel, additional_halos=real)
+        lens_systems = []
 
-        optimized_data, model = self.optimize_4imgs(data2fit=datatofit, method=method,
-                                                       sigmas=sigmas, identifier=identifier, gridsize=gridsize,
-                                                       res=res, source_shape=source_shape, ray_trace=ray_trace,
-                                                       source_size=source_size, print_mag=print_mag,
-                                                       opt_routine='full')
-        self.reset()
+        if realizations is not None:
+            for real in realizations:
+                lens_systems.append(
+                    self.build_system(main=copy.deepcopy(macromodel), additional_halos=real, multiplane=multiplane,
+                                      filter_by_position=filter_by_position, **filter_kwargs))
+        else:
+            lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), multiplane=multiplane))
 
-        return optimized_data, self.lens_systems
+        optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems, data2fit=datatofit, method=method,
+                                                    sigmas=sigmas, identifier=identifier, gridsize=gridsize,
+                                                    res=res, source_shape=source_shape, ray_trace=ray_trace,
+                                                    source_size=source_size, print_mag=print_mag, opt_routine='full',
+                                                    raytrace_with=raytrace_with)
+
+        return optimized_data, model
 
     def produce_images(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                        identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
-                       source_shape='GAUSSIAN', source_size=None):
+                       source_shape='GAUSSIAN', source_size=None,filter_by_position=False,
+                              filter_kwargs={}):
 
-        self.reset()
+        lens_systems = []
 
         if full_system is None:
+
             assert macromodel is not None
             if realizations is not None:
                 assert len(realizations) == 1
                 for real in realizations:
-                    self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane)
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=real, multiplane=multiplane))
 
         else:
-            assert macromodel is None
+            lens_systems.append(copy.deepcopy(full_system))
 
-            self.build_system(main=full_system.lens_components[0], additional_halos=full_system.lens_components[1:])
-
-        data = self.solve_lens_equation(full_system=self.lens_systems[0], multiplane=multiplane, method=method,
+        data = self.solve_lens_equation(full_system=lens_systems[0], multiplane=multiplane, method=method,
                                         identifier=None, srcx=None, srcy=None,
                                         gridsize=None, res=None, source_shape='GAUSSIAN', source_size=None)
 
@@ -153,9 +169,7 @@ class SolveRoutines(Magnipy):
                          source_shape=source_shape,
                          cosmology=self.cosmo.cosmo, source_size=source_size)
 
-        magnifications, images = trace.get_images(xpos=data[0].x, ypos=data[0].y, lens_system=self.lens_systems[0])
-
-        self.reset()
+        magnifications, images = trace.get_images(xpos=data[0].x, ypos=data[0].y, lens_system=lens_systems[0])
 
         return magnifications, images
 

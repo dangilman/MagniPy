@@ -21,7 +21,7 @@ class MultiLensWrapper:
         lenstronomywrap.assemble(lens_system)
 
         lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomywrap.lens_model_list,
-                                                  z_source=self.z_source, redshift_list=lens_system.redshift_list,
+                                                  z_source=self.z_source, redshift_list=lenstronomywrap.redshift_list,
                                                   cosmo=self.astropy_class, multi_plane=lens_system.multiplane)
 
         fluxes = lensModelExtensions.magnification_finite(x_pos=xpos,

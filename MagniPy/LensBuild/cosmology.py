@@ -72,13 +72,21 @@ class Cosmo:
 
     def T_xy(self, z_observer, z_source):
         """
-
-        :param z_observer: observer
-        :param z_source: source
-        :return: transverse comoving distance in units of Mpc
+        transverse comoving distance in units of Mpc
         """
         T_xy = self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer)
         return T_xy.value
+
+    def D_xy(self, z_observer, z_source):
+        """
+
+        :param z_observer: observer
+        :param z_source: source
+        :return: angular diamter distance in units of Mpc
+        """
+        a_S = self.a_z(z_source)
+        D_xy = (self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer))*a_S
+        return D_xy.value
 
 
 class ParticleMasses:

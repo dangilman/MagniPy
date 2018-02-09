@@ -15,102 +15,73 @@ class SIE(Cosmo):
         """
         pass
 
-    def def_angle(self, xgrid, ygrid, x=None, y=None, rcore=0, R_ein=None, ellip=None, ellip_theta=None,
-                  shear=0, shear_theta=0, **kwargs):
+    def kappa(self,x,y,theta_E,q,phi_G,center_x=0, center_y=0,gamma=2):
 
-        ellip_theta*=-1
-        ellip_theta+=-90 # to gravlens standard
+        rtol = 1e-6
+        r = np.sqrt(x**2+y**2)
+        r[np.where(r<rtol)] = rtol
 
-        xloc = xgrid - x
-        yloc = ygrid - x
+        return 0.5*r**-1
 
-        if shear!=0:
-            s = Shear()
+    def def_angle(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2):
 
-            shearx,sheary = s.def_angle(xgrid,ygrid,shear,shear_theta-90)
+        xloc = x - center_x
+        yloc = y - center_y
 
-        else:
-            shearx,sheary = 0,0
+        phi_G *= -1
+        phi_G += 0.5*np.pi
 
-        if ellip==0:
+        if q==1:
 
             r = np.sqrt(xloc ** 2 + yloc ** 2)
 
-            magdef = R_ein * r ** -1 * (np.sqrt(rcore ** 2 + r ** 2) - rcore)
+            magdef = theta_E
 
-
-            return magdef * xloc * r ** -1 + shearx, magdef * yloc * r ** -1 + sheary
+            return magdef * xloc * r ** -1 , magdef * yloc * r ** -1
 
         else:
 
-            q=1-ellip
-            q2 = q*q
-            qfac = np.sqrt(1-q2)
+            #q2 = q*q
+            qfac = np.sqrt(1-q**2)
 
-            normFac = q*np.sqrt(2*(1+q2)**-1)
+            #normFac = q*np.sqrt(2*(1+q2)**-1)
+            normFac = q**-.5
 
-            R_ein*= normFac ** -1
-            rcore*=normFac**-1
+            #theta_E *= normFac ** -1
+            theta_E *= normFac
+            xrot, yrot = rotate(xloc, yloc, -phi_G)
+            psi = np.sqrt(q**2*(xrot**2)+yrot**2)
+            psis = psi
 
-            xrot, yrot = rotate(xloc, yloc,-ellip_theta)
-            psi = np.sqrt(q2*(xrot**2+rcore**2)+yrot**2)
-            psis = psi + rcore
-
-            xdef = R_ein * q * qfac ** -1 * np.arctan(qfac * xrot * psis ** -1)
-            ydef = R_ein * q * qfac ** -1 * np.arctanh(qfac * yrot * (psi + q2 * rcore) ** -1)
+            xdef = theta_E * q * qfac ** -1 * np.arctan(qfac * xrot * psis ** -1)
+            ydef = theta_E * q * qfac ** -1 * np.arctanh(qfac * yrot * (psi) ** -1)
 
 
-            xdef,ydef = rotate(xdef,ydef,ellip_theta)
+            xdef,ydef = rotate(xdef,ydef,phi_G)
 
-            return xdef+shearx,ydef+sheary
+            return xdef,ydef
 
     def convergence(self, rcore, rtrunc):
         return None
-
-    def translate_to_lensmodel(self, **args):
-
-        newargs = {}
-        newargs['R_ein'] = args['theta_E']
-        newargs['ellip'] = 1 - args['q']
-        newargs['ellip_theta'] = args['phi_G']*180*np.pi**-1
-        newargs['x'] = args['center_x']
-        newargs['y'] = args['center_y']
-        return newargs
-
-    def translate_to_lenstronomy(self, **args):
-
-        newargs = {}
-        newargs['q'] = 1-args['ellip']
-        newargs['theta_E'] = args['R_ein']
-        newargs['phi_G'] = (args['ellip_theta']-90)*np.pi*180**-1
-        newargs['center_x'] = args['x']
-        newargs['center_y'] = args['y']
-        return newargs
 
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
                y = None, shear=0, shear_theta=0,trunc=None):
 
         subparams = {}
-        subparams['name']='SIE'
-        subparams['x'] = x
-        subparams['y'] = y
-        subparams['R_ein'] = R_ein
-        subparams['ellip'] = ellip
-        subparams['ellip_theta'] = ellip_theta
-        subparams['shear'] = shear
-        subparams['shear_theta'] = shear_theta
-        subparams['trunc'] = trunc
-        subparams['lenstronomy_name'] = 'SPEMD'
+        otherkwargs = {}
 
-        lenstronomy_params = {}
-        lenstronomy_params['theta_E'] = R_ein
-        lenstronomy_params['q'] = 1 - ellip
-        lenstronomy_params['phi_G'] = ellip_theta*np.pi*180**-1
-        lenstronomy_params['gamma'] = 2
-        lenstronomy_params['center_x'] = x
-        lenstronomy_params['center_y'] = y
+        otherkwargs['name']='SPEMD'
+        q = 1-ellip
+        subparams['q'] = q
+        subparams['phi_G'] = (ellip_theta)*np.pi*180**-1
+        subparams['gamma'] = 2
+        subparams['center_x'] = x
+        subparams['center_y'] = y
+        subparams['theta_E'] = R_ein*((1+q**2)*(2*q)**-1)**.5
+        #q = subparams['q']
+        #subparams['theta_E_fastell'] = R_ein*((1+q**2)*(2*q)**-1)**.5
 
-        return subparams,lenstronomy_params
+        return subparams,otherkwargs
 
     def R_ein(self,vdis,z1,z2):
         Cosmo.__init__(self, zd=z1, zsrc=z2)

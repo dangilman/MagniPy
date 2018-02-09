@@ -4,20 +4,23 @@ from massfunctions import *
 from MagniPy.MassModels import TNFW
 from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
+from MagniPy.MassModels import PointMass
 from MagniPy.LensBuild.lens_assemble import Deflector
 
 
-class HaloGen(Cosmo):
+class HaloGen:
 
     def __init__(self,z_l=0.5,z_s=1.5,cosmo='FlatLambdaCDM',use_lenstronomy_halos=False):
 
-        Cosmo.__init__(self,zd=z_l,zsrc=z_s,cosmology=cosmo)
+        self.cosmology = Cosmo(zd=z_l,zsrc=z_s,cosmology=cosmo)
 
         self.substrucutre_initialized = False
 
         self.realizations = []
 
         self.use_lenstronomy_halos = use_lenstronomy_halos
+
+        self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
         #if self.use_lenstronomy_halos:
         #    from lenstronomy.LensModel.Profiles import *
@@ -32,15 +35,22 @@ class HaloGen(Cosmo):
         if spatial == 'uniformflat':
             Rmax_2d = model['spatial'][sub_mod_index][1][0]
             trunc_rad = model['spatial'][sub_mod_index][1][1]
-            self.spatial = Uniform(Rmax_2d*self.D_ratio([0,zplane],[0,self.zd]))
+            geometric_factor = self.cosmology.D_ratio([0,zplane],[0,self.zd])
+            geometric_factor = 1
+            self.spatial = Uniform(Rmax_2d*geometric_factor)
 
         elif spatial == 'uniformnfw':
             Rmax_2d = model['spatial'][sub_mod_index][1][0]
             Rmax_z = model['spatial'][sub_mod_index][1][1]
 
             trunc_rad = None
+            geometric_factor = self.cosmology.D_ratio([0, zplane], [0, self.zd])
 
-            self.spatial = Uniform_2d_1(Rmax_2d*self.D_ratio([0,zplane],[0,self.zd]), Rmax_z / self.kpc_per_asec(zplane), rc=25)
+            geometric_factor = 1
+            self.spatial = Uniform(Rmax_2d * geometric_factor)
+
+
+            self.spatial = Uniform_2d_1(Rmax_2d*geometric_factor, Rmax_z / self.cosmology.kpc_per_asec(zplane), rc=25)
 
 
         mass_func_type = model['massfunctype'][sub_mod_index]
@@ -63,7 +73,7 @@ class HaloGen(Cosmo):
             subs = Plaw(norm=normalization,
                         logmL=model['mlow'][sub_mod_index],
                         logmH=model['mhigh'][sub_mod_index],
-                        logmbreak=model['args'][sub_mod_index][0], scrit=self.sigmacrit,
+                        logmbreak=model['args'][sub_mod_index][0], scrit=self.cosmology.sigmacrit,
                         area=self.spatial.area,norm_kwargs=norm_kwargs)
 
             masses = subs.draw()
@@ -76,7 +86,7 @@ class HaloGen(Cosmo):
                     0], masses
 
             if trunc_rad is None:
-                self.rtrunc = truncation(self.r3d, 1, self.masses, self.sigmacrit)
+                self.rtrunc = truncation(self.r3d, 1, self.masses, self.cosmology.sigmacrit)
             else:
                 self.rtrunc = np.ones_like(self.masses)*trunc_rad
 
@@ -86,45 +96,53 @@ class HaloGen(Cosmo):
 
             prof = model['proftypes'][sub_mod_index]
 
-            if prof == 'tNFW':
-
-                if model['args'][sub_mod_index][1] == 0:
-                    c_turnover = False
-                else:
-                    c_turnover = True
-
-                lensmod = TNFW.TNFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover)
-
-            elif prof == 'NFW':
-
-                if model['args'][sub_mod_index][1] == 0:
-                    c_turnover = False
-                else:
-                    c_turnover = True
-
-                lensmod = NFW.NFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover)
-
-                self.rtrunc = 1000*np.ones_like(self.rtrunc)
-
-            elif prof == 'pjaffe':
-                raise StandardError('Pjaffe subhalos not yet implemented')
-
-                if model['args'][sub_mod_index][1] == 0:
-                    core = 1e-6
-                else:
-                    core = model['args'][sub_mod_index][1]
-
-                lensmod = PJaffe()
-
-            else:
-
-                raise ValueError('profile '+prof+' not valid, supply valid mass profile for halos')
-
             for i in range(0, self.Nhalos):
-                subhalos.append(
-                    Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos, subclass=lensmod, trunc=self.rtrunc[i], x=self.xpos[i],
-                              y=self.ypos[i], mass=self.masses[i], redshift=zplane,
-                              mhm=model['args'][sub_mod_index][0]))
+
+                subhalo_args = {}
+
+                if prof == 'TNFW':
+
+                    if model['args'][sub_mod_index][1] == 0:
+                        c_turnover = False
+                    else:
+                        c_turnover = True
+
+                    lensmod = TNFW.TNFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover, cosmology=self.cosmology)
+
+                    subhalo_args['trunc'] = self.rtrunc[i]
+                    subhalo_args['mhm'] = model['args'][sub_mod_index][0]
+
+                elif prof == 'NFW':
+
+                    if model['args'][sub_mod_index][1] == 0:
+                        c_turnover = False
+                    else:
+                        c_turnover = True
+
+                    lensmod = NFW.NFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover, cosmology=self.cosmology)
+
+                    subhalo_args['mhm'] = model['args'][sub_mod_index][0]
+
+                elif prof == 'pjaffe':
+                    raise StandardError('Pjaffe subhalos not yet implemented')
+
+                    if model['args'][sub_mod_index][1] == 0:
+                        core = 1e-6
+                    else:
+                        core = model['args'][sub_mod_index][1]
+
+                    lensmod = PJaffe.PJaffe()
+
+                elif prof == 'ptmass':
+
+                    lensmod = PointMass.PointMass()
+
+                else:
+
+                    raise ValueError('profile '+prof+' not valid, supply valid mass profile for halos')
+
+                subhalos.append(Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos, subclass=lensmod, x=self.xpos[i],
+                                  y=self.ypos[i], mass=self.masses[i], redshift=zplane, is_subhalo=True, **subhalo_args))
 
         else:
             raise StandardError('other mass function types not yet implemented')

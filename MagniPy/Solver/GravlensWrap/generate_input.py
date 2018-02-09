@@ -1,6 +1,7 @@
 import numpy as np
 from MagniPy.paths import *
 from MagniPy.util import *
+from gravlens_to_kwargs import *
 
 class GravlensInput:
 
@@ -56,9 +57,9 @@ class GravlensInput:
 
                 for object in system.single_models:
 
-                    if object.lensmodel.tovary and object.lensmodel.profname=='SIE':
+                    if object.deflector.tovary and object.deflector.profname=='SPEMD':
 
-                        for i,flag in enumerate(object.lensmodel.varyflags):
+                        for i,flag in enumerate(object.deflector.varyflags):
 
                             if float(flag)==1:
 
@@ -204,7 +205,7 @@ class SingleModel:
 
         self.name = lensmodel.profname
 
-        self.lensmodel = lensmodel
+        self.deflector = lensmodel
 
         self.tovary = lensmodel.tovary
 
@@ -213,7 +214,7 @@ class SingleModel:
         if self.tovary:
             if vary_type == 'optimize':
                 vary_string = ''
-                for arg in self.lensmodel.varyflags:
+                for arg in self.deflector.varyflags:
                     vary_string += str(arg) + ' '
 
                 return vary_string
@@ -224,51 +225,12 @@ class SingleModel:
 
     def _get_model(self,multiplane=False):
 
-        name,lensparams = '',[0]*10
-
-        if self.name == 'TNFW':
-            name = 'tnfw3'
-            lensparams[0] = self.lensmodel.args['ks']
-            lensparams[1],lensparams[2] = self.lensmodel.args['x'],self.lensmodel.args['y']
-            lensparams[7] = self.lensmodel.args['rs']
-            lensparams[8] = self.lensmodel.args['rt']*lensparams[7]**-1
-            lensparams[9] = 1
-
-        if self.name == 'NFW':
-            name = 'nfw'
-            lensparams[0] = self.lensmodel.args['ks']
-            lensparams[1],lensparams[2] = self.lensmodel.args['x'],self.lensmodel.args['y']
-            lensparams[7] = self.lensmodel.args['rs']
-            lensparams[8] = 0
-            lensparams[9] = 0
-
-        elif self.name == 'SIE':
-
-            name = 'alpha'
-            lensparams[0] = self.lensmodel.args['R_ein']
-            lensparams[1], lensparams[2] = self.lensmodel.args['x'], self.lensmodel.args['y']
-            lensparams[3],lensparams[4] = polar_to_cart(self.lensmodel.args['ellip'], self.lensmodel.args['ellip_theta'])
-            lensparams[5], lensparams[6] = polar_to_cart(self.lensmodel.args['shear'],self.lensmodel.args['shear_theta'])
-
-            lensparams[9]=1
-
-        elif self.name == 'ptmass':
-
-            name = 'ptmass'
-            lensparams[0] = self.lensmodel.args['R_ein']
-            lensparams[1], lensparams[2] = self.lensmodel.args['x'], self.lensmodel.args['y']
-            lensparams[3],lensparams[4],lensparams[5],lensparams[6],lensparams[7],lensparams[8],lensparams[9] = 0,0,0,0,0,0,0
+        lensparams = kwargs_to_gravlens(self.deflector)
 
         if multiplane:
-            lensparams.append(self.lensmodel.args['z'])
+            lensparams += str(self.deflector.redshift)
 
-        model = name+' '
-
-        for element in lensparams:
-            model += str(element)+' '
-
-        return model
-
+        return lensparams
 
 class Header:
     def __init__(self, zlens=float, zsrc=float, hval=0.7):

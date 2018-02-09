@@ -123,34 +123,6 @@ def Runi(N, Rmax, Rmaxz = None):
 
     return np.sqrt(xrand ** 2 + yrand ** 2 + zrand ** 2), xrand, yrand
 
-def filter_spatial(deflector_list,xpos,ypos,mindis,masscut_low):
-    #filter_spatial(xsub, ysub, r3d, xpos, ypos, masses, mindis, masscut_low, Nsub)
-    """
-    :param xsub: sub x coords
-    :param ysub: sub y coords
-    :param xpos: img x coords
-    :param ypos: img y coords
-    :param mindis: max 2d distance
-    :return: filtered subhalos
-    """
-    newlist = []
-
-    for deflector in deflector_list:
-
-        x,y = deflector.args['x'],deflector.args['y']
-
-        for i in range(0,len(xpos)):
-
-            dr = ((x - xpos[i])**2 + (y - ypos[i])**2)**.5
-
-            if dr<=mindis or deflector.args['mass']>=masscut_low:
-
-                newlist.append(deflector)
-
-                break
-
-    return newlist
-
 
 def filter_spatial_2(xsub, ysub, r3d, xpos, ypos, masses, mindis, between_low, between_high, Nsub):
     """

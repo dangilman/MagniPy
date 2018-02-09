@@ -1,7 +1,8 @@
 from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from MagniPy.util import polar_to_cart
-
+import numpy as np
+from copy import deepcopy
 # import the lens equation solver class (finding image plane positions of a source position)
 from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
 # import lens model solver with 4 image positions constrains
@@ -42,25 +43,33 @@ class LenstronomyWrap:
 
     def assemble(self,system):
 
+        self.redshift_list = []
         lens_model_list = []
         lens_model_params = []
 
         for deflector in system.lens_components:
 
-            lens_model_list.append(deflector.args['lenstronomy_name'])
-            lens_model_params.append(deflector.lenstronomy_args)
+            lens_model_list.append(deflector.profname)
+
+            if 'phi_G' in deflector.args:
+                newargs = deepcopy(deflector.args)
+                newargs['phi_G'] = deflector.args['phi_G'] - 0.5*np.pi
+                lens_model_params.append(newargs)
+            else:
+                lens_model_params.append(deflector.args)
+
+            self.redshift_list.append(deflector.redshift)
 
             if deflector.has_shear:
 
                 lens_model_list.append('SHEAR')
 
-                e1,e2 = polar_to_cart(deflector.args['shear'],deflector.args['shear_theta'])
+                self.redshift_list.append(deflector.redshift)
 
+                e1,e2 = polar_to_cart(deflector.shear,deflector.shear_theta)
                 lens_model_params.append({'e1':e1,'e2':e2})
 
         self.lens_model_list, self.lens_model_params = lens_model_list,lens_model_params
-
-        self.redshift_list = system.redshift_list
 
     def get_lensmodel(self):
 
