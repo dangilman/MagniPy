@@ -98,10 +98,10 @@ class RayTrace:
 
         if print_mag:
             print 'computing mag...'
-        deflector = lens_system.lens_components[0]
-        print deflector.args
-        print deflector.shear
-        print deflector.shear_theta
+        #deflector = lens_system.lens_components[0]
+        #print deflector.args
+        #print deflector.shear
+        #print deflector.shear_theta
 
         a = input('continue')
 
