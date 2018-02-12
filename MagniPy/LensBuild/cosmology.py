@@ -12,6 +12,7 @@ class Cosmo:
 
     G = 6.67384 * 10 ** (-11) * Mpc**-3 * M_sun # Gravitational constant [Mpc^3 M_sun^-1 s^-2]
     c = 299792458*Mpc**-1 # speed of light [Mpc s^-1]
+    density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3
 
     def __init__(self,cosmology = 'FlatLambdaCDM',zd=0.5,zsrc = 1.5):
 
@@ -22,7 +23,7 @@ class Cosmo:
             self.h = self.cosmo.h
             self.epsilon_crit = self.get_epsiloncrit(zd,zsrc)
             self.sigmacrit = self.epsilon_crit*(0.001)**2*self.kpc_per_asec(zd)**2
-            self.rhoc_physical = self.cosmo.critical_density0.value * 0.001 * self.M_sun**-1 * (100**3) * self.Mpc**3 # [M_sun Mpc^-3]
+            self.rhoc_physical = self.cosmo.critical_density0.value * self.density_to_MsunperMpc # [M_sun Mpc^-3]
             self.rhoc = self.rhoc_physical*self.h**-2
             self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
             self.kpc_convert = self.kpc_per_asec(zd)
@@ -88,6 +89,12 @@ class Cosmo:
         D_xy = (self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer))*a_S
         return D_xy.value
 
+    def rho_crit(self,z):
+        return self.cosmo.critical_density(z).value*self.density_to_MsunperMpc
+
+    def rho_matter_crit(self,z):
+        return self.rho_crit(z)*self.cosmo.Om(z)
+
 
 class ParticleMasses:
 
@@ -124,6 +131,5 @@ class ParticleMasses:
             return massstring
         else:
             return masses
-
 
 

@@ -5,7 +5,7 @@ class Data:
     def __init__(self,x,y,m,t,source):
 
         self.decimals_pos = 4
-        self.decimals_mag = 3
+        self.decimals_mag = 5
         self.decimals_time = 1
         self.decimals_src = 4
 

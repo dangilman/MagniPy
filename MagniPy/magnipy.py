@@ -83,8 +83,8 @@ class Magnipy:
             return realizations
 
     def optimize_4imgs(self, lens_systems=None, data2fit=[], method=str, sigmas=[], identifier='', opt_routine=None,
-                       ray_trace = True, return_positions = False, gridsize=int, res=0.0005, source_shape='GAUSSIAN',
-                       source_size=float, print_mag=False, raytrace_with=None):
+                       ray_trace = True, return_positions = False, grid_rmax=int, res=0.0005, source_shape='GAUSSIAN',
+                       source_size=float, print_mag=False, raytrace_with=None, polar_grid=False):
 
         # opt_routine:
         # basic: gridflag = 0, chimode = 0; optimizes in source plane, fast
@@ -141,15 +141,15 @@ class Magnipy:
                                                         ypos=lensdata[i].y,
                                                         xsrc=lensdata[i].srcx, ysrc=lensdata[i].srcy,
                                                         multiplane=optimized_systems[i].multiplane,
-                                                        gridsize=gridsize,
+                                                        grid_rmax=grid_rmax,
                                                         res=res, source_shape=source_shape, source_size=source_size,
-                                                        cosmology=self.cosmo, zsrc=self.zsrc, raytrace_with = raytrace_with)
+                                                        cosmology=self.cosmo, zsrc=self.zsrc, raytrace_with = raytrace_with, polar_grid=polar_grid)
 
                     lensdata[i].set_mag(fluxes)
 
 
-                for dataset in lensdata:
-                    dataset.sort_by_pos(data2fit.x,data2fit.y)
+            for dataset in lensdata:
+                dataset.sort_by_pos(data2fit.x,data2fit.y)
 
             return lensdata, optimized_systems
 
@@ -193,7 +193,7 @@ class Magnipy:
                         print 'computing mag #: ',i+1
 
                     fluxes = self.do_raytrace_lenstronomy(lenstronomy_wrap_instance=lenstronomywrap, xpos=newdata.x,
-                                                          ypos=newdata.y,source_size=source_size, gridsize=gridsize,res=res,
+                                                          ypos=newdata.y, source_size=source_size, gridsize=grid_rmax, res=res,
                                                           source_shape=source_shape, zsrc=self.zsrc, cosmology=self.cosmo.cosmo,
                                                           multiplane=system.multiplane)
 
@@ -206,7 +206,7 @@ class Magnipy:
 
             return data, optimized_systems
 
-    def solve_4imgs(self, lens_systems = None, method=str, sigmas=[], identifier='', srcx=None, srcy=None, gridsize=.1,
+    def solve_4imgs(self, lens_systems = None, method=str, sigmas=[], identifier='', srcx=None, srcy=None, grid_rmax=.1,
                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False, time_ray_trace=False):
 
 
@@ -244,7 +244,7 @@ class Magnipy:
                         print 'computing mag #: ',i+1
 
                     fluxes = self.do_raytrace_lensmodel(lens_system=system, xpos=data[i].x, ypos=data[i].y, xsrc=srcx,
-                                                        ysrc=srcy, multiplane=lens_systems[i].multiplane, gridsize=gridsize,
+                                                        ysrc=srcy, multiplane=lens_systems[i].multiplane, grid_rmax=grid_rmax,
                                                         res=res, source_shape=source_shape, source_size=source_size,
                                                         cosmology = self.cosmo, zsrc=self.zsrc)
 
@@ -278,9 +278,9 @@ class Magnipy:
                         print 'computing mag #: ',i+1
 
                     fluxes = self.do_raytrace_lenstronomy(lenstronomy_wrap_instance=lenstronomywrap, xpos=data[i].x, ypos=data[i].y,
-                                                          source_size=source_size,gridsize=gridsize,
-                                                          res=res, source_shape=source_shape,zsrc=self.zsrc,
-                                                          cosmology=self.cosmo.cosmo,multiplane=system.multiplane)
+                                                          source_size=source_size, gridsize=grid_rmax,
+                                                          res=res, source_shape=source_shape, zsrc=self.zsrc,
+                                                          cosmology=self.cosmo.cosmo, multiplane=system.multiplane)
 
                     data[i].set_mag(fluxes)
 
@@ -289,12 +289,14 @@ class Magnipy:
 
             return data
 
-    def do_raytrace_lensmodel(self, lens_system, xpos, ypos, xsrc=float, ysrc=float, multiplane=None, gridsize=None,
-                              res=None, source_shape=None, source_size=None, cosmology = classmethod, zsrc=None, raytrace_with=None):
+    def do_raytrace_lensmodel(self, lens_system, xpos, ypos, xsrc=float, ysrc=float, multiplane=None, grid_rmax=None,
+                              res=None, source_shape=None, source_size=None, cosmology = classmethod, zsrc=None, raytrace_with=None,
+                              polar_grid=False):
 
         ray_shooter = raytrace.RayTrace(xsrc=xsrc, ysrc=ysrc, multiplane=multiplane,
-                                        gridsize=gridsize, res=res, source_shape=source_shape,
-                                        source_size=source_size, cosmology=cosmology, zsrc=self.zsrc, raytrace_with=raytrace_with)
+                                        grid_rmax=grid_rmax, res=res, source_shape=source_shape,
+                                        source_size=source_size, cosmology=cosmology, zsrc=self.zsrc,
+                                        raytrace_with=raytrace_with, polar_grid=polar_grid)
 
         fluxes = ray_shooter.compute_mag(xpos,ypos,lens_system=lens_system)
 
