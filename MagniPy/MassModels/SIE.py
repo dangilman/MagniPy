@@ -13,7 +13,7 @@ class SIE(Cosmo):
         :param z2: source redshift
         :param h: little h
         """
-        pass
+        self.Shear = Shear()
 
     def kappa(self,x,y,theta_E,q,phi_G,center_x=0, center_y=0,gamma=2):
 
@@ -23,13 +23,19 @@ class SIE(Cosmo):
 
         return 0.5*r**-1
 
-    def def_angle(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2):
+    def def_angle(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2,shear=None,shear_theta=None):
 
         xloc = x - center_x
         yloc = y - center_y
 
         phi_G *= -1
-        phi_G += 0.5*np.pi
+        phi_G += -0.5*np.pi
+
+        shearx,sheary = 0,0
+
+        if shear is not None:
+            assert shear_theta is not None
+            shearx,sheary = self.Shear.def_angle(xloc,yloc,shear,shear_theta)
 
         if q==1:
 
@@ -37,18 +43,18 @@ class SIE(Cosmo):
 
             magdef = theta_E
 
-            return magdef * xloc * r ** -1 , magdef * yloc * r ** -1
+            return shearx+magdef * xloc * r ** -1 , sheary+magdef * yloc * r ** -1
 
         else:
 
-            #q2 = q*q
-            qfac = np.sqrt(1-q**2)
 
-            #normFac = q*np.sqrt(2*(1+q2)**-1)
-            normFac = q**-.5
+            q2 = q * q
+            qfac = np.sqrt(1 - q2)
 
-            #theta_E *= normFac ** -1
-            theta_E *= normFac
+            normFac = q * np.sqrt(2 * (1 + q2) ** -1)
+
+            theta_E *= normFac ** -1
+
             xrot, yrot = rotate(xloc, yloc, -phi_G)
             psi = np.sqrt(q**2*(xrot**2)+yrot**2)
             psis = psi
@@ -56,10 +62,9 @@ class SIE(Cosmo):
             xdef = theta_E * q * qfac ** -1 * np.arctan(qfac * xrot * psis ** -1)
             ydef = theta_E * q * qfac ** -1 * np.arctanh(qfac * yrot * (psi) ** -1)
 
-
             xdef,ydef = rotate(xdef,ydef,phi_G)
 
-            return xdef,ydef
+            return xdef+shearx,ydef+sheary
 
     def convergence(self, rcore, rtrunc):
         return None
@@ -77,7 +82,9 @@ class SIE(Cosmo):
         subparams['gamma'] = 2
         subparams['center_x'] = x
         subparams['center_y'] = y
-        subparams['theta_E'] = R_ein*((1+q**2)*(2*q)**-1)**.5
+        prefactor = ((1+q**2)*(2*q)**-1)**.5
+        prefactor=1
+        subparams['theta_E'] = R_ein*prefactor
         #q = subparams['q']
         #subparams['theta_E_fastell'] = R_ein*((1+q**2)*(2*q)**-1)**.5
 
@@ -87,5 +94,3 @@ class SIE(Cosmo):
         Cosmo.__init__(self, zd=z1, zsrc=z2)
         return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
                self.D_ds * self.D_s ** -1 * self.arcsec ** -1
-
-

@@ -56,8 +56,6 @@ class Deflector:
 
         self.tovary = tovary
 
-        self.has_shear = False
-
         self.is_subhalo = is_subhalo
 
         self.subclass = subclass
@@ -81,22 +79,12 @@ class Deflector:
             self.shear = lens_kwargs['shear']
             self.shear_theta = lens_kwargs['shear_theta']
             self.e1,self.e2 = polar_to_cart(self.shear,self.shear_theta)
-        elif 'e1' in lens_kwargs:
-            assert 'e2' in lens_kwargs
-            self.has_shear = True
-            self.shear = lens_kwargs['shear']
-            self.shear_theta = lens_kwargs['shear_theta']
-            self.e1, self.e2 = polar_to_cart(self.shear, self.shear_theta)
-        elif 'e2' in lens_kwargs:
-            assert 'e1' in lens_kwargs
-            self.has_shear = True
-            self.e1 = lens_kwargs['e1']
-            self.e2 = lens_kwargs['e2']
-            self.shear,self.shear_theta = cart_to_polar(self.e1,self.e2)
-
+        else:
+            self.has_shear = False
         if self.has_shear:
             from MagniPy.MassModels.ExternalShear import Shear
             self.Shear = Shear()
+
 
     def print_args(self):
 
@@ -140,10 +128,12 @@ class Deflector:
     def update(self, method=None,**newparams):
 
         assert method is not None
+        self.args.update(**newparams)
 
-        for param in newparams:
-            if param in self.args:
-                self.args[param] = newparams[param]
+        if 'shear' in self.args:
+            del self.args['shear']
+        if 'shear_theta' in self.args:
+            del self.args['shear_theta']
 
         if self.has_shear:
 
@@ -152,10 +142,3 @@ class Deflector:
                 self.shear = newparams['shear']
                 self.shear_theta = newparams['shear_theta']
                 self.e1, self.e2 = polar_to_cart(self.shear, self.shear_theta)
-
-            elif 'e1' in newparams:
-                assert 'e2' in newparams
-                self.e1 = newparams['e1']
-                self.e2 = newparams['e2']
-                self.shear, self.shear_theta = cart_to_polar(self.e1, self.e2)
-

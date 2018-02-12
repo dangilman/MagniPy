@@ -5,9 +5,7 @@
 
 import pytest
 import numpy as np
-
 from click.testing import CliRunner
-
 import matplotlib.pyplot as plt
 
 
@@ -192,17 +190,18 @@ def test_solving_leq_single_plane():
         realizationsdata[0][0].update(method='lensmodel',**newparams)
         realizationsdata[0] = [realizationsdata[0][0]]
 
-        optimized_lenstronomy,systems = solver.fit_src_plane(macromodel=start,datatofit=data_to_fit[0],
-                                                                     realizations=realizationsdata,multiplane=multiplane,
-                                                                     method='lenstronomy',ray_trace=True, sigmas=sigmas,
-                                                                     identifier=identifier,srcx=srcx, srcy=srcy,gridsize=.05,
-                                                                     res=.001,source_shape='GAUSSIAN', source_size=0.0012)
+        optimized_lenstronomy,systems = solver.fit_src_plane(macromodel=start, datatofit=data_to_fit[0],
+                                                             realizations=realizationsdata, multiplane=multiplane,
+                                                             method='lenstronomy', ray_trace=True, sigmas=sigmas,
+                                                             identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=.05,
+                                                             res=.001, source_shape='GAUSSIAN', source_size=0.0012)
 
-        optimized_lensmodel,systems = solver.two_step_optimize(macromodel=start,datatofit=data_to_fit[0],
-                                                                     realizations=realizationsdata,multiplane=multiplane,
-                                                                     method='lensmodel',ray_trace=True, sigmas=sigmas,
-                                                                     identifier=identifier,srcx=srcx, srcy=srcy,gridsize=.05,
-                                                                     res=.001,source_shape='GAUSSIAN', source_size=0.0012)
+        optimized_lensmodel,systems = solver.two_step_optimize(macromodel=start, datatofit=data_to_fit[0],
+                                                               realizations=realizationsdata, multiplane=multiplane,
+                                                               method='lensmodel', ray_trace=True, sigmas=sigmas,
+                                                               identifier=identifier, srcx=srcx, srcy=srcy,
+                                                               grid_rmax=.05,
+                                                               res=.001, source_shape='GAUSSIAN', source_size=0.0012)
 
         np.testing.assert_almost_equal(optimized_lensmodel[0].m, optimized_lenstronomy[0].m, decimal=2)
         np.testing.assert_almost_equal(optimized_lensmodel[0].x, optimized_lenstronomy[0].x, decimal=4)
@@ -216,6 +215,80 @@ def test_solving_leq_single_plane():
         print optimized_lenstronomy[0].m
         #plt.show()
 
-test_profiles_nfwT(plot=False)
-test_profiles_nfw(plot=False)
-test_solving_leq_single_plane()
+def test_SIE():
+    from MagniPy.MassModels.SIE import SIE
+
+    values = np.loadtxt('../../SIE_def.txt',skiprows=5)
+    sie = SIE()
+
+    xdef = values[:,3]
+    ydef = values[:,4]
+    x = values[:,0]
+    y = values[:,1]
+
+    theta_E = 0.7
+    ellip = 0.45
+    ellip_theta = -10
+
+    center_x,center_y = 0,0
+    plt.plot(x,xdef,color='k')
+
+    siexdef = sie.def_angle(x,y,center_x=center_x,center_y=center_y,theta_E=theta_E,q=1-ellip,phi_G=ellip_theta*np.pi*180**-1)[0]
+    plt.plot(x,siexdef,color='r')
+    plt.show()
+
+def test_Shear():
+    from MagniPy.MassModels.ExternalShear import Shear
+    s = Shear()
+
+    shear,shear_theta = 0.02,40
+
+    values = np.loadtxt('../../shear_def.txt',skiprows=5)
+    xdef = values[:, 3]
+    ydef = values[:, 4]
+    x = values[:, 0]
+    y = values[:, 1]
+    plt.plot(x,xdef)
+    plt.plot(x,s.def_angle(x,y,shear,shear_theta)[0])
+
+    plt.show()
+
+
+def test_SIEShear():
+    from MagniPy.MassModels.SIE import SIE
+    from MagniPy.MassModels.ExternalShear import Shear
+    s = Shear()
+
+    shear, shear_theta = 0.02, 40
+
+    values_shear = np.loadtxt('../../shear_def.txt', skiprows=5)
+
+    x = values_shear[:, 0]
+    y = values_shear[:, 1]
+
+    values_sie = np.loadtxt('../../SIE_def.txt', skiprows=5)
+    sie = SIE()
+
+    values_sieshear = np.loadtxt('../../sieshear_def.txt',skiprows=5)
+
+    x = values_sie[:, 0]
+    y = values_sie[:, 1]
+
+    theta_E = 0.7
+    ellip = 0.45
+    ellip_theta = -10
+
+    center_x, center_y = 0, 0
+    plt.plot(x, values_sieshear[:,3], color='k')
+
+    siexdef = sie.def_angle(x, y, center_x=center_x, center_y=center_y, theta_E=theta_E, q=1 - ellip,
+                            phi_G=ellip_theta * np.pi * 180 ** -1)[0]
+    shearxdef = s.def_angle(x,y,shear,shear_theta)[0]
+    plt.plot(x,siexdef+shearxdef,color='r')
+    plt.show()
+
+test_SIEShear()
+
+#test_profiles_nfwT(plot=False)
+#test_profiles_nfw(plot=False)
+#test_solving_leq_single_plane()

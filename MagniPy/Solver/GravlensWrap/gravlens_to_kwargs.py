@@ -8,14 +8,17 @@ def gravlens_to_kwargs(model_string, deflector=None):
         e1 = float(model_string[4])
         e2 = float(model_string[5])
         ellip,ellip_theta = cart_to_polar(e1, e2)
+
         q = 1-ellip
         prefactor = ((1 + q ** 2) * (2 * q)**-1) ** .5
-        R_ein = float(model_string[1]) * prefactor
+        prefactor = 1
+        R_ein = float(model_string[1]) * prefactor**-1
         phi_G = ellip_theta*np.pi*180**-1
         shear = float(model_string[6])
         shear_theta = float(model_string[7])
 
         shear,shear_theta = cart_to_polar(shear, shear_theta)
+
 
         return {'theta_E':R_ein,'q':q,'phi_G':phi_G,'shear':shear,
                 'shear_theta':shear_theta,'center_x':x,'center_y':y}
@@ -38,12 +41,15 @@ def kwargs_to_gravlens(deflector=None):
         q = args['q']
         prefactor = ((1 + q ** 2) * (2 * q) ** -1) ** .5
         p0 = 'alpha'
+        prefactor = 1
         p1 = str(args['theta_E']*prefactor**-1)
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
 
         p4,p5 = polar_to_cart(1-args['q'],(args['phi_G'])*180*np.pi**-1)
+
         p4,p5 = str(p4),str(p5)
+
 
         if deflector.has_shear:
             s,spa = polar_to_cart(deflector.shear,deflector.shear_theta)

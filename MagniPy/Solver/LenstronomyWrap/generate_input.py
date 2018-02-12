@@ -51,13 +51,16 @@ class LenstronomyWrap:
 
             lens_model_list.append(deflector.profname)
 
-            if 'phi_G' in deflector.args:
-                newargs = deepcopy(deflector.args)
-                newargs['phi_G'] = deflector.args['phi_G'] - 0.5*np.pi
-                lens_model_params.append(newargs)
-            else:
-                lens_model_params.append(deflector.args)
+            newargs = deepcopy(deflector.args)
 
+            if 'phi_G' in deflector.args:
+                newargs['phi_G'] = deflector.args['phi_G'] - 0.5*np.pi
+
+            if 'theta_E' in deflector.args and deflector.profname=='SPEMD':
+                q = deflector.args['q']
+                newargs['theta_E'] = deflector.args['theta_E']*((1+q**2)*(2*q)**-1)**.5
+
+            lens_model_params.append(newargs)
             self.redshift_list.append(deflector.redshift)
 
             if deflector.has_shear:
@@ -105,6 +108,7 @@ class LenstronomyWrap:
         solver4Point = Solver4Point(lensModel=self.model, decoupling=True)
         kwargs_fit = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
                                                        xtol=self.xtol)[0]
+
 
         return kwargs_fit
 

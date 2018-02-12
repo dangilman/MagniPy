@@ -4,11 +4,12 @@ from source_models import *
 from MagniPy.util import *
 from MagniPy.LensBuild.cosmology import Cosmo
 import matplotlib.pyplot as plt
+from lenstronomy.LensModel.Profiles.sie import SPEMD
 
 class RayTrace:
 
-    def __init__(self,xsrc=float,ysrc=float,multiplane=False,gridsize=int,res=0.0005,source_shape='',cosmology=None,raytrace_with=None,
-                 **kwargs):
+    def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None, raytrace_with=None,
+                 polar_grid=False, **kwargs):
 
         """
 
@@ -18,8 +19,8 @@ class RayTrace:
         :param size: width of the box in asec
         :param res: pixel resolution asec per pixel
         """
-
-        self.gridsize = gridsize
+        self.polar_grid = polar_grid
+        self.grid_rmax = grid_rmax
         self.res = res
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
@@ -31,14 +32,20 @@ class RayTrace:
 
         self.cosmo = cosmology
 
-        self.x_grid_0, self.y_grid_0 = make_grid(numPix=self.gridsize * self.res ** -1, deltapix=self.res)
+        self.x_grid_0, self.y_grid_0 = make_grid(numPix=self.grid_rmax * self.res ** -1, deltapix=self.res)
+
         self.y_grid_0 *= -1
 
         self.raytrace_with = raytrace_with
 
+        if self.polar_grid:
+
+            scale = 0.707
+            self.r_indicies = np.where(scale*self.grid_rmax > (self.x_grid_0 ** 2 + self.y_grid_0 ** 2) ** .5)
+
         if self.raytrace_with == 'lenstronomy':
-            self.multilens_wrap = MultiLensWrapper(gridsize=gridsize,res=res,source_shape=source_shape,
-                                                   astropy_class=self.cosmo.cosmo,z_source=self.cosmo.zsrc,
+            self.multilens_wrap = MultiLensWrapper(gridsize=grid_rmax, res=res, source_shape=source_shape,
+                                                   astropy_class=self.cosmo.cosmo, z_source=self.cosmo.zsrc,
                                                    source_size=kwargs['source_size'])
 
     def get_images(self,xpos,ypos,lens_system,print_mag=False):
@@ -91,11 +98,22 @@ class RayTrace:
 
         if print_mag:
             print 'computing mag...'
+        deflector = lens_system.lens_components[0]
+        print deflector.args
+        print deflector.shear
+        print deflector.shear_theta
+
+        a = input('continue')
 
         for i in range(0,len(xpos)):
 
             x_loc = xpos[i]*np.ones_like(self.x_grid_0)+self.x_grid_0
             y_loc = ypos[i]*np.ones_like(self.y_grid_0)+self.y_grid_0
+
+            if self.polar_grid:
+
+                x_loc = x_loc[self.r_indicies]
+                y_loc = y_loc[self.r_indicies]
 
             xdef = np.zeros_like(x_loc)
             ydef = np.zeros_like(y_loc)
@@ -106,7 +124,7 @@ class RayTrace:
 
                 if deflector.has_shear:
 
-                    shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc, deflector.shear,deflector.shear_theta - 90)
+                    shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
                     xplus += shearx
                     yplus += sheary
 
@@ -118,7 +136,9 @@ class RayTrace:
 
             x_source = x_loc - xdef
             y_source = y_loc - ydef
-
+            #plt.imshow(self.source.source_profile(betax=x_source,betay=y_source))
+            #plt.show()
+            #a=input('continue')
             magnification.append(np.sum(self.source.source_profile(betax=x_source,betay=y_source))*self.res**2)
 
         return np.array(magnification)
@@ -132,8 +152,13 @@ class RayTrace:
                 show=True
             else:
                 show=False
+
             xcoords = self.x_grid_0 + xpos[i]
             ycoords = self.y_grid_0 + ypos[i]
+
+            if self.polar_grid:
+                xcoords = xcoords[self.r_indicies]
+                ycoords = ycoords[self.r_indicies]
 
             x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords,show=show)
 
@@ -158,7 +183,8 @@ class RayTrace:
         dx_angle, dy_angle = lens.lensing.def_angle(xangle, yangle, **lens.args)
 
         if lens.has_shear:
-            dx_angle_shear,dy_angle_shear = lens.Shear.def_angle(xangle,yangle,lens.shear,lens.shear_theta-90)
+
+            dx_angle_shear,dy_angle_shear = lens.Shear.def_angle(xangle,yangle,lens.shear,lens.shear_theta)
             dx_angle += dx_angle_shear
             dy_angle += dy_angle_shear
 
