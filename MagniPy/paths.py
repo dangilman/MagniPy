@@ -10,8 +10,9 @@ elif homedir == '/Users/danielgi/':
     prefix = homedir
     path_2_lensmodel = homedir + '/Code/'
 
-print homedir
-
+elif homedir == '/Users/mcsedarous/':
+    prefix = homedir
+    path_2_lensmodel = homedir + 'Desktop/research_Treu/'
 
 gravlens_input_path = prefix+'data/gravlens_input/'
 
