@@ -6,7 +6,11 @@ class Shear:
     def def_angle(self, x, y, shear, shear_theta):
 
         shear_theta += -90
-        e1,e2 = polar_to_cart(shear,shear_theta)
+
+        phi = np.arctan2(y, x)
+        e1, e2 = shear * np.cos(2 * (phi - shear_theta * np.pi / 180)), shear * np.sin(
+            2 * (phi - shear_theta * np.pi / 180))
+
         shearx = -e1 * x - e2 * y
         sheary = e2 * x - e1 * y
 

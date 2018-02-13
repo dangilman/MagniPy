@@ -103,7 +103,7 @@ class RayTrace:
         #print deflector.shear
         #print deflector.shear_theta
 
-        a = input('continue')
+        #a = input('continue')
 
         for i in range(0,len(xpos)):
 
@@ -125,6 +125,7 @@ class RayTrace:
                 if deflector.has_shear:
 
                     shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
+                    
                     xplus += shearx
                     yplus += sheary
 
