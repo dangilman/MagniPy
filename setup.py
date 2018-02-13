@@ -34,7 +34,7 @@ setup(
     author="Daniel Gilman",
     author_email='gilmanda@ucla.edu',
     url='https://github.com/dangilman/magnipy',
-    packages=find_packages(include=['magnipy']),
+    #packages=find_packages(),
     entry_points={
         'console_scripts': [
             'magnipy=magnipy.cli:main'
