@@ -1,5 +1,7 @@
 import numpy as np
 from lensdata import Data
+import subprocess
+import shutil
 
 def read_data(filename=''):
 
@@ -315,3 +317,14 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
     new_redshift_list = [lens_components[i].redshift for i in keep_index]
 
     return newcomponents, new_redshift_list
+
+def create_directory(dirname=''):
+
+    proc = subprocess.Popen(['mkdir', dirname])
+    proc.wait()
+
+def delete_dir(dirname=''):
+
+    shutil.rmtree(dirname)
+
+

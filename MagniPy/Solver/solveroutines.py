@@ -1,6 +1,5 @@
 from MagniPy.magnipy import Magnipy
 from RayTrace.raytrace import RayTrace
-from LenstronomyWrap.generate_input import LenstronomyWrap
 import copy
 
 class SolveRoutines(Magnipy):
@@ -8,13 +7,18 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None, ray_trace=None, sigmas=None,
-                            identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
+    def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
+                            ray_trace=None, identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={}):
 
 
         lens_systems = []
+
+        pos_sigma = [[0.003] * 4, [0.003] * 4]
+        flux_sigma = [.4] * 4
+        tdel_sigma = [0, 2, 2, 2]
+        sigmas = [pos_sigma, flux_sigma, tdel_sigma]
 
         if full_system is None:
             assert macromodel is not None
@@ -145,12 +149,14 @@ class SolveRoutines(Magnipy):
 
         return optimized_data, model
 
-    def produce_images(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
-                       identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
-                       source_shape='GAUSSIAN', source_size=None,filter_by_position=False,
-                              filter_kwargs={}):
+    def raytrace_images(self, full_system=None, macromodel=None, xcoord=None, ycoord = None, realizations=None, multiplane=None,
+                        identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
+                        source_shape='GAUSSIAN', source_size=None, filter_by_position=False,
+                        image_index=None):
 
         lens_systems = []
+
+        assert image_index is not None
 
         if full_system is None:
 
@@ -163,15 +169,12 @@ class SolveRoutines(Magnipy):
         else:
             lens_systems.append(copy.deepcopy(full_system))
 
-        data = self.solve_lens_equation(full_system=lens_systems[0], multiplane=multiplane, method=method,
-                                        identifier=None, srcx=None, srcy=None,
-                                        grid_rmax=None, res=None, source_shape='GAUSSIAN', source_size=None)
 
-        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method=method, grid_rmax=gridsize, res=res,
+        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method='lensmodel', grid_rmax=grid_rmax, res=res,
                          source_shape=source_shape,
-                         cosmology=self.cosmo.cosmo, source_size=source_size)
+                         cosmology=self.cosmo, source_size=source_size)
 
-        magnifications, images = trace.get_images(xpos=data[0].x, ypos=data[0].y, lens_system=lens_systems[0])
+        magnifications, images = trace.get_images(xpos=[xcoord], ypos=[ycoord], lens_system=lens_systems[0])
 
         return magnifications, images
 

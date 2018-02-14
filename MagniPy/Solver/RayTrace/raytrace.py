@@ -19,6 +19,7 @@ class RayTrace:
         :param size: width of the box in asec
         :param res: pixel resolution asec per pixel
         """
+
         self.polar_grid = polar_grid
         self.grid_rmax = grid_rmax
         self.res = res
@@ -40,8 +41,7 @@ class RayTrace:
 
         if self.polar_grid:
 
-            scale = 0.707
-            self.r_indicies = np.where(scale*self.grid_rmax > (self.x_grid_0 ** 2 + self.y_grid_0 ** 2) ** .5)
+            self.r_indicies = np.where(self.grid_rmax > (self.x_grid_0 ** 2 + self.y_grid_0 ** 2) ** .5)
 
         if self.raytrace_with == 'lenstronomy':
             self.multilens_wrap = MultiLensWrapper(gridsize=grid_rmax, res=res, source_shape=source_shape,
@@ -66,6 +66,13 @@ class RayTrace:
 
                 xplus,yplus = deflector.lensing.def_angle(x_loc,y_loc,**deflector.args)
 
+                if deflector.has_shear:
+
+                    shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
+
+                    xplus += shearx
+                    yplus += sheary
+
                 xdef+=xplus
                 ydef+=yplus
 
@@ -73,10 +80,10 @@ class RayTrace:
             y_source = y_loc - ydef
 
             source_light = self.source.source_profile(betax=x_source, betay=y_source)
-            magnifications.append(np.sum(source_light)*self.res**2)
-            images.append(source_light * (int(np.shape(source_light)[0]) ** 2 * np.sum(source_light)) ** -1)
+            magnifications = np.sum(source_light)*self.res**2
+            image = source_light * (int(np.shape(source_light)[0]) ** 2 * np.sum(source_light)) ** -1
 
-        return magnifications,images
+        return magnifications,image
 
     def compute_mag(self,xpos,ypos,lens_system,print_mag=False):
 
@@ -125,7 +132,7 @@ class RayTrace:
                 if deflector.has_shear:
 
                     shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
-                    
+
                     xplus += shearx
                     yplus += sheary
 

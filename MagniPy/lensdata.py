@@ -77,7 +77,7 @@ class Data:
         else:
             self.srcx,self.srcy = np.round(srcx,self.decimals_src),np.round(srcy,self.decimals_src)
 
-    def flux_ratios(self,index):
+    def compute_flux_ratios(self,index=1):
 
         ref = float(self.m[index])
 
@@ -86,8 +86,6 @@ class Data:
         m = np.delete(m,index)
 
         self.fluxratios = m
-
-        return m
 
     def all(self):
 

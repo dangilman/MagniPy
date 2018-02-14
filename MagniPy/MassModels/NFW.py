@@ -11,7 +11,8 @@ class NFW:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(self, zd=z1, zsrc=z2)
+            self.cosmology = Cosmo(zd=z1, zsrc=z2)
+
         else:
             self.cosmology = cosmology
 

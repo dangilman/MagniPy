@@ -19,13 +19,26 @@ class Magnipy:
 
     """
 
-    def __init__(self,zmain,zsrc,main_lens_profile=[],use_lenstronomy_halos=False):
+    def __init__(self,zmain,zsrc,main_lens_profile=[],clean_up=True,temp_folder=None):
 
         self.zmain = zmain
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc, cosmo='FlatLambdaCDM',use_lenstronomy_halos=use_lenstronomy_halos)
+        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc, cosmo='FlatLambdaCDM')
 
         self.cosmo = Cosmo(zd=zmain,zsrc=zsrc)
+        self.clean_up = clean_up
+        from MagniPy import paths
+
+        self.paths = paths
+
+        if clean_up:
+            if temp_folder is None:
+                self.temp_folder = 'temp/'
+            else:
+                self.temp_folder = temp_folder+'/'
+
+            self.paths.gravlens_input_path_dump = self.paths.gravlens_input_path+self.temp_folder
+
 
     def print_system(self,system_index,component_index=None):
 
@@ -97,10 +110,12 @@ class Magnipy:
 
         if method == 'lensmodel':
 
+            create_directory(self.paths.gravlens_input_path_dump)
+
             assert opt_routine is not None
             solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
                                    pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
-                                   identifier=identifier)
+                                   identifier=identifier,paths=self.paths)
 
             for system in lens_systems:
 
@@ -114,7 +129,7 @@ class Magnipy:
             outputfile = solver.write_all(data=d2fit, zlens=self.zmain, zsrc=self.zsrc, opt_routine=opt_routine)
 
             call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
-                           path_2_lensmodel=path_2_lensmodel)
+                           path_2_lensmodel=self.paths.path_2_lensmodel)
 
             lensdata = []
 
@@ -151,6 +166,9 @@ class Magnipy:
             for dataset in lensdata:
                 dataset.sort_by_pos(data2fit.x,data2fit.y)
 
+            if self.clean_up:
+                delete_dir(self.paths.gravlens_input_path_dump)
+
             return lensdata, optimized_systems
 
         elif method == 'lenstronomy':
@@ -180,7 +198,7 @@ class Magnipy:
                 lensModel = lenstronomywrap.model
 
                 xsrc, ysrc = lensModel.ray_shooting(d2fit[0], d2fit[1], lenstronomywrap.lens_model_params)
-                #xsrc,ysrc = -0.0093,0.0023
+
                 x_image, y_image = lenstronomywrap.solve_leq(xsrc=np.mean(xsrc),ysrc=np.mean(ysrc))
 
                 newdata = Data(x=x_image, y=y_image, m=None, t=None, source=[xsrc, ysrc])
@@ -212,11 +230,13 @@ class Magnipy:
 
         if method == 'lensmodel':
 
+            create_directory(self.paths.gravlens_input_path_dump)
+
             data=[]
 
             solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
                                    pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
-                                   identifier=identifier)
+                                   identifier=identifier,paths=self.paths)
 
             for i,system in enumerate(lens_systems):
                 full = FullModel(multiplane=system.multiplane)
@@ -227,7 +247,7 @@ class Magnipy:
             outputfile = solver.write_all(data=None, zlens=self.zmain, zsrc=self.zsrc,srcx=srcx,srcy=srcy)
 
             call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
-                           path_2_lensmodel=path_2_lensmodel)
+                           path_2_lensmodel=self.paths.path_2_lensmodel)
 
             lens_data = read_gravlens_out(fnames=outputfile)
             t0 = time.time()
@@ -252,6 +272,9 @@ class Magnipy:
 
             if ray_trace:
                 print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
+
+            if self.clean_up:
+                delete_dir(self.paths.gravlens_input_path_dump)
 
             return data
 

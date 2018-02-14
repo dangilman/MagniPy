@@ -19,10 +19,10 @@ class Pjaffe:
         else:
             return (rcore**2+r**2)**-.5 - (rtrunc**2+r**2)**-.5
 
-    def def_angle(self,xgrid,ygrid,rcore=None,rtrunc=None,b=None,x0=None,y0=None):
+    def def_angle(self,x,y,rcore=None,rtrunc=None,b=None,x0=None,y0=None):
 
-        x = xgrid - x0
-        y = ygrid - y0
+        x = x - x0
+        y = y - y0
 
         r=np.sqrt(x**2+y**2)
 
@@ -33,12 +33,12 @@ class Pjaffe:
     def params(self,M,rt,rc=0,**kwargs):
 
         subkwargs = {}
-        subkwargs['name'] = 'Pjaffe'
         subkwargs['b'] = self.b(M,rt,rc)
-        subkwargs['rt'] = None
+        subkwargs['rt'] = rt
 
         otherkwargs ={}
         otherkwargs['mass'] = M
+        otherkwargs['name'] = 'Pjaffe'
 
         return subkwargs
 

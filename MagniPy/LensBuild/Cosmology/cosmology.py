@@ -11,8 +11,10 @@ class Cosmo:
     arcsec = 2 * np.pi / 360 / 3600  # arc second in radian
 
     G = 6.67384 * 10 ** (-11) * Mpc**-3 * M_sun # Gravitational constant [Mpc^3 M_sun^-1 s^-2]
+
     c = 299792458*Mpc**-1 # speed of light [Mpc s^-1]
-    density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3
+
+    density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3 # convert [g/cm^3] to [solarmasses / Mpc^3]
 
     def __init__(self,cosmology = 'FlatLambdaCDM',zd=0.5,zsrc = 1.5):
 
@@ -27,6 +29,9 @@ class Cosmo:
             self.rhoc = self.rhoc_physical*self.h**-2
             self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
             self.kpc_convert = self.kpc_per_asec(zd)
+            self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
+        else:
+            raise AssertionError('other cosmologies not yet implemented')
 
     def D_A(self,z1,z2):
 
@@ -132,4 +137,6 @@ class ParticleMasses:
         else:
             return masses
 
+    def wave_alpha(self,m_kev,omega_WDM=0.25,h=0.7):
 
+        return 0.049*(m_kev)**-1.11*(omega_WDM*4)**0.11*(h*0.7**-1)**1.22*h**-1

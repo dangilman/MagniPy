@@ -441,17 +441,5 @@ class NFWt(object):
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
         return theta_Rs
 
-nfw = NFWt()
-
-
-x,y = np.linspace(-0.5,.5,100),np.linspace(-0.5,0.5,100)
-xx,yy = np.meshgrid(x,y)
-
-theta_Rs = 0.01
-xdef,ydef = nfw.derivatives(xx,yy,.2,theta_Rs,100,0,0)
-
-import matplotlib.pyplot as plt
-plt.plot(xdef[50,:])
-plt.show()
 
 

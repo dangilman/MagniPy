@@ -1,15 +1,14 @@
 import numpy as np
-from MagniPy.paths import *
 from MagniPy.util import *
 from gravlens_to_kwargs import *
 
 class GravlensInput:
 
     def __init__(self,filename='',zlens=float,zsrc=float,pos_sigma=[],flux_sigma=[],tdelay_sigma=[],
-                 identifier='',dataindex=1):
+                 identifier='',dataindex=1,paths=classmethod):
 
         self.filename = filename
-        self.outfile_path = gravlens_input_path_dump
+        self.outfile_path = paths.gravlens_input_path_dump
         self.systems = []
         self.Nsystems = 0
         self.xpos_sigma,self.ypos_sigma,self.flux_sigma,self.tdelay_sigma = \

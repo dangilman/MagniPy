@@ -76,7 +76,7 @@ def kwargs_to_gravlens(deflector=None):
         p9 = args['t']*args['Rs']**-1
         p10 = '1'
 
-    elif deflector.profname =='POINTMASS':
+    elif deflector.profname =='POINT_MASS':
 
         p0 = 'ptmass'
         p1 = str(args['theta_E'])
