@@ -1,5 +1,5 @@
 import numpy as np
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class Pjaffe:
 

@@ -1,5 +1,5 @@
 import numpy as np
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class TNFW:
 
@@ -11,18 +11,18 @@ class TNFW:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(self, zd=z1, zsrc=z2)
+            self.cosmology = Cosmo(zd=z1, zsrc=z2)
         else:
             self.cosmology = cosmology
 
         self.c_turnover=c_turnover
 
-    def def_angle(self, x, y, Rs, theta_Rs, t, center_x=0, center_y=0):
+    def def_angle(self, x, y, Rs=None, theta_Rs=None, t=None, center_x=0, center_y=0):
 
         x_loc = x - center_x
         y_loc = y - center_y
 
-        r = np.sqrt(x_loc ** 2 + y_loc ** 2)
+        r = np.sqrt(x_loc ** 2 + y_loc ** 2+1e-9)
         xnfw = r * Rs ** -1
         tau = t*Rs**-1
 
@@ -32,9 +32,27 @@ class TNFW:
 
         magdef = theta_Rs * (1 + np.log(0.5)) ** -1 * self.t_fac(xnfw, tau) * xnfw ** -1
 
-        return magdef * x * r ** -1, magdef * y * r ** -1
+        return magdef * x_loc * r ** -1, magdef * y_loc * r ** -1
 
     def F(self,x):
+
+        if isinstance(x, np.ndarray):
+            nfwvals = np.ones_like(x)
+            inds1 = np.where(x < 1)
+            inds2 = np.where(x > 1)
+            nfwvals[inds1] = (1 - x[inds1] ** 2) ** -.5 * np.arctanh((1 - x[inds1] ** 2) ** .5)
+            nfwvals[inds2] = (x[inds2] ** 2 - 1) ** -.5 * np.arctan((x[inds2] ** 2 - 1) ** .5)
+            return nfwvals
+
+        elif isinstance(x, float) or isinstance(x, int):
+            if x == 1:
+                return 1
+            if x < 1:
+                return (1 - x ** 2) ** -.5 * np.arctanh((1 - x ** 2) ** .5)
+            else:
+                return (x ** 2 - 1) ** -.5 * np.arctan((x ** 2 - 1) ** .5)
+
+    def F_old(self,x):
 
         if isinstance(x, np.ndarray):
             nfwvals = np.ones_like(x)

@@ -1,7 +1,7 @@
 import time
 import MagniPy.LensBuild.lens_assemble as build
 import MagniPy.LensBuild.renderhalos as halo_gen
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.Solver.GravlensWrap._call import *
 from MagniPy.Solver.GravlensWrap.generate_input import *
 from MagniPy.Solver.GravlensWrap.gravlens_to_kwargs import gravlens_to_kwargs
@@ -18,6 +18,9 @@ class Magnipy:
     This class is used to specify a lens system and solve the lens equation or optimize a lens model
 
     """
+    default_pos_sigma = [[0.003]*4,[0.003]*4]
+    default_flux_sigma = [0.2]*4
+    default_tdelay_sigma = [0,2,2,2]
 
     def __init__(self,zmain,zsrc,main_lens_profile=[],clean_up=True,temp_folder=None):
 
@@ -95,7 +98,7 @@ class Magnipy:
         else:
             return realizations
 
-    def optimize_4imgs(self, lens_systems=None, data2fit=[], method=str, sigmas=[], identifier='', opt_routine=None,
+    def optimize_4imgs(self, lens_systems=None, data2fit=[], method=str, sigmas=None, identifier='', opt_routine=None,
                        ray_trace = True, return_positions = False, grid_rmax=int, res=0.0005, source_shape='GAUSSIAN',
                        source_size=float, print_mag=False, raytrace_with=None, polar_grid=False):
 
@@ -105,6 +108,10 @@ class Magnipy:
         # randomize: does a randomize command command followed by full
 
         d2fit = [data2fit.x, data2fit.y, data2fit.m, data2fit.t]
+
+        if sigmas is None:
+
+            sigmas = [self.default_pos_sigma,self.default_flux_sigma,self.default_tdelay_sigma]
 
         optimized_systems = []
 
@@ -185,10 +192,8 @@ class Magnipy:
 
                 #print lens_systems[0].lens_components[0].lenstronomy_args
 
-                kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1])
 
-                #print lens_systems[0].lens_components[0].lenstronomy_args
-                #exit(1)
+                kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1])
 
                 optimized_systems.append(self.update_system(lens_system=lens_systems[i],component_index=0,
                                                             newkwargs=kwargs_fit,method='lenstronomy'))
@@ -224,7 +229,7 @@ class Magnipy:
 
             return data, optimized_systems
 
-    def solve_4imgs(self, lens_systems = None, method=str, sigmas=[], identifier='', srcx=None, srcy=None, grid_rmax=.1,
+    def solve_4imgs(self, lens_systems = None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False, time_ray_trace=False):
 
 
@@ -234,9 +239,7 @@ class Magnipy:
 
             data=[]
 
-            solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
-                                   pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
-                                   identifier=identifier,paths=self.paths)
+            solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,identifier=identifier,paths=self.paths)
 
             for i,system in enumerate(lens_systems):
                 full = FullModel(multiplane=system.multiplane)

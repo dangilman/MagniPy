@@ -16,7 +16,7 @@ class Cosmo:
 
     density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3 # convert [g/cm^3] to [solarmasses / Mpc^3]
 
-    def __init__(self,cosmology = 'FlatLambdaCDM',zd=0.5,zsrc = 1.5):
+    def __init__(self,zd=0.5,zsrc = 1.5,cosmology = 'FlatLambdaCDM'):
 
         if cosmology == 'FlatLambdaCDM':
 

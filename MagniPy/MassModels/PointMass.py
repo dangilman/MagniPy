@@ -1,4 +1,4 @@
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 import numpy as np
 
 class PointMass:

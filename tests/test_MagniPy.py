@@ -54,7 +54,7 @@ def test_profiles_nfw(plot=True):
 
     nfw = NFW()
     nfwL = NFW_L()
-    nfwT = TNFW()
+    TNFW = TNFW()
     nfwTL = NFWt()
 
     # nfw_params,nfw_params_L = nfw.params(x=0,y=0,mass=mass,mhm=mhm)
@@ -63,8 +63,8 @@ def test_profiles_nfw(plot=True):
     ks, rs = 0.1, 0.1
     theta_rs = 4 * ks * rs * (1 + np.log(.5))
 
-    xdef, ydef = nfw.def_angle(x, y, x=0, y=0, ks=ks, rs=rs)
-    xdef_t, ydef_t = nfwT.def_angle(x, y, x=0, y=0, ks=ks, rs=rs, rt=rt)
+    xdef, ydef = nfw.def_angle(x, y, center_x=0, center_y=0, theta_Rs=theta_rs, Rs=rs)
+    xdef_t, ydef_t = TNFW.def_angle(x, y, center_x=0, center_y=0, theta_Rs=theta_rs, Rs=rs, t=rt)
     xdef_L, ydef_L = nfwL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs)
     xdef_Lt, ydef_Lt = nfwTL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs, t=rt)
 
@@ -287,8 +287,23 @@ def test_SIEShear():
     plt.plot(x,siexdef+shearxdef,color='r')
     plt.show()
 
-test_SIEShear()
+def test_nfws():
+    from lenstronomy.LensModel.Profiles.nfw import NFW
+    x_loc = np.linspace(0,.1,100)
+    y_loc = np.linspace(0,0,100)
+    args = {'theta_Rs':0.01,'Rs':0.02,'center_x':0,'center_y':0.03}
+    nfw = NFW()
+    xdefL, ydefL = nfw.derivatives(x=x_loc, y=y_loc, **args)
+    from MagniPy.MassModels.NFW import NFW
+    nfw = NFW()
+    xplus,yplus = nfw.def_angle(x=x_loc,y=y_loc,**args)
+    print ydefL
+    print yplus
+    np.testing.assert_almost_equal(ydefL, yplus, decimal=5)
+
+test_nfws()
+#test_SIEShear()
 
 #test_profiles_nfwT(plot=False)
-#test_profiles_nfw(plot=False)
+#test_profiles_nfw(plot=True)
 #test_solving_leq_single_plane()

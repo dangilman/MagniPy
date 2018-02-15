@@ -1,5 +1,5 @@
 import numpy as np
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.util import *
 from MagniPy.MassModels.ExternalShear import Shear
 import matplotlib.pyplot as plt

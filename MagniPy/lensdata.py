@@ -28,6 +28,8 @@ class Data:
 
         import itertools
 
+        if self.nimg != 4:
+            return
         x_self = np.array(list(itertools.permutations(self.x)))
         y_self = np.array(list(itertools.permutations(self.y)))
 

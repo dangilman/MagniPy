@@ -1,7 +1,5 @@
 import numpy as np
-from cosmology import Cosmo
-from scipy.special import j1
-from scipy.integrate import quad
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class Plaw:
 

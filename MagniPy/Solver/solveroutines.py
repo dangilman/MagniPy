@@ -15,11 +15,6 @@ class SolveRoutines(Magnipy):
 
         lens_systems = []
 
-        pos_sigma = [[0.003] * 4, [0.003] * 4]
-        flux_sigma = [.4] * 4
-        tdel_sigma = [0, 2, 2, 2]
-        sigmas = [pos_sigma, flux_sigma, tdel_sigma]
-
         if full_system is None:
             assert macromodel is not None
             if realizations is not None:
@@ -38,7 +33,7 @@ class SolveRoutines(Magnipy):
 
 
 
-        data = self.solve_4imgs(lens_systems=lens_systems, method=method, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy,
+        data = self.solve_4imgs(lens_systems=lens_systems, method=method, identifier=identifier, srcx=srcx, srcy=srcy,
                                 grid_rmax=grid_rmax,
                                 res=res, source_shape=source_shape, ray_trace=ray_trace, source_size=source_size)
 
@@ -47,7 +42,7 @@ class SolveRoutines(Magnipy):
         return data
 
 
-    def two_step_optimize(self, macromodel, datatofit, realizations, multiplane, method=None, ray_trace=None, sigmas=None,
+    def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
                           identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                           source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
                           filter_by_position=False, polar_grid=False, filter_kwargs={}):
@@ -63,7 +58,7 @@ class SolveRoutines(Magnipy):
                                                        filter_by_position=filter_by_position, filter_kwargs=filter_kwargs)
 
 
-        optimized_data, newsystem = self.fit_src_plane(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
+        optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
                                                        ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
                                                        source_shape=source_shape, source_size=source_size, print_mag=print_mag, raytrace_with=raytrace_with,
                                                        filter_by_position=filter_by_position, polar_grid=polar_grid, filter_kwargs=filter_kwargs)
@@ -94,15 +89,20 @@ class SolveRoutines(Magnipy):
 
         return optimized_data,newmacromodel
 
-    def fit_src_plane(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=None, sigmas=None,
+    def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False, polar_grid=False,
-                      filter_kwargs={}):
+                      filter_kwargs={},which_chi = 'src'):
 
         # uses source plane chi^2
 
         assert method is not None
         assert method in ['lensmodel', 'lenstronomy']
+        assert which_chi is not None
+        if which_chi == 'src':
+            basic_or_full = 'basic'
+        else:
+            basic_or_full = 'full'
 
         lens_systems= []
 
@@ -116,38 +116,10 @@ class SolveRoutines(Magnipy):
         optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems, data2fit=datatofit, method=method,
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,
                                                     res=res, source_shape=source_shape, ray_trace=ray_trace,
-                                                    source_size=source_size, print_mag=print_mag, opt_routine='basic',
+                                                    source_size=source_size, print_mag=print_mag, opt_routine=basic_or_full,
                                                     raytrace_with=raytrace_with, polar_grid=polar_grid)
 
         return optimized_data,model
-
-    def fit_imgplane(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=None, sigmas=None,
-                      identifier=None, srcx=None, srcy=None, gridsize=None, res=None,
-                      source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,filter_by_position=False,
-                              filter_kwargs={}):
-
-        # uses image plane chi^2; quite slow
-
-        assert method is not None
-        assert method in ['lensmodel', 'lenstronomy']
-
-        lens_systems = []
-
-        if realizations is not None:
-            for real in realizations:
-                lens_systems.append(
-                    self.build_system(main=copy.deepcopy(macromodel), additional_halos=real, multiplane=multiplane,
-                                      filter_by_position=filter_by_position, **filter_kwargs))
-        else:
-            lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), multiplane=multiplane))
-
-        optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems, data2fit=datatofit, method=method,
-                                                    sigmas=sigmas, identifier=identifier, grid_rmax=gridsize,
-                                                    res=res, source_shape=source_shape, ray_trace=ray_trace,
-                                                    source_size=source_size, print_mag=print_mag, opt_routine='full',
-                                                    raytrace_with=raytrace_with)
-
-        return optimized_data, model
 
     def raytrace_images(self, full_system=None, macromodel=None, xcoord=None, ycoord = None, realizations=None, multiplane=None,
                         identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,

@@ -4,15 +4,16 @@ from gravlens_to_kwargs import *
 
 class GravlensInput:
 
-    def __init__(self,filename='',zlens=float,zsrc=float,pos_sigma=[],flux_sigma=[],tdelay_sigma=[],
+    def __init__(self,filename='',zlens=float,zsrc=float,pos_sigma=None,flux_sigma=None,tdelay_sigma=None,
                  identifier='',dataindex=1,paths=classmethod):
 
         self.filename = filename
         self.outfile_path = paths.gravlens_input_path_dump
         self.systems = []
         self.Nsystems = 0
-        self.xpos_sigma,self.ypos_sigma,self.flux_sigma,self.tdelay_sigma = \
-            pos_sigma[0],pos_sigma[1],flux_sigma,tdelay_sigma
+        if pos_sigma is not None or flux_sigma is not None or tdelay_sigma is not None:
+            self.xpos_sigma,self.ypos_sigma,self.flux_sigma,self.tdelay_sigma = \
+                pos_sigma[0],pos_sigma[1],flux_sigma,tdelay_sigma
 
         self.identifier = identifier
         self.dataindex = dataindex
@@ -92,7 +93,7 @@ class GravlensInput:
 
                         extra_commands['randomize'] += [ranges]
 
-                        extra_commands['randomize'] += ['set gridflag = 1\nset chimode = 1\n',
+                        extra_commands['randomize'] += ['set gridflag = 1\nset chimode = 1\nset restart = 3\n',
                             'setlens ' + self.outfile_path + self.filename + '_rand' +
                             str(self.dataindex) + '.start\n',
                             'optimize ' + self.outfile_path + self.identifier + str(0)]

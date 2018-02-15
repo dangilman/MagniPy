@@ -2,9 +2,10 @@ import numpy as np
 from MagniPy.Solver.LenstronomyWrap.MultiLensWrap import MultiLensWrapper
 from source_models import *
 from MagniPy.util import *
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.Profiles.sie import SPEMD
+from lenstronomy.LensModel.Profiles.nfw import NFW
 
 class RayTrace:
 
@@ -32,10 +33,8 @@ class RayTrace:
             raise ValueError('other source models not yet implemented')
 
         self.cosmo = cosmology
-
-        self.x_grid_0, self.y_grid_0 = make_grid(numPix=self.grid_rmax * self.res ** -1, deltapix=self.res)
-
-        self.y_grid_0 *= -1
+        self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, self.grid_rmax*res**-1),
+                                                   -np.linspace(-self.grid_rmax, self.grid_rmax, self.grid_rmax*res**-1))
 
         self.raytrace_with = raytrace_with
 
@@ -105,12 +104,6 @@ class RayTrace:
 
         if print_mag:
             print 'computing mag...'
-        #deflector = lens_system.lens_components[0]
-        #print deflector.args
-        #print deflector.shear
-        #print deflector.shear_theta
-
-        #a = input('continue')
 
         for i in range(0,len(xpos)):
 
@@ -127,7 +120,8 @@ class RayTrace:
 
             for count,deflector in enumerate(lens_system.lens_components):
 
-                xplus,yplus = deflector.lensing.def_angle(x_loc,y_loc,**deflector.args)
+                xplus,yplus = deflector.lensing.def_angle(x=x_loc,y=y_loc,**deflector.args)
+
 
                 if deflector.has_shear:
 
@@ -144,9 +138,7 @@ class RayTrace:
 
             x_source = x_loc - xdef
             y_source = y_loc - ydef
-            #plt.imshow(self.source.source_profile(betax=x_source,betay=y_source))
-            #plt.show()
-            #a=input('continue')
+            
             magnification.append(np.sum(self.source.source_profile(betax=x_source,betay=y_source))*self.res**2)
 
         return np.array(magnification)

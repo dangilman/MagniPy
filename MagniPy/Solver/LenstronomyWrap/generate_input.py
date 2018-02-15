@@ -17,7 +17,7 @@ class LenstronomyWrap:
         self.min_distance = 0.01
         self.search_window = 5
         self.precision_limit = 10**-10
-        self.num_iter_max = 100
+        self.num_iter_max = 1000
         self.cosmo = cosmo
 
         assert z_source is not None

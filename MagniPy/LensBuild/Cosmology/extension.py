@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cosmology import ParticleMasses
 from scipy.integrate import quad
+from scipy.special import j1
 
 class CosmoExtension(Cosmo):
 
@@ -21,7 +22,7 @@ class CosmoExtension(Cosmo):
         Cosmo.__init__(self,zd=zd,zsrc=zsrc)
 
         self.cosmology = {'omega_M_0':self.cosmo.Om0,'omega_b_0':self.cosmo.Ob0,'omega_lambda_0':1-self.cosmo.Om0,
-                          'omega_n_0':0,'N_nu':int(np.floor(self.cosmo.Neff)),'h':self.h,'sigma_8':self.sigma8,'n':1}
+                          'omega_n_0':0,'N_nu':1,'h':self.h,'sigma_8':self.sigma8,'n':1}
 
         self.dm_particles = ParticleMasses(h=self.h)
 
@@ -45,6 +46,13 @@ class CosmoExtension(Cosmo):
             transfer_WDM = self.transfer_WDM(k,z,m_hm)
 
         return power_spectrum(k,z,**self.cosmology)*transfer_WDM**2
+    def sigma_numerical(self,r,z,m_hm):
+
+        def integrand(k,r,z,m_hm):
+            x = k*r
+
+            return (2*np.pi**2)**-1*k**2*self.power_spectrum(k,z,m_hm=m_hm)*(3*j1(x)*x**-1)**2
+        return 4.02885421452*quad(integrand,0,np.inf,args=(r,z,m_hm),limit=500)[0]
 
     def sigma(self,r,z):
 
@@ -61,18 +69,19 @@ class CosmoExtension(Cosmo):
 
         return 1.68647*fgrowth(z,self.cosmology['omega_M_0'])**-1
 
-    def Nu(self,r,z):
+    def Nu(self,r,z,m_hm=0):
 
         """
 
         :return: the parameter "nu" defined as the critical overdensity squared divided by sigma
         """
+        if m_hm==0:
+            return (self.delta_lin(z)*self.sigma(r,z)**-1)**2
+        else:
+            return (self.delta_lin(z)*self.sigma_numerical(r,z,m_hm=m_hm)**-1)**2
 
-        return (self.delta_lin(z)*self.sigma(r,z)**-1)**2
+    def f_nu(self,nu):
 
-    def f_nu(self,r,z):
-
-        nu = self.Nu(r,z)
         nu_p = self.a*nu
 
         return (self.A*nu**-1)*(1+nu_p**-self.p)*(nu_p*(2*np.pi)**-1)**.5*np.exp(-0.5*nu_p)
@@ -124,13 +133,13 @@ class CosmoExtension(Cosmo):
         """
         return 2*np.pi*self.mass2size_physical(m,z)**-1
 
-    def f_nu_mass(self,m,z):
+    def f_nu_mass(self,m,z,m_hm=0):
+        nu = self.Nu(self.mass2size_physical(m,z),z,m_hm=m_hm)
+        return self.f_nu(nu)
 
-        return self.f_nu(self.mass2size_physical(m,z),z)
+    def comoving_ShethTormen_density(self,M,z,m_hm=0):
 
-    def comoving_ShethTormen_density(self,M,z):
-
-        return self.rho_matter_crit(z)*M**-1*self.dnu_dM(M,z)*self.f_nu_mass(M,z)
+        return self.rho_matter_crit(z)*M**-1*self.dnu_dM(M,z)*self.f_nu_mass(M,z,m_hm=m_hm)
 
     def physical_ShethTormen(self,M,z1,z2,angle):
 
@@ -174,5 +183,26 @@ class CosmoExtension(Cosmo):
         """
         def integrand(z,angle):
             return self.differential_comoving_volume_disk(z,angle)
+        if isinstance(z2,float) or isinstance(z2,int):
+            return quad(integrand,z1,z2,args=(angle))[0]
+        else:
+            integral = []
+            for value in z2:
+                integral.append(quad(integrand,z1,value,args=(angle))[0])
+            return np.array(integral)
 
-        return quad(integrand,z1,z2,args=(angle))[0]
+
+C = CosmoExtension()
+
+M = np.logspace(6,11,100)
+y1 = C.comoving_ShethTormen_density(M,0.6)
+
+plt.loglog(M,np.array(y1))
+
+vals = np.polyfit(np.log10(M),np.log10(y1),1)
+
+def fun(vals,M):
+    return 10**vals[1]*M**vals[0]
+plt.loglog(M,fun(vals,M),color='r')
+plt.show()
+print vals

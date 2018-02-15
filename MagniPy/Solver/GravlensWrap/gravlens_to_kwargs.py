@@ -61,7 +61,7 @@ def kwargs_to_gravlens(deflector=None):
     elif deflector.profname == 'NFW':
 
         p0 = 'nfw'
-        p1 = args['theta_Rs'] * (4 * args['Rs'] * (1 + np.log(0.5))) ** -1
+        p1 = args['theta_Rs']*(4*args['Rs']*(1+np.log(0.5)))**-1
         p2 = args['center_x']
         p3 = args['center_y']
         p8 = args['Rs']
