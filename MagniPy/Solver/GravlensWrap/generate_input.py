@@ -93,7 +93,7 @@ class GravlensInput:
 
                         extra_commands['randomize'] += [ranges]
 
-                        extra_commands['randomize'] += ['set gridflag = 1\nset chimode = 1\nset restart = 3\n',
+                        extra_commands['randomize'] += ['set gridflag = 1\nset chimode = 1\nset restart = 2\n',
                             'setlens ' + self.outfile_path + self.filename + '_rand' +
                             str(self.dataindex) + '.start\n',
                             'optimize ' + self.outfile_path + self.identifier + str(0)]

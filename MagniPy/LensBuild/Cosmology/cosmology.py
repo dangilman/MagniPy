@@ -83,6 +83,15 @@ class Cosmo:
         T_xy = self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer)
         return T_xy.value
 
+    def D_co(self,z_observer, z):
+        """
+
+        :param z_observer: initial z
+        :param z: target z
+        :return: comoving distance between redshift z_observer and z
+        """
+        return self.cosmo._comoving_distance_z1z2(z_observer,z).value
+
     def D_xy(self, z_observer, z_source):
         """
 

@@ -92,7 +92,7 @@ class Magnipy:
         if filter_by_pos:
             _realizations = []
             for realization in realizations:
-                newrealization,newredshift = filter_by_position(realization,**spatial_kwargs)
+                newrealization,newredshift = filter_by_position(realization,cosmology=self.cosmo,**spatial_kwargs)
                 _realizations.append(newrealization)
             return _realizations
         else:

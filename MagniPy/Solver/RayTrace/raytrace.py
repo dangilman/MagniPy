@@ -138,7 +138,7 @@ class RayTrace:
 
             x_source = x_loc - xdef
             y_source = y_loc - ydef
-            
+
             magnification.append(np.sum(self.source.source_profile(betax=x_source,betay=y_source))*self.res**2)
 
         return np.array(magnification)

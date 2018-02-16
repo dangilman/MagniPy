@@ -281,7 +281,7 @@ def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
     return array2image(x_grid - shift), array2image(y_grid - shift)
 
 def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, masscut_low=10 ** 7,
-                       zmain=None):
+                       zmain=None, cosmology=None, srcx = 0, srcy = 0):
     """
     :param xsub: sub x coords
     :param ysub: sub y coords
@@ -292,21 +292,43 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
     """
     keep_index = []
 
+    xdefmain,ydefmain = x_filter - srcx, y_filter - srcy
+
     for index, deflector in enumerate(lens_components):
 
         if not deflector.is_subhalo:
             keep_index.append(index)
             continue
 
-        if zmain != deflector.redshift:
-            keep_index.append(index)
-            continue
+        if zmain > deflector.redshift:
+
+            """
+            for LOS halos; keep if it's rescaled position is near an image
+            """
+
+            #scale = np.ones_like(x_filter)*np.array(cosmology.D_co(0, deflector.redshift) * cosmology.D_d ** -1)
+            scale = np.ones_like(x_filter)
+
+        elif zmain < deflector.redshift:
+
+            """
+            for halos behind the main lens
+            """
+            scale = (x_filter * cosmology.D_d - xdefmain * cosmology.D_co(cosmology.zd,
+                                                                          deflector.redshift)) * cosmology.D_d ** -1
+            scale = np.ones_like(x_filter)
+
+        else:
+            """
+            for lens plane halos
+            """
+            scale = np.ones_like(x_filter)
 
         x, y = deflector.args['center_x'], deflector.args['center_y']
 
         for i in range(0, len(x_filter)):
 
-            dr = ((x - x_filter[i]) ** 2 + (y - y_filter[i]) ** 2) ** .5
+            dr = ((x - x_filter[i]*scale[i]) ** 2 + (y - y_filter[i]*scale[i]) ** 2) ** .5
 
             if dr <= mindis or deflector.other_args['mass'] >= masscut_low:
                 keep_index.append(index)

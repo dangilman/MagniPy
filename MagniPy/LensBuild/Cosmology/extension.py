@@ -5,26 +5,80 @@ import matplotlib.pyplot as plt
 from cosmology import ParticleMasses
 from scipy.integrate import quad
 from scipy.special import j1
+from scipy.special import hyp2f1
+from copy import deepcopy
 
 class CosmoExtension(Cosmo):
 
-    """
-    the (A,a,p) parameters from Despali 2016 used to normalized the mass function
-    """
-    A = 0.333
-    a = 0.794
-    p = 0.247
-
-    sigma8 = 0.8
-
-    def __init__(self,zd=0.5,zsrc=1.5):
+    def __init__(self,zd=0.5,zsrc=1.5,sigma_8=0.83,rescale_sigma8 = None, omega_M_void=0.035):
 
         Cosmo.__init__(self,zd=zd,zsrc=zsrc)
 
+        if rescale_sigma8 is True:
+            self.sigma_8 = self.rescale_sigma8(sigma_8,void_omega_M=omega_M_void)
+            self.delta_c = 1.62 # appropriate for an "open" universe in the void
+        else:
+            self.sigma_8 = sigma_8
+            self.delta_c = 1.68647 # appropriate for a flat universe
+
         self.cosmology = {'omega_M_0':self.cosmo.Om0,'omega_b_0':self.cosmo.Ob0,'omega_lambda_0':1-self.cosmo.Om0,
-                          'omega_n_0':0,'N_nu':1,'h':self.h,'sigma_8':self.sigma8,'n':1}
+                          'omega_n_0':0,'N_nu':1,'h':self.h,'sigma_8':self.sigma_8,'n':1}
 
         self.dm_particles = ParticleMasses(h=self.h)
+
+    def D_growth(self,z,omega_M,omega_L):
+
+        def f(x,OmO,OmL):
+            return (1+OmO*(x**-1 - 1)+OmL*(x**2-1))**-.5
+
+        a = (1+z)**-1
+
+        if omega_M+omega_L != 1:
+            return a * hyp2f1(3 ** -1, 1, 11 * 6 ** -1, a ** 3 * (1 - omega_M ** -1))
+        else:
+            prefactor = 5*omega_M*(2*a*f(a,omega_M,omega_L))**-1
+            return prefactor*quad(f,0,a,args=(omega_M,omega_L))[0]
+
+    def rescale_sigma8(self,sigma_8_init,void_omega_M):
+
+        """
+        :param sigma_8_init: initial cosmological sigma8 in the field
+        :param void_omega_M: the matter density in the void
+        :return: a rescaled sigma8 appropriate for an under dense region
+        Gottlober et al 2003
+        """
+
+        zi = 1000
+
+        D_ai = self.D_growth(zi,self.cosmo.Om0,self.cosmo.Ode0)
+        D_a1 = self.D_growth(0,self.cosmo.Om0,self.cosmo.Ode0)
+
+        D_void_ai = self.D_growth(zi, void_omega_M,self.cosmo.Ode0)
+        D_void_a1 = self.D_growth(0, void_omega_M, self.cosmo.Ode0)
+
+        return sigma_8_init*(D_ai*D_void_a1)*(D_a1*D_void_ai)**-1
+
+    def delta_lin(self,z):
+
+        fgrow = fgrowth(z,self.cosmology['omega_M_0'])
+
+        return self.delta_c*fgrow**-1
+
+    def sigma(self,r,z):
+
+        """
+
+        :param r: length scale in Mpc
+        :param z: redshift
+        :return:
+        """
+
+        return sigma_r(r,z,**self.cosmology)[0]
+
+    def sigma_inv_log(self, sigma):
+
+        return np.log(sigma ** -1)
+
 
     def transfer_WDM(self,k,z,m_hm,n=1.12):
 
@@ -46,122 +100,45 @@ class CosmoExtension(Cosmo):
             transfer_WDM = self.transfer_WDM(k,z,m_hm)
 
         return power_spectrum(k,z,**self.cosmology)*transfer_WDM**2
-    def sigma_numerical(self,r,z,m_hm):
 
-        def integrand(k,r,z,m_hm):
-            x = k*r
-
-            return (2*np.pi**2)**-1*k**2*self.power_spectrum(k,z,m_hm=m_hm)*(3*j1(x)*x**-1)**2
-        return 4.02885421452*quad(integrand,0,np.inf,args=(r,z,m_hm),limit=500)[0]
-
-    def sigma(self,r,z):
-
+    def mass2size_comoving(self, m, z):
         """
 
-        :param r: length scale in Mpc
+        :param m: mass in solar masses
         :param z: redshift
+        :return: comoving distance corresponding to a sphere of mass M computed w.r.t. background
+        """
+
+        return (3*m*(4*np.pi*self.rho_matter_crit(z))**-1)**(1*3**-1)
+
+    def mass2wavenumber_comoving(self, m, z):
+        """
+
+        :param m: mass in solar masses
+        :param z: redshift
+        :return: physical distance corresponding to a sphere of mass M computed w.r.t. background
+        """
+        return 2*np.pi* self.mass2size_comoving(m, z) ** -1
+
+    def DsigmaInv_DlnM(self, M, z):
+
+        sigma = self.sigma(self.mass2size_comoving(M, z), z)
+        sigma_inv_log = self.sigma_inv_log(sigma)
+
+        return np.polyval(np.polyder(np.polyfit(np.log10(M), sigma_inv_log, 2)), np.log10(M))
+
+    def differential_comoving_volume_cone(self, z, angle):
+        """
+        :param z: redshift
+        :param angle: in arcseconds
+        :param dz: redshift spacing
         :return:
         """
+        angle *= self.arcsec
 
-        return sigma_r(r,z,**self.cosmology)[0]
+        return self.cosmo.hubble_distance.value*np.pi*angle**2*(self.cosmo.comoving_distance(z).value)**2*self.cosmo.efunc(z)**-1
 
-    def delta_lin(self,z):
-
-        return 1.68647*fgrowth(z,self.cosmology['omega_M_0'])**-1
-
-    def Nu(self,r,z,m_hm=0):
-
-        """
-
-        :return: the parameter "nu" defined as the critical overdensity squared divided by sigma
-        """
-        if m_hm==0:
-            return (self.delta_lin(z)*self.sigma(r,z)**-1)**2
-        else:
-            return (self.delta_lin(z)*self.sigma_numerical(r,z,m_hm=m_hm)**-1)**2
-
-    def f_nu(self,nu):
-
-        nu_p = self.a*nu
-
-        return (self.A*nu**-1)*(1+nu_p**-self.p)*(nu_p*(2*np.pi)**-1)**.5*np.exp(-0.5*nu_p)
-
-    def dnu_dM(self,M,z):
-
-        """
-        calibrated for 5<M<10 solar masses
-        and
-        0<z<0.6
-
-        :param M: mass in solar masses
-        :return: d(nu) / dM
-        """
-
-        def a(z):
-            return 0.01667204 * z ** 2 - 0.03291005 * z + 0.02367598
-
-        def b(z):
-            return -0.3941185 * z ** 2 + 0.87143976 * z - 0.71429476
-
-        def c(z):
-            return 2.25605581 * z ** 2 - 5.86192512 * z + 5.45501308
-
-        def fnu_fit(logm, z):
-            return a(z) * logm ** 2 + b(z) * logm + c(z)
-
-        logM = np.log10(M)
-
-        return np.absolute(M**-1*(2*a(z)*logM + b(z)))
-
-    def mass2size_physical(self,m,z):
-        """
-
-        :param m: mass in solar masses
-        :param z: redshift
-        :return: physical distance corresponding to a sphere of mass M computed w.r.t. background
-        """
-        comoving = (1+z)**-1
-        #comoving=1
-        return comoving*(3*m*(4*np.pi*self.rho_matter_crit(z))**-1)**(1*3**-1)
-
-    def mass2wavenumber_physical(self,m,z):
-        """
-
-        :param m: mass in solar masses
-        :param z: redshift
-        :return: physical distance corresponding to a sphere of mass M computed w.r.t. background
-        """
-        return 2*np.pi*self.mass2size_physical(m,z)**-1
-
-    def f_nu_mass(self,m,z,m_hm=0):
-        nu = self.Nu(self.mass2size_physical(m,z),z,m_hm=m_hm)
-        return self.f_nu(nu)
-
-    def comoving_ShethTormen_density(self,M,z,m_hm=0):
-
-        return self.rho_matter_crit(z)*M**-1*self.dnu_dM(M,z)*self.f_nu_mass(M,z,m_hm=m_hm)
-
-    def physical_ShethTormen(self,M,z1,z2,angle):
-
-        zmin = 0.01
-        delta_z = z2-z1
-
-
-        if delta_z <= zmin:
-
-            return self.comoving_ShethTormen_density(M,z1)*self.comoving_volume_disk(z1,z2,angle)
-        else:
-
-            dz = 0.01
-            z = np.linspace(z1,z2,1+np.ceil((z2-z1)*dz**-1))
-
-            value = 0
-            for zval in z:
-                value+=self.comoving_ShethTormen_density(M,zval)*self.comoving_volume_disk(zval,zval+0.01,angle)
-            return value
-
-
-    def differential_comoving_volume_disk(self,z,angle):
+    def differential_comoving_volume_cylinder(self, z, angle):
         """
 
         :param z: redshift
@@ -171,18 +148,19 @@ class CosmoExtension(Cosmo):
         """
         angle *= self.arcsec
 
-        return self.cosmo.hubble_distance.value*np.pi*angle**2*self.cosmo.comoving_distance(z).value**2*self.cosmo.efunc(z)**-1
+        return self.cosmo.hubble_distance.value*np.pi*angle**2*self.D_d**2*self.cosmo.efunc(z)**-1
 
-    def comoving_volume_disk(self,z1,z2,angle):
+    def comoving_volume_cone(self, z1, z2, angle):
         """
-        computes the comoving volume in a surface specified by angle and z1,z2
+        computes the comoving volume in a surface specified by angle and z1,z2, is an expanding cylinder
         same as differential_comoving_volume_disk for z2-z1 ~ 0
         :param z1: start redshift
         :param z2: end redshift
         :return:
         """
         def integrand(z,angle):
-            return self.differential_comoving_volume_disk(z,angle)
+            return self.differential_comoving_volume_cone(z, angle)
+
         if isinstance(z2,float) or isinstance(z2,int):
             return quad(integrand,z1,z2,args=(angle))[0]
         else:
@@ -191,18 +169,22 @@ class CosmoExtension(Cosmo):
                 integral.append(quad(integrand,z1,value,args=(angle))[0])
             return np.array(integral)
 
+    def comoving_volume_cylinder(self,z1,z2,angle):
+        """
+        computes the comoving volume in a surface specified by angle, and z1 z2. is a cylinder
+        same as differential_comoving_volume_disk for z2-z1 ~ 0
+        :param z1: start redshift
+        :param z2: end redshift
+        :return:
+        """
+        f = sigma_r()
+        def integrand(z,angle):
+            return self.differential_comoving_volume_cylinder(z, angle)
 
-C = CosmoExtension()
-
-M = np.logspace(6,11,100)
-y1 = C.comoving_ShethTormen_density(M,0.6)
-
-plt.loglog(M,np.array(y1))
-
-vals = np.polyfit(np.log10(M),np.log10(y1),1)
-
-def fun(vals,M):
-    return 10**vals[1]*M**vals[0]
-plt.loglog(M,fun(vals,M),color='r')
-plt.show()
-print vals
+        if isinstance(z2,float) or isinstance(z2,int):
+            return quad(integrand,z1,z2,args=(angle))[0]
+        else:
+            integral = []
+            for value in z2:
+                integral.append(quad(integrand,z1,value,args=(angle))[0])
+            return np.array(integral)
