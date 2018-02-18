@@ -1,5 +1,4 @@
 import numpy as np
-from MagniPy.Solver.LenstronomyWrap.MultiLensWrap import MultiLensWrapper
 from source_models import *
 from MagniPy.util import *
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
@@ -42,10 +41,10 @@ class RayTrace:
 
             self.r_indicies = np.where(self.grid_rmax > (self.x_grid_0 ** 2 + self.y_grid_0 ** 2) ** .5)
 
-        if self.raytrace_with == 'lenstronomy':
-            self.multilens_wrap = MultiLensWrapper(gridsize=grid_rmax, res=res, source_shape=source_shape,
-                                                   astropy_class=self.cosmo.cosmo, z_source=self.cosmo.zsrc,
-                                                   source_size=kwargs['source_size'])
+        #if self.raytrace_with == 'lenstronomy':
+        #    self.multilens_wrap = MultiLensWrapper(gridsize=grid_rmax, res=res, source_shape=source_shape,
+        #                                           astropy_class=self.cosmo.cosmo, z_source=self.cosmo.zsrc,
+        #                                           source_size=kwargs['source_size'])
 
     def get_images(self,xpos,ypos,lens_system,print_mag=False):
 
@@ -94,7 +93,8 @@ class RayTrace:
                 return self._single_plane_trace(xpos,ypos,lens_system,print_mag)
         else:
             if self.raytrace_with == 'lenstronomy':
-                return self.multilens_wrap.compute_mag(xpos, ypos, lens_system)
+                raise ValueError("can't do that")
+                #return self.multilens_wrap.compute_mag(xpos, ypos, lens_system)
             else:
                 return self._mult_plane_trace(xpos,ypos,lens_system)
 
@@ -139,9 +139,18 @@ class RayTrace:
             x_source = x_loc - xdef
             y_source = y_loc - ydef
 
-            magnification.append(np.sum(self.source.source_profile(betax=x_source,betay=y_source))*self.res**2)
+            magnification.append(np.sum(self._eval_src(x_source,y_source)*self.res**2))
 
         return np.array(magnification)
+
+    def _eval_src(self,betax,betay):
+
+        #print 'lensmodel'
+        #plt.imshow(self.source.source_profile(betax=betax, betay=betay), origin='lower')
+        #plt.show()
+        #a = input('continue')
+
+        return self.source.source_profile(betax=betax,betay=betay)
 
     def _mult_plane_trace(self,xpos,ypos,lens_system):
 
@@ -162,7 +171,7 @@ class RayTrace:
 
             x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords,show=show)
 
-            magnification.append(np.sum(self.source.source_profile(betax=x_source, betay=y_source)) * self.res ** 2)
+            magnification.append(np.sum(self._eval_src(x_source, y_source) * self.res ** 2))
 
         return np.array(magnification)
 

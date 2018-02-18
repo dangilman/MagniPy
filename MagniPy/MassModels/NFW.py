@@ -3,7 +3,7 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class NFW:
 
-    def __init__(self,z1=0.5,z2=1.5,c_turnover=True,cosmology=None):
+    def __init__(self,z,c_turnover=True,cosmology=None):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
@@ -11,7 +11,7 @@ class NFW:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z1, zsrc=z2)
+            self.cosmology = Cosmo(zd=z, zsrc=1.5)
 
         else:
             self.cosmology = cosmology
@@ -23,7 +23,7 @@ class NFW:
         x_loc = x - center_x
         y_loc = y - center_y
 
-        r = (x_loc ** 2 + y_loc ** 2 + 1e-9)**.5
+        r = (x_loc ** 2 + y_loc ** 2 + 1e-12)**.5
         xnfw = r * Rs ** -1
 
         xmin = 0.00001

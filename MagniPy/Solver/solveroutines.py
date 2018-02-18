@@ -45,23 +45,27 @@ class SolveRoutines(Magnipy):
     def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
                           identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                           source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
-                          filter_by_position=False, polar_grid=False, filter_kwargs={}):
+                          filter_by_position=False, polar_grid=False, filter_kwargs={},solver_type='PROFILE_SHEAR'):
 
         # optimizes the macromodel first, then uses it to optimize with additional halos in the lens model
         assert method is not None
         assert method in ['lensmodel','lenstronomy']
 
-        _,macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel), datatofit=datatofit,
-                                                       multiplane=multiplane, method=method, ray_trace=ray_trace, sigmas=sigmas,
-                                                       identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
-                                                       source_shape=source_shape, source_size=source_size, print_mag=print_mag,
-                                                       filter_by_position=filter_by_position, filter_kwargs=filter_kwargs)
+        if method == 'lensmodel':
+            _,macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel), datatofit=datatofit,
+                                                           multiplane=multiplane, method=method, ray_trace=ray_trace, sigmas=sigmas,
+                                                           identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
+                                                           source_shape=source_shape, source_size=source_size, print_mag=print_mag,
+                                                           filter_by_position=filter_by_position, filter_kwargs=filter_kwargs)
+        else:
+            macromodel_init = macromodel
 
 
         optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
                                                        ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
                                                        source_shape=source_shape, source_size=source_size, print_mag=print_mag, raytrace_with=raytrace_with,
-                                                       filter_by_position=filter_by_position, polar_grid=polar_grid, filter_kwargs=filter_kwargs)
+                                                       filter_by_position=filter_by_position, polar_grid=polar_grid,
+                                                    filter_kwargs=filter_kwargs,solver_type=solver_type)
 
 
         return optimized_data,newsystem
@@ -92,7 +96,7 @@ class SolveRoutines(Magnipy):
     def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False, polar_grid=False,
-                      filter_kwargs={},which_chi = 'src'):
+                      filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR'):
 
         # uses source plane chi^2
 
@@ -117,7 +121,7 @@ class SolveRoutines(Magnipy):
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,
                                                     res=res, source_shape=source_shape, ray_trace=ray_trace,
                                                     source_size=source_size, print_mag=print_mag, opt_routine=basic_or_full,
-                                                    raytrace_with=raytrace_with, polar_grid=polar_grid)
+                                                    raytrace_with=raytrace_with, polar_grid=polar_grid,solver_type=solver_type)
 
         return optimized_data,model
 

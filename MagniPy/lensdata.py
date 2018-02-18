@@ -79,15 +79,43 @@ class Data:
         else:
             self.srcx,self.srcy = np.round(srcx,self.decimals_src),np.round(srcy,self.decimals_src)
 
-    def compute_flux_ratios(self,index=1):
+    def compute_flux_ratios(self,fluxes=None,index=1):
 
-        ref = float(self.m[index])
+        if fluxes is None:
 
-        m = np.array(self.m)*ref**-1
+            ref = float(self.m[index])
 
-        m = np.delete(m,index)
+            m = np.array(self.m)*ref**-1
 
-        self.fluxratios = m
+            m = np.delete(m,index)
+
+            self.fluxratios = m
+
+        else:
+
+            ref = float(fluxes[index])
+
+            fluxes = np.array(fluxes) * ref ** -1
+
+            return np.delete(fluxes, index)
+
+    def flux_anomaly(self, other_data=None, index=1, sum_in_quad=False):
+
+        other_mags = other_data.m
+
+        other = self.compute_flux_ratios(fluxes=other_mags)
+
+        self.compute_flux_ratios()
+
+        if sum_in_quad:
+
+            return (np.sum((self.fluxratios - other)**2*other**-2))**.5
+
+        else:
+
+            return np.absolute((self.fluxratios - other) * other ** -1)
+
+
 
     def all(self):
 

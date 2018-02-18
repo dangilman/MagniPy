@@ -1,12 +1,11 @@
-from lenstronomy.LensModel.lens_model import LensModel
-from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from MagniPy.util import polar_to_cart
 import numpy as np
 from copy import deepcopy
 # import the lens equation solver class (finding image plane positions of a source position)
-from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
-# import lens model solver with 4 image positions constrains
+from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LensModel.Solver.solver4point import Solver4Point
+from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
+import lenstronomy.Util.param_util as param_util
 
 class LenstronomyWrap:
 
@@ -80,9 +79,11 @@ class LenstronomyWrap:
                               redshift_list=self.redshift_list,
                               cosmo=self.cosmo, multi_plane=self.multiplane)
 
-    def update_lensparams(self, component_index, newkwargs):
+    def update_lensparams(self, newparams):
 
-        self.lens_model_params[component_index] = newkwargs
+        self.lens_model_params = newparams
+        print self.lens_model_params
+        a=input('continue')
 
     def reset_assemble(self):
 
@@ -95,20 +96,19 @@ class LenstronomyWrap:
 
         lensEquationSolver = LensEquationSolver(lensModel=lensmodel)
 
-        x_image,y_image =  lensEquationSolver.image_position_from_source(kwargs_lens=self.lens_model_params, sourcePos_x=xsrc, sourcePos_y=ysrc,
+        x_image,y_image =  lensEquationSolver.findBrightImage(kwargs_lens=self.lens_model_params, sourcePos_x=xsrc, sourcePos_y=ysrc,
                                                                          min_distance=self.min_distance, search_window=self.search_window,
                                                                          precision_limit=self.precision_limit, num_iter_max=self.num_iter_max)
 
         return x_image,y_image
 
-    def optimize_lensmodel(self,x_image,y_image):
+    def optimize_lensmodel(self, x_image, y_image, solver_type):
 
         self.model = self.get_lensmodel()
 
-        solver4Point = Solver4Point(lensModel=self.model, decoupling=True)
-        kwargs_fit = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
-                                                       xtol=self.xtol)[0]
-
+        solver4Point = Solver4Point(lensModel=self.model, decoupling=True, solver_type=solver_type)
+        kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
+                                                       xtol=self.xtol)
 
         return kwargs_fit
 

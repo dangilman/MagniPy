@@ -3,7 +3,7 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class TNFW:
 
-    def __init__(self,z1=0.5,z2=1.5,c_turnover=True,cosmology=None):
+    def __init__(self,z=None,c_turnover=True,cosmology=None):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
@@ -11,7 +11,7 @@ class TNFW:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z1, zsrc=z2)
+            self.cosmology = Cosmo(zd=z, zsrc=1.5)
         else:
             self.cosmology = cosmology
 

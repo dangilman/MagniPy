@@ -100,7 +100,7 @@ class Magnipy:
 
     def optimize_4imgs(self, lens_systems=None, data2fit=[], method=str, sigmas=None, identifier='', opt_routine=None,
                        ray_trace = True, return_positions = False, grid_rmax=int, res=0.0005, source_shape='GAUSSIAN',
-                       source_size=float, print_mag=False, raytrace_with=None, polar_grid=False):
+                       source_size=float, print_mag=False, raytrace_with=None, polar_grid=False, solver_type=None):
 
         # opt_routine:
         # basic: gridflag = 0, chimode = 0; optimizes in source plane, fast
@@ -190,15 +190,18 @@ class Magnipy:
 
                 lenstronomywrap.assemble(system)
 
-                #print lens_systems[0].lens_components[0].lenstronomy_args
+                kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1], solver_type=solver_type)
 
+                optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                                newkwargs=kwargs_fit[0], method='lenstronomy'))
 
-                kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1])
+                lenstronomywrap.update_lensparams(newparams=kwargs_fit)
 
-                optimized_systems.append(self.update_system(lens_system=lens_systems[i],component_index=0,
-                                                            newkwargs=kwargs_fit,method='lenstronomy'))
+                if solver_type=='PROFILE_SHEAR':
 
-                lenstronomywrap.update_lensparams(component_index=0, newkwargs=kwargs_fit)
+                    optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                                newkwargs=kwargs_fit[1], method='lenstronomy'))
+
 
                 lensModel = lenstronomywrap.model
 
@@ -273,8 +276,8 @@ class Magnipy:
 
                     data[i].set_mag(fluxes)
 
-            if ray_trace:
-                print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
+            #if ray_trace:
+            #    print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
 
             if self.clean_up:
                 delete_dir(self.paths.gravlens_input_path_dump)
@@ -336,6 +339,8 @@ class Magnipy:
         lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomy_wrap_instance.lens_model_list,
                                                   z_source=zsrc, redshift_list=lenstronomy_wrap_instance.redshift_list,
                                                   cosmo=cosmology, multi_plane=multiplane)
+
+        gridsize*=2
 
         fluxes = lensModelExtensions.magnification_finite(x_pos=xpos,
                                                           y_pos=ypos,

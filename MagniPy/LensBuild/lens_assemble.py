@@ -124,7 +124,6 @@ class Deflector:
             except:
                 return xdef,ydef
 
-
     def update(self, method=None,**newparams):
 
         assert method is not None
@@ -134,6 +133,14 @@ class Deflector:
             del self.args['shear']
         if 'shear_theta' in self.args:
             del self.args['shear_theta']
+
+
+        if 'e1' in newparams and 'e2' in newparams:
+
+            s,spa = cart_to_polar(newparams['e1'],newparams['e2'])
+
+            self.shear = s
+            self.shear_theta = spa
 
         if self.has_shear:
 

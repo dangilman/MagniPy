@@ -107,7 +107,7 @@ class HaloGen:
                     else:
                         c_turnover = True
 
-                    lensmod = TNFW.TNFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover, cosmology=self.cosmology)
+                    lensmod = TNFW.TNFW(z=zplane, c_turnover=c_turnover)
 
                     subhalo_args['trunc'] = self.rtrunc[i]
                     subhalo_args['mhm'] = model['args'][sub_mod_index][0]
@@ -119,7 +119,7 @@ class HaloGen:
                     else:
                         c_turnover = True
 
-                    lensmod = NFW.NFW(z1=self.zd, z2=self.zsrc, c_turnover=c_turnover, cosmology=self.cosmology)
+                    lensmod = NFW.NFW(z=zplane, c_turnover=c_turnover)
 
                     subhalo_args['mhm'] = model['args'][sub_mod_index][0]
 
