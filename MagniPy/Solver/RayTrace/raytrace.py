@@ -27,9 +27,6 @@ class RayTrace:
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
 
-        if self.multiplane:
-            self.raytrace_with = 'lenstronomy'
-
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
         else:
@@ -37,7 +34,7 @@ class RayTrace:
 
         self.cosmo = cosmology
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
-                                                   -np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
+                                                   np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
 
 
@@ -147,10 +144,7 @@ class RayTrace:
     def _eval_src(self,betax,betay):
 
         #print 'lensmodel'
-        #plt.imshow(self.source.source_profile(betax=betax, betay=betay), origin='lower')
-        #plt.show()
-        #a = input('continue')
-
+       
         return self.source.source_profile(betax=betax,betay=betay)
 
     def _mult_plane_trace(self,xpos,ypos,lens_system):
@@ -167,38 +161,11 @@ class RayTrace:
             xcoords = self.x_grid_0 + xpos[i]
             ycoords = self.y_grid_0 + ypos[i]
 
-            x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords,show=show)
+            x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords)
 
             magnification.append(np.sum(self._eval_src(x_source, y_source) * self.res ** 2))
 
         return np.array(magnification)
-
-    def _comoving2angle(self,x,y,z):
-
-        dt = self.cosmo.T_xy(0,z)
-        return x*dt**-1,y*dt**-1
-
-    def _reduced2phys(self,reduced_angle,z,zsrc):
-
-        return reduced_angle*self.cosmo.D_xy(0,zsrc)*\
-               self.cosmo.D_xy(z,zsrc)**-1
-
-    def add_deflection(self, x, y, defx, defy, lens, z, is_shear=False,show=False):
-
-        xangle,yangle = self._comoving2angle(x,y,z)
-
-        dx_angle, dy_angle = lens.lensing.def_angle(xangle, yangle, **lens.args)
-
-        if lens.has_shear:
-
-            dx_angle_shear,dy_angle_shear = lens.Shear.def_angle(xangle,yangle,lens.shear,lens.shear_theta)
-            dx_angle += dx_angle_shear
-            dy_angle += dy_angle_shear
-
-        dx_phys = self._reduced2phys(dx_angle,z,self.cosmo.zsrc)
-        dy_phys = self._reduced2phys(dy_angle, z, self.cosmo.zsrc)
-
-        return defx - dx_phys, defy - dy_phys
 
     def _index_ordering(self, redshift_list):
         """
@@ -216,38 +183,75 @@ class RayTrace:
 
         return x+alpha_x*DT,y+alpha_y*DT
 
-    def _multi_plane_shoot(self, lens_system, theta_x, theta_y, show):
+    def _comoving2angle(self,d,z):
+
+        return d*self.cosmo.D_A(0,z)**-1
+
+    def _reduced2phys(self,reduced,z):
+
+        scale = self.cosmo.D_s*self.cosmo.D_A(0,z)**-1
+
+        return reduced*scale
+
+    def _multi_plane_shoot(self, lens_system, x_obs, y_obs):
 
         sorted_indexes = self._index_ordering(lens_system.redshift_list)
 
+        x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
+
+        xdef_angle,ydef_angle = np.zeros_like(x_obs),np.zeros_like(y_obs)
+
         zstart = 0
 
-        alpha_x,alpha_y = theta_x, theta_y
+        for i,deflector in enumerate(lens_system.lens_components):
 
-        x,y = np.zeros_like(alpha_x),np.zeros_like(alpha_y)
+            z = sorted_indexes[i]
 
-        for i,index in enumerate(sorted_indexes):
+            D_to_plane = self.cosmo.T_xy(zstart,z)
 
-            z = lens_system.redshift_list[index]
+            x_on_plane,y_on_plane = x + D_to_plane*xdef_angle,y+D_to_plane*ydef_angle
 
-            lens = lens_system.lens_components[index]
+            x_angle_plane = self._comoving2angle(x_on_plane,z)
+            y_angle_plane = self._comoving2angle(y_on_plane,z)
 
-            DT = self.cosmo.T_xy(zstart, z)
+            xdef_new,ydef_new = deflector.lensing.def_angle(x_angle_plane,y_angle_plane,**deflector.args)
 
-            x, y = self._ray_step(x,y,alpha_x,alpha_y,DT)
+            if deflector.has_shear:
 
-            alpha_x,alpha_y = self.add_deflection(x,y,alpha_x,
-                                                            alpha_y,lens,z)
+                xshear,yshear = deflector.Shear(x_angle_plane,y_angle_plane,deflector.shear,deflector.shear_theta)
+
+                xdef_new += xshear
+                ydef_new += yshear
+
+            xdef_physical = self._reduced2phys(xdef_new, z)
+            ydef_physical = self._reduced2phys(ydef_new, z)
+
+            xdef_angle -= xdef_physical
+            ydef_angle -= ydef_physical
 
             zstart = z
 
-        DT = self.cosmo.T_xy(zstart, self.cosmo.zsrc)
+        D_to_src = self.cosmo.T_xy(zstart,self.cosmo.zsrc)
 
-        x, y = x + alpha_x * DT, y + alpha_y * DT
+        x_on_src,y_on_src = x + D_to_src*xdef_angle, y + D_to_src*ydef_angle
 
-        betax,betay = self._comoving2angle(x,y,self.cosmo.zsrc)
+        betax = self._comoving2angle(x_on_src,self.cosmo.zsrc)
+        betay = self._comoving2angle(y_on_src, self.cosmo.zsrc)
 
         return betax,betay
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

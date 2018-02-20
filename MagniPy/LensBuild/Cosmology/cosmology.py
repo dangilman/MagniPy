@@ -86,8 +86,9 @@ class Cosmo:
         """
         transverse comoving distance in units of Mpc
         """
-        T_xy = self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer)
-        return T_xy.value
+        T_xy = self.cosmo.comoving_transverse_distance(z_source).value - \
+               self.cosmo.comoving_transverse_distance(z_observer).value
+        return T_xy
 
     def D_co(self,z_observer, z):
         """
