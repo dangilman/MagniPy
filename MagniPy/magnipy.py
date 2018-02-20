@@ -26,7 +26,7 @@ class Magnipy:
 
         self.zmain = zmain
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc, cosmo='FlatLambdaCDM')
+        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc)
 
         self.cosmo = Cosmo(zd=zmain,zsrc=zsrc)
         self.clean_up = clean_up
@@ -233,7 +233,7 @@ class Magnipy:
             return data, optimized_systems
 
     def solve_4imgs(self, lens_systems = None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
-                    res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False, time_ray_trace=False):
+                    res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False, raytrace_with=''):
 
 
         if method == 'lensmodel':
@@ -272,7 +272,7 @@ class Magnipy:
                     fluxes = self.do_raytrace_lensmodel(lens_system=system, xpos=data[i].x, ypos=data[i].y, xsrc=srcx,
                                                         ysrc=srcy, multiplane=lens_systems[i].multiplane, grid_rmax=grid_rmax,
                                                         res=res, source_shape=source_shape, source_size=source_size,
-                                                        cosmology = self.cosmo, zsrc=self.zsrc)
+                                                        cosmology = self.cosmo, zsrc=self.zsrc, raytrace_with= raytrace_with)
 
                     data[i].set_mag(fluxes)
 
@@ -340,7 +340,6 @@ class Magnipy:
                                                   z_source=zsrc, redshift_list=lenstronomy_wrap_instance.redshift_list,
                                                   cosmo=cosmology, multi_plane=multiplane)
 
-        gridsize*=2
 
         fluxes = lensModelExtensions.magnification_finite(x_pos=xpos,
                                                           y_pos=ypos,

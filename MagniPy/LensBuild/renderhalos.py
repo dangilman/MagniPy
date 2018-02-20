@@ -10,15 +10,13 @@ from MagniPy.LensBuild.lens_assemble import Deflector
 
 class HaloGen:
 
-    def __init__(self,z_l=0.5,z_s=1.5,cosmo='FlatLambdaCDM',use_lenstronomy_halos=False):
+    def __init__(self,z_l=0.5,z_s=1.5):
 
-        self.cosmology = Cosmo(zd=z_l,zsrc=z_s,cosmology=cosmo)
+        self.cosmology = Cosmo(zd=z_l,zsrc=z_s)
 
         self.substrucutre_initialized = False
 
         self.realizations = []
-
-        self.use_lenstronomy_halos = use_lenstronomy_halos
 
         self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
@@ -141,7 +139,7 @@ class HaloGen:
 
                     raise ValueError('profile '+prof+' not valid, supply valid mass profile for halos')
 
-                subhalos.append(Deflector(use_lenstronomy_halos = self.use_lenstronomy_halos, subclass=lensmod, x=self.xpos[i],
+                subhalos.append(Deflector(subclass=lensmod, x=self.xpos[i],
                                   y=self.ypos[i], mass=self.masses[i], redshift=zplane, is_subhalo=True, **subhalo_args))
 
         else:

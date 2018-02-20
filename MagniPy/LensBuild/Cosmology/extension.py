@@ -134,9 +134,25 @@ class CosmoExtension(Cosmo):
         :param dz: redshift spacing
         :return:
         """
-        angle *= self.arcsec
 
-        return self.cosmo.hubble_distance.value*np.pi*angle**2*(self.cosmo.comoving_distance(z).value)**2*self.cosmo.efunc(z)**-1
+        if z <= self.zd:
+
+            angle *= self.arcsec
+
+            base = angle*self.cosmo.comoving_distance(z).value
+
+            return np.pi*base**2*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
+
+        else:
+
+            reduced_Rein_deflection = 1 # arcsec
+
+            physical_Rein_deflection = reduced_Rein_deflection*self.D_s * self.D_ds ** -1
+
+            base = (self.D_d*angle - physical_Rein_deflection*self.D_A(self.zd,z))*self.arcsec
+
+            return np.pi*base**2*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
+
 
     def differential_comoving_volume_cylinder(self, z, angle):
         """
@@ -159,6 +175,7 @@ class CosmoExtension(Cosmo):
         :return:
         """
         def integrand(z,angle):
+
             return self.differential_comoving_volume_cone(z, angle)
 
         if isinstance(z2,float) or isinstance(z2,int):
@@ -166,6 +183,7 @@ class CosmoExtension(Cosmo):
         else:
             integral = []
             for value in z2:
+
                 integral.append(quad(integrand,z1,value,args=(angle))[0])
             return np.array(integral)
 
@@ -177,7 +195,7 @@ class CosmoExtension(Cosmo):
         :param z2: end redshift
         :return:
         """
-        f = sigma_r()
+
         def integrand(z,angle):
             return self.differential_comoving_volume_cylinder(z, angle)
 

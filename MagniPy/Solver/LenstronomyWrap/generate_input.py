@@ -5,6 +5,7 @@ from copy import deepcopy
 from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LensModel.Solver.solver4point import Solver4Point
 from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
+from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 import lenstronomy.Util.param_util as param_util
 
 class LenstronomyWrap:
@@ -82,8 +83,6 @@ class LenstronomyWrap:
     def update_lensparams(self, newparams):
 
         self.lens_model_params = newparams
-        print self.lens_model_params
-        a=input('continue')
 
     def reset_assemble(self):
 
@@ -109,7 +108,7 @@ class LenstronomyWrap:
         solver4Point = Solver4Point(lensModel=self.model, decoupling=True, solver_type=solver_type)
         kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
                                                        xtol=self.xtol)
-
+        print acc
         return kwargs_fit
 
 

@@ -10,7 +10,7 @@ class SolveRoutines(Magnipy):
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                             ray_trace=None, identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None, filter_subhalos=False,
-                            filter_by_pos=False, filter_kwargs={}):
+                            filter_by_pos=False, filter_kwargs={},raytrace_with=''):
 
 
         lens_systems = []
@@ -35,7 +35,7 @@ class SolveRoutines(Magnipy):
 
         data = self.solve_4imgs(lens_systems=lens_systems, method=method, identifier=identifier, srcx=srcx, srcy=srcy,
                                 grid_rmax=grid_rmax,
-                                res=res, source_shape=source_shape, ray_trace=ray_trace, source_size=source_size)
+                                res=res, source_shape=source_shape, ray_trace=ray_trace, raytrace_with=raytrace_with, source_size=source_size)
 
         if sort_by_pos is not None:
             data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)

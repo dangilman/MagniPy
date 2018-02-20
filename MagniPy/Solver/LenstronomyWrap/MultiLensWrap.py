@@ -1,10 +1,10 @@
-from generate_input import LenstronomyWrap
-from generate_input import LensModelExtensions
+from MagniPy.Solver.LenstronomyWrap.generate_input import LenstronomyWrap
+from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 import numpy as np
 
 class MultiLensWrapper:
 
-    def __init__(self,gridsize=int,res=0.0005,source_shape='',astropy_class=None,z_source=None,source_size=None):
+    def __init__(self,gridsize=int,res=0.0005,source_shape='',multiplane=True,astropy_class=None,z_source=None,source_size=None):
 
         self.gridsize = gridsize
         self.res = res
@@ -12,10 +12,11 @@ class MultiLensWrapper:
         self.astropy_class = astropy_class
         self.z_source = z_source
         self.source_size = source_size
+        self.multiplane = multiplane
 
     def compute_mag(self,xpos,ypos,lens_system,print_mag=False):
 
-        lenstronomywrap = LenstronomyWrap(multiplane=lens_system.multiplane, cosmo=self.astropy_class,
+        lenstronomywrap = LenstronomyWrap(multiplane=self.multiplane, cosmo=self.astropy_class,
                                                z_source=self.z_source)
 
         lenstronomywrap.assemble(lens_system)

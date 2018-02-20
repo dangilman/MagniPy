@@ -1,6 +1,7 @@
 from scipy.integrate import quad
 import numpy as np
-import astropy.cosmology as C
+from astropy.cosmology import WMAP9 as cosmo
+
 
 class Cosmo:
 
@@ -16,22 +17,27 @@ class Cosmo:
 
     density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3 # convert [g/cm^3] to [solarmasses / Mpc^3]
 
-    def __init__(self,zd=0.5,zsrc = 1.5,cosmology = 'FlatLambdaCDM'):
+    def __init__(self,zd=0.5,zsrc = 1.5):
 
-        if cosmology == 'FlatLambdaCDM':
+        self.zd,self.zsrc = zd,zsrc
 
-            self.zd,self.zsrc = zd,zsrc
-            self.cosmo = C.FlatLambdaCDM(H0=70, Om0=0.3, Ob0=0.045)
-            self.h = self.cosmo.h
-            self.epsilon_crit = self.get_epsiloncrit(zd,zsrc)
-            self.sigmacrit = self.epsilon_crit*(0.001)**2*self.kpc_per_asec(zd)**2
-            self.rhoc_physical = self.cosmo.critical_density0.value * self.density_to_MsunperMpc # [M_sun Mpc^-3]
-            self.rhoc = self.rhoc_physical*self.h**-2
-            self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
-            self.kpc_convert = self.kpc_per_asec(zd)
-            self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
-        else:
-            raise AssertionError('other cosmologies not yet implemented')
+        self.cosmo = cosmo
+
+        self.h = self.cosmo.h
+
+        self.epsilon_crit = self.get_epsiloncrit(zd,zsrc)
+
+        self.sigmacrit = self.epsilon_crit*(0.001)**2*self.kpc_per_asec(zd)**2
+
+        self.rhoc_physical = self.cosmo.critical_density0.value * self.density_to_MsunperMpc # [M_sun Mpc^-3]
+
+        self.rhoc = self.rhoc_physical*self.h**-2
+
+        self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
+
+        self.kpc_convert = self.kpc_per_asec(zd)
+
+        self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
 
     def D_A(self,z1,z2):
 

@@ -5,6 +5,7 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.Profiles.sie import SPEMD
 from lenstronomy.LensModel.Profiles.nfw import NFW
+from MagniPy.Solver.LenstronomyWrap import generate_input,MultiLensWrap
 
 class RayTrace:
 
@@ -12,13 +13,13 @@ class RayTrace:
                  polar_grid=False, **kwargs):
 
         """
-
         :param xsrc: x coordinate for grid center (arcseconds)
         :param ysrc: ""
         :param multiplane: multiple lens plane flag
         :param size: width of the box in asec
         :param res: pixel resolution asec per pixel
         """
+        self.raytrace_with = raytrace_with
 
         self.polar_grid = polar_grid
         self.grid_rmax = grid_rmax
@@ -26,25 +27,26 @@ class RayTrace:
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
 
+        if self.multiplane:
+            self.raytrace_with = 'lenstronomy'
+
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
         else:
             raise ValueError('other source models not yet implemented')
 
         self.cosmo = cosmology
-        self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, self.grid_rmax*res**-1),
-                                                   -np.linspace(-self.grid_rmax, self.grid_rmax, self.grid_rmax*res**-1))
+        self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
+                                                   -np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-        self.raytrace_with = raytrace_with
 
-        if self.polar_grid:
 
-            self.r_indicies = np.where(self.grid_rmax > (self.x_grid_0 ** 2 + self.y_grid_0 ** 2) ** .5)
+        if self.raytrace_with == 'lenstronomy':
+            self.multlenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
+                                                               z_source=self.cosmo.zsrc,source_shape=source_shape,
+                                                               gridsize=2*self.grid_rmax,res=self.res,
+                                                               source_size=kwargs['source_size'])
 
-        #if self.raytrace_with == 'lenstronomy':
-        #    self.multilens_wrap = MultiLensWrapper(gridsize=grid_rmax, res=res, source_shape=source_shape,
-        #                                           astropy_class=self.cosmo.cosmo, z_source=self.cosmo.zsrc,
-        #                                           source_size=kwargs['source_size'])
 
     def get_images(self,xpos,ypos,lens_system,print_mag=False):
 
@@ -87,14 +89,13 @@ class RayTrace:
 
         if self.multiplane is False:
             if self.raytrace_with == 'lenstronomy':
-                return self.multilens_wrap.compute_mag(xpos,ypos,lens_system)
+                return self.multlenswrap.compute_mag(xpos,ypos,lens_system)
 
             else:
                 return self._single_plane_trace(xpos,ypos,lens_system,print_mag)
         else:
             if self.raytrace_with == 'lenstronomy':
-                raise ValueError("can't do that")
-                #return self.multilens_wrap.compute_mag(xpos, ypos, lens_system)
+                return self.multlenswrap.compute_mag(xpos, ypos, lens_system)
             else:
                 return self._mult_plane_trace(xpos,ypos,lens_system)
 
@@ -162,12 +163,9 @@ class RayTrace:
             else:
                 show=False
 
+
             xcoords = self.x_grid_0 + xpos[i]
             ycoords = self.y_grid_0 + ypos[i]
-
-            if self.polar_grid:
-                xcoords = xcoords[self.r_indicies]
-                ycoords = ycoords[self.r_indicies]
 
             x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords,show=show)
 
@@ -202,13 +200,25 @@ class RayTrace:
 
         return defx - dx_phys, defy - dy_phys
 
+    def _index_ordering(self, redshift_list):
+        """
+
+        :param redshift_list: list of redshifts
+        :return: indexes in acending order to be evaluated (from z=0 to z=z_source)
+        """
+        redshift_list = np.array(redshift_list)
+        sort_index = np.argsort(redshift_list[redshift_list < self.cosmo.zsrc])
+        if len(sort_index) < 1:
+            raise ValueError("There is no lens object between observer at z=0 and source at z=%s" % self._z_source)
+        return sort_index
+
     def _ray_step(self,x,y,alpha_x,alpha_y,DT):
 
         return x+alpha_x*DT,y+alpha_y*DT
 
     def _multi_plane_shoot(self, lens_system, theta_x, theta_y, show):
 
-        sorted_indexes = np.argsort(lens_system.redshift_list)
+        sorted_indexes = self._index_ordering(lens_system.redshift_list)
 
         zstart = 0
 
@@ -238,11 +248,6 @@ class RayTrace:
         betax,betay = self._comoving2angle(x,y,self.cosmo.zsrc)
 
         return betax,betay
-
-
-
-
-
 
 
 

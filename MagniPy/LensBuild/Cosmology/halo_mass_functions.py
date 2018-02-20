@@ -55,19 +55,58 @@ class ShethTormen(CosmoExtension):
 
         return self.rho_matter_crit(z) * M ** -2 * self.f_sigma(sigma,z,neff) * self.DsigmaInv_DlnM(sigma,z)
 
-    def Dn_DM(self,M,z,dz=0.05,delta_z_min=0.05):
+    def Dn_DM_perdz(self,M,z,dz=0.05,delta_z_min=0.05,cone_base=3):
 
         assert isinstance(z,float) or isinstance(z,int)
         assert dz <= delta_z_min
 
-        return self.Dn_DM_density(M, z) * self.comoving_volume_cone(z, z + dz, 3)
+        return self.Dn_DM_density(M, z) * self.comoving_volume_cone(z, z + dz, cone_base)
+
+    def Dn_DM_integrated_z1z2(self,M,z1,z2,delta_z_min=0.05,cone_base=3):
+
+        if z1<1e-4:
+            z1 = 1e-4
+
+        if z2 - z1 < delta_z_min:
+            return self.Dn_DM_density(M, z1) * self.comoving_volume_cone(z1, z2 - z1, cone_base)
+
+        N = int((z2 - z1)*delta_z_min**-1 + 1)
+
+        zvals = np.linspace(z1,z2,N)
+        dz = zvals[1] - zvals[0]
+        integral = 0
+
+        for z in zvals:
+
+            integral += self.Dn_DM_density(M, z) * self.comoving_volume_cone(z, z + dz, cone_base)
+        return integral
+
+cols = ['k','0.1','0.3','0.5','0.7','0.9','r','g','b','y']
 
 if False:
-    M = np.logspace(6,10)
-    m = ShethTormen()
-    z2 = 0.4
-    dndm = m.Dn_DM_density(M,0)
-    dndm2 = m.Dn_DM_density(M,z2)
-    plt.loglog(M,dndm,color='k')
-    plt.loglog(M,dndm2,color='r')
+    zlens = np.linspace(0.5,1.5,8)
+    M = np.logspace(6, 10) * 0.7 ** -1
+
+    for k,z in enumerate(zlens):
+
+        m = ShethTormen(zd=0.2, zsrc=z)
+
+        dndm_front = m.Dn_DM_integrated_z1z2(M,1e-5,0.2)
+
+        dndm_back = m.Dn_DM_integrated_z1z2(M,0.2,z)
+
+        coeffs = np.polyfit(np.log10(M),np.log10(dndm_front),1)
+
+        print 'zlens, zsrc:'
+        print z, 1.5
+
+        print 'front:', mass_function_moment(10**coeffs[1],coeffs[0],0,10**7,10**10)
+
+        coeffs = np.polyfit(np.log10(M), np.log10(dndm_back), 1)
+
+        print 'back: ',mass_function_moment(10 ** coeffs[1], coeffs[0], 0, 10 ** 7, 10 ** 10)
+
+
+
+    #plt.loglog(M,dndm2,color='r')
     plt.show()

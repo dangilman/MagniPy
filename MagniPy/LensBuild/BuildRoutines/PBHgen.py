@@ -1,6 +1,6 @@
 import numpy as np
 from MagniPy.MassModels.PointMass import PointMass
-from MagniPy.LensBuild.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.LensBuild.lens_assemble import Deflector
 
 def number_per_image(f_pbh=float, cosmology_class=classmethod, M=float, R_ein=float, distance_factor=25):
