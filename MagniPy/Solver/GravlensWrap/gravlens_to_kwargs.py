@@ -83,5 +83,13 @@ def kwargs_to_gravlens(deflector=None):
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
 
+    elif deflector.profname =='PJaffe':
+
+        p0 = 'pjaffe'
+        p1 = str(args['b'])
+        p2 = str(args['center_x'])
+        p3 = str(args['center_y'])
+        p8 = str(args['rt'])
+
     return str(p0) + ' ' + str(p1) + ' ' + str(p2) + ' ' + str(p3) + ' ' + str(p4) + ' ' + str(p5) + ' ' + \
            str(p6) + ' ' + str(p7) + ' ' + str(p8) + ' ' + str(p9) + ' ' + str(p10)+' '

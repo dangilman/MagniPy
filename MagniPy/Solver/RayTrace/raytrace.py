@@ -45,58 +45,25 @@ class RayTrace:
                                                                source_size=kwargs['source_size'])
 
 
-    def get_images(self,xpos,ypos,lens_system,print_mag=False):
+    def get_images(self,xpos,ypos,lens_system,**kwargs):
 
-        assert self.multiplane is False
+        return self.compute_mag(xpos,ypos,lens_system,**kwargs)
 
-        images,magnifications = [],[]
-
-        for i in range(0,len(xpos)):
-
-            x_loc = xpos[i]*np.ones_like(self.x_grid_0)+self.x_grid_0
-            y_loc = ypos[i]*np.ones_like(self.y_grid_0)+self.y_grid_0
-
-            xdef = np.zeros_like(x_loc)
-            ydef = np.zeros_like(y_loc)
-
-            for count,deflector in enumerate(lens_system.lens_components):
-
-                xplus,yplus = deflector.lensing.def_angle(x_loc,y_loc,**deflector.args)
-
-                if deflector.has_shear:
-
-                    shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
-
-                    xplus += shearx
-                    yplus += sheary
-
-                xdef+=xplus
-                ydef+=yplus
-
-            x_source = x_loc - xdef
-            y_source = y_loc - ydef
-
-            source_light = self.source.source_profile(betax=x_source, betay=y_source)
-            magnifications = np.sum(source_light)*self.res**2
-            image = source_light * (int(np.shape(source_light)[0]) ** 2 * np.sum(source_light)) ** -1
-
-        return magnifications,image
-
-    def compute_mag(self,xpos,ypos,lens_system,print_mag=False):
+    def compute_mag(self,xpos,ypos,lens_system,print_mag=False,**kwargs):
 
         if self.multiplane is False:
             if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos,ypos,lens_system)
+                return self.multlenswrap.compute_mag(xpos,ypos,lens_system,)
 
             else:
-                return self._single_plane_trace(xpos,ypos,lens_system,print_mag)
+                return self._single_plane_trace(xpos,ypos,lens_system,print_mag,**kwargs)
         else:
             if self.raytrace_with == 'lenstronomy':
                 return self.multlenswrap.compute_mag(xpos, ypos, lens_system)
             else:
-                return self._mult_plane_trace(xpos,ypos,lens_system)
+                return self._mult_plane_trace(xpos,ypos,lens_system,**kwargs)
 
-    def _single_plane_trace(self,xpos,ypos,lens_system,print_mag=False):
+    def _single_plane_trace(self,xpos,ypos,lens_system,print_mag=False,return_image=False,which_image=None):
 
         magnification = []
 
@@ -137,14 +104,21 @@ class RayTrace:
             x_source = x_loc - xdef
             y_source = y_loc - ydef
 
+            if return_image:
+
+                image = self._eval_src(x_source,y_source)
+
             magnification.append(np.sum(self._eval_src(x_source,y_source)*self.res**2))
 
-        return np.array(magnification)
+        if return_image:
+            return np.array(magnification),image
+        else:
+            return np.array(magnification)
 
     def _eval_src(self,betax,betay):
 
         #print 'lensmodel'
-       
+
         return self.source.source_profile(betax=betax,betay=betay)
 
     def _mult_plane_trace(self,xpos,ypos,lens_system):
@@ -152,11 +126,6 @@ class RayTrace:
         magnification = []
 
         for i in range(0,len(xpos)):
-            if i==0:
-                show=True
-            else:
-                show=False
-
 
             xcoords = self.x_grid_0 + xpos[i]
             ycoords = self.y_grid_0 + ypos[i]
@@ -183,15 +152,19 @@ class RayTrace:
 
         return x+alpha_x*DT,y+alpha_y*DT
 
-    def _comoving2angle(self,d,z):
+    def _comoving2angle(self,d,z,zstart=0):
 
-        return d*self.cosmo.D_A(0,z)**-1
+        return d*self.cosmo.T_xy(zstart,z)**-1
 
     def _reduced2phys(self,reduced,z):
 
-        scale = self.cosmo.D_s*self.cosmo.D_A(0,z)**-1
+        scale = self.cosmo.D_s*self.cosmo.D_A(z,self.cosmo.zsrc)**-1
 
         return reduced*scale
+
+    def _next_plane(self,x,y,xdef,ydef,d):
+
+        return x + xdef*d, y +ydef*d
 
     def _multi_plane_shoot(self, lens_system, x_obs, y_obs):
 
@@ -199,26 +172,26 @@ class RayTrace:
 
         x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
 
-        xdef_angle,ydef_angle = np.zeros_like(x_obs),np.zeros_like(y_obs)
+        xdef_angle,ydef_angle = x_obs,y_obs
 
         zstart = 0
 
         for i,deflector in enumerate(lens_system.lens_components):
 
-            z = sorted_indexes[i]
+            z = lens_system.redshift_list[sorted_indexes[i]]
 
             D_to_plane = self.cosmo.T_xy(zstart,z)
 
-            x_on_plane,y_on_plane = x + D_to_plane*xdef_angle,y+D_to_plane*ydef_angle
+            x,y = self._next_plane(x,y,xdef_angle,ydef_angle,D_to_plane)
 
-            x_angle_plane = self._comoving2angle(x_on_plane,z)
-            y_angle_plane = self._comoving2angle(y_on_plane,z)
+            x_angle_plane = self._comoving2angle(x,z)
+            y_angle_plane = self._comoving2angle(y,z)
 
             xdef_new,ydef_new = deflector.lensing.def_angle(x_angle_plane,y_angle_plane,**deflector.args)
 
             if deflector.has_shear:
 
-                xshear,yshear = deflector.Shear(x_angle_plane,y_angle_plane,deflector.shear,deflector.shear_theta)
+                xshear,yshear = deflector.Shear.def_angle(x_angle_plane,y_angle_plane,deflector.shear,deflector.shear_theta)
 
                 xdef_new += xshear
                 ydef_new += yshear
@@ -237,7 +210,7 @@ class RayTrace:
 
         betax = self._comoving2angle(x_on_src,self.cosmo.zsrc)
         betay = self._comoving2angle(y_on_src, self.cosmo.zsrc)
-
+       
         return betax,betay
 
 

@@ -150,9 +150,10 @@ class SolveRoutines(Magnipy):
                          source_shape=source_shape,
                          cosmology=self.cosmo, source_size=source_size)
 
-        magnifications, images = trace.get_images(xpos=[xcoord], ypos=[ycoord], lens_system=lens_systems[0])
+        magnifications, image = trace.get_images(xpos=[xcoord], ypos=[ycoord], lens_system=lens_systems[0],
+                                                 return_image=True,which_image=image_index)
 
-        return magnifications, images
+        return magnifications, image
 
 
 

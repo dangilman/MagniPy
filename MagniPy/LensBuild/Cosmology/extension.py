@@ -21,7 +21,7 @@ class CosmoExtension(Cosmo):
             self.sigma_8 = sigma_8
             self.delta_c = 1.68647 # appropriate for a flat universe
 
-        self.cosmology = {'omega_M_0':self.cosmo.Om0,'omega_b_0':self.cosmo.Ob0,'omega_lambda_0':1-self.cosmo.Om0,
+        self.cosmology_params = {'omega_M_0':self.cosmo.Om0, 'omega_b_0':self.cosmo.Ob0, 'omega_lambda_0': 1 - self.cosmo.Om0,
                           'omega_n_0':0,'N_nu':1,'h':self.h,'sigma_8':self.sigma_8,'n':1}
 
         self.dm_particles = ParticleMasses(h=self.h)
@@ -58,11 +58,9 @@ class CosmoExtension(Cosmo):
 
         return sigma_8_init*(D_ai*D_void_a1)*(D_a1*D_void_ai)**-1
 
-    def delta_lin(self,z):
+    def delta_lin(self):
 
-        fgrow = fgrowth(z,self.cosmology['omega_M_0'])
-
-        return self.delta_c*fgrow**-1
+        return self.delta_c
 
     def sigma(self,r,z):
 
@@ -73,12 +71,9 @@ class CosmoExtension(Cosmo):
         :return:
         """
 
-        return sigma_r(r,z,**self.cosmology)[0]
+        growth = self.D_growth(z, self.cosmology_params['omega_M_0'], self.cosmology_params['omega_lambda_0'])
 
-    def sigma_inv_log(self, sigma):
-
-        return np.log(sigma ** -1)
-
+        return growth**2*sigma_r(r, z, **self.cosmology_params)[0]
 
     def transfer_WDM(self,k,z,m_hm,n=1.12):
 
@@ -99,7 +94,7 @@ class CosmoExtension(Cosmo):
         else:
             transfer_WDM = self.transfer_WDM(k,z,m_hm)
 
-        return power_spectrum(k,z,**self.cosmology)*transfer_WDM**2
+        return power_spectrum(k, z, **self.cosmology_params) * transfer_WDM ** 2
 
     def mass2size_comoving(self, m, z):
         """
@@ -123,86 +118,95 @@ class CosmoExtension(Cosmo):
     def DsigmaInv_DlnM(self, M, z):
 
         sigma = self.sigma(self.mass2size_comoving(M, z), z)
-        sigma_inv_log = self.sigma_inv_log(sigma)
+        sigma_inv_log = np.log(sigma**-1)
 
         return np.polyval(np.polyder(np.polyfit(np.log10(M), sigma_inv_log, 2)), np.log10(M))
 
-    def differential_comoving_volume_cone(self, z, angle):
-        """
-        :param z: redshift
-        :param angle: in arcseconds
-        :param dz: redshift spacing
-        :return:
-        """
+    def _angle_to_physicalradius(self,angle,z,z_base,base_deflection=1):
 
-        if z <= self.zd:
+        angle_radian = angle*self.arcsec
+        angle_deflection = angle*self.arcsec
 
-            angle *= self.arcsec
-
-            base = angle*self.cosmo.comoving_distance(z).value
-
-            return np.pi*base**2*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
-
+        if z<=z_base:
+            R = angle_radian*self.D_A(0,z)
         else:
+            R = angle_radian * self.D_A(0, z_base) - angle_deflection * self.D_A(z_base, z)
 
-            reduced_Rein_deflection = 1 # arcsec
+        return R
 
-            physical_Rein_deflection = reduced_Rein_deflection*self.D_s * self.D_ds ** -1
-
-            base = (self.D_d*angle - physical_Rein_deflection*self.D_A(self.zd,z))*self.arcsec
-
-            return np.pi*base**2*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
-
-
-    def differential_comoving_volume_cylinder(self, z, angle):
+    def angle_to_physical_area(self,angle,z,z_base,base_deflection=1):
+        """
+        computes the area corresponding to the angular radius of a plane at redshift z for a double cone with base at z_base
+        :param angle: angle in arcsec
+        :param z: redshift of plane
+        :param z_base: redshift of cone base
+        :return: comoving area
         """
 
+        angle_radian = angle * self.arcsec
+
+        R = self._angle_to_physicalradius(angle,z,z_base,base_deflection=base_deflection)
+
+        return np.pi*R**2
+
+    def differential_physical_volume_cone(self, z, angle,z_base=None,base_deflection=None):
+        """
         :param z: redshift
         :param angle: in arcseconds
         :param dz: redshift spacing
         :return:
         """
-        angle *= self.arcsec
 
-        return self.cosmo.hubble_distance.value*np.pi*angle**2*self.D_d**2*self.cosmo.efunc(z)**-1
+        return self.angle_to_physical_area(angle,z,z_base,base_deflection)*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
 
-    def comoving_volume_cone(self, z1, z2, angle):
+    def comoving_volume_cone(self, z1, z2, angle, z_base=None, base_deflection=None):
         """
-        computes the comoving volume in a surface specified by angle and z1,z2, is an expanding cylinder
-        same as differential_comoving_volume_disk for z2-z1 ~ 0
+        computes the comoving volume in a surface specified by angle and z1,z2
         :param z1: start redshift
         :param z2: end redshift
         :return:
         """
-        def integrand(z,angle):
 
-            return self.differential_comoving_volume_cone(z, angle)
+        if z_base is None:
+            z_base = self.zd
+        if base_deflection is None:
+            base_deflection = 1
+
+        def integrand(z,angle,z_base,base_deflection):
+
+            return self.differential_physical_volume_cone(z, angle,z_base,base_deflection)*(1+z)**3
 
         if isinstance(z2,float) or isinstance(z2,int):
-            return quad(integrand,z1,z2,args=(angle))[0]
+            return quad(integrand,z1,z2,args=(angle,z_base,base_deflection))[0]
         else:
             integral = []
             for value in z2:
 
-                integral.append(quad(integrand,z1,value,args=(angle))[0])
+                integral.append(quad(integrand,z1,value,args=(angle,z_base,base_deflection))[0])
             return np.array(integral)
 
-    def comoving_volume_cylinder(self,z1,z2,angle):
+    def physical_volume_cone(self, z1, z2, angle, z_base=None, base_deflection=None):
         """
-        computes the comoving volume in a surface specified by angle, and z1 z2. is a cylinder
-        same as differential_comoving_volume_disk for z2-z1 ~ 0
+        computes the comoving volume in a surface specified by angle and z1,z2
         :param z1: start redshift
         :param z2: end redshift
         :return:
         """
 
-        def integrand(z,angle):
-            return self.differential_comoving_volume_cylinder(z, angle)
+        if z_base is None:
+            z_base = self.zd
+        if base_deflection is None:
+            base_deflection = 1
+
+        def integrand(z,angle,z_base,base_deflection):
+
+            return self.differential_physical_volume_cone(z, angle,z_base,base_deflection)
 
         if isinstance(z2,float) or isinstance(z2,int):
-            return quad(integrand,z1,z2,args=(angle))[0]
+            return quad(integrand,z1,z2,args=(angle,z_base,base_deflection))[0]
         else:
             integral = []
             for value in z2:
-                integral.append(quad(integrand,z1,value,args=(angle))[0])
+
+                integral.append(quad(integrand,z1,value,args=(angle,z_base,base_deflection))[0])
             return np.array(integral)

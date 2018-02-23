@@ -5,7 +5,7 @@ from gravlens_to_kwargs import *
 class GravlensInput:
 
     def __init__(self,filename='',zlens=float,zsrc=float,pos_sigma=None,flux_sigma=None,tdelay_sigma=None,
-                 identifier='',dataindex=1,paths=classmethod):
+                 identifier='',dataindex=1,paths=classmethod,cosmology=None):
 
         self.filename = filename
         self.outfile_path = paths.gravlens_input_path_dump
@@ -14,7 +14,7 @@ class GravlensInput:
         if pos_sigma is not None or flux_sigma is not None or tdelay_sigma is not None:
             self.xpos_sigma,self.ypos_sigma,self.flux_sigma,self.tdelay_sigma = \
                 pos_sigma[0],pos_sigma[1],flux_sigma,tdelay_sigma
-
+        self.cosmology = cosmology
         self.identifier = identifier
         self.dataindex = dataindex
 
@@ -132,7 +132,7 @@ class GravlensInput:
 
     def _add_header(self,zlens, zsrc, opt_routine):
 
-        self.header = Header(zlens=zlens,zsrc=zsrc)
+        self.header = Header(zlens=zlens,zsrc=zsrc,omega_M=self.cosmology.cosmo.Om0,hval=self.cosmology.h)
         self.header.opt_routine(opt_routine)
 
     def _write_header(self):
@@ -233,10 +233,11 @@ class SingleModel:
         return lensparams
 
 class Header:
-    def __init__(self, zlens=float, zsrc=float, hval=0.7):
+    def __init__(self, zlens=float, zsrc=float, omega_M=None, hval=None):
         inputstring = ''
         inputstring += 'set zlens = ' + str(zlens) + '\nset zsrc = ' + str(zsrc) + '\n'
-        inputstring += 'set omega = 0.3\nset lambda = 0.7\nset hval = 0.7\nset shrcoords=1\nset omitcore=.001\nset checkparity=0\nset clumpmode = 0\n'
+        inputstring += 'set omega = '+str(omega_M)+'\nset lambda = '+str(1-omega_M)+'\nset hval = '+str(hval)+\
+                       '\nset shrcoords=1\nset omitcore=.001\nset checkparity=0\nset clumpmode = 0\n'
 
         self.inputstring = inputstring+'\n\n'
 

@@ -122,7 +122,7 @@ class Magnipy:
             assert opt_routine is not None
             solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
                                    pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
-                                   identifier=identifier,paths=self.paths)
+                                   identifier=identifier,paths=self.paths,cosmology=self.cosmo)
 
             for system in lens_systems:
 
@@ -242,7 +242,8 @@ class Magnipy:
 
             data=[]
 
-            solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,identifier=identifier,paths=self.paths)
+            solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,identifier=identifier,paths=self.paths,
+                                   cosmology=self.cosmo)
 
             for i,system in enumerate(lens_systems):
                 full = FullModel(multiplane=system.multiplane)

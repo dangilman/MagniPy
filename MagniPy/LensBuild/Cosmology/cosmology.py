@@ -116,6 +116,18 @@ class Cosmo:
     def rho_matter_crit(self,z):
         return self.rho_crit(z)*self.cosmo.Om(z)
 
+    def _physical2angle(self,phys,z):
+
+        return phys*self.D_A(0,z)**-1
+
+    def _physical2comoving(self,phys,z):
+
+        return phys*(1+z)
+
+    def _comoving2physical(self,co,z):
+
+        return co*(1+z)**-1
+
 
 class ParticleMasses:
 

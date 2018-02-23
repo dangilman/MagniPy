@@ -2,6 +2,7 @@ import numpy as np
 from lensdata import Data
 import subprocess
 import shutil
+import scipy.ndimage.filters as sfilt
 
 def read_data(filename=''):
 
@@ -348,5 +349,29 @@ def create_directory(dirname=''):
 def delete_dir(dirname=''):
 
     shutil.rmtree(dirname)
+
+def rebin_image(image,factor):
+
+    if np.shape(image)[0]%factor != 0:
+        raise ValueError('size of image must be divisible by factor')
+
+    def rebin(a, shape):
+        sh = shape[0], a.shape[0] // shape[0], shape[1], a.shape[1] // shape[1]
+
+        return a.reshape(sh).mean(-1).mean(1)
+    size = (np.shape(image)[0]*factor**-1)
+
+    return rebin(image,[size,size])
+
+def convolve_image(image,kernel='Gaussian',scale=None):
+
+    if kernel == 'Gaussian':
+        grid = sfilt.gaussian_filter(image, scale * (2.355) ** -1, mode='constant', cval=0)
+    elif kernel == 'HST':
+        grid = sfilt.gaussian_filter(image, scale * (2.355) ** -1, mode='constant', cval=0)
+
+    return grid
+
+
 
 
