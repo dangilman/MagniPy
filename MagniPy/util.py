@@ -315,9 +315,8 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             """
             for halos behind the main lens
             """
-            scale = (x_filter * cosmology.D_d - xdefmain * cosmology.D_co(cosmology.zd,
-                                                                          deflector.redshift)) * cosmology.D_d ** -1
-            scale = np.ones_like(x_filter)
+            Rein_def = 1*cosmology.arcsec
+            scale = (1 - cosmology.D_A(0,deflector.redshift)*cosmology.D_s**-1)
 
         else:
             """

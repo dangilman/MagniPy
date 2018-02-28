@@ -1,12 +1,11 @@
 import numpy as np
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.util import *
 from MagniPy.MassModels.ExternalShear import Shear
 import matplotlib.pyplot as plt
 
-class SIE(Cosmo):
+class SIE:
 
-    def __init__(self,z1=0.5,z2=1.5):
+    def __init__(self):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
@@ -24,6 +23,10 @@ class SIE(Cosmo):
         return 0.5*r**-1
 
     def def_angle(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2,shear=None,shear_theta=None):
+
+        if gamma!=2:
+            raise Exception('only isothermal (gamma=2) models allowed')
+            return
 
         xloc = x - center_x
         yloc = y - center_y
@@ -70,7 +73,7 @@ class SIE(Cosmo):
         return None
 
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
-               y = None, shear=0, shear_theta=0,trunc=None):
+               y = None, gamma=2,trunc=None,**kwargs):
 
         subparams = {}
         otherkwargs = {}
@@ -79,12 +82,10 @@ class SIE(Cosmo):
         q = 1-ellip
         subparams['q'] = q
         subparams['phi_G'] = (ellip_theta)*np.pi*180**-1
-        subparams['gamma'] = 2
+        subparams['gamma'] = gamma
         subparams['center_x'] = x
         subparams['center_y'] = y
-        prefactor = ((1+q**2)*(2*q)**-1)**.5
-        prefactor=1
-        subparams['theta_E'] = R_ein*prefactor
+        subparams['theta_E'] = R_ein
         #q = subparams['q']
         #subparams['theta_E_fastell'] = R_ein*((1+q**2)*(2*q)**-1)**.5
 

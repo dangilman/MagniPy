@@ -39,7 +39,7 @@ def kwargs_to_gravlens(deflector=None):
 
     if deflector.profname=='SPEMD' or deflector.profname=='SIE':
         q = args['q']
-        prefactor = ((1 + q ** 2) * (2 * q) ** -1) ** .5
+        #prefactor = ((1 + q ** 2) * (2 * q) ** -1) ** .5
         p0 = 'alpha'
         prefactor = 1
         p1 = str(args['theta_E']*prefactor**-1)
@@ -56,7 +56,10 @@ def kwargs_to_gravlens(deflector=None):
             p6 = str(s)
             p7 = str(spa)
 
-        p10 = '1'
+        if args['gamma']==2:
+            p10 = '1'
+        else:
+            p10 = str(3-args['gamma'])
 
     elif deflector.profname == 'NFW':
 

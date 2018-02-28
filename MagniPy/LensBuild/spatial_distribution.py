@@ -1,170 +1,145 @@
 import numpy as np
 
-def truncation(r3d, RE, m, sigmacrit):
-    return (m * r3d ** 2 * (2 * sigmacrit * RE) ** -1) ** (1. / 3)
+class TwoDCoords:
 
-class Uniform:
+    def __init__(self, cosmology=None):
 
-    def __init__(self,Rmax):
+        self.cosmology = cosmology
 
-        self.Rmax = Rmax
-        self.area = np.pi*Rmax**2
+    def get_2dcoordinates(self,theta,Npoints,R_ein_deflection=1,z=None,zmain=None):
+        """
 
-    def draw(self,N):
+        :param z: redshift
+        :param theta: maximum angle
+        :param Npoints:
+        : R_ein_deflection: deflection at the Einstein radius in arcsec
+        :return: x,y,r2d positions in comoving units
+        """
 
-        r3d, x, y = Runi(int(round(N)), self.Rmax)
+        if z <= self.cosmology.zd:
+            angle = np.random.uniform(0,2*np.pi,Npoints)
+            r = np.random.uniform(0,theta**2,Npoints)
+            x = r**.5*np.cos(angle)
+            y = r**.5*np.sin(angle)
+            r2d = (x**2+y**2)**.5
 
-        return np.array(r3d), np.array(x), np.array(y)
+            return x,y,r2d
 
+        elif z > zmain:
 
-class Uniform_2d_1:
+            assert self.cosmology is not None
 
-    def __init__(self,Rmax2d,Rmaxz,rc):
+            theta *= self.cosmology.arcsec
+            Rco = theta * self.cosmology.T_xy(0, zmain)
 
-        self.Rmax2d = Rmax2d
-        self.Rmaxz = Rmaxz
+            Rco -= self.cosmology.arcsec*R_ein_deflection*self.cosmology.T_xy(0,z)
+
+            theta_new = self.cosmology._comoving2physical(Rco,z)*self.cosmology.D_A(0,z)**-1
+            theta_new *= self.cosmology.arcsec**-1
+
+            angle = np.random.uniform(0, 2 * np.pi, Npoints)
+            r = np.random.uniform(0, theta_new ** 2, Npoints)
+            x = r ** .5 * np.cos(angle)
+            y = r ** .5 * np.sin(angle)
+            r2d = (x ** 2 + y ** 2) ** .5
+
+            return x, y, r2d
+
+class Uniform_2d:
+
+    def __init__(self,rmax2d=None,cosmology=None):
+
+        self.cosmology = cosmology
+        self.zmain = cosmology.zd
+        self.zsrc = cosmology.zsrc
+
+        self.rmax2d = rmax2d
+
+        self.TwoD = TwoDCoords(cosmology=cosmology)
+
+    def draw(self,N,z):
+
+        r2d, x, y = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
+
+        return r2d,x,y
+
+class Uniform_cored_nfw:
+
+    def __init__(self,rmax2d=None,rmaxz=None,cosmology=None,rc=None):
+
+        self.TwoD = Uniform_2d(rmax2d=rmax2d,cosmology=cosmology)
+        self.zmax = rmaxz
+        self.rmax2d = rmax2d
         self.rc = rc
-        self.area = np.pi*Rmax2d**2
 
-    def r3d_pdf(self,r):
+    def _draw_z(self,rmaxz,N):
+        """
+
+        :param rmaxz: physical z coordinate in kpc
+        :param N: number to draw
+        :return:
+        """
+        return np.random.uniform(-rmaxz,rmaxz,N)
+
+    def r3d_pdf_cored(self,r):
         def f(x):
             return np.arcsinh(x)-x*(x**2+1)**-.5
 
-        norm = (4*np.pi*self.rc**3*f(self.Rmaxz*self.rc**-1))**-1
+        norm = (4*np.pi*self.rc**3*f(self.zmax*self.rc**-1))**-1
         return norm*(1+r**2*self.rc**-2)**-1.5
 
-    def draw(self,N):
+    def draw(self, N, z=None):
 
         def acceptance_prob(r):
 
-            return self.r3d_pdf(r)*self.r3d_pdf(0)**-1
+            return self.r3d_pdf_cored(r) * self.r3d_pdf_cored(0) ** -1
 
-        r3d,x,y = Runi(N,self.Rmax2d,Rmaxz=self.Rmaxz)
+        r2d, x, y =self.TwoD.draw(N=N,z=0)
 
-        for i in range(0,int(len(r3d))):
+        z = np.random.uniform(-self.zmax,self.zmax,N)
+
+        r3d = (z**2+r2d**2)**.5
+
+        for i in range(0, int(len(r3d))):
+
             u = np.random.rand()
 
             accept = acceptance_prob(r3d[i])
 
-            while u>=accept:
-                r3d[i],x[i],y[i] = Runi(1,self.Rmax2d,Rmaxz=self.Rmaxz)
+            while u >= accept:
+                r2d_, x_, y_ = self.TwoD.draw(N=1,z=0)
+                z = np.random.uniform(-self.zmax,self.zmax)
+                r3d[i] = (z**2+r2d_**2)**.5
                 u = np.random.rand()
                 accept = acceptance_prob(r3d[i])
 
-        return r3d,x,y
+        return r3d, x, y
 
-class Uniform_2d_nfw:
+class TruncationFuncitons:
 
-    def __init__(self,Rmax2d,Rmaxz,rs,core_factor=0.3):
+    def __init__(self,truncation_routine=None,**kwargs):
 
-        self.Rmax2d = Rmax2d
-        self.Rmaxz = Rmaxz
-        self.rs = rs
-        self.area = np.pi*Rmax2d**2
-        self.corefactor=0.3
+        self.truncation_routine = truncation_routine
 
-    def r3d_pdf(self,r,rtol=1):
-        r+=1e-9
-        return ((r*self.rs**-1)*(1+r*self.rs**-1)**2)**-1
+        if truncation_routine == 'tidal_3d':
+            self.function = self.tidal_3D
+        elif truncation_routine == 'constant':
+            self.function = self.constant_trunc
+        elif truncation_routine == 'normal_distribution':
+            self.function = self.gaussian
+        elif truncation_routine == 'NFW_r200':
+            self.function = self.NFW_r200
 
-    def r2d_pdf(self,r,rtol=1):
-        def F(x):
-
-            if isinstance(x, np.ndarray):
-                nfwvals = np.ones_like(x)
-                inds1 = np.where(x < 1)
-                inds2 = np.where(x > 1)
-                nfwvals[inds1] = (1 - x[inds1] ** 2) ** -.5 * np.arctanh((1 - x[inds1] ** 2) ** .5)
-                nfwvals[inds2] = (x[inds2] ** 2 - 1) ** -.5 * np.arctan((x[inds2] ** 2 - 1) ** .5)
-                return nfwvals
-
-            elif isinstance(x, float) or isinstance(x, int):
-                if x == 1:
-                    return 1
-                if x < 1:
-                    return (1 - x ** 2) ** -.5 * np.arctanh((1 - x ** 2) ** .5)
-                else:
-                    return (x ** 2 - 1) ** -.5 * np.arctan((x ** 2 - 1) ** .5)
-        return (1-F(r*self.rs**-1))*(r**2**self.rs**-2-1)**-1
-
-    def draw(self,N,near_x=False,near_y=False,mindis=False):
-
-        def acceptance_prob(r):
-
-            return self.r3d_pdf(r)*self.r3d_pdf(self.rs*self.corefactor)**-1
-
-        r3d,x,y = Runi(N,self.Rmax2d,Rmaxz=self.Rmaxz)
-
-        for i in range(0,int(len(r3d))):
-            u = np.random.rand()
-
-            accept = acceptance_prob(r3d[i])
+    def tidal_3D(self, **kwargs):
+        return (kwargs['mass'] * kwargs['r3d'] ** 2 * (2 * kwargs['sigmacrit'] * kwargs['RE']) ** -1) ** (1. / 3)
+    def constant_trunc(self, **kwargs):
+        return self.value
+    def gaussian(self,**kwargs):
+        return np.absolute(np.random.normal(kwargs['mean'],kwargs['sigma'],size=kwargs['size']))
+    def NFW_r200(self,**kwargs):
+        return np.absolute(np.random.normal(kwargs['multiple']*kwargs['r200'],kwargs['sigma']))
 
 
-            while u>=accept:
-                r3d[i],x[i],y[i] = Runi(1,self.Rmax2d,Rmaxz=self.Rmaxz)
-                u = np.random.rand()
-                accept = acceptance_prob(r3d[i])
-
-        return r3d,x,y
-
-def Runi(N, Rmax, Rmaxz = None):
-    if Rmaxz is None:
-        Rmaxz = Rmax
-    xrand = Rmax * np.random.uniform(-1, 1, N)
-    yrand = Rmax * np.random.uniform(-1, 1, N)
-    zrand = Rmaxz * np.random.uniform(-1, 1, N)
-    R_3D = np.sqrt(xrand**2+yrand**2+zrand**2)
-    for i in range(0, np.shape(R_3D)[0]):
-        R_new = np.sqrt(float(xrand[i]) ** 2 + float(yrand[i]) ** 2)
-        while R_new > Rmax:
-            xrand[i], yrand[i] = Rmax * np.random.uniform(-1, 1, 1),Rmax * np.random.uniform(-1, 1, 1)
-            R_new = np.sqrt(float(xrand[i]) ** 2 + float(yrand[i]) ** 2)
-
-    return np.sqrt(xrand ** 2 + yrand ** 2 + zrand ** 2), xrand, yrand
-
-
-def filter_spatial_2(xsub, ysub, r3d, xpos, ypos, masses, mindis, between_low, between_high, Nsub):
-    """
-    same as filter spatial, except it will exclude subhalos between_low < M < between_high
-    :param xsub: sub x coords
-    :param ysub: sub y coords
-    :param xpos: img x coords
-    :param ypos: img y coords
-    :param mindis: max 2d distance
-    :return: filtered subhalos
-    """
-
-
-    if Nsub==1:
-        keep=False
-        for i in range(0,len(xpos)):
-
-            r =np.sqrt((xsub[0]-xpos[i])**2+(ysub[0]-ypos[i])**2)
-
-            if masses[0] >= between_high or masses[0] <= between_low:
-                if masses[0]>10**8 or r<mindis:
-
-                    keep=True
-                    break
-
-        if keep:
-            return [0]
-        else:
-            return []
-    else:
-        inds = []
-
-        for j in range(0,Nsub-1):
-            for i in range(0,len(xpos)):
-                r = np.sqrt((xsub[j] - xpos[i]) ** 2 + (ysub[j] - ypos[i]) ** 2)
-                if masses[j] >= between_high or masses[j] <= between_low:
-                    if r<mindis or masses[j]>10**8:
-
-                        inds.append(j)
-                        break
-
-        return inds
 
 
 

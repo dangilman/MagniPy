@@ -143,8 +143,6 @@ class CosmoExtension(Cosmo):
         :return: comoving area
         """
 
-        angle_radian = angle * self.arcsec
-
         R = self._angle_to_physicalradius(angle,z,z_base,base_deflection=base_deflection)
 
         return np.pi*R**2
@@ -157,7 +155,9 @@ class CosmoExtension(Cosmo):
         :return:
         """
 
-        return self.angle_to_physical_area(angle,z,z_base,base_deflection)*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
+        scale_factor = (1+z)**-1
+
+        return scale_factor*self.angle_to_physical_area(angle,z,z_base,base_deflection)*self.cosmo.hubble_distance.value*self.cosmo.efunc(z)**-1
 
     def comoving_volume_cone(self, z1, z2, angle, z_base=None, base_deflection=None):
         """

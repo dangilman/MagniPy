@@ -5,7 +5,7 @@ class PointMass:
 
     #pcrit = 2.77536627e+11
 
-    def __init__(self,z1=0.5,z2=1.5,cosmology = None):
+    def __init__(self,z=None,zsrc=None,cosmology = None):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
@@ -13,9 +13,11 @@ class PointMass:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z1, zsrc=z2)
+            self.cosmology = Cosmo(zd=z, zsrc=zsrc,compute=False)
         else:
             self.cosmology = cosmology
+
+        self.D_s,self.D_d,self.D_ds = self.cosmology.D_A(0,zsrc),self.cosmology.D_A(0,z),self.cosmology.D_A(z,zsrc)
 
         self.rmin = 10**-9
 
@@ -45,5 +47,5 @@ class PointMass:
 
     def R_ein(self,M):
 
-        const = 4*self.cosmology.G*self.cosmology.c**-2*self.cosmology.D_ds*(self.cosmology.D_d*self.cosmology.D_s)**-1
+        const = 4*self.cosmology.G*self.cosmology.c**-2*self.D_ds*(self.D_d*self.D_s)**-1
         return self.cosmology.arcsec**-1*(M*const)**.5

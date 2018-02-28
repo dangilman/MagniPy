@@ -1,9 +1,4 @@
-from MagniPy.MassModels.SIE import *
-from MagniPy.MassModels.ExternalShear import *
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.util import polar_to_cart,cart_to_polar
-from copy import deepcopy
-from MagniPy.LensBuild.spatial_distribution import *
 
 class LensSystem:
 

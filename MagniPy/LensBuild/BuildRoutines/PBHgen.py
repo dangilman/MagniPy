@@ -9,7 +9,7 @@ def number_per_image(f_pbh=float, cosmology_class=classmethod, M=float, R_ein=fl
 
     return np.pi*k_pbh*cosmology_class.sigmacrit*((distance_factor*R_ein)**2)*M**-1
 
-def drawPBH(ximgs=[],yimgs=[],f_pbh=float,cosmology=classmethod,mass=float,distance_factor=10,Nrealizations=1):
+def drawPBH(ximgs=[],yimgs=[],f_pbh=float,cosmology=classmethod,mass=float,distance_factor=25,Nrealizations=1):
 
     ptmass = PointMass()
 

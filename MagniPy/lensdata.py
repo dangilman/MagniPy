@@ -104,7 +104,7 @@ class Data:
         other_mags = other_data.m
 
         other = self.compute_flux_ratios(fluxes=other_mags)
-
+        
         self.compute_flux_ratios()
 
         if sum_in_quad:

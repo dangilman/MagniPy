@@ -1,17 +1,18 @@
 import numpy as np
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
-class Pjaffe:
+class PJaffe:
 
-    def __init__(self,z1=0.5,z2=1.5,cosmology=None):
+    def __init__(self,z=None,zsrc=None,cosmology=None):
 
         if cosmology is None:
 
-            self.cosmology = Cosmo(zd=z1,zsrc=z2)
+            self.cosmology = Cosmo(zd=z,zsrc=zsrc,compute=False)
 
         else:
             self.cosmology = cosmology
 
+        self.sigmacrit = self.cosmology.sigmacrit
 
     def convergence(self,rcore,rtrunc,r=False):
         if r is False:
@@ -19,32 +20,34 @@ class Pjaffe:
         else:
             return (rcore**2+r**2)**-.5 - (rtrunc**2+r**2)**-.5
 
-    def def_angle(self,x,y,rcore=None,rtrunc=None,b=None,x0=None,y0=None):
+    def def_angle(self,x,y,rcore=0,rt=None,b=None,center_x=None,center_y=None):
 
-        x = x - x0
-        y = y - y0
+        x = x - center_x
+        y = y - center_y
 
         r=np.sqrt(x**2+y**2)
 
-        magdef = b*(np.sqrt(1+(rcore*r**-1)**2)-np.sqrt(1+(rtrunc*r**-1)**2)+(rtrunc-rcore)*r**-1)
+        magdef = b*(np.sqrt(1+(rcore*r**-1)**2)-np.sqrt(1+(rt*r**-1)**2)+(rt-rcore)*r**-1)
 
         return magdef*x*r**-1,magdef*y*r**-1
 
-    def params(self,M,rt,rc=0,**kwargs):
+    def params(self,x=None,y=None,mass=None,rt=None,rc=0,**kwargs):
 
         subkwargs = {}
-        subkwargs['b'] = self.b(M,rt,rc)
+        subkwargs['b'] = self.b(mass,rt,rc)
         subkwargs['rt'] = rt
+        subkwargs['center_x'] = x
+        subkwargs['center_y'] = y
 
         otherkwargs ={}
-        otherkwargs['mass'] = M
-        otherkwargs['name'] = 'Pjaffe'
+        otherkwargs['mass'] = mass
+        otherkwargs['name'] = 'PJaffe'
 
-        return subkwargs
+        return subkwargs,otherkwargs
 
     def b(self,M,rt,rc):
 
-        return M*((rt-rc)*self.cosmology.sigmacrit*np.pi)**-1
+        return M*((rt-rc)*self.sigmacrit*np.pi)**-1
 
 
 

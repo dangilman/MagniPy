@@ -3,58 +3,44 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class Plaw:
 
-    def __init__(self,norm=float,logmL=float,logmH=float,area=classmethod,scrit=float,logmbreak=0,
-                 alpha=1.9,gamma=1.3,**norm_kwargs):
+    def __init__(self, normalization=float, log_mL=None, log_mH=None, logmhm=0, plaw_index=-1.9, turnover_index=1.3, **kwargs):
 
-        self.alpha,self.gamma = alpha,gamma
+        self.plaw_index, self.turnover_index = plaw_index, turnover_index
 
-        self.mL,self.mH = 10**logmL,10**logmH
+        self.mL,self.mH = 10**log_mL,10**log_mH
 
-        if logmbreak == 0:
+        if logmhm == 0:
 
             self.mbreak = 0
 
         else:
 
-            self.mbreak = 10**logmbreak
+            self.mbreak = 10**logmhm
 
-        self.A0 = self.get_A0(norm=norm,scrit=scrit,area=area,**norm_kwargs)
+        self.norm = normalization
 
-        self.Nsub,self.Nmean = self.get_Nsub(self.A0,scrit,area)
+        self.Nhalos,self.Nhalos_mean = self.get_Nsub(normalization)
 
     def draw(self):
-        return self.sample_CDF(self.Nsub)
 
-    def get_Nsub(self,A0=float,scrit=None,area=None):
+        return self.sample_CDF(self.Nhalos)
 
-        Nwdm = A0*self.moment(0,self.mL,self.mH)
+    def get_Nsub(self,norm=float,scrit=None,area=None):
 
-        return np.random.poisson(Nwdm),Nwdm
+        N = norm*self.moment(0,self.mL,self.mH)
 
-    def get_A0(self,norm,scrit,area,**kwargs):
-        kwargs = kwargs['norm_kwargs']
-        if isinstance(norm,float):
-
-            A0 = norm*scrit*area*self.moment(1,self.mL,self.mH)**-1
-
-        else:
-
-            mass = norm.compute_mass(z=kwargs['z'],dz = kwargs['dz'], area= kwargs['area'])
-            A0 = mass*self.moment(1,kwargs['mlow_norm'],kwargs['mhigh_norm'])**-1
-
-
-        return A0
+        return np.random.poisson(N),N
 
     def moment(self,n,m1,m2):
-        return (n + 1 - self.alpha) ** -1 * (m2 ** (n + 1 - self.alpha) - m1 ** (n + 1 - self.alpha))
+        return (n + 1 + self.plaw_index) ** -1 * (m2 ** (n + 1 + self.plaw_index) - m1 ** (n + 1 + self.plaw_index))
 
     def sample_CDF(self, Nsamples):
 
-        if self.alpha == 2:
-            raise ValueError('alpha cannot equal 2')
+        if self.plaw_index == 2:
+            raise ValueError('index cannot equal 2')
 
         x = np.random.rand(Nsamples)
-        X = (x * (self.mH ** (1 - self.alpha) - self.mL ** (1 - self.alpha)) + self.mL ** (1 - self.alpha)) ** ((1 - self.alpha) ** -1)
+        X = (x * (self.mH ** (1 + self.plaw_index) - self.mL ** (1 + self.plaw_index)) + self.mL ** (1 + self.plaw_index)) ** ((1 + self.plaw_index) ** -1)
 
         if self.mbreak == 0:
             return np.array(X)
@@ -64,9 +50,20 @@ class Plaw:
             for i in range(0, Nsamples):
 
                 u = np.random.rand()
-                if u < (1 + self.mbreak * X[i] ** -1) ** (-self.gamma):
+                if u < (1 + self.mbreak * X[i] ** -1) ** (-self.turnover_index):
                     mass.append(X[i])
 
         return np.array(mass)
+
+class Delta:
+
+    def __init__(self,N,logmass):
+
+        self.norm = N
+        self.mass = 10**logmass
+
+    def draw(self):
+
+        return np.ones(self.norm)*self.mass
 
 

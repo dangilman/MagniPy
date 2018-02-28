@@ -6,281 +6,460 @@ from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
 from MagniPy.MassModels import PointMass
 from MagniPy.LensBuild.lens_assemble import Deflector
-
+from BuildRoutines.halo_environments import *
 
 class HaloGen:
 
-    def __init__(self,z_l=0.5,z_s=1.5):
+    def __init__(self,zd=None,zsrc=None):
 
-        self.cosmology = Cosmo(zd=z_l,zsrc=z_s)
+        """
 
-        self.substrucutre_initialized = False
+        :param zd: main deflector redshift
+        :param zsrc: source redshift
+        """
 
-        self.realizations = []
+        self.cosmology = Cosmo(zd=zd,zsrc=zsrc)
 
         self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
-        #if self.use_lenstronomy_halos:
-        #    from lenstronomy.LensModel.Profiles import *
+    def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1, rescale_sigma8=False):
 
-    def add_single_plane(self, zplane, model, sub_mod_index, dz=float):
+        """
+        Main execution routine for drawing (sub)halo realizations.
 
-        subhalos =[]
+        returns: a list with 'Nrealizations' elements; each element is a halo realization specified by the other
+                    input arguments discussed below.
 
-        spatial = model['spatial'][sub_mod_index][0]
-        assert type(spatial) is str
+        ###############################################################################################################
 
-        if spatial == 'uniformflat':
-            Rmax_2d = model['spatial'][sub_mod_index][1][0]
-            trunc_rad = model['spatial'][sub_mod_index][1][1]
-            geometric_factor = self.cosmology.D_ratio([0,zplane],[0,self.zd])
-            geometric_factor = 1
-            self.spatial = Uniform(Rmax_2d*geometric_factor)
+        0) model_kwargs: a dictionary containing keyword arguments related to the following mass function and spatial
+                        distribution models
 
-        elif spatial == 'uniformnfw':
-            Rmax_2d = model['spatial'][sub_mod_index][1][0]
-            Rmax_z = model['spatial'][sub_mod_index][1][1]
+        ###############################################################################################################
 
-            trunc_rad = None
-            geometric_factor = self.cosmology.D_ratio([0, zplane], [0, self.zd])
+        1) model_name:
+        - Can be 'plaw_main', 'plaw_LOS', 'composite_plaw', 'delta_main', 'delta_LOS', 'composite_delta'
 
-            geometric_factor = 1
-            self.spatial = Uniform(Rmax_2d * geometric_factor)
+            A) plaw_main: a power law mass function at the main deflector reshift.
 
+                model_kwargs:
 
-            self.spatial = Uniform_2d_1(Rmax_2d*geometric_factor, Rmax_z / self.cosmology.kpc_per_asec(zplane), rc=25)
+                    Mandatory inputs:
+                    i. fsub: substructure mass fraction (in projection) at the Einstein radius
 
+                    Optional inputs:
+                    i. kappa_Rein: convergence in substructure at the Einstein radius (1 arcsecond); defaults to 0.5
+                    ii. plaw_index: power law index; defaults to -1.9
+                    iii. turnover_index: mass function turnover power law index below mhm; defaults to 1.3
+                    iv. logmhm: log10 of half mode mass scale; defaults to 0
+                        (anything other than zero will yield m_hm = 10^logmhm)
+                    v. log_mL: log10 of minimum subhalo mass; defaults to 6
+                    vi. log_mH: log10 of minimum subhalo mass; defaults to 10
 
-        mass_func_type = model['massfunctype'][sub_mod_index]
+            B) plaw_LOS: a power law mass function between redshift zmin and zmax
 
-        if mass_func_type == 'plaw':
-            if model['norms'][sub_mod_index][0] == 'znorm':
-                normalization = RedshiftNormalization(self.zd,self.zsrc)
-                norm_kwargs = {}
-                norm_kwargs['z'] = zplane
-                norm_kwargs['dz'] = dz
-                norm_kwargs['area'] = self.spatial.area
-                norm_kwargs['mlow_norm'] = 10**model['args'][sub_mod_index][2]
-                norm_kwargs['mhigh_norm'] = 10 ** model['args'][sub_mod_index][3]
+                model_kwargs:
+
+                    Mandatory inputs:
+                    i. zmin: start redshift
+                    ii. zmax: end resfhit
+
+                    Optional inputs:
+                    i. turnover_index: mass function turnover power law index below mhm; defaults to 1.3
+                    ii. logmhm: log10 of half mode mass scale; defaults to 0
+                        (anything other than zero will yield m_hm = 10^logmhm)
+                    iii. rescale_sigma8 (bool): flag to rescale cosmology to account for an under dense region
+                    iv. omega_M_void (float): matter density in an underdense region; only used if rescale_sigma8 is True
+                    v. log_mL: log10 of minimum subhalo mass; defaults to 6
+                    vi. log_mH: log10 of minimum subhalo mass; defaults to 10
+
+            C) composite_plaw: A combination of 'plaw_LOS' and 'plaw_main'; see above documentation
+
+            D) delta_LOS: delta function mass function between zmin and zmax
+
+                model_kwargs:
+
+                    Mandatory inputs:
+                    i. M: mass on which to center delta function
+                    ii. matter_fraction: fraction of the matter density 'omega_M' composed of masses 'M'
+                    iii. zmin: minimum redshift
+                    iv. zmax: maximum redshift
+
+        ###############################################################################################################
+
+        2) spatial_name:
+        - Can be 'uniform2d', 'uniform_cored_nfw'
+
+            A) uniform2d: uniform spatial distribution inside a circle
+
+                model_kwargs:
+
+                    Optional inputs:
+                    i. rmax2d_asec: maximum circular radius in which to render halos; defaults to 3 arcseconds
+
+            B) uniform_cored_nfw: an approximation to an NFW profile projected in two dimensions
+
+                rho_2d ~ (1+rc^2/r^2)^-1
+                rho_3d ~ (1+(z^2+rc^2) / r^2 )^(-3/2)
+
+                model_kwargs:
+
+                    Optional inputs:
+                    i. rmax2d_asec: maximum circular radius in which to render halos; defaults to 3 arcseconds
+                    ii. rmaxz_kpc: maximum z radius to render halos; basically the virial radius; defaults to 500kpc
+                    iii. nfw_core_kpc: core size in kpc; defaults to 100 kpc
+
+        ###############################################################################################################
+
+        3) massprofiles:
+        - Can be 'NFW', 'TNFW', 'PJaffe', 'PointMass'
+
+            see related documentation in MagniPy.MassModels
+
+        """
+
+        ###############################################################################################################
+        ############################################## MAIN PROGRAM ###################################################
+        ###############################################################################################################
+
+        def _return_delta_LOS(_spatial_):
+
+            mass_function_type = []
+            spatial_distribution_type = []
+
+            N,zvals = LOS_delta(model_kwargs['M'],model_kwargs['matter_fraction'],zmin=model_kwargs['zmin'], zmax=model_kwargs['zmax'],
+                                                 zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc)
+
+            modelkwargs['N'] = np.random.poisson(N)
+            model_kwargs['logmass'] = np.log10(model_kwargs['M'])
+
+            mass_function_type.append('delta')
+            spatial_distribution_type.append(_spatial_)
+
+            halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                                redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
+                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
+            return halos
+
+        def _return_plaw_main(_spatial_):
+
+            mass_function_type = []
+            spatial_distribution_type = []
+
+            if 'kappa_Rein' in model_kwargs:
+                kappaRein = model_kwargs['kappa_Rein']
             else:
+                kappaRein = kappa_Rein
 
-                assert isinstance(model['norms'][sub_mod_index][0],float)
-                norm_kwargs = {}
-                normalization = model['norms'][sub_mod_index][0]
-
-            subs = Plaw(norm=normalization,
-                        logmL=model['mlow'][sub_mod_index],
-                        logmH=model['mhigh'][sub_mod_index],
-                        logmbreak=model['args'][sub_mod_index][0], scrit=self.cosmology.sigmacrit,
-                        area=self.spatial.area,norm_kwargs=norm_kwargs)
-
-            masses = subs.draw()
-
-            Nhalos = int(np.shape(masses)[0])
-
-            r3d, xpos, ypos = self.spatial.draw(N=Nhalos)
-
-            self.xpos, self.ypos, self.r3d, self.Nhalos, self.masses = xpos, ypos, r3d, np.shape(masses)[
-                    0], masses
-
-            if trunc_rad is None:
-                self.rtrunc = truncation(self.r3d, 1, self.masses, self.cosmology.sigmacrit)
+            if 'plaw_index' in model_kwargs:
+                modelkwargs['plaw_index'] = model_kwargs['rmax2d_asec']
             else:
-                self.rtrunc = np.ones_like(self.masses)*trunc_rad
+                modelkwargs['plaw_index'] = powerlaw_defaults['plaw_index']
 
-            assert len(self.rtrunc) == len(self.masses)
-            assert len(self.rtrunc) == len(self.xpos)
-            assert len(self.rtrunc) == self.Nhalos
+            if 'turnover_index' in model_kwargs:
+                modelkwargs['turnover_index'] = model_kwargs['turnover_index']
+            else:
+                modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
 
-            prof = model['proftypes'][sub_mod_index]
+            if 'logmhm' in model_kwargs:
+                modelkwargs['logmhm'] = model_kwargs['logmhm']
+            else:
+                modelkwargs['logmhm'] = 0
 
-            for i in range(0, self.Nhalos):
+            if 'log_mL' in model_kwargs:
+                modelkwargs['log_mL'] = model_kwargs['log_mL']
+            else:
+                modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
 
-                subhalo_args = {}
+            if 'log_mH' in model_kwargs:
+                modelkwargs['log_mH'] = model_kwargs['log_mH']
+            else:
+                modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
 
-                if prof == 'TNFW':
+            A0, _ = mainlens_plaw(model_kwargs['fsub'], plaw_index=modelkwargs['plaw_index'], cosmo=self.cosmology,
+                                  kappa_Rein=kappaRein, log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
 
-                    if model['args'][sub_mod_index][1] == 0:
-                        c_turnover = False
-                    else:
-                        c_turnover = True
+            modelkwargs['normalization'] = A0
 
-                    lensmod = TNFW.TNFW(z=zplane, c_turnover=c_turnover)
+            mass_function_type.append('plaw')
+            spatial_distribution_type.append(_spatial_)
 
-                    subhalo_args['trunc'] = self.rtrunc[i]
-                    subhalo_args['mhm'] = model['args'][sub_mod_index][0]
+            halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                                redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
+                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
+            return halos
 
-                elif prof == 'NFW':
+        def _return_plaw_LOS(_spatial_):
 
-                    if model['args'][sub_mod_index][1] == 0:
-                        c_turnover = False
-                    else:
-                        c_turnover = True
+            mass_function_type = []
+            spatial_distribution_type = []
+            halos = []
 
-                    lensmod = NFW.NFW(z=zplane, c_turnover=c_turnover)
+            if 'turnover_index' in model_kwargs:
+                modelkwargs['turnover_index'] = model_kwargs['turnover_index']
+            else:
+                modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
 
-                    subhalo_args['mhm'] = model['args'][sub_mod_index][0]
+            if 'logmhm' in model_kwargs:
+                modelkwargs['logmhm'] = model_kwargs['logmhm']
+            else:
+                modelkwargs['logmhm'] = 0
 
-                elif prof == 'pjaffe':
-                    raise StandardError('Pjaffe subhalos not yet implemented')
+            if 'rescale_sigma8' in model_kwargs:
+                rescale_sigma8 = True
+                omega_M_void = model_kwargs['omega_M_void']
+            else:
+                rescale_sigma8 = False
+                omega_M_void = None
 
-                    if model['args'][sub_mod_index][1] == 0:
-                        core = 1e-6
-                    else:
-                        core = model['args'][sub_mod_index][1]
+            if 'log_mL' in model_kwargs:
+                modelkwargs['log_mL'] = model_kwargs['log_mL']
+            else:
+                modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
 
-                    lensmod = PJaffe.PJaffe()
+            if 'log_mH' in model_kwargs:
+                modelkwargs['log_mH'] = model_kwargs['log_mH']
+            else:
+                modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
 
-                elif prof == 'ptmass':
+            A0_z, plaw_index_z, zvals = LOS_plaw(zmin=model_kwargs['zmin'], zmax=model_kwargs['zmax'],
+                                                 zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,
+                                                 rescale_sigma8 = rescale_sigma8, omega_M_void=omega_M_void,
+                                                 log_mL=modelkwargs['log_mL'],log_mH=modelkwargs['log_mH'])
 
-                    lensmod = PointMass.PointMass()
+            mass_function_type.append('plaw')
+            spatial_distribution_type.append(_spatial_)
 
-                else:
+            for N in range(0, Nrealizations):
 
-                    raise ValueError('profile '+prof+' not valid, supply valid mass profile for halos')
+                _plane_halos = []
 
-                subhalos.append(Deflector(subclass=lensmod, x=self.xpos[i],
-                                  y=self.ypos[i], mass=self.masses[i], redshift=zplane, is_subhalo=True, **subhalo_args))
+                for p in range(0, len(A0_z)):
+                    modelkwargs['normalization'] = A0_z[p]
+                    model_kwargs['plaw_index'] = plaw_index_z
+                    redshift = zvals[p]
 
+                    _plane_halos += self._halos(mass_function_type=mass_function_type,
+                                                spatial_distribution=spatial_distribution_type, redshift=redshift,
+                                                Nrealizations=1, mass_profile=[massprofile],
+                                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])[0]
+
+                halos.append(_plane_halos)
+
+            return halos
+
+
+        if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_main','delta_LOS','composite_delta']:
+                raise Exception('model name not recognized')
+        if spatial_name not in ['uniform2d','uniform_cored_nfw']:
+                raise Exception('spatial distribution not recognized')
+
+        if isinstance(massprofile, list):
+            raise Exception('not yet implemented')
         else:
-            raise StandardError('other mass function types not yet implemented')
+            if massprofile not in ['NFW', 'TNFW', 'PTmass', 'PJaffe']:
+                    raise Exception('mass profile not recognized')
 
-        return subhalos
 
-    def draw_subhalos(self,N_real=1,**kwargs):
+        modelkwargs = {}
+        spatialkwargs = {}
 
-        # returns a list of lists; each nested list is composed of a single substructure realization
-        # If there are multiple lens planes, each nested list is composed of a list of realizations in different planes
-        # e.g. [[realization1],[realization2],...[realizationN]]; realization1 = [plane1,plane2... planeK]
-        # plane1 = [subhalo1,subhalo2,subhalo3...]
-        #  N_real lists of physical parameters (position, masses, truncation, etc.)
-        #  for subhalos, whose functional form is not yet specified
+        if 'rmax2d_asec' in model_kwargs:
+            spatialkwargs['rmax2d'] = model_kwargs['rmax2d_asec']
+        else:
+            spatialkwargs['rmax2d'] = spatial_defaults['theta_max']
 
-        # drawn according to self.mass_functions
-
-        assert self.substrucutre_initialized
-
-        Nmods = self.substructure_model['Nprofiles']
-
-        substrucuture_realizations = []
-
-        for n in range(0,N_real):
-
-            subhalos_inplane = []
-
-            for modnum in range(0,Nmods):
-
-                if self.substructure_model['Nplanes'][modnum] == 1:
-                    multiplane = False
-
-                else:
-                    multiplane = True
-
-                if multiplane:
-
-                    redshifts = np.linspace(self.substructure_model['zlow'][modnum],self.substructure_model['zhigh'][modnum],
-                                            self.substructure_model['Nplanes'][modnum]+1)[:-1]
-
-                    kwargs['dz'] = redshifts[1] - redshifts[0]
-
-                    if redshifts[0]==0:
-                        redshifts = redshifts[1:]
-
-                    for zval in redshifts:
-
-                        subhalos_inplane += self.add_single_plane(zval,model=self.substructure_model,sub_mod_index=modnum,**kwargs)
-
-                else:
-                    subhalos_inplane += self.add_single_plane(self.zd,model=self.substructure_model,sub_mod_index=modnum,**kwargs)
-
-            substrucuture_realizations.append(subhalos_inplane)
-
-        return substrucuture_realizations
-
-    def set_substructure_model(self,models):
-        """
-
-        :param model: Defines a model for a substructure realization(s)
-        :return: model kwargs
-
-        model syntax: Nprofiles_massfunc1_prof1_norm1_mlow1_mhigh1_args1_spatial1_Nplanes_z1_z2+massfunc2_...
-
-        args form: ['mbreak',extra]
-        for NFW: extra is c turnover 0 is off 1 is on
-
-        spatial1 form: ['name',args]
-        if 'name'== 'uniformnfw' args = [Rmax_2d,Rmax_z]
-
-        if 'name'== 'uniformflat' args = [Rmax_2d,trunc]
-
-        Nprofiles specifies the number of different substructure models per realization
-
-        Nplanes refers to multiple lens planes. If Nplanes>1, must specify:
-        ..._Nplanes_zlow_zhigh_zstep
-
-        """
-
-        self.substrucutre_initialized = True
-        realization_args = {}
-        realization_args['massfunctype'] = []
-        realization_args['proftypes'] = []
-        realization_args['norms'] = []
-        realization_args['mlow'] = []
-        realization_args['mhigh'] = []
-        realization_args['args'] = []
-        realization_args['spatial'] = []
-        realization_args['Nplanes'] = []
-        realization_args['zlow'] = []
-        realization_args['zhigh'] = []
-        realization_args['zstep'] = []
-
-        realization_args['Nprofiles'] = len(models)
-
-        for model in models:
-            count = 0
-
-            splitname = model.split('_')
-
-            # mlow_high should be in log(mass)
-            realization_args['massfunctype'].append(splitname[count])
-            realization_args['proftypes'].append(splitname[count+1])
-            realization_args['norms'].append(eval(splitname[count+2]))
-            realization_args['mlow'].append(float(splitname[count+3]))
-            realization_args['mhigh'].append(float(splitname[count+4]))
-            realization_args['args'].append(eval(splitname[count+5]))
-            realization_args['spatial'].append(eval(splitname[count+6]))
-
-            if int(splitname[count+7]) != 1:
-
-                realization_args['Nplanes'].append(int(splitname[count+7]))
-                realization_args['zlow'].append(float(splitname[count + 8]))
-                realization_args['zhigh'].append(float(splitname[count + 9]))
-                count+=9
+        if spatial_name == 'uniform_cored_nfw':
+            if 'rmaxz_kpc' in model_kwargs:
+                spatialkwargs['rmaxz'] = model_kwargs['Rmax_z_kpc'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
             else:
-                realization_args['Nplanes'].append(1)
-                realization_args['zlow'].append(self.zd)
-                realization_args['zhigh'].append(self.zsrc)
-                realization_args['zstep'].append(1)
-                count+=7
+                spatialkwargs['rmaxz'] = spatial_defaults['Rmax_z_kpc'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
 
-        return realization_args
+            if 'nfw_core_kpc' in model_kwargs:
+                spatialkwargs['rc'] = model_kwargs['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
+            else:
+                spatialkwargs['rc'] = spatial_defaults['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
 
-    def substructure_init(self,model):
+        if model_name == 'plaw_main':
 
-        self.substructure_model = self.set_substructure_model(model)
-        self.substrucutre_initialized = True
+            HALOS = _return_plaw_main( _spatial_ = spatial_name)
+
+        elif model_name == 'plaw_LOS':
+
+            HALOS = _return_plaw_LOS(_spatial_ = 'uniform2d')
+
+        elif model_name=='composite_plaw':
+
+            HALOS_main = _return_plaw_main(_spatial_ = spatial_name)
+            HALOS_LOS = _return_plaw_LOS(_spatial_ = 'uniform2d')
+
+            HALOS = []
+
+            for n in range(0,Nrealizations):
+
+                HALOS.append(HALOS_LOS[n]+HALOS_main[n])
+
+        elif model_name == 'delta_main':
+            raise Exception('not yet implemented')
+
+        elif model_name == 'delta_LOS':
+            HALOS = _return_delta_LOS()
+
+        return HALOS
+
+    def _halos(self,mass_function_type=None,spatial_distribution=None,redshift=None,Nrealizations=1,
+                   mass_profile=None,modelkwargs={},spatialkwargs={}):
+        """
+        :param mass_func_type: "plaw, delta, etc."
+        :param spatial: 'uniformflat','uniformnfw'
+        :param redshift: redshift of the plane
+        :param modelkwargs: keyword args for a particular model
+        :return:
+        """
+
+        assert isinstance(mass_function_type,list)
+        assert isinstance(spatial_distribution,list)
+        assert len(mass_function_type)==len(spatial_distribution)
+
+        realizations = []
+
+        for r in range(0,Nrealizations):
+
+            subhalos = []
+
+            for i in range(0,len(mass_function_type)):
+
+                mass_func_type = mass_function_type[i]
+                spatial_type = spatial_distribution[i]
+                massprofile= mass_profile[i]
+
+                if mass_func_type == 'plaw':
+
+                    massfunction = Plaw(**modelkwargs[i])
+
+                elif mass_func_type == 'delta':
+
+                    massfunction = Delta(**modelkwargs[i])
+
+                else:
+                    if mass_func_type is None:
+                        raise Exception('supply mass function type')
+                    else:
+                        raise Exception('mass function type '+str(mass_func_type)+' not recognized')
+
+                if spatial_type == 'uniform2d':
+
+                    if 'rmaxz' in spatialkwargs[i]:
+                        del spatialkwargs[i]['rmaxz']
+                    if 'rc' in spatialkwargs[i]:
+                        del spatialkwargs[i]['rc']
+
+                    spatial= Uniform_2d(cosmology=self.cosmology,**spatialkwargs[i])
+
+                elif spatial_type == 'uniform_cored_nfw':
+
+                    spatial = Uniform_cored_nfw(cosmology=self.cosmology,**spatialkwargs[i])
+
+                else:
+                    if spatial_type is None:
+                        raise Exception('supply spatial distribution type')
+                    else:
+                        raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
+
+                masses = massfunction.draw()
+
+                R,x,y = spatial.draw(int(len(masses)),redshift)
+
+                for j in range(0, int(len(masses))):
+
+                    subhalo_args = {}
+
+                    if massprofile == 'TNFW':
+
+                        c_turnover = concentration_turnover
+
+                        lensmod = TNFW.TNFW(z=redshift, zsrc=self.cosmology.zsrc, c_turnover=c_turnover)
+
+                        if spatial_distribution[i] == 'uniform2d':
+                            truncation = TruncationFuncitons(truncation_routine='NFW_m200')
+                            subhalo_args['trunc'] = None
+
+                        elif spatial_distribution[i] == 'uniform_cored_nfw':
+                            truncation = TruncationFuncitons(truncation_routine='tidal_3d')
+                            subhalo_args['trunc'] = truncation.function(mass=masses,r3d=R,
+                                                                        sigmacrit=self.cosmology.sigmacrit)
+
+                        subhalo_args['mhm'] = modelkwargs[i]['logmhm']
+
+                    elif massprofile == 'NFW':
+
+                        c_turnover = concentration_turnover
+
+                        lensmod = NFW.NFW(z=redshift, zsrc = self.cosmology.zsrc, c_turnover=c_turnover)
+
+                        subhalo_args['mhm'] = modelkwargs[i]['logmhm']
+
+                    elif massprofile == 'pjaffe':
+
+                        if spatial_distribution[i] == 'uniform2d':
+                            truncation = TruncationFuncitons(truncation_routine='gaussian')
+                            subhalo_args['trunc'] = truncation.function(mean=0.1,sigma=0.05,size=len(masses))
+
+                        elif spatial_distribution[i] == 'uniform_cored_nfw':
+                            truncation = TruncationFuncitons(truncation_routine='tidal_3d')
+                            subhalo_args['trunc'] = truncation.function(mass=masses, r3d=R,
+                                                                        sigmacrit=self.cosmology.sigmacrit)
+
+                        lensmod = PJaffe.PJaffe(z=redshift,zsrc = self.cosmology.zsrc)
+
+                    elif massprofile == 'ptmass':
+
+                        lensmod = PointMass.PointMass(z=redshift,zsrc = self.cosmology.zsrc)
+
+                    else:
+
+                        raise ValueError('profile '+massprofile+' not valid, supply valid mass profile for halos')
+
+                    subhalos.append(Deflector(subclass=lensmod, x=x[j],
+                                  y=y[j], mass=masses[j], redshift=redshift, is_subhalo=True, **subhalo_args))
+
+
+            realizations.append(subhalos)
+
+        return realizations
+
+    def get_masses(self,realization_list):
+
+        realization_masses = []
+
+        for realization in realization_list:
+
+            realization_masses.append(np.array([deflector.other_args['mass'] for deflector in realization]))
+
+        return realization_masses
+
 
 if False:
-    d = HaloGen()
-    #model syntax: massfunc1_prof1_norm1_mlow1_mhigh1_args1_Nplanes_massfunc2_...
-    # args syntax: [mbreak,core/c(m) relation,logmlow_norm,logmhigh_norm]
-    models = ["plaw_tNFW_[.0005]_6_10_[0,1]_['uniformnfw',[3,500]]_1"]
-    #models = ["plaw_tNFW_['znorm']_6_10_[0,1,2,10]_['uniformnfw',[3,500]]_20_0_0.5"]
+    render = HaloGen(zd=.5,zsrc=1.5)
 
-    d.substructure_init(model=models)
+    model_args = {}
+    model_args['fsub'] = 0.1
+    model_args['zmin'] = 0.001
+    model_args['zmax'] = .57
 
-    realization = d.draw_subhalos(N_real=1)
-    print (realization[0][0].lensclass.params)
+    halos = render.draw_model(model_name='plaw_main', spatial_name='uniform_cored_nfw',
+                              massprofile='NFW', model_kwargs=model_args, Nrealizations=1)[0]
+    m = []
+
+    for halo in halos:
+        m.append(np.log10(halo.other_args['mass']))
+    h,b = np.histogram(m)
+    print np.polyfit((b[0:-1]),np.log10(h),1)
+
 
 
 

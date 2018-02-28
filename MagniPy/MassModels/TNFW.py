@@ -3,15 +3,17 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class TNFW:
 
-    def __init__(self,z=None,c_turnover=True,cosmology=None):
+    def __init__(self,z=None,zsrc=None,c_turnover=True,cosmology=None):
         """
         adopting a standard cosmology, other cosmologies not yet implemented
         :param z1: lens redshift
         :param z2: source redshift
         :param h: little h
         """
+        self.z = z
+
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z, zsrc=1.5)
+            self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
         else:
             self.cosmology = cosmology
 
@@ -24,6 +26,7 @@ class TNFW:
 
         r = np.sqrt(x_loc ** 2 + y_loc ** 2+1e-9)
         xnfw = r * Rs ** -1
+
         tau = t*Rs**-1
 
         xmin = 0.0001
@@ -108,15 +111,19 @@ class TNFW:
         newargs['center_x'] = args['y']
         return newargs
 
-    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None):
+    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None,**kwargs):
 
         assert mhm is not None
         assert mass is not None
-        assert trunc is not None
 
         c = self.nfw_concentration(mass, mhm)
 
         rsdef,Rs = self.nfw_physical2angle(mass, c)
+
+        if trunc is None:
+            assert kwargs['truncation_funciton'].truncation_routine == 'NFW_r200'
+            truncation = kwargs['truncation_function']
+            trunc = truncation.function(r200=Rs*c,multiple=1,sigma=(Rs*c)**-1)
 
         #ks = rsdef*(4*rs*(np.log(0.5)+1))**-1
 
@@ -159,7 +166,7 @@ class TNFW:
         :return: radius R_200 in comoving Mpc/h
         """
 
-        return (3*M/(4*np.pi*self.cosmology.rhoc*200))**(1./3.)
+        return (3*M/(4*np.pi*self.cosmology.get_rhoc()*200))**(1./3.)
 
     def M_r200(self, r200):
         """
@@ -167,14 +174,14 @@ class TNFW:
         :param r200: r200 in comoving Mpc/h
         :return: M200
         """
-        return self.cosmology.rhoc*200 * r200**3 * 4*np.pi/3.
+        return self.cosmology.get_rhoc()*200 * r200**3 * 4*np.pi/3.
 
     def rho0_c(self, c):
         """
         computes density normalization as a function of concentration parameter
         :return: density normalization in h^2/Mpc^3 (comoving)
         """
-        return 200./3*self.cosmology.rhoc*c**3/(np.log(1+c)-c/(1+c))
+        return 200./3*self.cosmology.get_rhoc()*c**3/(np.log(1+c)-c/(1+c))
 
     def nfw_concentration(self, m, mhm, g1=60,g2=.17):
 
@@ -200,24 +207,6 @@ class TNFW:
 
         return rt*rs**-1
 
-    def m_in_r3d(self,m,r,rt,mhm=False):
-
-        tau = self.tau(m,rt,mhm=mhm)
-        ks,rs = self.nfw_params(m,mhm=mhm)
-        return 4 * ks * rs ** 2 * self.cosmology.sigmacrit * np.pi * tau_factor(r*rs**-1,tau)
-
-    def m_infinity(self,m,rt,mhm=False):
-        """
-
-        :param m: comoving M200
-        :param rt: physical truncation radius in arcseconds
-        :param mhm: half mode mass; set to zero to avoid concentration damping
-        :return: physical total mass of halo
-        """
-        tau = self.tau(m, rt, mhm=mhm)
-        ks, rs = self.nfw_params(m, mhm=mhm)
-        return 4*np.pi*ks*rs**2*self.cosmology.sigmacrit*f(tau)
-
     def nfwParam_physical(self, M, c):
         """
         returns the NFW parameters in physical units
@@ -225,9 +214,9 @@ class TNFW:
         :param c: concentration
         :return:
         """
-        h = self.cosmology.h
-        r200 = self.r200_M(M * h) * h * self.cosmology.a_z(self.cosmology.zd)  # physical radius r200
-        rho0 = self.rho0_c(c) / h**2 / self.cosmology.a_z(self.cosmology.zd)**3 # physical density in M_sun/Mpc**3
+        h = self.cosmology.cosmo.h
+        r200 = self.r200_M(M * h) * h * self.cosmology.a_z(self.z)  # physical radius r200
+        rho0 = self.rho0_c(c) / h**2 / self.cosmology.a_z(self.z)**3 # physical density in M_sun/Mpc**3
         Rs = r200/c
         return rho0, Rs, r200
 
@@ -240,11 +229,11 @@ class TNFW:
         """
 
         rho0, Rs, r200 = self.nfwParam_physical(M, c)
-        Rs_angle = Rs / self.cosmology.D_d / self.cosmology.arcsec #Rs in asec
+        Rs_angle = Rs / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec #Rs in asec
 
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
 
-        return theta_Rs / self.cosmology.epsilon_crit / self.cosmology.D_d / self.cosmology.arcsec, Rs_angle
+        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
 
     def M_physical(self,m200,mhm=0):
         """

@@ -26,7 +26,7 @@ class Magnipy:
 
         self.zmain = zmain
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(z_l=zmain, z_s=zsrc)
+        self.lens_halos = halo_gen.HaloGen(zd=zmain, zsrc=zsrc)
 
         self.cosmo = Cosmo(zd=zmain,zsrc=zsrc)
         self.clean_up = clean_up
@@ -35,6 +35,7 @@ class Magnipy:
         self.paths = paths
 
         if clean_up:
+
             if temp_folder is None:
                 self.temp_folder = 'temp/'
             else:
@@ -281,6 +282,7 @@ class Magnipy:
             #    print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
 
             if self.clean_up:
+
                 delete_dir(self.paths.gravlens_input_path_dump)
 
             return data

@@ -1,6 +1,6 @@
-from scipy.integrate import quad
 import numpy as np
-from astropy.cosmology import WMAP9 as cosmo
+from MagniPy.LensBuild.defaults import *
+from scipy.integrate import quad
 
 
 class Cosmo:
@@ -17,27 +17,37 @@ class Cosmo:
 
     density_to_MsunperMpc = 0.001 * M_sun**-1 * (100**3) * Mpc**3 # convert [g/cm^3] to [solarmasses / Mpc^3]
 
-    def __init__(self,zd=0.5,zsrc = 1.5):
+    def __init__(self,zd = None, zsrc = None, compute=True):
 
-        self.zd,self.zsrc = zd,zsrc
+        self.cosmo = default_cosmology
 
-        self.cosmo = cosmo
+        if compute:
 
-        self.h = self.cosmo.h
+            self.zd,self.zsrc = zd,zsrc
 
-        self.epsilon_crit = self.get_epsiloncrit(zd,zsrc)
+            self.h = self.cosmo.h
 
-        self.sigmacrit = self.epsilon_crit*(0.001)**2*self.kpc_per_asec(zd)**2
+            self.epsilon_crit = self.get_epsiloncrit(zd,zsrc)
 
-        self.rhoc_physical = self.cosmo.critical_density0.value * self.density_to_MsunperMpc # [M_sun Mpc^-3]
+            self.sigmacrit = self.epsilon_crit*(0.001)**2*self.kpc_per_asec(zd)**2
 
-        self.rhoc = self.rhoc_physical*self.h**-2
+            self.rhoc_physical = self.cosmo.critical_density0.value * self.density_to_MsunperMpc # [M_sun Mpc^-3]
 
-        self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
+            self.rhoc = self.rhoc_physical*self.h**-2
 
-        self.kpc_convert = self.kpc_per_asec(zd)
+            self.D_d,self.D_s,self.D_ds = self.D_A(0,zd),self.D_A(0,zsrc),self.D_A(zd,zsrc)
 
-        self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
+            self.kpc_convert = self.kpc_per_asec(zd)
+
+            self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
+
+    def get_rhoc(self):
+
+        return self.cosmo.critical_density0.value * self.density_to_MsunperMpc*self.cosmo.h**-2
+
+    def get_sigmacrit(self):
+
+        return self.get_epsiloncrit(self.zd,self.zsrc)*(0.001)**2*self.kpc_per_asec(self.zd)**2
 
     def D_A(self,z1,z2):
 
@@ -64,12 +74,13 @@ class Cosmo:
         return self.D_A(z1[0],z1[1])*self.D_A(z2[0],z2[1])**-1
 
     def get_epsiloncrit(self,z1,z2):
-        if not hasattr(self,'epsilon_crit'):
-            D_ds = self.D_A(z1, z2)
-            D_d = self.D_A(0, z1)
-            D_s = self.D_A(0, z2)
-            # Units [M_sun arcsec^-2]
-            epsilon_crit = (self.c**2*(4*np.pi*self.G)**-1)*(D_s*D_ds**-1*D_d**-1)
+
+        D_ds = self.D_A(z1, z2)
+        D_d = self.D_A(0, z1)
+        D_s = self.D_A(0, z2)
+
+        epsilon_crit = (self.c**2*(4*np.pi*self.G)**-1)*(D_s*D_ds**-1*D_d**-1)
+
         return epsilon_crit
 
     def E_z(self,z):

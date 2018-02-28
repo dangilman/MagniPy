@@ -210,7 +210,7 @@ class RayTrace:
 
         betax = self._comoving2angle(x_on_src,self.cosmo.zsrc)
         betay = self._comoving2angle(y_on_src, self.cosmo.zsrc)
-       
+
         return betax,betay
 
 
