@@ -19,23 +19,27 @@ class TNFW:
 
         self.c_turnover=c_turnover
 
-    def def_angle(self, x, y, Rs=None, theta_Rs=None, t=None, center_x=0, center_y=0):
+    def def_angle(self, x, y, Rs=None, theta_Rs=None, r_trunc=None, center_x=0, center_y=0):
 
         x_loc = x - center_x
         y_loc = y - center_y
 
-        r = np.sqrt(x_loc ** 2 + y_loc ** 2+1e-9)
+        r = np.sqrt(x_loc ** 2 + y_loc ** 2)
+
         xnfw = r * Rs ** -1
 
-        tau = t*Rs**-1
+        tau = r_trunc * Rs ** -1
 
-        xmin = 0.0001
+        xmin = 0.00000001
 
-        xnfw[np.where(xnfw < xmin)] = xmin
+        if isinstance(xnfw,float) or isinstance(xnfw,int):
+            xnfw = max(xmin,xnfw)
+        else:
+            xnfw[np.where(xnfw<xmin)] = xmin
 
         magdef = theta_Rs * (1 + np.log(0.5)) ** -1 * self.t_fac(xnfw, tau) * xnfw ** -1
 
-        return magdef * x_loc * r ** -1, magdef * y_loc * r ** -1
+        return magdef * x_loc * (xnfw*Rs) ** -1, magdef * y_loc * (xnfw*Rs) ** -1
 
     def F(self,x):
 
@@ -45,25 +49,6 @@ class TNFW:
             inds2 = np.where(x > 1)
             nfwvals[inds1] = (1 - x[inds1] ** 2) ** -.5 * np.arctanh((1 - x[inds1] ** 2) ** .5)
             nfwvals[inds2] = (x[inds2] ** 2 - 1) ** -.5 * np.arctan((x[inds2] ** 2 - 1) ** .5)
-            return nfwvals
-
-        elif isinstance(x, float) or isinstance(x, int):
-            if x == 1:
-                return 1
-            if x < 1:
-                return (1 - x ** 2) ** -.5 * np.arctanh((1 - x ** 2) ** .5)
-            else:
-                return (x ** 2 - 1) ** -.5 * np.arctan((x ** 2 - 1) ** .5)
-
-    def F_old(self,x):
-
-        if isinstance(x, np.ndarray):
-            nfwvals = np.ones_like(x)
-
-            inds1 = np.where(x < 1)
-            inds2 = np.where(x > 1)
-            nfwvals[inds1] = (1 - x[inds1] ** 2) ** -.5 * np.arccosh(x[inds1]**-1)
-            nfwvals[inds2] = (x[inds2] ** 2 - 1) ** -.5 * np.arccos(x[inds2]**-1)
             return nfwvals
 
         elif isinstance(x, float) or isinstance(x, int):
@@ -93,25 +78,7 @@ class TNFW:
             r = np.sqrt(self.x**2+self.y**2)
         return 2*ks*(1-self.F(r*rs**-1))*((r*rs**-1)**2-1)**-1
 
-    def translate_to_lensmodel(self, **args):
-
-        newargs = {}
-        newargs['rs'] = args['Rs']
-        newargs['ks'] = args['theta_Rs'] * (4 * args['Rs'] * (np.log(0.5) + 1)) ** -1
-        newargs['x'] = args['center_x']
-        newargs['y'] = args['center_y']
-        return newargs
-
-    def translate_to_lenstronomy(self, **args):
-
-        newargs = {}
-        newargs['Rs'] = args['rs']
-        newargs['theta_Rs'] = 4 * args['ks'] * args['Rs'] * (np.log(0.5) + 1)
-        newargs['center_x'] = args['x']
-        newargs['center_x'] = args['y']
-        return newargs
-
-    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None,**kwargs):
+    def params(self, x=None,y=None,mass=float, mhm=None,trunc=None):
 
         assert mhm is not None
         assert mass is not None
@@ -119,11 +86,6 @@ class TNFW:
         c = self.nfw_concentration(mass, mhm)
 
         rsdef,Rs = self.nfw_physical2angle(mass, c)
-
-        if trunc is None:
-            assert kwargs['truncation_funciton'].truncation_routine == 'NFW_r200'
-            truncation = kwargs['truncation_function']
-            trunc = truncation.function(r200=Rs*c,multiple=1,sigma=(Rs*c)**-1)
 
         #ks = rsdef*(4*rs*(np.log(0.5)+1))**-1
 
@@ -135,8 +97,12 @@ class TNFW:
         subkwargs['Rs'] = Rs
         subkwargs['center_x'] = x
         subkwargs['center_y'] = y
-        subkwargs['t'] = trunc
 
+        if trunc is None:
+            r200 = Rs*c
+            trunc = r200
+
+        subkwargs['r_trunc'] = trunc
         otherkwargs['mass'] = mass
         otherkwargs['c'] = c
         otherkwargs['name'] = 'TNFW'
@@ -233,7 +199,7 @@ class TNFW:
 
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
 
-        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
+        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.cosmology.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
 
     def M_physical(self,m200,mhm=0):
         """

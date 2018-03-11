@@ -1,7 +1,6 @@
 import numpy as np
 from source_models import *
 from MagniPy.util import *
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.Profiles.sie import SPEMD
 from lenstronomy.LensModel.Profiles.nfw import NFW
@@ -27,16 +26,16 @@ class RayTrace:
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
 
-        if source_shape == 'GAUSSIAN':
-            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
-        else:
-            raise ValueError('other source models not yet implemented')
+        self.xsrc,self.ysrc = xsrc,ysrc
 
         self.cosmo = cosmology
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-
+        if source_shape == 'GAUSSIAN':
+            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'],xgrid0=self.x_grid_0,ygrid0=self.y_grid_0)
+        else:
+            raise ValueError('other source models not yet implemented')
 
         if self.raytrace_with == 'lenstronomy':
             self.multlenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
@@ -53,7 +52,7 @@ class RayTrace:
 
         if self.multiplane is False:
             if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos,ypos,lens_system,)
+                return self.multlenswrap.compute_mag(xpos,ypos,lens_system)
 
             else:
                 return self._single_plane_trace(xpos,ypos,lens_system,print_mag,**kwargs)
@@ -61,7 +60,45 @@ class RayTrace:
             if self.raytrace_with == 'lenstronomy':
                 return self.multlenswrap.compute_mag(xpos, ypos, lens_system)
             else:
-                return self._mult_plane_trace(xpos,ypos,lens_system,**kwargs)
+                return self._multi_plane_trace(xpos,ypos,lens_system,**kwargs)
+
+    def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False,which_image=None):
+
+        if print_mag:
+            print 'computing mag...'
+
+        x_loc = xx
+        y_loc = yy
+
+        xdef = np.zeros_like(x_loc)
+        ydef = np.zeros_like(y_loc)
+
+        for count,deflector in enumerate(lens_system.lens_components):
+
+            xplus,yplus = deflector.lensing.def_angle(x=x_loc,y=y_loc,**deflector.args)
+
+
+            if deflector.has_shear:
+
+                shearx, sheary = deflector.Shear.def_angle(x_loc, y_loc,deflector.shear,deflector.shear_theta)
+
+                xplus += shearx
+                yplus += sheary
+
+            xdef += xplus
+            ydef += yplus
+
+            if print_mag and i==0:
+                print count+1
+
+        if to_img_plane:
+
+            return xdef,ydef
+
+        else:
+            x_source = x_loc - xdef
+            y_source = y_loc - ydef
+            return x_source,y_source
 
     def _single_plane_trace(self,xpos,ypos,lens_system,print_mag=False,return_image=False,which_image=None):
 
@@ -117,11 +154,18 @@ class RayTrace:
 
     def _eval_src(self,betax,betay):
 
-        #print 'lensmodel'
+        #plt.imshow(self.source.source_profile(betax=betax,betay=betay))
+        #plt.show()
 
         return self.source.source_profile(betax=betax,betay=betay)
 
-    def _mult_plane_trace(self,xpos,ypos,lens_system):
+    def multi_plane_trace_full(self,xx,yy,lens_system):
+
+        betax,betay = self._multi_plane_shoot(lens_system,xx,yy)
+
+        return betax,betay
+
+    def _multi_plane_trace(self,xpos,ypos,lens_system):
 
         magnification = []
 
@@ -136,7 +180,7 @@ class RayTrace:
 
         return np.array(magnification)
 
-    def _index_ordering(self, redshift_list):
+    def sort_redshift_indexes(self, redshift_list):
         """
 
         :param redshift_list: list of redshifts
@@ -152,23 +196,70 @@ class RayTrace:
 
         return x+alpha_x*DT,y+alpha_y*DT
 
-    def _comoving2angle(self,d,z,zstart=0):
+    def _comoving2angle(self,d,z):
 
-        return d*self.cosmo.T_xy(zstart,z)**-1
+        return d*self.cosmo.T_xy(0,z)**-1
 
-    def _reduced2phys(self,reduced,z):
+    def _reduced2phys(self,reduced,z,z_source):
 
-        scale = self.cosmo.D_s*self.cosmo.D_A(z,self.cosmo.zsrc)**-1
-
-        return reduced*scale
+        factor = self.cosmo.D_xy(0, z_source) / self.cosmo.D_xy(z, z_source)
+        return reduced * factor
 
     def _next_plane(self,x,y,xdef,ydef,d):
 
         return x + xdef*d, y +ydef*d
 
+    def _add_deflection(self,x_comoving,y_comoving,deflector,xdeflection,ydeflection,z):
+
+        x_angle = self._comoving2angle(x_comoving,z)
+        y_angle = self._comoving2angle(y_comoving,z)
+
+        xdef_new,ydef_new = deflector.lensing.def_angle(x_angle,y_angle,**deflector.args)
+
+        if deflector.has_shear:
+            xshear,yshear = deflector.Shear.def_angle(x_angle,y_angle,deflector.shear,deflector.shear_theta)
+            xdef_new += xshear
+            ydef_new += yshear
+
+        xdef_physical = self._reduced2phys(xdef_new, z, self.cosmo.zsrc)
+        ydef_physical = self._reduced2phys(ydef_new, z, self.cosmo.zsrc)
+
+        alpha_x_new = xdeflection - xdef_physical
+        alpha_y_new = ydeflection - ydef_physical
+
+        return alpha_x_new, alpha_y_new
+
+    def _add_deflection_write(self,x_comoving,y_comoving,deflector,xdeflection,ydeflection,z,file):
+
+        x_angle = self._comoving2angle(x_comoving,z)
+        y_angle = self._comoving2angle(y_comoving,z)
+
+        xdef_new,ydef_new = deflector.lensing.def_angle(x_angle,y_angle,**deflector.args)
+
+        with open(file,'a') as f:
+            f.write('reduced_def '+str(deflector.profname)+': '+str(xdef_new)+' '+str(ydef_new)+'\n\n')
+
+        if deflector.has_shear:
+            xshear,yshear = deflector.Shear.def_angle(x_angle,y_angle,deflector.shear,deflector.shear_theta)
+            xdef_new += xshear
+            ydef_new += yshear
+            with open(file, 'a') as f:
+                f.write('reduced_def (shear) ' + str('Shear') + ': ' + str(xshear) + ' ' + str(yshear) + '\n\n')
+
+        xdef_physical = self._reduced2phys(xdef_new,z)
+        ydef_physical = self._reduced2phys(ydef_new,z)
+
+        with open(file, 'a') as f:
+            f.write('physical_def: ' + str(xdef_physical) + ' ' + str(ydef_physical) + '\n\n')
+
+        alpha_x_new = xdeflection - xdef_physical
+        alpha_y_new = ydeflection - ydef_physical
+
+        return alpha_x_new, alpha_y_new
+
     def _multi_plane_shoot(self, lens_system, x_obs, y_obs):
 
-        sorted_indexes = self._index_ordering(lens_system.redshift_list)
+        sorted_indexes = self.sort_redshift_indexes(lens_system.redshift_list)
 
         x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
 
@@ -176,31 +267,17 @@ class RayTrace:
 
         zstart = 0
 
-        for i,deflector in enumerate(lens_system.lens_components):
+        for index in sorted_indexes:
 
-            z = lens_system.redshift_list[sorted_indexes[i]]
+            z = lens_system.redshift_list[index]
+
+            deflector = lens_system.lens_components[index]
 
             D_to_plane = self.cosmo.T_xy(zstart,z)
 
             x,y = self._next_plane(x,y,xdef_angle,ydef_angle,D_to_plane)
 
-            x_angle_plane = self._comoving2angle(x,z)
-            y_angle_plane = self._comoving2angle(y,z)
-
-            xdef_new,ydef_new = deflector.lensing.def_angle(x_angle_plane,y_angle_plane,**deflector.args)
-
-            if deflector.has_shear:
-
-                xshear,yshear = deflector.Shear.def_angle(x_angle_plane,y_angle_plane,deflector.shear,deflector.shear_theta)
-
-                xdef_new += xshear
-                ydef_new += yshear
-
-            xdef_physical = self._reduced2phys(xdef_new, z)
-            ydef_physical = self._reduced2phys(ydef_new, z)
-
-            xdef_angle -= xdef_physical
-            ydef_angle -= ydef_physical
+            xdef_angle,ydef_angle = self._add_deflection(x,y,deflector,xdef_angle,ydef_angle,z)
 
             zstart = z
 
@@ -213,18 +290,62 @@ class RayTrace:
 
         return betax,betay
 
+    def _multi_plane_shoot_write(self, lens_system, x_obs, y_obs,file):
 
+        sorted_indexes = self.sort_redshift_indexes(lens_system.redshift_list)
 
+        x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
 
+        xdef_angle,ydef_angle = x_obs,y_obs
 
+        with open(file,'a') as f:
+            f.write('x_obs,y_obs: '+str(x_obs)+' '+str(y_obs)+'\n\n')
 
+        zstart = 0
 
+        for index in sorted_indexes:
 
+            z = lens_system.redshift_list[index]
 
+            with open(file, 'a') as f:
+                f.write('xdef angle/ydef angle: '+str(xdef_angle)+' '+str(ydef_angle)+'\n')
+                f.write('zstart,z: '+str(zstart)+' '+str(z)+'\n')
 
+            deflector = lens_system.lens_components[index]
 
+            D_to_plane = self.cosmo.T_xy(zstart,z)
 
+            with open(file, 'a') as f:
+                f.write('D_co: '+str(D_to_plane)+'\n\n')
 
+            x,y = self._next_plane(x,y,xdef_angle,ydef_angle,D_to_plane)
+
+            with open(file,'a') as f:
+                f.write('next plane: '+str(x)+' '+str(y)+'\n\n')
+
+            xdef_angle,ydef_angle = self._add_deflection_write(x,y,deflector,xdef_angle,ydef_angle,z,file)
+
+            with open(file,'a') as f:
+                f.write('updated xdef: '+str(xdef_angle)+'\n')
+                f.write('updated ydef: '+str(ydef_angle)+'\n')
+
+            zstart = z
+
+        D_to_src = self.cosmo.T_xy(zstart,self.cosmo.zsrc)
+
+        with open(file,'a') as f:
+            f.write('D_co (src): ' +str(D_to_src)+'\n\n')
+
+        x_on_src,y_on_src = x + D_to_src*xdef_angle, y + D_to_src*ydef_angle
+
+        betax = self._comoving2angle(x_on_src,self.cosmo.zsrc)
+        betay = self._comoving2angle(y_on_src, self.cosmo.zsrc)
+
+        with open(file,'a') as f:
+            f.write('src pos: '+str(betax)+ ' ' + str(betay)+'\n')
+        print 'src pos (true): ',str(self.xsrc) + ' ' + str(self.ysrc)
+
+        return betax,betay
 
 
 

@@ -1,0 +1,77 @@
+import numpy as np
+from halo_constructor import halo_constructor
+from MagniPy.LensBuild.lens_assemble import Deflector
+from MagniPy.MassModels.SIE import SIE
+from MagniPy.Solver.solveroutines import SolveRoutines
+from MagniPy.util import identify
+
+def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
+                sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
+                raytrace_with='lensmodel',solver_class=None):
+
+    run = True
+
+    if config=='cross':
+        target = 0
+    elif config=='fold':
+        target = 1
+    elif config == 'cusp':
+        target = 2
+    else:
+        raise Exception('config must be one of cross, cusp, fold')
+
+    if solver_class is None:
+        solver = SolveRoutines(zmain=zlens,zsrc=zsrc)
+    else:
+        solver = solver_class
+
+    while run:
+
+        r = np.random.uniform(0, .07 ** 2, 1)
+        theta = np.random.uniform(0, np.pi * 2, 1)
+        src_x, src_y = float(r ** .5 * np.cos(theta)), float(r ** .5 * np.sin(theta))
+
+        R_ein = np.absolute(np.random.normal(b_prior[0], b_prior[1]))
+        ellip = np.absolute(np.random.normal(ellip_prior[0], ellip_prior[1]))
+        shear = np.absolute(np.random.normal(shear_prior[0], shear_prior[1]))
+        epa = np.random.normal(ePA_prior[0], ePA_prior[1])
+        spa = np.random.normal(sPA_prior[0], sPA_prior[1])
+        if gamma_prior is None:
+            gamma = 2
+        else:
+            gamma = np.random.normal(gamma_prior[0], gamma_prior[1])
+            raytrace_with = 'lenstronomy'
+
+        truth = {'R_ein': R_ein, 'ellip': ellip, 'ellip_theta': epa, 'x': 0, 'y': 0, 'shear': shear, 'shear_theta': spa,
+                 'gamma': gamma}
+
+        main = Deflector(subclass=SIE(), redshift=zlens, tovary=True,
+                         varyflags=['1', '1', '1', '1', '1', '0', '0', '0', '0', '0'], **truth)
+
+        realizations_tokeep = halo_constructor(massprofile=massprofile, model_name='plaw_main', model_args=substructure_model_args,
+                                               Nrealizations=1, zlens=zlens, zsrc=zsrc)
+
+
+        dset_v0 = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=realizations_tokeep,
+                                           identifier=identifier,
+                                           srcx=src_x, srcy=src_y, grid_rmax=.06,
+                                           res=0.001, source_shape='GAUSSIAN', ray_trace=False,
+                                           raytrace_with=raytrace_with, source_size=source_size,
+                                           multiplane=False)
+
+        if dset_v0[0].nimg != 4 or identify(dset_v0[0].x, dset_v0[0].y, R_ein) != target:
+
+            continue
+
+        else:
+
+            dset = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=realizations_tokeep,
+                                               identifier=identifier,
+                                               srcx=src_x, srcy=src_y, grid_rmax=.06,
+                                               res=0.001, source_shape='GAUSSIAN', ray_trace=True,
+                                               raytrace_with=raytrace_with, source_size=source_size,
+                                               multiplane=False)
+
+            lens_system = solver.build_system(main=main,additional_halos=realizations_tokeep,multiplane=False)
+
+            return dset[0],lens_system

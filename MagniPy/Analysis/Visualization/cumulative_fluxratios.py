@@ -8,9 +8,10 @@ default_colors = ['k',cnames['indianred'],cnames['royalblue'],
 
 class FluxRatioCumulative:
 
-    def __init__(self,datasets='load',fnames=None,reference_data='load',reference_fname=None):
+    def __init__(self,datasets='load',fnames=None,refdataset='load',fname_ref=None):
 
         lensdata = []
+        refdata=[]
 
         if datasets=='load':
 
@@ -23,19 +24,23 @@ class FluxRatioCumulative:
             assert isinstance(datasets,list)
             lensdata = datasets
 
-        if reference_data == 'load':
-            reference_data = read_data(reference_fname)[0]
+        if refdataset=='load':
+
+            refdata= read_data(fname_ref)[0]
+
+        else:
+            refdata = refdataset
 
         self.lensdata = lensdata
 
-        if reference_data is not None:
-            self.set_reference_data(reference_data)
+        self.set_reference_data(refdata)
 
     def set_reference_data(self,refdata):
 
         self.reference_data = refdata
 
-    def make_figure(self,nbins=100,xmax=0.1,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8):
+    def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
+                    xlims=None,ylims=None):
 
         if color is None:
             color = default_colors
@@ -52,7 +57,8 @@ class FluxRatioCumulative:
 
             flux_ratio_residuals = []
 
-            for dset in model_data:
+            for j,dset in enumerate(model_data):
+
                 flux_ratio_residuals.append(dset.flux_anomaly(other_data=self.reference_data, index=1, sum_in_quad=True))
 
             values, bins = np.histogram(flux_ratio_residuals, bins=nbins, range=(0, xmax))
@@ -67,19 +73,28 @@ class FluxRatioCumulative:
                          linestyle=linestyle, alpha=alpha)
                 leg = False
 
-        ax.set_xlabel(
-            r'$\sqrt{\sum_{i=1}^{3} \left( \frac{F_{\rm{SIE(i)}} - F_{\rm{data(i)}}}{F_{\rm{data(i)}}} \right)^2}$',
-            fontsize=20)
+        ax.set_xlabel(xlabel,fontsize=20)
         ax.set_ylabel(ylabel,rotation=90,fontsize=18)
+        if xlims is None:
+            ax.set_xlim(0,xmax)
+        else:
+            ax.set_xlim(xlims[0],xlims[1])
 
-        yticks = np.round(np.linspace(0,L,6),1)
-        yticklabs = []
+        if ylims is None:
+            ax.set_ylim(0,1)
 
-        for tick in yticks:
-            yticklabs.append(str(np.round(tick*L**-1),1))
+        else:
+            ax.set_ylim(ylims[0],ylims[1])
 
-        ax.set_yticks(yticks)
-        ax.set_yticklabels(yticklabs)
+        if False:
+            ylims = [0, 1]
+            yticks = np.round(np.linspace(0, (ylims[1] - ylims[0]) * L, 6), 1)
+            yticklabs = []
+            for tick in yticks:
+                yticklabs.append(str(np.round(tick * (ylims[1] - ylims[0]) * L ** -1, 1)))
+
+            ax.set_yticks(yticks)
+            ax.set_yticklabels(yticklabs)
 
         if leg:
             plt.legend()
@@ -89,11 +104,12 @@ class FluxRatioCumulative:
 if False:
     import os
     from MagniPy.paths import *
-    path = os.getenv('HOME')+'/data/lensdata/SIE_flux_ratios/LOS_test/'
-    fnames = [path+'LOS1.txt',path+'LOS2.txt',path+'LOS1.txt',path+'main_lens_half.txt',path+'main_lens.txt']
-    fr = FluxRatioCumulative(fnames=fnames,reference_fname=fluxratio_data_path+'LOS_test/reference_data.txt')
+    path = os.getenv('HOME')+'/Code/jupyter_notebooks/Compute_flux_ratios/'
+    fnames = [path+'lenstronomy_LOS.txt',path+'lensmodel_LOS.txt']
+    fr = FluxRatioCumulative(fnames=fnames,fname_ref=path+'reference.txt')
 
-    fig,ax = fr.make_figure()
+    fig,ax = fr.make_figure(xmax=2)
+    plt.show(fig)
 
 
 

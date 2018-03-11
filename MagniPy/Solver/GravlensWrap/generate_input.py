@@ -201,13 +201,15 @@ class FullModel:
 
 class SingleModel:
 
-    def __init__(self, lensmodel=classmethod, tovary=False, tovary_args=[], vary_type='optimize'):
+    def __init__(self, lensmodel=classmethod, tovary=False, units='lensmodel', vary_type='optimize'):
 
         self.name = lensmodel.profname
 
         self.deflector = lensmodel
 
         self.tovary = lensmodel.tovary
+
+        self.units = units
 
     def _get_tovary(self, vary_type='optimize'):
 
@@ -225,7 +227,7 @@ class SingleModel:
 
     def _get_model(self,multiplane=False):
 
-        lensparams = kwargs_to_gravlens(self.deflector)
+        lensparams = kwargs_to_gravlens(self.deflector,self.units)
 
         if multiplane:
             lensparams += str(self.deflector.redshift)
@@ -233,9 +235,13 @@ class SingleModel:
         return lensparams
 
 class Header:
+
     def __init__(self, zlens=float, zsrc=float, omega_M=None, hval=None):
+
         inputstring = ''
+
         inputstring += 'set zlens = ' + str(zlens) + '\nset zsrc = ' + str(zsrc) + '\n'
+
         inputstring += 'set omega = '+str(omega_M)+'\nset lambda = '+str(1-omega_M)+'\nset hval = '+str(hval)+\
                        '\nset shrcoords=1\nset omitcore=.001\nset checkparity=0\nset clumpmode = 0\n'
 

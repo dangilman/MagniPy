@@ -25,15 +25,15 @@ def test_content(response):
     # assert 'GitHub' in BeautifulSoup(response.content).title.string
 
 
-def test_command_line_interface():
-    """Test the CLI."""
-    runner = CliRunner()
-    result = runner.invoke(cli.main)
-    assert result.exit_code == 0
-    assert 'magnipy.cli.main' in result.output
-    help_result = runner.invoke(cli.main, ['--help'])
-    assert help_result.exit_code == 0
-    assert '--help  Show this message and exit.' in help_result.output
+#def test_command_line_interface():
+#    """Test the CLI."""
+ #   runner = CliRunner()
+#    result = runner.invoke(cli.main)
+#    assert result.exit_code == 0
+#    assert 'magnipy.cli.main' in result.output
+#    help_result = runner.invoke(cli.main, ['--help'])
+#    assert help_result.exit_code == 0
+#    assert '--help  Show this message and exit.' in help_result.output
 
 def test_profiles_nfw(plot=True):
 
@@ -64,7 +64,7 @@ def test_profiles_nfw(plot=True):
     theta_rs = 4 * ks * rs * (1 + np.log(.5))
 
     xdef, ydef = nfw.def_angle(x, y, center_x=0, center_y=0, theta_Rs=theta_rs, Rs=rs)
-    xdef_t, ydef_t = TNFW.def_angle(x, y, center_x=0, center_y=0, theta_Rs=theta_rs, Rs=rs, t=rt)
+    xdef_t, ydef_t = TNFW.def_angle(x, y, center_x=0, center_y=0, theta_Rs=theta_rs, Rs=rs, r_trunc=rt)
     xdef_L, ydef_L = nfwL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs)
     xdef_Lt, ydef_Lt = nfwTL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs, t=rt)
 
@@ -118,8 +118,8 @@ def test_profiles_nfwT(plot=True):
     ks, rs = 0.1, 0.1
     theta_rs = 4 * ks * rs * (1 + np.log(.5))
 
-    xdef, ydef = nfw.def_angle(x, y, x=0, y=0, ks=ks, rs=rs)
-    xdef_t, ydef_t = nfwT.def_angle(x, y, x=0, y=0, ks=ks, rs=rs, rt=rt)
+    xdef, ydef = nfw.def_angle(x, y, theta_Rs=theta_rs,Rs=rs,center_x=0, center_y=0)
+    xdef_t, ydef_t = nfwT.def_angle(x, y, theta_Rs=theta_rs, Rs=rs, center_x=0, center_y=0, r_trunc=rt)
     xdef_L, ydef_L = nfwL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs)
     xdef_Lt, ydef_Lt = nfwTL.derivatives(x=x, y=y, Rs=rs, theta_Rs=theta_rs, t=rt)
     gravlens_xdef = np.loadtxt(fname)
@@ -301,9 +301,35 @@ def test_nfws():
     print yplus
     np.testing.assert_almost_equal(ydefL, yplus, decimal=5)
 
-test_nfws()
-#test_SIEShear()
+def los_test():
+    from MagniPy.Solver.GravlensWrap.generate_input import Header
+    from MagniPy.Solver.GravlensWrap._call import call_lensmodel
+    from MagniPy.util import polar_to_cart
 
-#test_profiles_nfwT(plot=False)
+
+
+    h = Header(zlens=0.5,zsrc=1.5,omega_M=0.3,hval=0.7)
+    lines = h.inputstring
+    e1,e2 = polar_to_cart(0.2,-80)
+    sievals = 'alpha 1 0 0 '+str(e1)+' '+str(e2)+' '+'0 0 0 0 1 0.5\n'
+    nfwvals = ' nfw '+'0.050387342258 0.92 0.4 0 0 0 0 1.39523097511 0 0 0.2\n'
+    lines += 'setlens 2 1 1\n '+sievals+nfwvals+'0 0 0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0 0 0\n'
+    outfile='losnfw_def.txt'
+    lines += 'plotdef1 '+outfile+' 0.8 1.2 1000 0.4 0.4 1000'
+
+    with open('../../los_nfw.txt','w') as f:
+        f.write(lines)
+    #call_lensmodel('los_nfw.txt','../../')
+
+    values = np.loadtxt('../../losnfw_def.txt',skiprows=5)
+    x,xdef_lensmodel,ydef_lensmodel = values[:,0],values[:,3],values[:,4]
+    plt.plot(x,xdef_lensmodel,color='k')
+    plt.show()
+
+
+#los_test()
+#test_nfws()
+#test_SIEShear()
+#test_profiles_nfwT(plot=True)
 #test_profiles_nfw(plot=True)
 #test_solving_leq_single_plane()

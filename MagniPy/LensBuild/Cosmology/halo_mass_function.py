@@ -1,13 +1,21 @@
 import numpy as np
 from colossus.lss.mass_function import *
+from MagniPy.LensBuild.defaults import default_Rein_deflection,spatial_defaults,default_sigma8,default_halo_mass_function
 import matplotlib.pyplot as plt
 from MagniPy.LensBuild.Cosmology.extension import CosmoExtension
 
 class HaloMassFunction:
 
-    def __init__(self,model='reed07',sigma_8=0.82,rescale_sigma8=False,omega_M_void=None,zd=None,zsrc=None,**modelkwargs):
+    def __init__(self,model=None,sigma_8=None,rescale_sigma8=False,omega_M_void=None,zd=None,zsrc=None,**modelkwargs):
 
-        self.extension = CosmoExtension(zd=zd,zsrc=zsrc,sigma_8=sigma_8,rescale_sigma8=rescale_sigma8,omega_M_void=omega_M_void)
+        if sigma_8 is None:
+            sigma8 = default_sigma8
+        else:
+            sigma8 = sigma_8
+        if model is None:
+            model = default_halo_mass_function
+
+        self.extension = CosmoExtension(zd=zd,zsrc=zsrc,sigma_8=sigma8,rescale_sigma8=rescale_sigma8,omega_M_void=omega_M_void)
 
         self.cosmology_params = self.extension.cosmology_params
 
@@ -40,19 +48,23 @@ class HaloMassFunction:
         """
         return self.cosmo.rho_matter_crit(z)*omega*M**-1
 
-    def dN_dM_physical(self,M,z):
+    def dN_dM_comoving(self,M,z):
         """
 
         :param M: m200 in comoving units
         :param z: redshift
         :return: differential number per unit mass per cubic Mpc (physical)
-        [h^3 N / M_odot / Mpc^3] where Mpc is phsical
+        [h^3 N / M_odot / Mpc^3] where Mpc is physical
         """
         q_out = 'dndlnM'
-        #q_out = 'f'
-        return massFunction(M,z,q_out=q_out,model=self.model,**self.modelkwargs)*M**-1
 
-    def dN_dM_comoving(self, M, z):
+        h = self.extension.h
+
+        M_h = M*h
+
+        return h**3*massFunction(M_h,z,q_out=q_out,model=self.model,**self.modelkwargs)*M_h**-1
+
+    def dN_dM_physical(self, M, z):
         """
 
         :param M: m200 in comoving units
@@ -60,7 +72,7 @@ class HaloMassFunction:
         :return: differential number per unit mass per cubic Mpc (physical)
         [h^3 N / M_odot / Mpc^3] where Mpc is comoving
         """
-        return (1+z)**-3*self.dN_dM_physical(M,z)
+        return (1+z)**3*self.dN_dM_comoving(M,z)
 
     def fit_norm_index(self,M,dNdM,order=1):
 
@@ -92,25 +104,26 @@ class HaloMassFunction:
             Nsub = norm * newindex ** -1 * (m_high ** newindex - m_low ** newindex)
             return Nsub,norm,plaw_index
 
-    def dndM_integrated_z1z2_old(self,M,z1,z2,delta_z_min=0.02,cone_base=3, Rein_def = 1,physical=False,functype='plaw',
+    def dndM_integrated_z1z2(self,M,z1,z2,delta_z_min=0.01,cone_base=None, Rein_def = None, functype='plaw',
                              omega=None):
 
         if z1<1e-4:
             z1 = 1e-4
 
+        if cone_base is None:
+            cone_base = spatial_defaults['cone_base']
+
+        if Rein_def is None:
+            Rein_def = default_Rein_deflection(cone_base)
+
         if z2 - z1 < delta_z_min:
 
             if functype=='delta':
                 return self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z2, cone_base, base_deflection = Rein_def)
+                       self.extension.comoving_volume_cone(z1, z2, cone_base, Rein_def= Rein_def)
 
             else:
-
-                if physical:
-                    return self.dN_dM_physical(M, z1) * self.extension.physical_volume_cone(z1, z2, cone_base,
-                                                                base_deflection=Rein_def)
-                else:
-                    return self.dN_dM_comoving(M, z1) * self.extension.comoving_volume_cone(z1, z2, cone_base, base_deflection = Rein_def)
+                return self.dN_dM_comoving(M, z1) * self.extension.comoving_volume_cone(z1, z2, cone_base, Rein_def= Rein_def)
 
         N = int((z2 - z1)*delta_z_min**-1 + 1)
 
@@ -122,40 +135,9 @@ class HaloMassFunction:
 
             if functype=='delta':
                 integral += self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z+dz, cone_base, base_deflection = Rein_def)
-            else:
-                integral += dz*self.dN_dM_comoving(M, z) * self.extension.differential_physical_volume_cone(z,cone_base,
-                                                                                                z_base=self.extension.zd,base_deflection=1)
-        return integral
-
-    def dndM_integrated_z1z2(self,M,z1,z2,delta_z_min=0.04,cone_base=3, Rein_def = 1,functype='plaw',
-                             omega=None):
-
-        if z1<1e-4:
-            z1 = 1e-4
-
-        if z2 - z1 < delta_z_min:
-
-            if functype=='delta':
-                return self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z2, cone_base, base_deflection = Rein_def)
-
-            else:
-                return self.dN_dM_comoving(M, z1) * self.extension.comoving_volume_cone(z1, z2, cone_base, base_deflection = Rein_def)
-
-        N = int((z2 - z1)*delta_z_min**-1 + 1)
-
-        zvals = np.linspace(z1,z2,N)
-        dz = zvals[1] - zvals[0]
-        integral = 0
-
-        for z in zvals:
-
-            if functype=='delta':
-                integral += self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z+dz, cone_base, base_deflection = Rein_def)
+                       self.extension.comoving_volume_cone(z1, z + dz, cone_base, Rein_def= Rein_def)
             else:
                 integral += self.dN_dM_comoving(M, z) * self.extension.comoving_volume_cone(z, z + dz,
-                                                                                                cone_base, base_deflection = Rein_def)
+                                                                                            cone_base, Rein_def= Rein_def)
         return integral
 

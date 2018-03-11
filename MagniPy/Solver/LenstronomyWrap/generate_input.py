@@ -1,6 +1,7 @@
 from MagniPy.util import polar_to_cart
 import numpy as np
 from copy import deepcopy
+from kwargs_translate import gravlens_to_lenstronomy
 # import the lens equation solver class (finding image plane positions of a source position)
 from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LensModel.Solver.solver4point import Solver4Point
@@ -13,11 +14,12 @@ class LenstronomyWrap:
     def __init__(self,xtol=1.49012e-10,min_distance=0.01, search_window=5, precision_limit=10**(-10), num_iter_max=100,
                  multiplane=None,cosmo=None,z_source = None):
 
+        xtol = 1e-10
         self.xtol = xtol
         self.min_distance = 0.01
-        self.search_window = 5
+        self.search_window = 4
         self.precision_limit = 10**-10
-        self.num_iter_max = 1000
+        self.num_iter_max = 500
         self.cosmo = cosmo
 
         assert z_source is not None
@@ -54,11 +56,17 @@ class LenstronomyWrap:
             newargs = deepcopy(deflector.args)
 
             if 'phi_G' in deflector.args:
-                newargs['phi_G'] = deflector.args['phi_G'] - 0.5*np.pi
+                newargs['phi_G'] = gravlens_to_lenstronomy(newargs['phi_G'],'phi_G')
 
             if 'theta_E' in deflector.args and deflector.profname=='SPEMD':
                 q = deflector.args['q']
-                newargs['theta_E'] = deflector.args['theta_E']*((1+q**2)*(2*q)**-1)**.5
+                newargs['theta_E'] = gravlens_to_lenstronomy(newargs['theta_E'],'theta_E',q=q)
+
+            if deflector.profname=='SPEMD':
+                if 'e1' in newargs:
+                    del newargs['e1']
+                if 'e2' in deflector.args:
+                    del newargs['e2']
 
             lens_model_params.append(newargs)
             self.redshift_list.append(deflector.redshift)
@@ -105,10 +113,15 @@ class LenstronomyWrap:
 
         self.model = self.get_lensmodel()
 
-        solver4Point = Solver4Point(lensModel=self.model, decoupling=True, solver_type=solver_type)
+        if self.multiplane:
+            decoupling = False
+        else:
+            decoupling = True
+
+        solver4Point = Solver4Point(lensModel=self.model, decoupling=decoupling, solver_type=solver_type)
         kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
                                                        xtol=self.xtol)
-        print acc
+
         return kwargs_fit
 
 

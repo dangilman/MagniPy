@@ -4,6 +4,24 @@ import subprocess
 import shutil
 import scipy.ndimage.filters as sfilt
 
+def confidence_interval(percentile,data):
+
+    data=np.array(data)
+
+    data.sort()
+
+    L = len(data)
+    counter = 0
+    while True:
+
+        value = data[counter]
+
+        if counter>=L*percentile:
+            break
+        counter+=1
+
+    return value
+
 def read_data(filename=''):
 
     nimg,srcx,srcy,xpos1,ypos1,m1,t1,xpos2,ypos2,m2,t2,\
@@ -45,7 +63,6 @@ def write_data(filename='',data_list=[],mode='append'):
         with open(filename,'w') as f:
             for dataset in data_list:
                 f.write(single_line(dataset))
-
 
 def integrate_profile(profname,limit,inspheres=False,**kwargs):
     if profname=='nfw':
@@ -281,7 +298,7 @@ def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
     shift = (subgrid_res-1)/(2.*subgrid_res)*deltapix
     return array2image(x_grid - shift), array2image(y_grid - shift)
 
-def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, masscut_low=10 ** 7,
+def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, log_masscut_low=7,
                        zmain=None, cosmology=None, srcx = 0, srcy = 0):
     """
     :param xsub: sub x coords
@@ -291,9 +308,10 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
     :param mindis: max 2d distance
     :return: filtered subhalos
     """
-    keep_index = []
 
-    xdefmain,ydefmain = x_filter - srcx, y_filter - srcy
+    masscut_low = 10**log_masscut_low
+
+    keep_index = []
 
     for index, deflector in enumerate(lens_components):
 
@@ -315,8 +333,9 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             """
             for halos behind the main lens
             """
-            Rein_def = 1*cosmology.arcsec
-            scale = (1 - cosmology.D_A(0,deflector.redshift)*cosmology.D_s**-1)
+
+            scale = np.ones_like(x_filter)*(1 - cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_s*
+                                            (cosmology.D_A(0, deflector.redshift)*cosmology.D_ds)**-1)
 
         else:
             """
@@ -370,6 +389,7 @@ def convolve_image(image,kernel='Gaussian',scale=None):
         grid = sfilt.gaussian_filter(image, scale * (2.355) ** -1, mode='constant', cval=0)
 
     return grid
+
 
 
 

@@ -7,8 +7,9 @@ class LensSystem:
     Each element of LensSystem is an isntance of Deflector
     """
 
-    def __init__(self,multiplane=False):
+    def __init__(self,multiplane=False,units=None):
 
+        self.units = units
         self.lens_components = []
         self.redshift_list = []
         self.main = None
@@ -40,6 +41,11 @@ class LensSystem:
     def _redshift_list(self,component):
 
         self.redshift_list.append(component.redshift)
+
+    def print_components(self):
+
+        for component in self.lens_components:
+            component.print_args()
 
 
 
@@ -80,6 +86,9 @@ class Deflector:
             from MagniPy.MassModels.ExternalShear import Shear
             self.Shear = Shear()
 
+    def set_varyflags(self,flags):
+
+        self.varyflags = flags
 
     def print_args(self):
 
@@ -122,6 +131,7 @@ class Deflector:
     def update(self, method=None,**newparams):
 
         assert method is not None
+
         self.args.update(**newparams)
 
         if 'shear' in self.args:

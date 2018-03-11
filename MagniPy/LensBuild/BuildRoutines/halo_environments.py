@@ -8,6 +8,7 @@ def mainlens_plaw(fsub,plaw_index,cosmo,kappa_Rein=0.5, log_mL = None, log_mH = 
 
     A0_perasec2 = fsub*kappa_Rein*cosmo.sigmacrit*(2+plaw_index)*(mH**(2+plaw_index) - mL**(2+plaw_index))**-1
 
+
     return A0_perasec2*np.pi*spatial_defaults['theta_max']**2,plaw_index
 
 def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=None,log_mH=None):
@@ -22,8 +23,8 @@ def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=
 
     zvals = np.linspace(zmin,zmax,int(np.ceil((zmax-zmin)*zstep**-1)+1))
 
-    HMF = HaloMassFunction(sigma_8=sigma_8,zd=zmain,zsrc=zsrc,
-                           rescale_sigma8=rescale_sigma8,omega_M_void=omega_M_void)
+    HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc,
+                           rescale_sigma8=rescale_sigma8, omega_M_void=omega_M_void)
 
     M = np.logspace(log_mL,log_mH,30)
 
@@ -59,7 +60,7 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc):
 
     zvals = np.linspace(zmin,zmax,int(np.ceil((zmax-zmin)*zstep**-1)+1))
 
-    HMF = HaloMassFunction(sigma_8=sigma_8,zd=zmain,zsrc=zsrc)
+    HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc)
 
     zstep = zvals[1]-zvals[0]
 

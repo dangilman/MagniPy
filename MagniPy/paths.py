@@ -29,3 +29,5 @@ gravlens_input_path_dump = gravlens_input_path + 'dump/'
 chainpath = prefix + 'data/ABC_chains/'
 
 fluxratio_data_path = prefix+'data/lensdata/SIE_flux_ratios/'
+
+chain_output_path = prefix+'/data/ABC_chains/'

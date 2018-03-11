@@ -38,6 +38,7 @@ class SIE:
 
         if shear is not None:
             assert shear_theta is not None
+            raise Exception('inner SIE shear not implemented.')
             shearx,sheary = self.Shear.def_angle(xloc,yloc,shear,shear_theta)
 
         if q==1:
@@ -59,7 +60,7 @@ class SIE:
             theta_E *= normFac ** -1
 
             xrot, yrot = rotate(xloc, yloc, -phi_G)
-            psi = np.sqrt(q**2*(xrot**2)+yrot**2)
+            psi = np.sqrt(q**2*xrot**2+yrot**2)
             psis = psi
 
             xdef = theta_E * q * qfac ** -1 * np.arctan(qfac * xrot * psis ** -1)
@@ -67,7 +68,7 @@ class SIE:
 
             xdef,ydef = rotate(xdef,ydef,phi_G)
 
-            return xdef+shearx,ydef+sheary
+            return xdef,ydef
 
     def convergence(self, rcore, rtrunc):
         return None
@@ -91,7 +92,7 @@ class SIE:
 
         return subparams,otherkwargs
 
-    def R_ein(self,vdis,z1,z2):
-        Cosmo.__init__(self, zd=z1, zsrc=z2)
-        return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
-               self.D_ds * self.D_s ** -1 * self.arcsec ** -1
+    #def R_ein(self,vdis,z1,z2):
+    #    Cosmo.__init__(self, zd=z1, zsrc=z2)
+    #    return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
+    #           self.D_ds * self.D_s ** -1 * self.arcsec ** -1

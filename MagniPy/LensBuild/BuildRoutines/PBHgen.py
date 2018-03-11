@@ -3,17 +3,23 @@ from MagniPy.MassModels.PointMass import PointMass
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.LensBuild.lens_assemble import Deflector
 
-def number_per_image(f_pbh=float, cosmology_class=classmethod, M=float, R_ein=float, distance_factor=25):
+def number_per_image(f_pbh=float,redshift=None,zsrc=None,cosmology_class=classmethod, M=float, R_ein=None, distance_factor=25):
 
     k_pbh = f_pbh*0.5
 
-    return np.pi*k_pbh*cosmology_class.sigmacrit*((distance_factor*R_ein)**2)*M**-1
+    if R_ein is None:
+        ptmass = PointMass(z = redshift,zsrc = zsrc)
+        R_ein = ptmass.R_ein(M)
 
-def drawPBH(ximgs=[],yimgs=[],f_pbh=float,cosmology=classmethod,mass=float,distance_factor=25,Nrealizations=1):
+    return np.pi*k_pbh*cosmology_class.get_sigmacrit_z1z2(redshift,zsrc)*((distance_factor*R_ein)**2)*M**-1,R_ein
 
-    ptmass = PointMass()
+def drawPBH(ximgs=[],yimgs=[],f_pbh=float,redshift=None,zsrc=None,cosmology=classmethod,mass=float,distance_factor=25,Nrealizations=1):
 
-    N = number_per_image(f_pbh=f_pbh, cosmology_class=cosmology, M=mass, R_ein=ptmass.R_ein(mass), distance_factor=distance_factor)
+    ptmass = PointMass(z=redshift, zsrc=zsrc)
+
+    R_ein = ptmass.R_ein(mass)
+
+    N = number_per_image(f_pbh=f_pbh, cosmology_class=cosmology, M=mass,R_ein=R_ein,distance_factor=distance_factor)
 
     realizations = []
 

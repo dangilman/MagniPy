@@ -26,10 +26,10 @@ class NFW:
         x_loc = x - center_x
         y_loc = y - center_y
 
-        r = (x_loc ** 2 + y_loc ** 2 + 1e-12)**.5
+        r = (x_loc ** 2 + y_loc ** 2)**.5
         xnfw = r * Rs ** -1
 
-        xmin = 0.00001
+        xmin = 0.0000001
 
         if isinstance(xnfw,float) or isinstance(xnfw,int):
             xnfw = max(xnfw,xmin)
@@ -39,7 +39,7 @@ class NFW:
         ks = theta_Rs * (4 * Rs * (np.log(0.5) + 1)) ** -1
         magdef = 4*ks*Rs*(np.log(0.5*xnfw) + self.F(xnfw))*xnfw**-1
 
-        return magdef * x_loc * r ** -1, magdef * y_loc * r ** -1
+        return magdef * x_loc * (Rs*xnfw) ** -1, magdef * y_loc * (Rs*xnfw) ** -1
 
     def F(self,x):
 
@@ -173,6 +173,7 @@ class NFW:
         :return:
         """
         h = self.cosmology.cosmo.h
+
         r200 = self.r200_M(M * h) * h * self.cosmology.a_z(self.z)  # physical radius r200
         rho0 = self.rho0_c(c) / h**2 / self.cosmology.a_z(self.z)**3 # physical density in M_sun/Mpc**3
         Rs = r200/c

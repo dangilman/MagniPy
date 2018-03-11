@@ -1,4 +1,4 @@
-import time
+from time import time
 import MagniPy.LensBuild.lens_assemble as build
 import MagniPy.LensBuild.renderhalos as halo_gen
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
@@ -18,11 +18,8 @@ class Magnipy:
     This class is used to specify a lens system and solve the lens equation or optimize a lens model
 
     """
-    default_pos_sigma = [[0.003]*4,[0.003]*4]
-    default_flux_sigma = [0.2]*4
-    default_tdelay_sigma = [0,2,2,2]
 
-    def __init__(self,zmain,zsrc,main_lens_profile=[],clean_up=True,temp_folder=None):
+    def __init__(self,zmain,zsrc,clean_up=True,temp_folder=None):
 
         self.zmain = zmain
         self.zsrc = zsrc
@@ -34,14 +31,12 @@ class Magnipy:
 
         self.paths = paths
 
-        if clean_up:
+        if temp_folder is None:
+            self.temp_folder = 'temp/'
+        else:
+            self.temp_folder = temp_folder+'/'
 
-            if temp_folder is None:
-                self.temp_folder = 'temp/'
-            else:
-                self.temp_folder = temp_folder+'/'
-
-            self.paths.gravlens_input_path_dump = self.paths.gravlens_input_path+self.temp_folder
+        self.paths.gravlens_input_path_dump = self.paths.gravlens_input_path+self.temp_folder
 
 
     def print_system(self,system_index,component_index=None):
@@ -127,10 +122,12 @@ class Magnipy:
 
             for system in lens_systems:
 
+                system.units = 'lensmodel'
+
                 full = FullModel(multiplane=system.multiplane)
                 for i, model in enumerate(system.lens_components):
 
-                    full.populate(SingleModel(lensmodel=model))
+                    full.populate(SingleModel(lensmodel=model,units=system.units))
 
                 solver.add_lens_system(full)
 
@@ -187,6 +184,8 @@ class Magnipy:
 
             for i, system in enumerate(lens_systems):
 
+                system.units = 'lenstronomy'
+
                 lenstronomywrap = LenstronomyWrap(multiplane=system.multiplane,cosmo=self.cosmo.cosmo, z_source=self.zsrc)
 
                 lenstronomywrap.assemble(system)
@@ -195,6 +194,7 @@ class Magnipy:
 
                 optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
                                                                 newkwargs=kwargs_fit[0], method='lenstronomy'))
+
 
                 lenstronomywrap.update_lensparams(newparams=kwargs_fit)
 
@@ -211,8 +211,6 @@ class Magnipy:
                 x_image, y_image = lenstronomywrap.solve_leq(xsrc=np.mean(xsrc),ysrc=np.mean(ysrc))
 
                 newdata = Data(x=x_image, y=y_image, m=None, t=None, source=[xsrc, ysrc])
-
-                t0 = time.time()
 
                 if ray_trace:
 
@@ -258,7 +256,7 @@ class Magnipy:
                            path_2_lensmodel=self.paths.path_2_lensmodel)
 
             lens_data = read_gravlens_out(fnames=outputfile)
-            t0 = time.time()
+            t0 = time()
 
             for i,system in enumerate(lens_systems):
 
@@ -303,7 +301,7 @@ class Magnipy:
                 data.append(Data(x=x_image, y=y_image, m=None, t=None, source=[srcx, srcy]))
 
             if raytrace:
-                t0 = time.time()
+
                 for i, system in enumerate(lens_systems):
 
                     if print_mag:
@@ -315,9 +313,6 @@ class Magnipy:
                                                           cosmology=self.cosmo.cosmo, multiplane=system.multiplane)
 
                     data[i].set_mag(fluxes)
-
-            if ray_trace:
-                print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
 
             return data
 
@@ -337,8 +332,8 @@ class Magnipy:
     def do_raytrace_lenstronomy(self, lenstronomy_wrap_instance, xpos, ypos, multiplane=None, gridsize=None,
                                 res=None, source_shape=None, source_size=None, cosmology=classmethod, zsrc=None):
 
-
-
+        t0 = time()
+        print 'ray tracing... '
         lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomy_wrap_instance.lens_model_list,
                                                   z_source=zsrc, redshift_list=lenstronomy_wrap_instance.redshift_list,
                                                   cosmo=cosmology, multi_plane=multiplane)
@@ -347,9 +342,10 @@ class Magnipy:
         fluxes = lensModelExtensions.magnification_finite(x_pos=xpos,
                                                           y_pos=ypos,
                                                           kwargs_lens=lenstronomy_wrap_instance.lens_model_params,
-                                                          source_sigma=source_size, window_size=gridsize,
-                                                          grid_number=gridsize * res ** -1,
+                                                          source_sigma=source_size, window_size=2*gridsize,
+                                                          grid_number=2*gridsize * res ** -1,
                                                           shape=source_shape)
+        print 'done in '+str(time()-t0)+' seconds.'
 
 
         return fluxes

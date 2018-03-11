@@ -7,6 +7,9 @@ from MagniPy.MassModels import PJaffe
 from MagniPy.MassModels import PointMass
 from MagniPy.LensBuild.lens_assemble import Deflector
 from BuildRoutines.halo_environments import *
+from MagniPy.util import filter_by_position
+from MagniPy.LensBuild.BuildRoutines import PBHgen
+from copy import deepcopy
 
 class HaloGen:
 
@@ -22,7 +25,8 @@ class HaloGen:
 
         self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
-    def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1, rescale_sigma8=False):
+    def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1,
+                   rescale_sigma8=False, filter_halo_positions=False, **filter_kwargs):
 
         """
         Main execution routine for drawing (sub)halo realizations.
@@ -116,140 +120,14 @@ class HaloGen:
 
             see related documentation in MagniPy.MassModels
 
+        filter_halo_positions (bool): flag to filter subhalos by position
+        filterkwargs: 'x_filter','y_filter',
+
         """
 
-        ###############################################################################################################
         ############################################## MAIN PROGRAM ###################################################
-        ###############################################################################################################
 
-        def _return_delta_LOS(_spatial_):
-
-            mass_function_type = []
-            spatial_distribution_type = []
-
-            N,zvals = LOS_delta(model_kwargs['M'],model_kwargs['matter_fraction'],zmin=model_kwargs['zmin'], zmax=model_kwargs['zmax'],
-                                                 zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc)
-
-            modelkwargs['N'] = np.random.poisson(N)
-            model_kwargs['logmass'] = np.log10(model_kwargs['M'])
-
-            mass_function_type.append('delta')
-            spatial_distribution_type.append(_spatial_)
-
-            halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
-                                redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
-                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
-            return halos
-
-        def _return_plaw_main(_spatial_):
-
-            mass_function_type = []
-            spatial_distribution_type = []
-
-            if 'kappa_Rein' in model_kwargs:
-                kappaRein = model_kwargs['kappa_Rein']
-            else:
-                kappaRein = kappa_Rein
-
-            if 'plaw_index' in model_kwargs:
-                modelkwargs['plaw_index'] = model_kwargs['rmax2d_asec']
-            else:
-                modelkwargs['plaw_index'] = powerlaw_defaults['plaw_index']
-
-            if 'turnover_index' in model_kwargs:
-                modelkwargs['turnover_index'] = model_kwargs['turnover_index']
-            else:
-                modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
-
-            if 'logmhm' in model_kwargs:
-                modelkwargs['logmhm'] = model_kwargs['logmhm']
-            else:
-                modelkwargs['logmhm'] = 0
-
-            if 'log_mL' in model_kwargs:
-                modelkwargs['log_mL'] = model_kwargs['log_mL']
-            else:
-                modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
-
-            if 'log_mH' in model_kwargs:
-                modelkwargs['log_mH'] = model_kwargs['log_mH']
-            else:
-                modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
-
-            A0, _ = mainlens_plaw(model_kwargs['fsub'], plaw_index=modelkwargs['plaw_index'], cosmo=self.cosmology,
-                                  kappa_Rein=kappaRein, log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
-
-            modelkwargs['normalization'] = A0
-
-            mass_function_type.append('plaw')
-            spatial_distribution_type.append(_spatial_)
-
-            halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
-                                redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
-                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
-            return halos
-
-        def _return_plaw_LOS(_spatial_):
-
-            mass_function_type = []
-            spatial_distribution_type = []
-            halos = []
-
-            if 'turnover_index' in model_kwargs:
-                modelkwargs['turnover_index'] = model_kwargs['turnover_index']
-            else:
-                modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
-
-            if 'logmhm' in model_kwargs:
-                modelkwargs['logmhm'] = model_kwargs['logmhm']
-            else:
-                modelkwargs['logmhm'] = 0
-
-            if 'rescale_sigma8' in model_kwargs:
-                rescale_sigma8 = True
-                omega_M_void = model_kwargs['omega_M_void']
-            else:
-                rescale_sigma8 = False
-                omega_M_void = None
-
-            if 'log_mL' in model_kwargs:
-                modelkwargs['log_mL'] = model_kwargs['log_mL']
-            else:
-                modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
-
-            if 'log_mH' in model_kwargs:
-                modelkwargs['log_mH'] = model_kwargs['log_mH']
-            else:
-                modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
-
-            A0_z, plaw_index_z, zvals = LOS_plaw(zmin=model_kwargs['zmin'], zmax=model_kwargs['zmax'],
-                                                 zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,
-                                                 rescale_sigma8 = rescale_sigma8, omega_M_void=omega_M_void,
-                                                 log_mL=modelkwargs['log_mL'],log_mH=modelkwargs['log_mH'])
-
-            mass_function_type.append('plaw')
-            spatial_distribution_type.append(_spatial_)
-
-            for N in range(0, Nrealizations):
-
-                _plane_halos = []
-
-                for p in range(0, len(A0_z)):
-                    modelkwargs['normalization'] = A0_z[p]
-                    model_kwargs['plaw_index'] = plaw_index_z
-                    redshift = zvals[p]
-
-                    _plane_halos += self._halos(mass_function_type=mass_function_type,
-                                                spatial_distribution=spatial_distribution_type, redshift=redshift,
-                                                Nrealizations=1, mass_profile=[massprofile],
-                                                modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])[0]
-
-                halos.append(_plane_halos)
-
-            return halos
-
-
-        if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_main','delta_LOS','composite_delta']:
+        if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_LOS']:
                 raise Exception('model name not recognized')
         if spatial_name not in ['uniform2d','uniform_cored_nfw']:
                 raise Exception('spatial distribution not recognized')
@@ -261,7 +139,6 @@ class HaloGen:
                     raise Exception('mass profile not recognized')
 
 
-        modelkwargs = {}
         spatialkwargs = {}
 
         if 'rmax2d_asec' in model_kwargs:
@@ -280,22 +157,54 @@ class HaloGen:
             if 'nfw_core_kpc' in model_kwargs:
                 spatialkwargs['rc'] = model_kwargs['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
+
             else:
                 spatialkwargs['rc'] = spatial_defaults['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
 
+        position_filter_kwargs = {}
+
+        if filter_halo_positions:
+
+            assert 'x_filter' in filter_kwargs
+            assert 'y_filter' in filter_kwargs
+
+            position_filter_kwargs['x_position'] = filter_kwargs['x_filter']
+            position_filter_kwargs['y_position'] = filter_kwargs['y_filter']
+
+            position_filter_kwargs['filter_halo_positions'] = True
+
+            if 'mindis' in filter_kwargs:
+                position_filter_kwargs['mindis'] = filter_kwargs['mindis']
+            else:
+                position_filter_kwargs['mindis'] = filter_args['mindis']
+
+            if 'log_masscut_low' in filter_kwargs:
+                position_filter_kwargs['log_masscut_low'] = filter_kwargs['log_masscut_low']
+            else:
+                position_filter_kwargs['log_masscut_low'] = filter_args['log_masscut_low']
+
         if model_name == 'plaw_main':
 
-            HALOS = _return_plaw_main( _spatial_ = spatial_name)
+            HALOS = self._return_plaw_main(_spatial_ = spatial_name,position_filter_kwargs=position_filter_kwargs,
+                                           model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
+                                           Nrealizations=Nrealizations)
 
         elif model_name == 'plaw_LOS':
 
-            HALOS = _return_plaw_LOS(_spatial_ = 'uniform2d')
+            HALOS = self._return_plaw_LOS(_spatial_ = 'uniform2d',position_filter_kwargs=position_filter_kwargs,
+                                           model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
+                                           Nrealizations=Nrealizations)
 
         elif model_name=='composite_plaw':
 
-            HALOS_main = _return_plaw_main(_spatial_ = spatial_name)
-            HALOS_LOS = _return_plaw_LOS(_spatial_ = 'uniform2d')
+            HALOS_main = self._return_plaw_main(_spatial_ = spatial_name,position_filter_kwargs=position_filter_kwargs,
+                                           model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
+                                           Nrealizations=Nrealizations)
+
+            HALOS_LOS = self._return_plaw_LOS(_spatial_ = 'uniform2d',position_filter_kwargs=position_filter_kwargs,
+                                           model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
+                                           Nrealizations=Nrealizations)
 
             HALOS = []
 
@@ -307,12 +216,170 @@ class HaloGen:
             raise Exception('not yet implemented')
 
         elif model_name == 'delta_LOS':
-            HALOS = _return_delta_LOS()
+            raise Exception('not yet implemented')
+
+        elif model_name == 'composite_delta':
+            raise Exception('not yet implemented')
 
         return HALOS
 
+    def _return_delta_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
+
+        mass_function_type = []
+        spatial_distribution_type = []
+        modelkwargs = {}
+
+        Nz, zvals = LOS_delta(model_kwargs['M'], model_kwargs['matter_fraction'], zmin=model_kwargs['zmin'],
+                             zmax=model_kwargs['zmax'],
+                             zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc)
+
+        model_kwargs['logmass'] = np.log10(model_kwargs['M'])
+
+        mass_function_type.append('delta')
+        spatial_distribution_type.append(_spatial_)
+
+        for N in range(0, Nrealizations):
+
+            _plane_halos = []
+
+            for p in range(0, len(zvals)):
+
+                modelkwargs['N'] = np.random.poisson(Nz[p])
+
+                _plane_halos += self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                            redshift=zvals[p], Nrealizations=Nrealizations, mass_profile=[massprofile],
+                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)[0]
+
+            halos.append(_plane_halos)
+
+        return halos
+
+    def _return_plaw_main(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
+
+        mass_function_type = []
+        spatial_distribution_type = []
+        modelkwargs = deepcopy(model_kwargs)
+
+        if 'kappa_Rein' not in modelkwargs:
+            modelkwargs['kappa_Rein'] = kappa_Rein_default
+
+        if 'plaw_index' not in modelkwargs:
+            modelkwargs['plaw_index'] = powerlaw_defaults['plaw_index']
+
+        if 'turnover_index' not in modelkwargs:
+            modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
+
+        if 'logmhm' not in modelkwargs:
+            modelkwargs['logmhm'] = 0
+
+        if 'log_mL' not in modelkwargs:
+            modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
+
+        if 'log_mH' not in modelkwargs:
+            modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
+
+        A0, _ = mainlens_plaw(fsub=modelkwargs['fsub'],plaw_index=modelkwargs['plaw_index'],cosmo=self.cosmology,
+                              kappa_Rein=modelkwargs['kappa_Rein'], log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
+
+        modelkwargs['normalization'] = A0
+
+        mass_function_type.append('plaw')
+        spatial_distribution_type.append(_spatial_)
+
+        halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                            redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
+                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)
+
+        return halos
+
+    def _return_plaw_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
+
+        mass_function_type = []
+        spatial_distribution_type = []
+        halos = []
+        modelkwargs = deepcopy(model_kwargs)
+
+        if 'kappa_Rein' not in modelkwargs:
+            modelkwargs['kappa_Rein'] = kappa_Rein_default
+
+        if 'plaw_index' not in modelkwargs:
+            modelkwargs['plaw_index'] = powerlaw_defaults['plaw_index']
+
+        if 'turnover_index' not in modelkwargs:
+            modelkwargs['turnover_index'] = powerlaw_defaults['turnover_index']
+
+        if 'logmhm' not in modelkwargs:
+            modelkwargs['logmhm'] = 0
+
+        if 'log_mL' not in modelkwargs:
+            modelkwargs['log_mL'] = powerlaw_defaults['log_ML']
+
+        if 'log_mH' not in modelkwargs:
+            modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
+
+        if 'rescale_sigma8' not in modelkwargs:
+            modelkwargs['rescale_sigma8'] = False
+            modelkwargs['omega_M_void'] = None
+
+
+        A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
+                                             zmax=modelkwargs['zmax'],rescale_sigma8=modelkwargs['rescale_sigma8'],
+                                             omega_M_void=modelkwargs['omega_M_void'],log_mL=modelkwargs['log_mL'],
+                                             log_mH=modelkwargs['log_mH'])
+
+        mass_function_type.append('plaw')
+        spatial_distribution_type.append(_spatial_)
+
+        for N in range(0, Nrealizations):
+
+            _plane_halos = []
+
+            for p in range(0, len(A0_z)):
+                modelkwargs['normalization'] = A0_z[p]
+                modelkwargs['plaw_index'] = plaw_index_z[p]
+
+                redshift = zvals[p]
+
+                _plane_halos += self._halos(mass_function_type=mass_function_type,
+                                            spatial_distribution=spatial_distribution_type, redshift=redshift,
+                                            Nrealizations=1, mass_profile=[massprofile],
+                                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs],
+                                            **position_filter_kwargs)[0]
+
+            halos.append(_plane_halos)
+
+        return halos
+
+    def _return_delta_main(self, _spatial_, position_filter_kwargs, model_kwargs, massprofile, spatialkwargs, redshift,
+                           Nrealizations):
+
+        assert position_filter_kwargs['filter_halo_positions'] is True
+
+        modelkwargs = {}
+
+        mass_function_type = []
+        spatial_distribution_type = []
+
+        N,rmax2d = number_per_image(f_pbh=model_kwargs['f_PBH'], redshift=redshift, zsrc=self.cosmology.zsrc,
+                             cosmology_class=self.cosmology, M=model_kwargs['M'], R_ein=None)
+
+        spatialkwargs['rmax2d'] = rmax2d
+
+        modelkwargs['N_per_image'] = np.random.poisson(N)
+
+        modelkwargs['logmass'] = np.log10(model_kwargs['M'])
+
+        mass_function_type.append('delta')
+        spatial_distribution_type.append(_spatial_)
+
+        halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                            redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
+                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
+
+        return halos
+
     def _halos(self,mass_function_type=None,spatial_distribution=None,redshift=None,Nrealizations=1,
-                   mass_profile=None,modelkwargs={},spatialkwargs={}):
+                   mass_profile=None,modelkwargs={},spatialkwargs={},filter_halo_positions=False,**kwargs):
         """
         :param mass_func_type: "plaw, delta, etc."
         :param spatial: 'uniformflat','uniformnfw'
@@ -339,11 +406,28 @@ class HaloGen:
 
                 if mass_func_type == 'plaw':
 
-                    massfunction = Plaw(**modelkwargs[i])
+                    massfunction = Plaw(normalization=modelkwargs[i]['normalization'], log_mL=modelkwargs[i]['log_mL'],
+                                                log_mH=modelkwargs[i]['log_mH'], logmhm=modelkwargs[i]['logmhm'],
+                                                plaw_index=modelkwargs[i]['plaw_index'], turnover_index=modelkwargs[i]['turnover_index'])
+                    masses = massfunction.draw()
 
                 elif mass_func_type == 'delta':
 
-                    massfunction = Delta(**modelkwargs[i])
+                    massfunction = Delta(N_per_image = modelkwargs[i]['N_per_image'],logmass=modelkwargs[i]['logmass'])
+                    masses = massfunction.draw()
+
+                elif mass_function_type == 'plaw_order2':
+
+                    massfunction_primary = Plaw(normalization=modelkwargs[i]['normalization'], log_mL=modelkwargs[i]['log_mL'],
+                                                log_mH=modelkwargs[i]['log_mH'], logmhm=modelkwargs[i]['logmhm'],
+                                                plaw_index=modelkwargs[i]['plaw_index'], turnover_index=modelkwargs[i]['turnover_index'])
+
+                    masses = massfunction.draw()
+
+                    N0 = 0.21
+                    const = 0.8
+
+                    massfunction_seconary = Plaw_secondary(M=masses)
 
                 else:
                     if mass_func_type is None:
@@ -353,16 +437,18 @@ class HaloGen:
 
                 if spatial_type == 'uniform2d':
 
-                    if 'rmaxz' in spatialkwargs[i]:
-                        del spatialkwargs[i]['rmaxz']
-                    if 'rc' in spatialkwargs[i]:
-                        del spatialkwargs[i]['rc']
-
-                    spatial= Uniform_2d(cosmology=self.cosmology,**spatialkwargs[i])
+                    spatial= Uniform_2d(cosmology=self.cosmology,rmax2d=spatialkwargs[i]['rmax2d'])
+                    R, x, y = spatial.draw(int(len(masses)), redshift)
 
                 elif spatial_type == 'uniform_cored_nfw':
 
                     spatial = Uniform_cored_nfw(cosmology=self.cosmology,**spatialkwargs[i])
+                    R, x, y = spatial.draw(int(len(masses)), redshift)
+
+                elif spatial_type == 'localized_uniform':
+
+                    spatial = Localized_uniform(cosmology=self.cosmology,**spatialkwargs[i])
+                    R, x, y = spatial.draw(spatialkwargs['N_per_image'], redshift)
 
                 else:
                     if spatial_type is None:
@@ -370,9 +456,6 @@ class HaloGen:
                     else:
                         raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
 
-                masses = massfunction.draw()
-
-                R,x,y = spatial.draw(int(len(masses)),redshift)
 
                 for j in range(0, int(len(masses))):
 
@@ -385,13 +468,12 @@ class HaloGen:
                         lensmod = TNFW.TNFW(z=redshift, zsrc=self.cosmology.zsrc, c_turnover=c_turnover)
 
                         if spatial_distribution[i] == 'uniform2d':
-                            truncation = TruncationFuncitons(truncation_routine='NFW_m200')
                             subhalo_args['trunc'] = None
 
                         elif spatial_distribution[i] == 'uniform_cored_nfw':
                             truncation = TruncationFuncitons(truncation_routine='tidal_3d')
                             subhalo_args['trunc'] = truncation.function(mass=masses,r3d=R,
-                                                                        sigmacrit=self.cosmology.sigmacrit)
+                                                                        sigmacrit=self.cosmology.sigmacrit,RE=1)[0]
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 
@@ -407,12 +489,12 @@ class HaloGen:
 
                         if spatial_distribution[i] == 'uniform2d':
                             truncation = TruncationFuncitons(truncation_routine='gaussian')
-                            subhalo_args['trunc'] = truncation.function(mean=0.1,sigma=0.05,size=len(masses))
+                            subhalo_args['trunc'] = truncation.function(mean=0.1,sigma=0.05,size=len(masses))[0]
 
                         elif spatial_distribution[i] == 'uniform_cored_nfw':
                             truncation = TruncationFuncitons(truncation_routine='tidal_3d')
                             subhalo_args['trunc'] = truncation.function(mass=masses, r3d=R,
-                                                                        sigmacrit=self.cosmology.sigmacrit)
+                                                                        sigmacrit=self.cosmology.sigmacrit)[0]
 
                         lensmod = PJaffe.PJaffe(z=redshift,zsrc = self.cosmology.zsrc)
 
@@ -428,38 +510,69 @@ class HaloGen:
                                   y=y[j], mass=masses[j], redshift=redshift, is_subhalo=True, **subhalo_args))
 
 
+            if filter_halo_positions:
+
+                subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis=kwargs['mindis'],
+                                                 log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=self.cosmology)
+
             realizations.append(subhalos)
 
         return realizations
 
-    def get_masses(self,realization_list):
+    def get_masses(self, realization_list, mass_range = None, specific_redshift = None):
 
         realization_masses = []
 
-        for realization in realization_list:
+        if specific_redshift is None:
+            for realization in realization_list:
 
-            realization_masses.append(np.array([deflector.other_args['mass'] for deflector in realization]))
+
+                if mass_range is not None:
+                    object_generator = (deflector.other_args['mass'] for deflector in realization
+                                        if np.min(mass_range) <= deflector.other_args['mass'] < np.max(mass_range))
+
+                    realization_masses.append(list(object_generator))
+
+                else:
+                    realization_masses.append(np.array([deflector.other_args['mass'] for deflector in realization]))
+
+        else:
+            for realization in realization_list:
+
+                if mass_range is not None:
+                    object_generator = (deflector.other_args['mass'] for deflector in realization
+                                        if (np.min(mass_range) <= deflector.other_args['mass'] <
+                                            np.max(mass_range) and
+                                            deflector.redshift == specific_redshift))
+
+                    realization_masses.append(list(object_generator))
+
+                else:
+                    object_generator = (deflector.other_args['mass'] for deflector in realization
+                                        if (deflector.redshift == specific_redshift))
+
+                    realization_masses.append(list(object_generator))
 
         return realization_masses
+
 
 
 if False:
     render = HaloGen(zd=.5,zsrc=1.5)
 
     model_args = {}
-    model_args['fsub'] = 0.1
+    model_args['fsub'] = 0.01
     model_args['zmin'] = 0.001
     model_args['zmax'] = .57
 
     halos = render.draw_model(model_name='plaw_main', spatial_name='uniform_cored_nfw',
                               massprofile='NFW', model_kwargs=model_args, Nrealizations=1)[0]
-    m = []
 
-    for halo in halos:
-        m.append(np.log10(halo.other_args['mass']))
-    h,b = np.histogram(m)
-    print np.polyfit((b[0:-1]),np.log10(h),1)
-
+    print halos
+    specific_mass = 10**6
+    object_generator = (deflector.other_args['mass'] for deflector in halos
+                        if deflector.other_args['mass'] > specific_mass)
+    print len(list(object_generator))
 
 
 

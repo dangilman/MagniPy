@@ -17,11 +17,11 @@ class Data:
         if t is not None:
             self.set_t(t)
         else:
-            self.set_t(None)
+            self.set_t([0,0,0,0])
         if source is not None:
             self.set_src(source[0],source[1])
         else:
-            self.set_source(None,None)
+            self.set_src(None,None)
 
 
     def sort_by_pos(self,x,y):
@@ -63,7 +63,10 @@ class Data:
         if mag is None:
             self.mag = None
         else:
-            self.m = np.round(np.array(mag)*np.max(mag)**-1,self.decimals_mag)
+            try:
+                self.m = np.round(np.array(mag)*np.max(mag)**-1,self.decimals_mag)
+            except:
+                self.m = np.nan*np.ones_like(self.x)
 
     def set_t(self,t):
 
@@ -77,25 +80,34 @@ class Data:
         if srcx is None or srcy is None:
             self.srcx,self.srcy = None,None
         else:
-            self.srcx,self.srcy = np.round(srcx,self.decimals_src),np.round(srcy,self.decimals_src)
+            self.srcx,self.srcy = np.round(np.mean(srcx),self.decimals_src),np.round(np.mean(srcy),self.decimals_src)
 
     def compute_flux_ratios(self,fluxes=None,index=1):
 
         if fluxes is None:
 
             ref = float(self.m[index])
-
-            m = np.array(self.m)*ref**-1
+            try:
+                m = np.array(self.m)*ref**-1
+            except:
+                print 'reference data has zero flux'
+                m = np.ones_like(self.m)*np.nan
 
             m = np.delete(m,index)
 
             self.fluxratios = m
 
+            return self.fluxratios
+
         else:
 
             ref = float(fluxes[index])
 
-            fluxes = np.array(fluxes) * ref ** -1
+            try:
+                fluxes = np.array(fluxes)*ref**-1
+            except:
+                print 'reference data has zero flux'
+                fluxes = np.ones_like(fluxes)*np.nan
 
             return np.delete(fluxes, index)
 
@@ -103,9 +115,9 @@ class Data:
 
         other_mags = other_data.m
 
-        other = self.compute_flux_ratios(fluxes=other_mags)
+        other = self.compute_flux_ratios(fluxes=other_mags,index=index)
         
-        self.compute_flux_ratios()
+        self.compute_flux_ratios(index=index)
 
         if sum_in_quad:
 

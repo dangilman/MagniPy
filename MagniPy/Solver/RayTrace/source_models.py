@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 class GAUSSIAN:
 
-    def __init__(self,x,y,width):
+    def __init__(self,x,y,width,xgrid0,ygrid0):
 
         self.xcenter,self.ycenter,self.width = x,y,width
 

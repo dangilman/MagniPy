@@ -1,4 +1,6 @@
 import numpy as np
+import random
+import math
 
 class TwoDCoords:
 
@@ -29,13 +31,7 @@ class TwoDCoords:
 
             assert self.cosmology is not None
 
-            theta *= self.cosmology.arcsec
-            Rco = theta * self.cosmology.T_xy(0, zmain)
-
-            Rco -= self.cosmology.arcsec*R_ein_deflection*self.cosmology.T_xy(0,z)
-
-            theta_new = self.cosmology._comoving2physical(Rco,z)*self.cosmology.D_A(0,z)**-1
-            theta_new *= self.cosmology.arcsec**-1
+            theta_new = (1 - self.cosmology.D_A(zmain, z)*self.cosmology.D_s*(self.cosmology.D_A(0, z)*self.cosmology.D_ds)**-1)
 
             angle = np.random.uniform(0, 2 * np.pi, Npoints)
             r = np.random.uniform(0, theta_new ** 2, Npoints)
@@ -94,7 +90,7 @@ class Uniform_cored_nfw:
 
             return self.r3d_pdf_cored(r) * self.r3d_pdf_cored(0) ** -1
 
-        r2d, x, y =self.TwoD.draw(N=N,z=0)
+        r2d, x, y =self.TwoD.draw(N=N,z=self.TwoD.cosmology.zd)
 
         z = np.random.uniform(-self.zmax,self.zmax,N)
 
@@ -114,6 +110,55 @@ class Uniform_cored_nfw:
                 accept = acceptance_prob(r3d[i])
 
         return r3d, x, y
+
+class Localized_uniform:
+
+    def __init__(self,xlocations=None,ylocations=None,rmax2d=None,cosmology=None):
+
+        self.xlocations = ylocations
+        self.ylocations = xlocations
+        self.rmax2d = rmax2d
+
+        self.TwoD = Uniform_2d(rmax2d=rmax2d, cosmology=cosmology)
+
+    def set_rmax2d(self,rmax2d):
+
+        self.rmax2d = rmax2d
+
+    def set_xy(self,x,y):
+
+        self.xlocations = x
+        self.ylocations = y
+
+    def _prob_round(self,x):
+        sign = np.sign(x)
+        x = abs(x)
+        is_up = random.random() < x-int(x)
+        round_func = math.ceil if is_up else math.floor
+        return sign * round_func(x)
+
+    def draw(self,N,z):
+
+        x,y = np.empty(0),np.empty(0)
+
+        if isinstance(self.xlocations,float) or isinstance(self.xlocations,int):
+            self.xlocations = [self.xlocations]
+        if isinstance(self.ylocations,float) or isinstance(self.ylocations,int):
+            self.ylocations = [self.ylocations]
+
+        for imgnum in range(0, len(self.xlocations)):
+
+            ximg, yimg = self.xlocations[imgnum], self.ylocations[imgnum]
+
+            n = self._prob_round(N)
+
+            x_locations,y_locations = self.TwoD.draw(n,z=z)
+
+            x = np.append(np.array(x_locations)+ximg)
+            y = np.append(np.array(y_locations)+yimg)
+
+        return x,y
+
 
 class TruncationFuncitons:
 

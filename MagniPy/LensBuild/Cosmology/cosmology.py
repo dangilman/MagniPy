@@ -21,9 +21,9 @@ class Cosmo:
 
         self.cosmo = default_cosmology
 
-        if compute:
+        self.zd, self.zsrc = zd, zsrc
 
-            self.zd,self.zsrc = zd,zsrc
+        if compute:
 
             self.h = self.cosmo.h
 
@@ -45,9 +45,23 @@ class Cosmo:
 
         return self.cosmo.critical_density0.value * self.density_to_MsunperMpc*self.cosmo.h**-2
 
+    def get_epsiloncrit(self,z1,z2):
+
+        D_ds = self.D_A(z1, z2)
+        D_d = self.D_A(0, z1)
+        D_s = self.D_A(0, z2)
+
+        epsilon_crit = (self.c**2*(4*np.pi*self.G)**-1)*(D_s*D_ds**-1*D_d**-1)
+
+        return epsilon_crit
+
     def get_sigmacrit(self):
 
         return self.get_epsiloncrit(self.zd,self.zsrc)*(0.001)**2*self.kpc_per_asec(self.zd)**2
+
+    def get_sigmacrit_z1z2(self,zlens,zsrc):
+
+        return self.get_epsiloncrit(zlens,zsrc)*(0.001)**2*self.kpc_per_asec(zlens)**2
 
     def D_A(self,z1,z2):
 
@@ -55,10 +69,11 @@ class Cosmo:
 
     def D_C(self,z):
 
-        return self.cosmo.comoving_transverse_distance(z).value
+        return self.cosmo.comoving_distance(z).value
+
     def E_z(self,z):
 
-        return np.sqrt(self.cosmo.Om(z) + self.cosmo.Ode(z))
+        return self.cosmo.E_z(z)
 
     def a_z(self, z):
         """
@@ -73,19 +88,6 @@ class Cosmo:
 
         return self.D_A(z1[0],z1[1])*self.D_A(z2[0],z2[1])**-1
 
-    def get_epsiloncrit(self,z1,z2):
-
-        D_ds = self.D_A(z1, z2)
-        D_d = self.D_A(0, z1)
-        D_s = self.D_A(0, z2)
-
-        epsilon_crit = (self.c**2*(4*np.pi*self.G)**-1)*(D_s*D_ds**-1*D_d**-1)
-
-        return epsilon_crit
-
-    def E_z(self,z):
-        return (self.cosmo.Om(z)*(1+z)**-3 + self.cosmo.Ode(z))**.5
-
     def f_z(self,z):
 
         I = quad(self.E_z,0,z)[0]
@@ -97,25 +99,16 @@ class Cosmo:
         """
         transverse comoving distance in units of Mpc
         """
-        T_xy = self.cosmo.comoving_transverse_distance(z_source).value - \
-               self.cosmo.comoving_transverse_distance(z_observer).value
+        T_xy = self.cosmo.comoving_transverse_distance(z_source).value - self.cosmo.comoving_transverse_distance(z_observer).value
+
         return T_xy
-
-    def D_co(self,z_observer, z):
-        """
-
-        :param z_observer: initial z
-        :param z: target z
-        :return: comoving distance between redshift z_observer and z
-        """
-        return self.cosmo._comoving_distance_z1z2(z_observer,z).value
 
     def D_xy(self, z_observer, z_source):
         """
-
+        angular diamter distance in units of Mpc
         :param z_observer: observer
         :param z_source: source
-        :return: angular diamter distance in units of Mpc
+        :return:
         """
         a_S = self.a_z(z_source)
         D_xy = (self.cosmo.comoving_transverse_distance(z_source) - self.cosmo.comoving_transverse_distance(z_observer))*a_S
@@ -126,18 +119,6 @@ class Cosmo:
 
     def rho_matter_crit(self,z):
         return self.rho_crit(z)*self.cosmo.Om(z)
-
-    def _physical2angle(self,phys,z):
-
-        return phys*self.D_A(0,z)**-1
-
-    def _physical2comoving(self,phys,z):
-
-        return phys*(1+z)
-
-    def _comoving2physical(self,co,z):
-
-        return co*(1+z)**-1
 
 
 class ParticleMasses:
