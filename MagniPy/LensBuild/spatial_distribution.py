@@ -160,30 +160,6 @@ class Localized_uniform:
         return x,y
 
 
-class TruncationFuncitons:
-
-    def __init__(self,truncation_routine=None,**kwargs):
-
-        self.truncation_routine = truncation_routine
-
-        if truncation_routine == 'tidal_3d':
-            self.function = self.tidal_3D
-        elif truncation_routine == 'constant':
-            self.function = self.constant_trunc
-        elif truncation_routine == 'normal_distribution':
-            self.function = self.gaussian
-        elif truncation_routine == 'NFW_r200':
-            self.function = self.NFW_r200
-
-    def tidal_3D(self, **kwargs):
-        return (kwargs['mass'] * kwargs['r3d'] ** 2 * (2 * kwargs['sigmacrit'] * kwargs['RE']) ** -1) ** (1. / 3)
-    def constant_trunc(self, **kwargs):
-        return self.value
-    def gaussian(self,**kwargs):
-        return np.absolute(np.random.normal(kwargs['mean'],kwargs['sigma'],size=kwargs['size']))
-    def NFW_r200(self,**kwargs):
-        return np.absolute(np.random.normal(kwargs['multiple']*kwargs['r200'],kwargs['sigma']))
-
 
 
 

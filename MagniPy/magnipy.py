@@ -1,4 +1,5 @@
 from time import time
+from MagniPy import paths
 import MagniPy.LensBuild.lens_assemble as build
 import MagniPy.LensBuild.renderhalos as halo_gen
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
@@ -27,7 +28,6 @@ class Magnipy:
 
         self.cosmo = Cosmo(zd=zmain,zsrc=zsrc)
         self.clean_up = clean_up
-        from MagniPy import paths
 
         self.paths = paths
 
@@ -73,10 +73,6 @@ class Magnipy:
 
         if additional_halos is not None:
             newsystem.halos(additional_halos)
-
-        if filter_by_pos:
-
-            newsystem.filter_by_position(**filter_kwargs)
 
         return newsystem
 

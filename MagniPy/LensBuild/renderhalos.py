@@ -10,6 +10,7 @@ from BuildRoutines.halo_environments import *
 from MagniPy.util import filter_by_position
 from MagniPy.LensBuild.BuildRoutines import PBHgen
 from copy import deepcopy
+from halo_truncations import Truncation
 
 class HaloGen:
 
@@ -246,7 +247,7 @@ class HaloGen:
 
                 modelkwargs['N'] = np.random.poisson(Nz[p])
 
-                _plane_halos += self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+                _plane_halos += self._halos(cosmo_at_plane=Cosmo(zd=zvals[p],zsrc=self.zsrc,compute=False),mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
                             redshift=zvals[p], Nrealizations=Nrealizations, mass_profile=[massprofile],
                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)[0]
 
@@ -286,7 +287,7 @@ class HaloGen:
         mass_function_type.append('plaw')
         spatial_distribution_type.append(_spatial_)
 
-        halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+        halos = self._halos(cosmo_at_plane=self.cosmology,mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
                             redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)
 
@@ -340,7 +341,7 @@ class HaloGen:
 
                 redshift = zvals[p]
 
-                _plane_halos += self._halos(mass_function_type=mass_function_type,
+                _plane_halos += self._halos(cosmo_at_plane=Cosmo(zd=zvals[p],zsrc=self.zsrc,compute=False),mass_function_type=mass_function_type,
                                             spatial_distribution=spatial_distribution_type, redshift=redshift,
                                             Nrealizations=1, mass_profile=[massprofile],
                                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs],
@@ -372,13 +373,13 @@ class HaloGen:
         mass_function_type.append('delta')
         spatial_distribution_type.append(_spatial_)
 
-        halos = self._halos(mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
+        halos = self._halos(cosmo_at_plane=self.cosmology,mass_function_type=mass_function_type, spatial_distribution=spatial_distribution_type,
                             redshift=self.cosmology.zd, Nrealizations=Nrealizations, mass_profile=[massprofile],
                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs])
 
         return halos
 
-    def _halos(self,mass_function_type=None,spatial_distribution=None,redshift=None,Nrealizations=1,
+    def _halos(self,cosmo_at_plane=None,mass_function_type=None,spatial_distribution=None,redshift=None,Nrealizations=1,
                    mass_profile=None,modelkwargs={},spatialkwargs={},filter_halo_positions=False,**kwargs):
         """
         :param mass_func_type: "plaw, delta, etc."
@@ -437,17 +438,17 @@ class HaloGen:
 
                 if spatial_type == 'uniform2d':
 
-                    spatial= Uniform_2d(cosmology=self.cosmology,rmax2d=spatialkwargs[i]['rmax2d'])
+                    spatial= Uniform_2d(cosmology=cosmo_at_plane,rmax2d=spatialkwargs[i]['rmax2d'])
                     R, x, y = spatial.draw(int(len(masses)), redshift)
 
                 elif spatial_type == 'uniform_cored_nfw':
 
-                    spatial = Uniform_cored_nfw(cosmology=self.cosmology,**spatialkwargs[i])
+                    spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane,**spatialkwargs[i])
                     R, x, y = spatial.draw(int(len(masses)), redshift)
 
                 elif spatial_type == 'localized_uniform':
 
-                    spatial = Localized_uniform(cosmology=self.cosmology,**spatialkwargs[i])
+                    spatial = Localized_uniform(cosmology=cosmo_at_plane,**spatialkwargs[i])
                     R, x, y = spatial.draw(spatialkwargs['N_per_image'], redshift)
 
                 else:
@@ -465,15 +466,19 @@ class HaloGen:
 
                         c_turnover = concentration_turnover
 
-                        lensmod = TNFW.TNFW(z=redshift, zsrc=self.cosmology.zsrc, c_turnover=c_turnover)
+                        lensmod = TNFW.TNFW(cosmology=cosmo_at_plane, c_turnover=c_turnover)
 
                         if spatial_distribution[i] == 'uniform2d':
-                            subhalo_args['trunc'] = None
+
+                            truncation = Truncation(truncation_routine='fixed_radius')
 
                         elif spatial_distribution[i] == 'uniform_cored_nfw':
-                            truncation = TruncationFuncitons(truncation_routine='tidal_3d')
-                            subhalo_args['trunc'] = truncation.function(mass=masses,r3d=R,
-                                                                        sigmacrit=self.cosmology.sigmacrit,RE=1)[0]
+
+                            truncation = Truncation(truncation_routine='virial3d',
+                                                    params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
+                                                            'r3d': R[j]})
+
+                        subhalo_args['truncation'] = truncation
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 
@@ -481,26 +486,23 @@ class HaloGen:
 
                         c_turnover = concentration_turnover
 
-                        lensmod = NFW.NFW(z=redshift, zsrc = self.cosmology.zsrc, c_turnover=c_turnover)
+                        lensmod = NFW.NFW(cosmology=cosmo_at_plane, c_turnover=c_turnover)
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 
                     elif massprofile == 'pjaffe':
 
-                        if spatial_distribution[i] == 'uniform2d':
-                            truncation = TruncationFuncitons(truncation_routine='gaussian')
-                            subhalo_args['trunc'] = truncation.function(mean=0.1,sigma=0.05,size=len(masses))[0]
+                        truncation = Truncation(truncation_routine='virial3d',
+                                                params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
+                                                        'r3d': R})
 
-                        elif spatial_distribution[i] == 'uniform_cored_nfw':
-                            truncation = TruncationFuncitons(truncation_routine='tidal_3d')
-                            subhalo_args['trunc'] = truncation.function(mass=masses, r3d=R,
-                                                                        sigmacrit=self.cosmology.sigmacrit)[0]
+                        subhalo_args['truncation'] = truncation
 
-                        lensmod = PJaffe.PJaffe(z=redshift,zsrc = self.cosmology.zsrc)
+                        lensmod = PJaffe.PJaffe(cosmology=cosmo_at_plane)
 
                     elif massprofile == 'ptmass':
 
-                        lensmod = PointMass.PointMass(z=redshift,zsrc = self.cosmology.zsrc)
+                        lensmod = PointMass.PointMass(cosmology=cosmo_at_plane)
 
                     else:
 
@@ -513,7 +515,7 @@ class HaloGen:
             if filter_halo_positions:
 
                 subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis=kwargs['mindis'],
-                                                 log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=self.cosmology)
+                                                 log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=cosmo_at_plane)
 
             realizations.append(subhalos)
 

@@ -12,7 +12,7 @@ class PJaffe:
         else:
             self.cosmology = cosmology
 
-        self.sigmacrit = self.cosmology.sigmacrit
+        self.sigmacrit = self.cosmology.get_sigmacrit()
 
     def convergence(self,rcore,rtrunc,r=False):
         if r is False:
@@ -20,22 +20,27 @@ class PJaffe:
         else:
             return (rcore**2+r**2)**-.5 - (rtrunc**2+r**2)**-.5
 
-    def def_angle(self,x,y,rcore=0,rt=None,b=None,center_x=None,center_y=None):
+    def def_angle(self, x, y, rcore=0, r_trunc=None, b=None, center_x=None, center_y=None):
 
         x = x - center_x
         y = y - center_y
 
         r=np.sqrt(x**2+y**2)
 
-        magdef = b*(np.sqrt(1+(rcore*r**-1)**2)-np.sqrt(1+(rt*r**-1)**2)+(rt-rcore)*r**-1)
+        magdef = b*(np.sqrt(1+(rcore*r**-1)**2) - np.sqrt(1 + (r_trunc * r ** -1) ** 2) + (r_trunc - rcore) * r ** -1)
 
         return magdef*x*r**-1,magdef*y*r**-1
 
-    def params(self,x=None,y=None,mass=None,rt=None,rc=0,**kwargs):
+    def params(self,x=None,y=None,mass=None,truncation=None,rc=0,**kwargs):
 
         subkwargs = {}
-        subkwargs['b'] = self.b(mass,rt,rc)
-        subkwargs['rt'] = rt
+
+        if truncation.truncation_routine == 'virial3d':
+            subkwargs['r_trunc'] = truncation.virial3d(mass)
+        else:
+            raise Exception('fix truncation for PJaffe')
+
+        subkwargs['b'] = self.b(mass, subkwargs['rt'], rc)
         subkwargs['center_x'] = x
         subkwargs['center_y'] = y
 

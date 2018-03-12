@@ -186,12 +186,23 @@ class SolveRoutines(Magnipy):
 
         lens_systems= []
 
-        if realizations is not None:
-            for real in realizations:
-                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,multiplane=multiplane,
-                                                      filter_by_position=filter_by_position,**filter_kwargs))
+        ################################################################################
+
+        # If macromodel is a list same length as realizations, build the systems and fit each one
+
+        if isinstance(macromodel,list):
+
+            assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
+
+            for macro,real in zip(macromodel,realizations):
+                lens_systems.append(self.build_system(main=macro,additional_halos=real,multiplane=multiplane))
         else:
-            lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
+            if realizations is not None:
+                for real in realizations:
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,
+                                                          multiplane=multiplane))
+            else:
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
         optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems, data2fit=datatofit, method=method,
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,
