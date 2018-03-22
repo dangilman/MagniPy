@@ -7,7 +7,7 @@ from MagniPy.util import identify
 
 def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
                 sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
-                raytrace_with='lensmodel',solver_class=None):
+                raytrace_with='lensmodel',solver_class=None,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
 
     run = True
 
@@ -21,13 +21,17 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
         raise Exception('config must be one of cross, cusp, fold')
 
     if solver_class is None:
-        solver = SolveRoutines(zmain=zlens,zsrc=zsrc)
+        solver = SolveRoutines(zmain=zlens,zsrc=zsrc,temp_folder=identifier)
     else:
         solver = solver_class
 
     while run:
 
-        r = np.random.uniform(0, .07 ** 2, 1)
+        if config=='cusp':
+            r = np.random.uniform(0.03**2,0.07**2,1)
+        else:
+            r = np.random.uniform(0, .07 ** 2, 1)
+
         theta = np.random.uniform(0, np.pi * 2, 1)
         src_x, src_y = float(r ** .5 * np.cos(theta)), float(r ** .5 * np.sin(theta))
 
@@ -38,6 +42,8 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
         spa = np.random.normal(sPA_prior[0], sPA_prior[1])
         if gamma_prior is None:
             gamma = 2
+        elif gamma_prior[1]==0:
+            gamma = gamma_prior[0]
         else:
             gamma = np.random.normal(gamma_prior[0], gamma_prior[1])
             raytrace_with = 'lenstronomy'
@@ -48,11 +54,13 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
         main = Deflector(subclass=SIE(), redshift=zlens, tovary=True,
                          varyflags=['1', '1', '1', '1', '1', '0', '0', '0', '0', '0'], **truth)
 
-        realizations_tokeep = halo_constructor(massprofile=massprofile, model_name='plaw_main', model_args=substructure_model_args,
+        if subhalo_realizations is None:
+            subhalo_realizations = halo_constructor(massprofile=massprofile, model_name='plaw_main',model_args=substructure_model_args,
                                                Nrealizations=1, zlens=zlens, zsrc=zsrc)
 
 
-        dset_v0 = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=realizations_tokeep,
+
+        dset_v0 = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=subhalo_realizations,
                                            identifier=identifier,
                                            srcx=src_x, srcy=src_y, grid_rmax=.06,
                                            res=0.001, source_shape='GAUSSIAN', ray_trace=False,
@@ -65,13 +73,17 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
 
         else:
 
-            dset = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=realizations_tokeep,
+            dset = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=subhalo_realizations,
                                                identifier=identifier,
                                                srcx=src_x, srcy=src_y, grid_rmax=.06,
                                                res=0.001, source_shape='GAUSSIAN', ray_trace=True,
                                                raytrace_with=raytrace_with, source_size=source_size,
                                                multiplane=False)
+            dset[0].x += np.random.normal(0,astrometric_perturbation)
+            dset[0].y += np.random.normal(0,astrometric_perturbation)
 
-            lens_system = solver.build_system(main=main,additional_halos=realizations_tokeep,multiplane=False)
-
-            return dset[0],lens_system
+            lens_system = solver.build_system(main=main,additional_halos=subhalo_realizations,multiplane=False)
+            if return_gamma:
+                return dset[0],lens_system,gamma
+            else:
+                return dset[0],lens_system

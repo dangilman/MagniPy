@@ -110,8 +110,7 @@ class HaloMassFunction:
         if z1<1e-4:
             z1 = 1e-4
 
-        if cone_base is None:
-            cone_base = spatial_defaults['cone_base']
+        assert cone_base is not None,'Specify cone_base.'
 
         if Rein_def is None:
             Rein_def = default_Rein_deflection(cone_base)

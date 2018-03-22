@@ -1,7 +1,7 @@
 from MagniPy.LensBuild.renderhalos import HaloGen
 
 def halo_constructor(massprofile='', model_name='', model_args={},
-                   Nrealizations=int, zlens=None, zsrc=None, filter_halo_positions=None,
+                   Nrealizations=int, zlens=None, zsrc=None, filter_halo_positions=False,
                    **filter_kwargs):
 
     assert zlens is not None
@@ -21,7 +21,7 @@ def halo_constructor(massprofile='', model_name='', model_args={},
     elif model_name == 'composite_plaw':
         spatial_name = 'uniform_cored_nfw'
 
-    if filter_halo_positions is not None:
+    if filter_halo_positions:
         return halo_generator.draw_model(model_name=model_name, spatial_name=spatial_name,
                                           massprofile=massprofile, model_kwargs=model_args, Nrealizations=Nrealizations,
                                               filter_halo_positions=filter_halo_positions, **filter_kwargs)

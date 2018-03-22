@@ -87,7 +87,7 @@ class Plaw:
 
     def draw(self):
 
-        return self.sample_CDF(self.Nhalos)
+        return self.sample_CDF(np.random.poisson(self.Nhalos_mean))
 
     def get_Nsub(self,norm=float,scrit=None,area=None):
 

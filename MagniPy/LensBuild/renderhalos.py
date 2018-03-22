@@ -193,11 +193,15 @@ class HaloGen:
 
         elif model_name == 'plaw_LOS':
 
+            cone_base = spatial_defaults['default_cone_base_factor']*spatialkwargs['rmax2d']
+
             HALOS = self._return_plaw_LOS(_spatial_ = 'uniform2d',position_filter_kwargs=position_filter_kwargs,
                                            model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
-                                           Nrealizations=Nrealizations)
+                                          cone_base=cone_base,Nrealizations=Nrealizations)
 
         elif model_name=='composite_plaw':
+
+            cone_base = spatial_defaults['default_cone_base_factor'] * spatialkwargs['rmax2d']
 
             HALOS_main = self._return_plaw_main(_spatial_ = spatial_name,position_filter_kwargs=position_filter_kwargs,
                                            model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
@@ -205,7 +209,7 @@ class HaloGen:
 
             HALOS_LOS = self._return_plaw_LOS(_spatial_ = 'uniform2d',position_filter_kwargs=position_filter_kwargs,
                                            model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
-                                           Nrealizations=Nrealizations)
+                                              cone_base=cone_base, Nrealizations=Nrealizations)
 
             HALOS = []
 
@@ -224,7 +228,7 @@ class HaloGen:
 
         return HALOS
 
-    def _return_delta_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
+    def _return_delta_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,cone_base,Nrealizations):
 
         mass_function_type = []
         spatial_distribution_type = []
@@ -232,7 +236,7 @@ class HaloGen:
 
         Nz, zvals = LOS_delta(model_kwargs['M'], model_kwargs['matter_fraction'], zmin=model_kwargs['zmin'],
                              zmax=model_kwargs['zmax'],
-                             zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc)
+                             zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,cone_base=cone_base)
 
         model_kwargs['logmass'] = np.log10(model_kwargs['M'])
 
@@ -279,8 +283,18 @@ class HaloGen:
         if 'log_mH' not in modelkwargs:
             modelkwargs['log_mH'] = powerlaw_defaults['log_MH']
 
-        A0, _ = mainlens_plaw(fsub=modelkwargs['fsub'],plaw_index=modelkwargs['plaw_index'],cosmo=self.cosmology,
-                              kappa_Rein=modelkwargs['kappa_Rein'], log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
+        if 'fsub' in modelkwargs:
+
+            A0_perasec, _ = mainlens_plaw(fsub=modelkwargs['fsub'],plaw_index=modelkwargs['plaw_index'],cosmo=self.cosmology,
+                                  kappa_Rein=modelkwargs['kappa_Rein'], log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
+            A0 = A0_perasec*np.pi*spatialkwargs['rmax2d']**2
+
+        elif 'A0_perasec' in modelkwargs:
+
+            A0 = modelkwargs['A0_perasec']*np.pi*spatialkwargs['rmax2d']**2
+
+        else:
+            raise Exception('either fsub or A0_perasec must be specified for plaw_main')
 
         modelkwargs['normalization'] = A0
 
@@ -293,7 +307,7 @@ class HaloGen:
 
         return halos
 
-    def _return_plaw_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
+    def _return_plaw_LOS(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,cone_base,Nrealizations):
 
         mass_function_type = []
         spatial_distribution_type = []
@@ -322,11 +336,10 @@ class HaloGen:
             modelkwargs['rescale_sigma8'] = False
             modelkwargs['omega_M_void'] = None
 
-
         A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
                                              zmax=modelkwargs['zmax'],rescale_sigma8=modelkwargs['rescale_sigma8'],
                                              omega_M_void=modelkwargs['omega_M_void'],log_mL=modelkwargs['log_mL'],
-                                             log_mH=modelkwargs['log_mH'])
+                                             log_mH=modelkwargs['log_mH'],cone_base=cone_base)
 
         mass_function_type.append('plaw')
         spatial_distribution_type.append(_spatial_)
@@ -558,23 +571,6 @@ class HaloGen:
         return realization_masses
 
 
-
-if False:
-    render = HaloGen(zd=.5,zsrc=1.5)
-
-    model_args = {}
-    model_args['fsub'] = 0.01
-    model_args['zmin'] = 0.001
-    model_args['zmax'] = .57
-
-    halos = render.draw_model(model_name='plaw_main', spatial_name='uniform_cored_nfw',
-                              massprofile='NFW', model_kwargs=model_args, Nrealizations=1)[0]
-
-    print halos
-    specific_mass = 10**6
-    object_generator = (deflector.other_args['mass'] for deflector in halos
-                        if deflector.other_args['mass'] > specific_mass)
-    print len(list(object_generator))
 
 
 

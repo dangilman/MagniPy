@@ -92,7 +92,7 @@ class SIE:
 
         return subparams,otherkwargs
 
-    #def R_ein(self,vdis,z1,z2):
-    #    Cosmo.__init__(self, zd=z1, zsrc=z2)
+    #def R_ein(self,vdis,D_ds,D_s,arcsec):
+
     #    return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
     #           self.D_ds * self.D_s ** -1 * self.arcsec ** -1

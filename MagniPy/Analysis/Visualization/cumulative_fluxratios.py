@@ -11,7 +11,6 @@ class FluxRatioCumulative:
     def __init__(self,datasets='load',fnames=None,refdataset='load',fname_ref=None):
 
         lensdata = []
-        refdata=[]
 
         if datasets=='load':
 
@@ -37,7 +36,15 @@ class FluxRatioCumulative:
 
     def set_reference_data(self,refdata):
 
-        self.reference_data = refdata
+        self.reference_data = []
+
+        if isinstance(refdata,list):
+
+            self.reference_data = refdata
+
+        else:
+            self.reference_data = [refdata]*len(self.lensdata)
+
 
     def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
                     xlims=None,ylims=None):
@@ -53,23 +60,32 @@ class FluxRatioCumulative:
         ax = plt.subplot(111)
         fig.set_size_inches(6,6)
 
+        count = 0
+
         for i,model_data in enumerate(self.lensdata):
 
             flux_ratio_residuals = []
 
             for j,dset in enumerate(model_data):
 
-                flux_ratio_residuals.append(dset.flux_anomaly(other_data=self.reference_data, index=1, sum_in_quad=True))
+                flux_ratio_residuals.append(dset.flux_anomaly(other_data=self.reference_data[count], index=1, sum_in_quad=True))
+                count+=1
 
-            values, bins = np.histogram(flux_ratio_residuals, bins=nbins, range=(0, xmax))
+            #values, bins = np.histogram(flux_ratio_residuals, bins=nbins, range=(-0.00001, xmax))
             L = len(model_data)
-            cumulative = np.cumsum(values)
+
+            y = []
+            x = np.linspace(0,xmax,nbins)
+
+            for k in range(0, len(x)):
+                y.append((len(flux_ratio_residuals) - sum(val < x[k] for val in flux_ratio_residuals))*L**-1)
+
             if labels is not None:
-                plt.plot(bins[:-1], L - cumulative, c=color[i], label=labels[i], linewidth=linewidth,
+                plt.plot(x, y, c=color[i], label=labels[i], linewidth=linewidth,
                          linestyle=linestyle, alpha=alpha)
                 leg = True
             else:
-                plt.plot(bins[:-1], L - cumulative, c=color[i], linewidth=linewidth,
+                plt.plot(x, y, c=color[i], linewidth=linewidth,
                          linestyle=linestyle, alpha=alpha)
                 leg = False
 
@@ -85,16 +101,6 @@ class FluxRatioCumulative:
 
         else:
             ax.set_ylim(ylims[0],ylims[1])
-
-        if False:
-            ylims = [0, 1]
-            yticks = np.round(np.linspace(0, (ylims[1] - ylims[0]) * L, 6), 1)
-            yticklabs = []
-            for tick in yticks:
-                yticklabs.append(str(np.round(tick * (ylims[1] - ylims[0]) * L ** -1, 1)))
-
-            ax.set_yticks(yticks)
-            ax.set_yticklabels(yticklabs)
 
         if leg:
             plt.legend()

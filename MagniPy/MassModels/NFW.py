@@ -16,8 +16,7 @@ class NFW:
         else:
             self.cosmology = cosmology
 
-        self.z = z
-        self.zsrc= zsrc
+        self.z, self.zsrc = self.cosmology.zd, self.cosmology.zsrc
 
         self.c_turnover=c_turnover
 
@@ -89,6 +88,8 @@ class NFW:
 
         subkwargs = {}
         otherkwargs = {}
+
+
 
         subkwargs['theta_Rs'] = rsdef
         subkwargs['Rs'] = Rs

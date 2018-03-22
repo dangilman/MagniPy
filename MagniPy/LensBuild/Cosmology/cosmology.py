@@ -120,6 +120,15 @@ class Cosmo:
     def rho_matter_crit(self,z):
         return self.rho_crit(z)*self.cosmo.Om(z)
 
+    def vdis_to_Rein(self,zd,zsrc,vdis):
+
+        return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
+               self.D_A(zd, zsrc) * self.D_A(0,zsrc) ** -1 * self.arcsec ** -1
+
+    def vdis_to_Reinkpc(self,zd,zsrc,vdis):
+
+        return self.kpc_per_asec(zd)*self.vdis_to_Rein(zd,zsrc,vdis)
+
 
 class ParticleMasses:
 
@@ -132,7 +141,7 @@ class ParticleMasses:
         # half mode mass corresponding to thermal relic of mass m (kev)
         # calibrated to Schneider 2012
 
-        mass = 1.07e+10 * h**-1 * m**-3.33
+        mass = 1.07e+10 * h * m**-3.33
         return mass
 
     def thermal_to_sterile(self,m,w=0.1225):
@@ -147,7 +156,8 @@ class ParticleMasses:
 
         # particle mass (keV) corresponding to half-mode mass m (solar masses)
 
-        masses = (np.array(m) * (1.07e+10 * h**-1) ** -1) ** (-1 * 3.33 ** -1)
+        #masses = (np.array(m) * (1.07e+10 * h**-1) ** -1) ** (-1 * 3.33 ** -1)
+        masses = (np.array(m) * (1.07e+10 * h) ** -1) ** (-1 * 3.33 ** -1)
 
         if as_string:
             massstring = []
@@ -159,4 +169,5 @@ class ParticleMasses:
 
     def wave_alpha(self,m_kev,omega_WDM=0.25,h=0.7):
 
-        return 0.049*(m_kev)**-1.11*(omega_WDM*4)**0.11*(h*0.7**-1)**1.22*h**-1
+        return 0.049*(m_kev)**-1.11*(omega_WDM*4)**0.11*(h*0.7**-1)**1.22*h
+

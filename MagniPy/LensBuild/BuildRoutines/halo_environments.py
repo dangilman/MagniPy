@@ -8,10 +8,9 @@ def mainlens_plaw(fsub,plaw_index,cosmo,kappa_Rein=0.5, log_mL = None, log_mH = 
 
     A0_perasec2 = fsub*kappa_Rein*cosmo.sigmacrit*(2+plaw_index)*(mH**(2+plaw_index) - mL**(2+plaw_index))**-1
 
+    return A0_perasec2,plaw_index
 
-    return A0_perasec2*np.pi*spatial_defaults['theta_max']**2,plaw_index
-
-def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=None,log_mH=None):
+def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=None,log_mH=None,cone_base=None):
 
     from MagniPy.LensBuild.defaults import *
 
@@ -35,7 +34,7 @@ def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=
 
     for z in zvals:
 
-        dn_dm = HMF.dndM_integrated_z1z2(M,z,z+zstep,cone_base=spatial_defaults['theta_max'])
+        dn_dm = HMF.dndM_integrated_z1z2(M,z,z+zstep,cone_base=cone_base)
 
         _,normalization,index = HMF.mass_function_moment(M,dn_dm,0)
 
@@ -48,7 +47,7 @@ def delta_main(M,f_pbh,ximgs,yimgs,omega,zmin,zmax,zmain,zsrc,cosmo):
 
     return drawPBH(ximgs=ximgs,yimgs=yimgs,f_pbh=f_pbh,cosmology=cosmo,mass=M)
 
-def LOS_delta(M,omega,zmin,zmax,zmain,zsrc):
+def LOS_delta(M,omega,zmin,zmax,zmain,zsrc,cone_base):
 
     from MagniPy.LensBuild.defaults import zstep
 
@@ -68,13 +67,8 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc):
 
     for z in zvals:
 
-        Nz = HMF.dndM_integrated_z1z2(M,z,z+zstep,cone_base=spatial_defaults['theta_max'],functype='delta',omega=omega)
+        Nz = HMF.dndM_integrated_z1z2(M,z,z+zstep,functype='delta',omega=omega,cone_base=cone_base)
 
         N_z.append(Nz)
 
     return Nz,zvals
-
-
-
-
-

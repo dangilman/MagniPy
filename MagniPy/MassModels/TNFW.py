@@ -10,12 +10,13 @@ class TNFW:
         :param z2: source redshift
         :param h: little h
         """
-        self.z = z
 
         if cosmology is None:
             self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
         else:
             self.cosmology = cosmology
+
+        self.z,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
         self.c_turnover=c_turnover
 
@@ -98,9 +99,9 @@ class TNFW:
         subkwargs['center_x'] = x
         subkwargs['center_y'] = y
 
-        if truncation.truncation_routine == 'fixed_radius':
+        if truncation.routine == 'fixed_radius':
             subkwargs['r_trunc'] = truncation.fixed_radius(Rs*c)
-        elif truncation.truncation_routine == 'virial3d':
+        elif truncation.routine == 'virial3d':
             subkwargs['r_trunc'] = truncation.virial3d(mass)
         else:
             raise Exception('fix tnfw truncation.')
