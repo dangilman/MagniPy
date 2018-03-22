@@ -3,7 +3,9 @@ from copy import deepcopy
 
 class ProbabilityDistribution:
 
-    def __init__(self,distribution_type='',args={},Nsamples=int):
+    def __init__(self,distribution_type='',args={},Nsamples=int,decimals=int):
+
+        self.decimals = decimals
 
         if distribution_type=='Uniform':
             self.draw  = self.Uniform
@@ -30,7 +32,7 @@ class ProbabilityDistribution:
         if self.sort_ascending:
             samples = samples[np.argsort(samples)]
 
-        return np.array(samples)
+        return np.round(np.array(samples),self.decimals)
 
 
     def Gaussian(self,N):
@@ -43,4 +45,4 @@ class ProbabilityDistribution:
         if self.sort_ascending:
             samples = samples[np.argsort(samples)]
 
-        return np.array(samples)
+        return np.round(np.array(samples),self.decimals)

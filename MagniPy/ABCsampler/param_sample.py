@@ -3,7 +3,13 @@ from MagniPy.ABCsampler.probability_distributions import ProbabilityDistribution
 
 class ParamSample:
 
-    def __init__(self, params_to_vary = {}, Nsamples=int):
+    recognized_param_precision = {}
+    recognized_param_precision['fsub'] = 5
+    recognized_param_precision['logmhm'] = 2
+    recognized_param_precision['SIE_gamma'] = 3
+    recognized_param_precision['SIE_shear'] = 4
+
+    def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5):
         """
 
         :param params_to_vary (list): list of strings corresponding to parameters to vary
@@ -21,7 +27,12 @@ class ParamSample:
 
         for pname,pargs in params_to_vary.iteritems():
 
-            self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs))
+            if 'decimals' in pargs:
+                decimals = pargs['decimals']
+            elif pname in self.recognized_param_precision.keys():
+                decimals = self.recognized_param_precision[pname]
+
+            self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs,decimals=decimals))
 
     def sample(self,scale_by='dimension'):
 

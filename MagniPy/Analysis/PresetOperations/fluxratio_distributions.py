@@ -39,7 +39,7 @@ def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=
     _, macromodel = solver.two_step_optimize(macromodel=init_macromodel,datatofit=datatofit,multiplane=multiplane,sigmas=sigmas,identifier=None,
                              ray_trace=True,method=method,raytrace_with=raytrace_with,grid_rmax=grid_rmax,res=res,source_size=source_size)
 
-    return macromodel[0].lens_components[0]
+    return macromodel[0].lens_components[0],datatofit
 
 
 
@@ -50,7 +50,7 @@ def reoptimize_with_halos(data2fit=[], realizations=None, outfilename='', zlens=
 
     datatofit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
-    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, clean_up=False, temp_folder=outfilename)
+    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, clean_up=True, temp_folder=outfilename)
 
     model_data, _ = solver.fit(macromodel=start_macromodels, datatofit=datatofit, realizations=realizations,
                                              multiplane=multiplane_flag, method=method, ray_trace=True, sigmas=sigmas,

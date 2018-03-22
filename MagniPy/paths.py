@@ -4,7 +4,9 @@ homedir = os.getenv('HOME')+'/'
 
 if homedir == '/u/home/g/gilmanda':
     prefix = '/u/flashscratch/g/gilmanda/'
-    path_2_lensmodel = homedir+'/Code/'
+    IO_directory = os.getenv('TMPDIR') + '/'
+    lensmodel_location = homedir+'/Code/lensmodel_folder/'
+    path_2_lensmodel = IO_directory
 
 elif homedir == '/Users/danielgi/':
     prefix = homedir
