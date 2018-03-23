@@ -261,6 +261,7 @@ def runABC(inputfile_path='',Nsplit=1000):
     N_run = len(run_commands)*Nsplit**-1
 
     chain_data = []
+
     for i in range(0, int(N_run)):
         chain_data += reoptimize_with_halos(start_macromodels=macromodels,
                                             realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
