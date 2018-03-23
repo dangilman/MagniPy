@@ -232,3 +232,4 @@ class CosmoExtension(Cosmo):
 
                 integral.append(quad(integrand, z1, value, args=(angle, z_base, Rein_def))[0])
             return np.array(integral)
+

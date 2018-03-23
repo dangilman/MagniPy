@@ -4,6 +4,89 @@ from MagniPy.Analysis.PresetOperations.halo_constructor import halo_constructor
 from copy import deepcopy
 import shutil
 
+def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2, SIE_shear=None,
+                   SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
+                   solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None, mass_profile=None, mass_func_type=None,
+                   log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},core_index=int,
+                   chain_description='',chain_truths={}):
+
+    chain_keys = {}
+    chain_keys['sampler'] = {}
+    chain_keys['lens'] = {}
+    chain_keys['halos'] = {}
+    chain_keys['modeling'] = {}
+    chain_keys['data'] = {}
+
+    chain_keys['lens']['zlens'] = zlens
+    chain_keys['lens']['zsrc'] = zsrc
+    chain_keys['lens']['source_size'] = source_size
+    if SIE_gamma is not None:
+        chain_keys['lens']['SIE_gamma'] = SIE_gamma
+    if SIE_shear_start is None:
+        SIE_shear_start = SIE_shear
+    chain_keys['lens']['SIE_shear'] = SIE_shear_start
+    chain_keys['lens']['SIE_shear_start'] = SIE_shear_start
+    chain_keys['lens']['multiplane'] = multiplane
+
+    chain_keys['modeling']['mindis'] = mindis
+    chain_keys['modeling']['log_masscut_low'] = log_masscut_low
+
+    chain_keys['modeling']['grid_rmax'] = grid_rmax
+    chain_keys['modeling']['grid_res'] = grid_res
+    chain_keys['modeling']['raytrace_with'] = raytrace_with
+    chain_keys['modeling']['solve_method'] = solve_method
+    if lensmodel_varyflags is None:
+        lensmodel_varyflags = ['1', '1', '1', '1', '1', '1', '1', '0', '0', '0']
+    chain_keys['modeling']['varyflags'] = lensmodel_varyflags
+
+    chain_keys['data']['x_to_fit'] = data_to_fit.x.tolist()
+    chain_keys['data']['y_to_fit'] = data_to_fit.y.tolist()
+    chain_keys['data']['flux_to_fit'] = data_to_fit.m.tolist()
+
+    if sigmas is None:
+        sigmas = default_sigmas
+
+    if data_to_fit.t[1]==0 and data_to_fit.t[2] == 0:
+        sigmas[-1] = [100]*4
+
+    chain_keys['data']['t_to_fit'] = data_to_fit.t.tolist()
+    chain_keys['modeling']['sigmas'] = sigmas
+    chain_keys['sampler']['chain_ID'] = chain_ID
+    chain_keys['sampler']['scratch_file'] = chain_keys['sampler']['chain_ID'] + '_' + str(core_index)
+    chain_keys['sampler']['output_folder'] = chain_keys['sampler']['chain_ID'] + '/'
+    chain_keys['sampler']['core_index'] = core_index
+    chain_keys['sampler']['Nsamples'] = Nsamples
+    chain_keys['sampler']['chain_description'] = chain_description
+    chain_keys['sampler']['chain_truths'] = chain_truths
+
+    chain_keys['halos']['mass_profile'] = mass_profile
+    chain_keys['halos']['mass_func_type'] = mass_func_type
+    chain_keys['halos']['log_mL'] = log_mL
+    chain_keys['halos']['log_mH'] = log_mH
+
+    if fsub is not None:
+        chain_keys['halos']['fsub'] = fsub
+    elif A0 is not None:
+        chain_keys['halos']['A0'] = fsub
+
+    if logmhm is not None:
+        chain_keys['halos']['logmhm'] = logmhm
+
+    chain_keys['halos']['zmin'] = zmin
+    chain_keys['halos']['zmax'] = zmax
+
+    chain_keys_to_vary = {}
+
+    for groupname,items in chain_keys.iteritems():
+
+        for item_name in items:
+
+            if item_name in params_to_vary.keys():
+
+                chain_keys_to_vary[item_name] = params_to_vary[item_name]
+
+    return {'main_keys':chain_keys,'tovary_keys':chain_keys_to_vary}
+
 def write_param_dictionary(fname='',param_dictionary={}):
 
     with open(fname,'w') as f:
@@ -12,6 +95,7 @@ def write_param_dictionary(fname='',param_dictionary={}):
 def read_paraminput(file):
     with open(file,'r') as f:
         vals = f.read()
+
     return eval(vals)
 
 def build_dictionary_list(paramnames=[],values=[],dictionary_to_duplicate=None,N=int):
@@ -59,7 +143,10 @@ def halo_model_args(mass_func_type='',params={}):
 
 def runABC(inputfile_path='',Nsplit=1000):
 
-    #chain_keys = read_paraminput(inputfile_path)
+    all_keys = read_paraminput(inputfile_path)
+
+    chain_keys = all_keys['main_keys']
+    chain_keys_to_vary = all_keys['tovary_keys']
 
     output_path = chainpath + chain_keys['sampler']['output_folder']
 
@@ -86,15 +173,12 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     # Get parameters to vary
     prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'])
-    samples_full = prior.sample(scale_by='Nsamples')
+    samples = prior.sample(scale_by='Nsamples')
+    import matplotlib.pyplot as plt
+
+    plt.scatter(samples[:,0],samples[:,1])
+    plt.show()
     param_names_tovary = prior.param_names
-    if len(chain_keys_to_vary_sparse.keys())!=0:
-        prior_sparse = ParamSample(params_to_vary=chain_keys_to_vary_sparse,Nsamples=int(np.shape(samples_full)[0]))
-        sparse_samples = prior_sparse.sample(scale_by='Nsamples')
-        param_names_tovary += prior_sparse.param_names
-        samples = np.hstack((samples_full,sparse_samples))
-    else:
-        samples = samples_full
 
     chainkeys = {}
 
@@ -191,84 +275,18 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     np.savetxt(output_path+'parameters.txt',samples,header = header_string, fmt='%.6f')
 
-    with open(output_path+'info.txt','w') as f:
-        for pname in param_names_tovary:
-            f.write(pname+' ')
-        f.write('\n')
-        for key,value in chain_keys_to_vary.iteritems():
-            f.write(key+' '+str(value)+'\n')
+    write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
+                    chain_keys,chain_keys_to_vary,param_names_tovary)
 
+def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
+    with open(fpath,'w') as f:
 
+        f.write(str(keys_to_vary))
+        f.write('\n\n')
 
+        f.write('#Truths:\n')
 
+        f.write(str(keys['sampler']['chain_truths'])+'\n\n')
 
-chain_keys = {}
-core_index = 1
-
-chain_keys['sampler'] = {}
-chain_keys['lens'] = {}
-chain_keys['halos'] = {}
-chain_keys['modeling'] = {}
-chain_keys['data'] = {}
-
-chain_keys['lens']['zlens'] = 0.5
-chain_keys['lens']['zsrc'] = 1.5
-chain_keys['lens']['source_size'] = 0.0012*2.3**-1
-chain_keys['lens']['SIE_gamma'] = 2
-chain_keys['lens']['SIE_shear'] = 0.04
-chain_keys['lens']['SIE_shear_start'] = chain_keys['lens']['SIE_shear']
-chain_keys['lens']['multiplane']=False
-
-chain_keys['modeling']['mindis'] = 0.5
-chain_keys['modeling']['log_masscut_low'] = 7
-chain_keys['modeling']['sigmas'] = default_sigmas
-chain_keys['modeling']['grid_rmax'] = 0.06
-chain_keys['modeling']['grid_res'] = 0.001
-chain_keys['modeling']['raytrace_with'] = 'lenstronomy'
-chain_keys['modeling']['solve_method'] = 'lensmodel'
-chain_keys['modeling']['varyflags'] = ['1','1','1','1','1','1','1','0','0','0']
-
-chain_keys['data']['x_to_fit'] = [0.912 ,-0.9246,-0.5254,0.5011]
-chain_keys['data']['y_to_fit'] = [0.6344, -0.6008 , 0.7895,-0.7962]
-chain_keys['data']['flux_to_fit'] = [ 0.97634,1,0.69093,0.66614]
-chain_keys['data']['t_to_fit'] = [ 0,0.9,14.4,15.2]
-
-chain_keys['sampler']['chain_ID'] = 'tester_chain'
-chain_keys['sampler']['scratch_file'] = chain_keys['sampler']['chain_ID'] + '_'+str(core_index)
-chain_keys['sampler']['output_folder'] = chain_keys['sampler']['chain_ID']+'/'
-chain_keys['sampler']['core_index'] = core_index
-chain_keys['sampler']['Nsamples'] = 10
-
-chain_keys['halos']['mass_profile'] = 'NFW'
-chain_keys['halos']['mass_func_type'] = 'plaw_main'
-chain_keys['halos']['log_mL'] = 6
-chain_keys['halos']['log_mH'] = 10
-chain_keys['halos']['fsub'] = 1
-chain_keys['halos']['logmhm'] = 0
-chain_keys['halos']['zmin'] = 0
-chain_keys['halos']['zmax'] = 1
-
-params_to_vary = {}
-params_to_vary['fsub'] = {'prior_type':'Uniform','low':0,'high':0.01,'steps':21,'sample_full':True}
-params_to_vary['logmhm'] = {'prior_type':'Uniform','low':6,'high':7,'steps':21,'sample_full':True}
-params_to_vary['SIE_gamma'] = {'prior_type':'Gaussian','mean':2,'sigma':0.05,'positive_definite':True,'sample_full':True}
-#params_to_vary['SIE_shear'] = {'prior_type':'Gaussian','mean':chain_keys['lens']['SIE_shear_start'],'sigma':0.01,'positive_definite':True,'sample_full':False}
-chain_keys_to_vary = {}
-chain_keys_to_vary_sparse = {}
-
-for groupname,items in chain_keys.iteritems():
-
-    for item_name in items:
-
-        if item_name in params_to_vary.keys():
-
-            if params_to_vary[item_name]['sample_full']:
-                chain_keys_to_vary[item_name] = params_to_vary[item_name]
-            else:
-                chain_keys_to_vary_sparse[item_name] = params_to_vary[item_name]
-
-runABC('')
-
-
-
+        f.write(keys['sampler']['chain_description']+'\n\n')

@@ -27,7 +27,7 @@ def confidence_interval(percentile,data):
 
     return value
 
-def read_data(filename=''):
+def read_data(filename='',N=None):
 
     nimg,srcx,srcy,xpos1,ypos1,m1,t1,xpos2,ypos2,m2,t2,\
     xpos3,ypos3,m3,t3,xpos4,ypos4,m4,t4 = np.loadtxt(filename,unpack=True)
@@ -40,7 +40,13 @@ def read_data(filename=''):
         for i in range(0,len(xpos1)):
             data.append(Data(x=[xpos1[i],xpos2[i],xpos3[i],xpos4[i]],y=[ypos1[i],ypos2[i],ypos3[i],ypos4[i]],
                              m=[m1[i],m2[i],m3[i],m4[i]],t=[t1[i],t2[i],t3[i],t4[i]],source=[srcx[i],srcy[i]]))
-        return data
+        if N is None:
+            return data
+        if N>=len(data):
+            return data
+        else:
+            return data[0:N]
+
 
 
 def write_data(filename='',data_list=[],mode='append'):

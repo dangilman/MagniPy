@@ -24,7 +24,7 @@ defmap_path = kapmappath
 
 infopath = gravlens_input_path + 'deflector_info/'
 
-imgpos_ref = prefix+'data/lensdata/'
+data_path = prefix+'data/lensdata/SIE_data/data_4ABC/'
 
 gravlens_input_path_dump = gravlens_input_path + 'dump/'
 
