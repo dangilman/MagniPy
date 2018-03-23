@@ -79,7 +79,7 @@ class TNFW:
             r = np.sqrt(self.x**2+self.y**2)
         return 2*ks*(1-self.F(r*rs**-1))*((r*rs**-1)**2-1)**-1
 
-    def params(self, x=None,y=None,mass=float, mhm=None,truncation=None):
+    def params(self, x=None,y=None,mass=float, mhm=None,truncation=None,**kwargs):
 
         assert mhm is not None
         assert mass is not None
@@ -99,12 +99,16 @@ class TNFW:
         subkwargs['center_x'] = x
         subkwargs['center_y'] = y
 
-        if truncation.routine == 'fixed_radius':
-            subkwargs['r_trunc'] = truncation.fixed_radius(Rs*c)
-        elif truncation.routine == 'virial3d':
-            subkwargs['r_trunc'] = truncation.virial3d(mass)
+        if 'r_trunc' in kwargs:
+            subkwargs['r_trunc'] = kwargs['r_trunc']
         else:
-            raise Exception('fix tnfw truncation.')
+            if truncation.routine == 'fixed_radius':
+                subkwargs['r_trunc'] = truncation.fixed_radius(Rs*c)
+            elif truncation.routine == 'virial3d':
+                subkwargs['r_trunc'] = truncation.virial3d(mass)
+            else:
+                raise Exception('specify truncation.')
+
 
         otherkwargs['mass'] = mass
         otherkwargs['c'] = c

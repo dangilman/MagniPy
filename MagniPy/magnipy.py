@@ -329,7 +329,7 @@ class Magnipy:
                                 res=None, source_shape=None, source_size=None, cosmology=classmethod, zsrc=None):
 
         t0 = time()
-        print 'ray tracing... '
+
         lensModelExtensions = LensModelExtensions(lens_model_list=lenstronomy_wrap_instance.lens_model_list,
                                                   z_source=zsrc, redshift_list=lenstronomy_wrap_instance.redshift_list,
                                                   cosmo=cosmology, multi_plane=multiplane)
@@ -341,8 +341,6 @@ class Magnipy:
                                                           source_sigma=source_size, window_size=2*gridsize,
                                                           grid_number=2*gridsize * res ** -1,
                                                           shape=source_shape)
-        print 'done in '+str(time()-t0)+' seconds.'
-
 
         return fluxes
 

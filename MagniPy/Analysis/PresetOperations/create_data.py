@@ -7,7 +7,7 @@ from MagniPy.util import identify
 
 def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
                 sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
-                raytrace_with='lensmodel',solver_class=None,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
+                raytrace_with='lenstronomy',method='lenstronomy',solver_class=None,ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
 
     run = True
 
@@ -60,9 +60,9 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
 
 
 
-        dset_v0 = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=subhalo_realizations,
+        dset_v0 = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                            identifier=identifier,
-                                           srcx=src_x, srcy=src_y, grid_rmax=.06,
+                                           srcx=src_x, srcy=src_y, grid_rmax=.08,
                                            res=0.001, source_shape='GAUSSIAN', ray_trace=False,
                                            raytrace_with=raytrace_with, source_size=source_size,
                                            multiplane=False)
@@ -73,10 +73,10 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
 
         else:
 
-            dset = solver.solve_lens_equation(macromodel=main, method='lensmodel', realizations=subhalo_realizations,
+            dset = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                                identifier=identifier,
-                                               srcx=src_x, srcy=src_y, grid_rmax=.06,
-                                               res=0.001, source_shape='GAUSSIAN', ray_trace=True,
+                                               srcx=src_x, srcy=src_y, grid_rmax=.08,
+                                               res=0.001, source_shape='GAUSSIAN', ray_trace=ray_trace,
                                                raytrace_with=raytrace_with, source_size=source_size,
                                                multiplane=False)
             dset[0].x += np.random.normal(0,astrometric_perturbation)

@@ -158,7 +158,8 @@ def runABC(inputfile_path='',Nsplit=1000):
     output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(chain_keys['sampler']['core_index'])+'/'
 
     if os.path.exists(output_path+'chain.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
-        return
+        #return
+        pass
 
     if os.path.exists(output_path):
         pass
@@ -171,7 +172,10 @@ def runABC(inputfile_path='',Nsplit=1000):
         shutil.copy2(lensmodel_location+'lensmodel',path_2_lensmodel)
 
     # Initialize data, macormodel
-    datatofit = [chain_keys['data']['x_to_fit'], chain_keys['data']['y_to_fit'], chain_keys['data']['flux_to_fit'], chain_keys['data']['t_to_fit']]
+
+    datatofit = Data(x=chain_keys['data']['x_to_fit'], y=chain_keys['data']['y_to_fit'], m=chain_keys['data']['flux_to_fit'],
+                     t=chain_keys['data']['t_to_fit'], source=None)
+
     macromodel_default_start = default_startkwargs
 
     # Get parameters to vary
@@ -200,7 +204,7 @@ def runABC(inputfile_path='',Nsplit=1000):
                                          model_name=params['mass_func_type'],
                                          model_args=params['halo_model_args'], Nrealizations=1, zlens=params['zlens'],
                                          zsrc=params['zsrc'], filter_halo_positions=True,
-                                         x_filter=datatofit[0], y_filter=datatofit[1], mindis=params['mindis'],
+                                         x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
 
     macromodel_default_start['shear'] = chainkeys['SIE_shear_start']
@@ -210,7 +214,7 @@ def runABC(inputfile_path='',Nsplit=1000):
                                  redshift=chain_keys['lens']['zlens'],
                                  **macromodel_default_start)
 
-    macromodel,lensdata = initialize_macromodel(macromodel_start, data2fit=datatofit, method=chainkeys['solve_method'],
+    macromodel = initialize_macromodel(macromodel_start, data2fit=datatofit, method=chainkeys['solve_method'],
                                        sigmas=chainkeys['sigmas'],
                                        grid_rmax=chainkeys['grid_rmax'], res=chainkeys['grid_res'],
                                        zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
@@ -235,17 +239,20 @@ def runABC(inputfile_path='',Nsplit=1000):
     else:
         macromodels = [macromodel]*len(run_commands)
 
-    if len(run_commands) < 1000:
+    if chain_keys['modeling']['solve_method'] == 'lenstronomy':
         Nsplit = len(run_commands)
+    else:
+        if len(run_commands) < 1000:
+            Nsplit = len(run_commands)
 
-    if len(run_commands)%Nsplit != 0:
-        Nsplit = 1000
-    if len(run_commands)%Nsplit !=0:
-        Nsplit = 800
-    if len(run_commands)%Nsplit !=0:
-        Nsplit = 600
-    if len(run_commands)%Nsplit !=0:
-        Nsplit = 500
+        if len(run_commands)%Nsplit != 0:
+            Nsplit = 1000
+        if len(run_commands)%Nsplit !=0:
+            Nsplit = 800
+        if len(run_commands)%Nsplit !=0:
+            Nsplit = 600
+        if len(run_commands)%Nsplit !=0:
+            Nsplit = 500
 
     assert len(run_commands)%Nsplit==0,'run_commands length '+str(len(run_commands))+\
                                        ' and Nsplit length '+str(Nsplit)+' not compatible.'
@@ -266,10 +273,9 @@ def runABC(inputfile_path='',Nsplit=1000):
                                             write_to_file=False,outfilepath=run_commands[i]['scratch_file'],
                                             method=run_commands[i]['solve_method'])
 
-
     write_data(output_path+'chain.txt',chain_data)
 
-    write_data(output_path+'lensdata.txt',[lensdata])
+    write_data(output_path+'lensdata.txt',[datatofit])
 
     header_string = ''
     for name in param_names_tovary:
@@ -279,6 +285,12 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
                     chain_keys,chain_keys_to_vary,param_names_tovary)
+
+    statistic = []
+    for dset in chain_data:
+        statistic.append(dset.flux_anomaly(datatofit,sum_in_quad=True))
+
+    np.savetxt(output_path+'statistics.txt',np.array(statistic),fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -292,3 +304,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write(str(keys['sampler']['chain_truths'])+'\n\n')
 
         f.write(keys['sampler']['chain_description']+'\n\n')
+
+#runABC(os.getenv('HOME')+'/data/new_ABC/paramdictionary_1.txt')
