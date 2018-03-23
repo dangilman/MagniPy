@@ -8,7 +8,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
                    SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None, mass_profile=None, mass_func_type=None,
                    log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},core_index=int,
-                   chain_description='',chain_truths={}):
+                   chain_description='',chain_truths={},Ncores=int,cores_per_lens=int):
 
     chain_keys = {}
     chain_keys['sampler'] = {}
@@ -58,6 +58,8 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     chain_keys['sampler']['Nsamples'] = Nsamples
     chain_keys['sampler']['chain_description'] = chain_description
     chain_keys['sampler']['chain_truths'] = chain_truths
+    chain_keys['sampler']['Ncores'] = Ncores
+    chain_keys['sampler']['cores_per_lens'] = cores_per_lens
 
     chain_keys['halos']['mass_profile'] = mass_profile
     chain_keys['halos']['mass_func_type'] = mass_func_type
@@ -295,11 +297,11 @@ def runABC(inputfile_path='',Nsplit=1000):
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
-
+        f.write('# Ncores, cores_per_lens\n'+str(int(keys['sampler']['Ncores']))+' '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
         f.write(str(keys_to_vary))
         f.write('\n\n')
 
-        f.write('#Truths:\n')
+        f.write('# Truths:\n')
 
         f.write(str(keys['sampler']['chain_truths'])+'\n\n')
 
