@@ -1,7 +1,4 @@
-from cosmolopy.perturbation import *
 from cosmology import Cosmo
-import numpy as np
-import matplotlib.pyplot as plt
 from cosmology import ParticleMasses
 from scipy.integrate import quad
 from MagniPy.LensBuild.defaults import *
@@ -62,39 +59,12 @@ class CosmoExtension(Cosmo):
 
         return self.delta_c
 
-    def sigma(self,r,z):
-
-        """
-
-        :param r: length scale in Mpc
-        :param z: redshift
-        :return:
-        """
-
-        growth = self.D_growth(z, self.cosmology_params['omega_M_0'], self.cosmology_params['omega_lambda_0'])
-
-        return growth**2*sigma_r(r, z, **self.cosmology_params)[0]
-
     def transfer_WDM(self,k,z,m_hm,n=1.12):
 
         alpha = self.dm_particles.wave_alpha(m_kev=self.dm_particles.hm_to_thermal(m_hm,h=self.h),
                                              omega_WDM=self.cosmo.Om(0),h=self.h)
 
         return (1+(alpha*k)**(2*n))**(-5*n**-1)
-
-    def power_spectrum(self,k,z,m_hm=0):
-        """
-
-        :param k: wave number in Mpc^-1
-        :param z: redshift
-        :return:
-        """
-        if m_hm == 0:
-            transfer_WDM = 1
-        else:
-            transfer_WDM = self.transfer_WDM(k,z,m_hm)
-
-        return power_spectrum(k, z, **self.cosmology_params) * transfer_WDM ** 2
 
     def mass2size_comoving(self, m, z):
         """
@@ -114,13 +84,6 @@ class CosmoExtension(Cosmo):
         :return: physical distance corresponding to a sphere of mass M computed w.r.t. background
         """
         return 2*np.pi* self.mass2size_comoving(m, z) ** -1
-
-    def DsigmaInv_DlnM(self, M, z):
-
-        sigma = self.sigma(self.mass2size_comoving(M, z), z)
-        sigma_inv_log = np.log(sigma**-1)
-
-        return np.polyval(np.polyder(np.polyfit(np.log10(M), sigma_inv_log, 2)), np.log10(M))
 
     def _angle_to_physicalradius(self, angle, z, z_base, Rein_def=None):
 
