@@ -160,8 +160,7 @@ def runABC(inputfile_path='',Nsplit=1000):
     output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(chain_keys['sampler']['core_index'])+'/'
 
     if os.path.exists(output_path+'chain.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
-        #return
-        pass
+        return
 
     if os.path.exists(output_path):
         pass
