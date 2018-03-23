@@ -9,7 +9,6 @@ from MagniPy.lensdata import Data
 def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=None,grid_rmax=None,res=None,zlens=None,zsrc=None,
                           source_size=None,outfilename=None,multiplane=None,raytrace_with=None):
 
-    datatofit = Data(x=data2fit[0], y=data2fit[1], m=data2fit[2], t=data2fit[3], source=None)
     assert zlens is not None
     if method is None:
         method = default_solve_method
@@ -36,23 +35,22 @@ def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=
 
     solver = SolveRoutines(zmain=zlens, zsrc=zsrc, temp_folder=outfilename)
 
-    _, macromodel = solver.two_step_optimize(macromodel=init_macromodel,datatofit=datatofit,multiplane=multiplane,sigmas=sigmas,identifier=None,
+    _, macromodel = solver.two_step_optimize(macromodel=init_macromodel,datatofit=data2fit,multiplane=multiplane,sigmas=sigmas,identifier=None,
                              ray_trace=True,method=method,raytrace_with=raytrace_with,grid_rmax=grid_rmax,res=res,source_size=source_size)
 
-    return macromodel[0].lens_components[0],datatofit
+    return macromodel[0].lens_components[0]
 
 
 
-def reoptimize_with_halos(data2fit=[], realizations=None, outfilename='', zlens=None, multiplane_flag=None, zsrc=None,
+def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='', zlens=None, multiplane_flag=None, zsrc=None,
                           start_macromodels=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                           source_size=None, raytrace_with=None, test_only=False, write_to_file=False,
                           filter_halo_positions=None, outfilepath=None, method=None, **filter_kwargs):
 
-    datatofit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
     solver = SolveRoutines(zmain=zlens, zsrc=zsrc, clean_up=True, temp_folder=outfilename)
 
-    model_data, _ = solver.fit(macromodel=start_macromodels, datatofit=datatofit, realizations=realizations,
+    model_data, _ = solver.fit(macromodel=start_macromodels, datatofit=data2fit, realizations=realizations,
                                              multiplane=multiplane_flag, method=method, ray_trace=True, sigmas=sigmas,
                                              identifier=identifier, grid_rmax=grid_rmax, res=res, source_shape='GAUSSIAN',
                                              source_size=source_size, raytrace_with=raytrace_with, print_mag=True)
