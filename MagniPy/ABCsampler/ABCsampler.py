@@ -157,6 +157,9 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(chain_keys['sampler']['core_index'])+'/'
 
+    if os.path.exists(output_path+'chain.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
+        return
+
     if os.path.exists(output_path):
         pass
     else:
@@ -174,10 +177,7 @@ def runABC(inputfile_path='',Nsplit=1000):
     # Get parameters to vary
     prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'])
     samples = prior.sample(scale_by='Nsamples')
-    import matplotlib.pyplot as plt
 
-    plt.scatter(samples[:,0],samples[:,1])
-    plt.show()
     param_names_tovary = prior.param_names
 
     chainkeys = {}
@@ -240,6 +240,8 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     if len(run_commands)%Nsplit != 0:
         Nsplit = 1000
+    if len(run_commands)%Nsplit !=0:
+        Nsplit = 800
     if len(run_commands)%Nsplit !=0:
         Nsplit = 600
     if len(run_commands)%Nsplit !=0:

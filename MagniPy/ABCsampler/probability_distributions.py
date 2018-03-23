@@ -10,7 +10,6 @@ class ProbabilityDistribution:
         if distribution_type=='Uniform':
             self.draw  = self.Uniform
             self.low,self.high = args['low'],args['high']
-            self.steps = args['steps']
 
         elif distribution_type=='Gaussian':
             self.draw = self.Gaussian
