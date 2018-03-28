@@ -127,8 +127,6 @@ class Data:
 
             return np.absolute((self.fluxratios - other) * other ** -1)
 
-
-
     def all(self):
 
         return [self.x,self.y,self.m,self.t]

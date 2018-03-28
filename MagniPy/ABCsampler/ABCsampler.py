@@ -261,19 +261,19 @@ def runABC(inputfile_path='',Nsplit=1000):
     N_run = len(run_commands)*Nsplit**-1
 
     chain_data = []
-
     for i in range(0, int(N_run)):
-        chain_data += reoptimize_with_halos(start_macromodels=macromodels,
-                                            realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
-                                            data2fit=datatofit, outfilename=run_commands[i]['chain_ID'],
-                                            zlens=run_commands[i]['zlens'],
-                                            zsrc=run_commands[i]['zsrc'], identifier=run_commands[i]['chain_ID']+'_',
-                                            grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
-                                            multiplane_flag=run_commands[i]['multiplane'],sigmas=run_commands[i]['sigmas'],
-                                            source_size=run_commands[i]['source_size'],
-                                            raytrace_with=run_commands[i]['raytrace_with'],test_only=False,
-                                            write_to_file=False,outfilepath=run_commands[i]['scratch_file'],
-                                            method=run_commands[i]['solve_method'])
+        chain_data += reoptimize_with_halos(start_macromodels=macromodels[i*Nsplit:(i+1)*Nsplit],
+                                                realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
+                                                data2fit=datatofit, outfilename=run_commands[i]['chain_ID'],
+                                                zlens=run_commands[i]['zlens'],
+                                                zsrc=run_commands[i]['zsrc'], identifier=run_commands[i]['chain_ID']+'_',
+                                                grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
+                                                multiplane_flag=run_commands[i]['multiplane'],sigmas=run_commands[i]['sigmas'],
+                                                source_size=run_commands[i]['source_size'],
+                                                raytrace_with=run_commands[i]['raytrace_with'],test_only=False,
+                                                write_to_file=False,outfilepath=run_commands[i]['scratch_file'],
+                                                method=run_commands[i]['solve_method'])
+
 
     write_data(output_path+'chain.txt',chain_data)
 
@@ -290,9 +290,13 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     statistic = []
     for dset in chain_data:
-        statistic.append(dset.flux_anomaly(datatofit,sum_in_quad=True))
 
-    np.savetxt(output_path+'statistics.txt',np.array(statistic),fmt='%.6f')
+        if dset.nimg != datatofit.nimg:
+            statistic.append(10000)
+        else:
+            statistic.append(dset.flux_anomaly(datatofit,sum_in_quad=True))
+
+    np.savetxt(fname=output_path+'statistics.txt',X=np.array(statistic),fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 

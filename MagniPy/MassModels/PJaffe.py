@@ -31,16 +31,16 @@ class PJaffe:
 
         return magdef*x*r**-1,magdef*y*r**-1
 
-    def params(self,x=None,y=None,mass=None,truncation=None,rc=0,**kwargs):
+    def params(self,x=None,y=None,mass=None,truncation=None,rc=0,r_trunc=None):
 
         subkwargs = {}
 
-        if truncation.truncation_routine == 'virial3d':
+        if truncation is not None and truncation.truncation_routine == 'virial3d':
             subkwargs['r_trunc'] = truncation.virial3d(mass)
         else:
-            raise Exception('fix truncation for PJaffe')
+            subkwargs['r_trunc'] = r_trunc
 
-        subkwargs['b'] = self.b(mass, subkwargs['rt'], rc)
+        subkwargs['b'] = self.b(mass, subkwargs['r_trunc'], rc)
         subkwargs['center_x'] = x
         subkwargs['center_y'] = y
 

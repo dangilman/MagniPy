@@ -45,7 +45,6 @@ class FluxRatioCumulative:
         else:
             self.reference_data = [refdata]*len(self.lensdata)
 
-
     def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
                     xlims=None,ylims=None):
 
@@ -69,7 +68,7 @@ class FluxRatioCumulative:
             for j,dset in enumerate(model_data):
 
                 flux_ratio_residuals.append(dset.flux_anomaly(other_data=self.reference_data[count], index=1, sum_in_quad=True))
-                count+=1
+            count+=1
 
             #values, bins = np.histogram(flux_ratio_residuals, bins=nbins, range=(-0.00001, xmax))
             L = len(model_data)
