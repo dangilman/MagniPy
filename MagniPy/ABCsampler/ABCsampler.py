@@ -315,6 +315,8 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
         f.write('# Ncores, cores_per_lens\n'+str(int(keys['sampler']['Ncores']))+' '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
+
+        f.write('# params varied\n')
         f.write(str(keys_to_vary))
         f.write('\n\n')
 
