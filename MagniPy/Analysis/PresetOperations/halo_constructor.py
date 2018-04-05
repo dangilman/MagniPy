@@ -1,30 +1,32 @@
 from MagniPy.LensBuild.renderhalos import HaloGen
 
-def halo_constructor(massprofile='', model_name='', model_args={},
-                   Nrealizations=int, zlens=None, zsrc=None, filter_halo_positions=False,
-                   **filter_kwargs):
+class Realization:
 
-    assert zlens is not None
-    assert zsrc is not None
+    def __init__(self,zlens,zsrc):
 
-    halo_generator = HaloGen(zd=zlens, zsrc=zsrc)
+        self.halo_generator = HaloGen(zd=zlens,zsrc=zsrc)
 
-    if model_name == 'plaw_main':
-        spatial_name = 'uniform_cored_nfw'
+    def halo_constructor(self,massprofile='', model_name='', model_args={},
+                       Nrealizations=int, filter_halo_positions=False,
+                       **filter_kwargs):
 
-    elif model_name == 'plaw_LOS':
-        spatial_name = 'uniform2d'
 
-    elif model_name == 'delta_LOS':
-        spatial_name = 'uniform2d'
+        if model_name == 'plaw_main':
+            spatial_name = 'uniform_cored_nfw'
 
-    elif model_name == 'composite_plaw':
-        spatial_name = 'uniform_cored_nfw'
+        elif model_name == 'plaw_LOS':
+            spatial_name = 'uniform2d'
 
-    if filter_halo_positions:
-        return halo_generator.draw_model(model_name=model_name, spatial_name=spatial_name,
-                                          massprofile=massprofile, model_kwargs=model_args, Nrealizations=Nrealizations,
-                                              filter_halo_positions=filter_halo_positions, **filter_kwargs)
-    else:
-        return halo_generator.draw_model(model_name=model_name, spatial_name=spatial_name,
-                                         massprofile=massprofile, model_kwargs=model_args, Nrealizations=Nrealizations)
+        elif model_name == 'delta_LOS':
+            spatial_name = 'uniform2d'
+
+        elif model_name == 'composite_plaw':
+            spatial_name = 'uniform_cored_nfw'
+
+        if filter_halo_positions:
+            return self.halo_generator.draw_model(model_name=model_name, spatial_name=spatial_name,
+                                              massprofile=massprofile, model_kwargs=model_args, Nrealizations=Nrealizations,
+                                                  filter_halo_positions=filter_halo_positions, **filter_kwargs)
+        else:
+            return self.halo_generator.draw_model(model_name=model_name, spatial_name=spatial_name,
+                                             massprofile=massprofile, model_kwargs=model_args, Nrealizations=Nrealizations)

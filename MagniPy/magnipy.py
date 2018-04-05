@@ -177,7 +177,6 @@ class Magnipy:
             data = []
 
             optimized_systems = []
-            Nsys = len(lens_systems)
 
             for i, system in enumerate(lens_systems):
 

@@ -47,8 +47,6 @@ def read_data(filename='',N=None):
         else:
             return data[0:N]
 
-
-
 def write_data(filename='',data_list=[],mode='append'):
 
     def single_line(dset=classmethod):
@@ -345,8 +343,8 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             for halos behind the main lens
             """
 
-            scale = np.ones_like(x_filter)*(1 - cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_s*
-                                            (cosmology.D_A(0, deflector.redshift)*cosmology.D_ds)**-1)
+            scale = np.ones_like(x_filter)*(1 - cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_A(0,cosmology.zsrc)*
+                                            (cosmology.D_A(0, deflector.redshift)*cosmology.D_A(cosmology.zd,cosmology.zsrc))**-1)
 
         else:
             """
@@ -388,7 +386,7 @@ def rebin_image(image,factor):
         sh = shape[0], a.shape[0] // shape[0], shape[1], a.shape[1] // shape[1]
 
         return a.reshape(sh).mean(-1).mean(1)
-    size = (np.shape(image)[0]*factor**-1)
+    size = int(np.shape(image)[0]*factor**-1)
 
     return rebin(image,[size,size])
 

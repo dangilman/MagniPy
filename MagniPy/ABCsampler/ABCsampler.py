@@ -1,8 +1,9 @@
 from MagniPy.Analysis.PresetOperations.fluxratio_distributions import *
 from param_sample import ParamSample
-from MagniPy.Analysis.PresetOperations.halo_constructor import halo_constructor
+from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
 from copy import deepcopy
 import shutil
+from time import time
 
 def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2, SIE_shear=None,
                    SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
@@ -196,17 +197,26 @@ def runABC(inputfile_path='',Nsplit=1000):
                                          N=int(np.shape(samples)[0]),dictionary_to_duplicate=chainkeys)
 
     for i in range(0,len(run_commands)):
-        run_commands[i].update({'halo_model_args':halo_model_args(run_commands[0]['mass_func_type'],run_commands[0])})
+        run_commands[i].update({'halo_model_args':halo_model_args(run_commands[i]['mass_func_type'],run_commands[i])})
 
     # Draw realizations
     realizations = []
-    for params in run_commands:
-        realizations += halo_constructor(massprofile=params['mass_profile'],
+    print 'building realizations... '
+
+    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'])
+
+    t0 = time()
+    for index,params in enumerate(run_commands):
+
+        realizations += constructor.halo_constructor(massprofile=params['mass_profile'],
                                          model_name=params['mass_func_type'],
-                                         model_args=params['halo_model_args'], Nrealizations=1, zlens=params['zlens'],
-                                         zsrc=params['zsrc'], filter_halo_positions=True,
+                                         model_args=params['halo_model_args'], Nrealizations=1,
+                                        filter_halo_positions=True,
                                          x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
+
+    print 'done.'
+    print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
 
     macromodel_default_start['shear'] = chainkeys['SIE_shear_start']
 
@@ -261,6 +271,7 @@ def runABC(inputfile_path='',Nsplit=1000):
     N_run = len(run_commands)*Nsplit**-1
 
     chain_data = []
+
     for i in range(0, int(N_run)):
         chain_data += reoptimize_with_halos(start_macromodels=macromodels[i*Nsplit:(i+1)*Nsplit],
                                                 realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
@@ -288,15 +299,17 @@ def runABC(inputfile_path='',Nsplit=1000):
     write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
                     chain_keys,chain_keys_to_vary,param_names_tovary)
 
-    statistic = []
+    flux_ratios = []
+    flux_ratios.append(datatofit.compute_flux_ratios())
+
     for dset in chain_data:
 
         if dset.nimg != datatofit.nimg:
-            statistic.append(10000)
+            flux_ratios.append(np.array([1000,1000,1000]))
         else:
-            statistic.append(dset.flux_anomaly(datatofit,sum_in_quad=True))
+            flux_ratios.append(dset.compute_flux_ratios())
 
-    np.savetxt(fname=output_path+'statistics.txt',X=np.array(statistic),fmt='%.6f')
+    np.savetxt(fname=output_path+'fluxratios.txt',X=np.array(flux_ratios),fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -311,4 +324,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description']+'\n\n')
 
-#runABC(os.getenv('HOME')+'/data/new_ABC/paramdictionary_1.txt')
+runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')

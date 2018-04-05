@@ -72,7 +72,6 @@ class Plaw:
 
         self.mL,self.mH = 10**log_mL,10**log_mH
 
-
         if logmhm == 0:
 
             self.mbreak = 0
@@ -89,7 +88,7 @@ class Plaw:
 
         return self.sample_CDF(np.random.poisson(self.Nhalos_mean))
 
-    def get_Nsub(self,norm=float,scrit=None,area=None):
+    def get_Nsub(self,norm=float):
 
         N = norm*self.moment(0,self.mL,self.mH)
 
