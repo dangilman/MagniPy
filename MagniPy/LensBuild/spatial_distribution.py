@@ -59,7 +59,7 @@ class Uniform_2d:
 
         x, y, r2d = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
 
-        return r2d,x,y
+        return x,y,r2d
 
 class Uniform_cored_nfw:
 
@@ -92,7 +92,7 @@ class Uniform_cored_nfw:
 
             return self.r3d_pdf_cored(r) * self.r3d_pdf_cored(0) ** -1
 
-        r2d, x, y =self.TwoD.draw(N=N,z=self.TwoD.cosmology.zd)
+        x, y, r2d =self.TwoD.draw(N=N,z=self.TwoD.cosmology.zd)
 
         z = np.random.uniform(-self.zmax,self.zmax,N)
 
@@ -105,7 +105,7 @@ class Uniform_cored_nfw:
             accept = acceptance_prob(r3d[i])
 
             while u >= accept:
-                r2d_, x_, y_ = self.TwoD.draw(N=1,z=0)
+                x_, y_, r2d_ = self.TwoD.draw(N=1,z=0)
                 z = np.random.uniform(-self.zmax,self.zmax)
                 r3d[i] = (z**2+r2d_**2)**.5
                 u = np.random.rand()
@@ -152,7 +152,7 @@ class Localized_uniform:
 
             n = self._prob_round(N)
 
-            _, x_locations,y_locations = self.TwoD.draw(n,z=z)
+            x_locations,y_locations, _ = self.TwoD.draw(n,z=z)
 
             try:
                 x = np.append(np.array(x_locations)+ximg)
