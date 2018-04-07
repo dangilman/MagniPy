@@ -11,15 +11,13 @@ import lenstronomy.Util.param_util as param_util
 
 class LenstronomyWrap:
 
-    def __init__(self,xtol=1.49012e-10,min_distance=0.01, search_window=5, precision_limit=10**(-10), num_iter_max=100,
-                 multiplane=None,cosmo=None,z_source = None):
+    def __init__(self,multiplane=None,cosmo=None,z_source = None):
 
-        xtol = 1e-10
-        self.xtol = xtol
+        self.xtol = 1e-10
         self.min_distance = 0.01
         self.search_window = 4
-        self.precision_limit = 10**-10
-        self.num_iter_max = 500
+        self.precision_limit = 10**-9
+        self.num_iter_max = 250
         self.cosmo = cosmo
 
         assert z_source is not None

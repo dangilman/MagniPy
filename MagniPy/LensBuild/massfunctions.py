@@ -12,56 +12,54 @@ class Plaw_secondary:
     implement the exponential cutoff by rendering up to some factor xi*M.
 
     """
-    def __init__(self, M_parent=None, parent_locations=None, N0=0.21, alpha_secondary=0.8, xi=0.9,
-                 log_mL = None,logmhm=None,redshift=None,zsrc=None):
+    def __init__(self, M_parent=None, x_locations=None, y_locations=None, N0=0.1, alpha_secondary=0.8, xi=0.9,
+                 log_mL = None,logmhm=None,cosmo_at_zlens=None):
 
-        NFW_calculate = NFW(redshift,zsrc)
-
-        localized_2d = Localized_uniform(cosmology=NFW_calculate.cosmology)
+        NFW_calculate = NFW(cosmology=cosmo_at_zlens)
 
         self.power_laws = []
 
-        self.parent_locations = parent_locations
-
-        self.redshift = redshift
+        self.redshift = cosmo_at_zlens.zd
 
         self.locations = []
 
         for i,M in enumerate(M_parent):
 
+            if M<10**log_mL:
+                continue
             M *= xi
 
             normalization = N0*alpha_secondary**alpha_secondary*M**alpha_secondary
 
-            locations = deepcopy(localized_2d)
-
-            locations.set_xy(parent_locations[0][i],parent_locations[1][i])
-
             c = NFW_calculate.nfw_concentration(M*xi**-1,logmhm=logmhm)
 
-            rmax2d = NFW_calculate.nfwParam_physical(M * xi ** -1, c)[2] * NFW_calculate.cosmology.D_A(0,redshift) ** -1
+            # rmax2d in Mpc
+            rmax2d = NFW_calculate.nfwParam_physical(M * xi ** -1, c)[2] * NFW_calculate.cosmology.D_A(0,self.redshift) ** -1
+            rmax2d *= 1000*cosmo_at_zlens.kpc_per_asec(self.redshift)
 
-            locations.set_rmax2d(rmax2d)
+            locations = Localized_uniform(rmax2d=rmax2d, xlocations=x_locations[i],ylocations=y_locations[i],cosmology=cosmo_at_zlens)
 
             self.locations.append(locations)
 
-            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M),logmhm=logmhm,plaw_index=-1.8))
+            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M*xi**-1),logmhm=logmhm,plaw_index=-1.8))
 
     def draw(self):
 
         for i,plaw in enumerate(self.power_laws):
+
             newhalos = plaw.draw()
 
-            new_halo_positions = self.locations[i].draw(N=len(newhalos),z=self.redshift)
+            newx,newy = self.locations[i].draw(N=int(len(newhalos)),z=self.redshift)
 
             if i==0:
                 halos = np.array(newhalos)
-                halo_positions = np.array(new_halo_positions)
+                halox,haloy = np.array(newx),np.array(newy)
             else:
                 halos = np.append(halos,newhalos)
-                halo_positions = np.append(halo_positions,new_halo_positions)
+                halox = np.append(halox,newx)
+                haloy = np.append(haloy,newy)
 
-        return (halos,halo_positions)
+        return halos,halox,haloy
 
 class Plaw:
 

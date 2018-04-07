@@ -19,8 +19,10 @@ class TwoDCoords:
         """
 
         if z <= self.cosmology.zd:
-            angle = np.random.uniform(0,2*np.pi,Npoints)
-            r = np.random.uniform(0,theta**2,Npoints)
+
+            angle = np.random.uniform(0,2*np.pi,int(Npoints))
+            r = np.random.uniform(0,(theta**2),int(Npoints))
+
             x = r**.5*np.cos(angle)
             y = r**.5*np.sin(angle)
             r2d = (x**2+y**2)**.5
@@ -55,7 +57,7 @@ class Uniform_2d:
 
     def draw(self,N,z):
 
-        r2d, x, y = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
+        x, y, r2d = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
 
         return r2d,x,y
 
@@ -115,8 +117,8 @@ class Localized_uniform:
 
     def __init__(self,xlocations=None,ylocations=None,rmax2d=None,cosmology=None):
 
-        self.xlocations = ylocations
-        self.ylocations = xlocations
+        self.xlocations = xlocations
+        self.ylocations = ylocations
         self.rmax2d = rmax2d
 
         self.TwoD = Uniform_2d(rmax2d=rmax2d, cosmology=cosmology)
@@ -139,8 +141,6 @@ class Localized_uniform:
 
     def draw(self,N,z):
 
-        x,y = np.empty(0),np.empty(0)
-
         if isinstance(self.xlocations,float) or isinstance(self.xlocations,int):
             self.xlocations = [self.xlocations]
         if isinstance(self.ylocations,float) or isinstance(self.ylocations,int):
@@ -152,10 +152,14 @@ class Localized_uniform:
 
             n = self._prob_round(N)
 
-            x_locations,y_locations = self.TwoD.draw(n,z=z)
+            _, x_locations,y_locations = self.TwoD.draw(n,z=z)
 
-            x = np.append(np.array(x_locations)+ximg)
-            y = np.append(np.array(y_locations)+yimg)
+            try:
+                x = np.append(np.array(x_locations)+ximg)
+                y = np.append(np.array(y_locations)+yimg)
+            except:
+                x = np.array(x_locations) + ximg
+                y = np.array(y_locations) + yimg
 
         return x,y
 

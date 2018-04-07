@@ -10,7 +10,6 @@ class Realization:
                        Nrealizations=int, filter_halo_positions=False,
                        **filter_kwargs):
 
-
         if model_name == 'plaw_main':
             spatial_name = 'uniform_cored_nfw'
 

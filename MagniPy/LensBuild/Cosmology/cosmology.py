@@ -2,7 +2,6 @@ import numpy as np
 from MagniPy.LensBuild.defaults import *
 from scipy.integrate import quad
 
-
 class Cosmo:
 
     M_sun = 1.9891 * 10 ** 30  # solar mass in [kg]

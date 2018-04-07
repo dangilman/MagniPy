@@ -342,9 +342,9 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             """
             for halos behind the main lens
             """
+            beta = cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_A(0,cosmology.zsrc)*(cosmology.D_A(0, deflector.redshift)*cosmology.D_A(cosmology.zd,cosmology.zsrc))**-1
 
-            scale = np.ones_like(x_filter)*(1 - cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_A(0,cosmology.zsrc)*
-                                            (cosmology.D_A(0, deflector.redshift)*cosmology.D_A(cosmology.zd,cosmology.zsrc))**-1)
+            scale = np.ones_like(x_filter)*(1 - beta)
 
         else:
             """
@@ -398,7 +398,6 @@ def convolve_image(image,kernel='Gaussian',scale=None):
         grid = sfilt.gaussian_filter(image, scale * (2.355) ** -1, mode='constant', cval=0)
 
     return grid
-
 
 
 

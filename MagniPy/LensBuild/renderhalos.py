@@ -26,6 +26,10 @@ class HaloGen:
 
         self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
+        self.A0_z = None
+        self.plaw_index_z = None
+        self.redshift_values = None
+
     def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1,
                    rescale_sigma8=False, filter_halo_positions=False, **filter_kwargs):
 
@@ -336,10 +340,20 @@ class HaloGen:
             modelkwargs['rescale_sigma8'] = False
             modelkwargs['omega_M_void'] = None
 
-        A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
+        if self.A0_z is None:
+            A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
                                              zmax=modelkwargs['zmax'],rescale_sigma8=modelkwargs['rescale_sigma8'],
                                              omega_M_void=modelkwargs['omega_M_void'],log_mL=modelkwargs['log_mL'],
                                              log_mH=modelkwargs['log_mH'],cone_base=cone_base)
+            self.A0_z = A0_z
+            self.plaw_index_z = plaw_index_z
+            self.redshift_values = zvals
+
+        else:
+
+            A0_z = self.A0_z
+            plaw_index_z = self.plaw_index_z
+            zvals = self.redshift_values
 
         mass_function_type.append('plaw')
         spatial_distribution_type.append(_spatial_)
