@@ -466,17 +466,17 @@ class HaloGen:
                 if spatial_type == 'uniform2d':
 
                     spatial= Uniform_2d(cosmology=cosmo_at_plane,rmax2d=spatialkwargs[i]['rmax2d'])
-                    R, x, y = spatial.draw(int(len(masses)), redshift)
+                    x,y,R = spatial.draw(int(len(masses)), redshift)
 
                 elif spatial_type == 'uniform_cored_nfw':
 
                     spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane,**spatialkwargs[i])
-                    R, x, y = spatial.draw(int(len(masses)), redshift)
+                    x, y, R = spatial.draw(int(len(masses)), redshift)
 
                 elif spatial_type == 'localized_uniform':
 
                     spatial = Localized_uniform(cosmology=cosmo_at_plane,**spatialkwargs[i])
-                    R, x, y = spatial.draw(spatialkwargs['N_per_image'], redshift)
+                    x, y, R = spatial.draw(spatialkwargs['N_per_image'], redshift)
 
                 else:
                     if spatial_type is None:
