@@ -5,6 +5,7 @@ from spatial_distribution import Localized_uniform
 from copy import deepcopy
 
 class Plaw_secondary:
+
     """
     computes the subhalos of halos according to Giocoli 2008? equation 2
     dNs / dM = (N0 / m) * (m / (const*M))^const exp(-6 (m / (const*M))^3)
@@ -12,7 +13,8 @@ class Plaw_secondary:
     implement the exponential cutoff by rendering up to some factor xi*M.
 
     """
-    def __init__(self, M_parent=None, x_locations=None, y_locations=None, N0=0.1, alpha_secondary=0.8, xi=0.9,
+
+    def __init__(self, M_parent=None, parent_r2d = None, x_locations=None, y_locations=None, N0=0.21, alpha_secondary=-0.8, xi=1,
                  log_mL = None,logmhm=None,cosmo_at_zlens=None):
 
         NFW_calculate = NFW(cosmology=cosmo_at_zlens)
@@ -23,13 +25,18 @@ class Plaw_secondary:
 
         self.locations = []
 
+        self.alpha = alpha_secondary+1
+        self.parent_masses = M_parent
+        self.parent_r2d = parent_r2d
+
         for i,M in enumerate(M_parent):
 
-            if M<10**log_mL:
-                continue
             M *= xi
 
-            normalization = N0*alpha_secondary**alpha_secondary*M**alpha_secondary
+            if M<10**log_mL:
+                normalization=0
+            else:
+                normalization = N0*np.absolute(alpha_secondary)*M
 
             c = NFW_calculate.nfw_concentration(M*xi**-1,logmhm=logmhm)
 
@@ -41,25 +48,48 @@ class Plaw_secondary:
 
             self.locations.append(locations)
 
-            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M*xi**-1),logmhm=logmhm,plaw_index=-1.8))
+            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M*xi**-1),logmhm=logmhm,plaw_index=alpha_secondary-1))
 
     def draw(self):
 
         for i,plaw in enumerate(self.power_laws):
 
-            newhalos = plaw.draw()
+            new_halos = plaw.draw()
 
-            newx,newy = self.locations[i].draw(N=int(len(newhalos)),z=self.redshift)
+            newhalos = []
+
+            for halo in new_halos:
+
+                if np.exp(-6.283*(halo*(0.8*self.parent_masses[i])**-1)**3) > np.random.random():
+                    newhalos.append(halo)
+
+            newx,newy,R2d = self.locations[i].draw(N=int(len(newhalos)),z=self.redshift)
+
+            parent_mass = self.parent_masses[i] - np.sum(newhalos)
+
+            parent_x, parent_y = self.locations[i].xlocations, self.locations[i].ylocations
+            parent_r2d = self.parent_r2d[i]
+            zvals = np.random.uniform(-self.locations[i].rmax2d,self.locations[i].rmax2d,len(newhalos))
 
             if i==0:
-                halos = np.array(newhalos)
-                halox,haloy = np.array(newx),np.array(newy)
-            else:
-                halos = np.append(halos,newhalos)
-                halox = np.append(halox,newx)
-                haloy = np.append(haloy,newy)
+                halor2d = np.append(parent_r2d,np.sqrt(R2d**2+zvals**2))
+                halos = np.append(parent_mass,newhalos)
+                halox,haloy = np.append(parent_x,np.array(newx)),np.append(parent_y,np.array(newy))
 
-        return halos,halox,haloy
+            else:
+
+                newR = np.append(parent_r2d,np.sqrt(R2d**2+zvals**2))
+                halor2d = np.append(halor2d, newR)
+
+                newobjects = np.append(parent_mass,newhalos)
+                new_xloc = np.append(parent_x,newx)
+                new_yloc = np.append(parent_y,newy)
+
+                halos = np.append(halos,newobjects)
+                halox = np.append(halox,new_xloc)
+                haloy = np.append(haloy,new_yloc)
+
+        return halos,halox,haloy,halor2d
 
 class Plaw:
 
@@ -126,3 +156,20 @@ class Delta:
     def draw(self):
 
         return np.ones(self.norm)*self.mass
+
+def f(x,xmin=1e-9):
+    x[np.where(x<xmin)] = xmin
+    inds1,inds2 = np.where(x<1),np.where(x>1)
+    vals = np.ones_like(x)
+    vals[inds1] = np.arctanh((1-x[inds1]**2)**.5)*(1-x[inds1]**2)**-.5
+    vals[inds2] = np.arctan((x[inds2]**2-1)**.5)*(x[inds2]**2-1)**-.5
+    return vals
+
+def kr(r,rs=1):
+
+    return (1-f(r*rs**01))*((r*rs**-1)**2 - 1)**-1
+
+import matplotlib.pyplot as plt
+xvals = np.linspace(0,0.99,100)
+plt.plot(xvals,kr(xvals))
+plt.show()

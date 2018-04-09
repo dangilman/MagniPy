@@ -294,8 +294,6 @@ def runABC(inputfile_path='',Nsplit=1000):
     for name in param_names_tovary:
         header_string+= name + ' '
 
-    np.savetxt(output_path+'parameters.txt',samples,header = header_string, fmt='%.6f')
-
     write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
                     chain_keys,chain_keys_to_vary,param_names_tovary)
 
@@ -310,20 +308,19 @@ def runABC(inputfile_path='',Nsplit=1000):
             fluxes.append(dset.m)
 
     np.savetxt(fname=output_path+'fluxes.txt',X=np.array(fluxes),fmt='%.6f')
+    np.savetxt(output_path + 'parameters.txt', samples, header=header_string, fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
         f.write('# Ncores, cores_per_lens\n'+str(int(keys['sampler']['Ncores']))+' '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
 
-        f.write('# params varied\n')
-        f.write(str(keys_to_vary))
+        f.write('params varied = '+str(keys_to_vary))
+
         f.write('\n\n')
 
-        f.write('# Truths:\n')
+        f.write('truths = '+str(keys['sampler']['chain_truths'])+'\n')
 
-        f.write(str(keys['sampler']['chain_truths'])+'\n\n')
-
-        f.write(keys['sampler']['chain_description']+'\n\n')
+        f.write('info = '+"'"+keys['sampler']['chain_description']+'\n\n'+"'")
 
 #runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')
