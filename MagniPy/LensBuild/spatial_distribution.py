@@ -2,6 +2,7 @@ import numpy as np
 import random
 import math
 
+
 class TwoDCoords:
 
     def __init__(self, cosmology=None):
@@ -33,7 +34,7 @@ class TwoDCoords:
 
             assert self.cosmology is not None
 
-            theta_new = (1 - self.cosmology.D_A(zmain, z)*self.cosmology.D_s*(self.cosmology.D_A(0, z)*self.cosmology.D_ds)**-1)
+            theta_new = theta*(1 - self.cosmology.D_A(zmain, z)*self.cosmology.D_s*(self.cosmology.D_A(0, z)*self.cosmology.D_ds)**-1)
 
             angle = np.random.uniform(0, 2 * np.pi, Npoints)
             r = np.random.uniform(0, theta_new ** 2, Npoints)
@@ -111,7 +112,7 @@ class Uniform_cored_nfw:
                 u = np.random.rand()
                 accept = acceptance_prob(r3d[i])
 
-        return r3d, x, y
+        return x,y,r3d
 
 class Localized_uniform:
 
@@ -142,26 +143,109 @@ class Localized_uniform:
     def draw(self,N,z):
 
         if isinstance(self.xlocations,float) or isinstance(self.xlocations,int):
-            self.xlocations = [self.xlocations]
+            xloc = [self.xlocations]
         if isinstance(self.ylocations,float) or isinstance(self.ylocations,int):
-            self.ylocations = [self.ylocations]
+            yloc = [self.ylocations]
 
-        for imgnum in range(0, len(self.xlocations)):
+        for imgnum in range(0, len(xloc)):
 
-            ximg, yimg = self.xlocations[imgnum], self.ylocations[imgnum]
+            ximg, yimg = xloc[imgnum], yloc[imgnum]
 
             n = self._prob_round(N)
 
-            x_locations,y_locations, _ = self.TwoD.draw(n,z=z)
+            x_locations,y_locations, R = self.TwoD.draw(n,z=z)
 
             try:
                 x = np.append(np.array(x_locations)+ximg)
                 y = np.append(np.array(y_locations)+yimg)
+
             except:
                 x = np.array(x_locations) + ximg
                 y = np.array(y_locations) + yimg
 
-        return x,y
+        return x,y,np.sqrt(x**2+y**2)
+
+class NFW_2D:
+
+    def __init__(self, rmax2d=None, rs = None):
+
+        self.rmax2d = rmax2d
+        self.rs = rs
+        self.xmin = 1e-9
+        self.profile = self.nfw_profile(np.linspace(self.rs*0.001,rmax2d,100))
+        start,end = self.profile[0],self.profile[-1]
+
+        self.slope = (end-start)*(rmax2d-0.001*self.rs)**-1
+        self.intercept = self.profile[0] - self.slope*self.rs*0.001
+
+
+
+    def bound(self,x):
+
+        if isinstance(x,np.ndarray) or isinstance(x,list):
+            x[np.where(x<self.xmin)] = self.xmin
+        else:
+            if x<self.xmin:
+                return self.xmin
+
+        return self.slope*x + self.intercept
+
+    def prob(self,x):
+        return self.nfw_profile(x)*self.bound(x)**-1
+
+    def nfw_profile(self,r):
+
+        if isinstance(r,list) or isinstance(r,np.ndarray):
+            x = r*self.rs**-1
+            xmin = self.xmin
+            x[np.where(x<xmin)] = xmin
+
+            vals = np.ones_like(x)
+            inds1 = np.where(x<1)
+            inds2 = np.where(x>1)
+
+            vals[inds1] = np.arctanh((1-x[inds1]**2)**.5)*(1-x[inds1]**2)**-.5
+            vals[inds2] = np.arctan((x[inds2] ** 2 - 1) ** .5) * (x[inds2] ** 2-1) ** -.5
+
+            return vals
+        else:
+            xmin = self.xmin
+            x = r*self.rs**-1
+            if x<xmin:
+                x=xmin
+            if x<1:
+                return np.arctanh((1-x**2)**.5)*(1-x**2)**-.5
+            elif x>1:
+                return np.arctan((x ** 2-1) ** .5) * (x ** 2-1) ** -.5
+            else:
+                return 1
+
+    def cdf(self,x):
+        y2,y1 = self.rmax2d,0.001*self.rs
+        A = 0.5*self.slope*(y2**2-y1**2)**2+self.intercept*(y2-y1)
+        return -0.5+(self.intercept**2*self.slope**-2 - 2*A*self.slope**-1*x - 2*self.intercept*self.slope**-1*self.rs*0.001 - (self.rs*0.001)**2)**.5
+
+    def draw(self,N):
+
+        xsamples,ysamples = [],[]
+        while len(xsamples)<N:
+            r_rand = np.random.uniform(0,self.rmax2d**2)
+            theta = np.random.uniform(0,2*np.pi)
+            xrand = r_rand**.5*np.cos(theta)
+            yrand = r_rand**.5*np.sin(theta)
+            r2d_rand = (xrand**2+yrand**2)**.5
+            u = np.random.random()
+
+
+            if u<=self.prob(r2d_rand):
+                xsamples.append(xrand)
+                ysamples.append(yrand)
+        xsamples = np.array(xsamples)
+        ysamples = np.array(ysamples)
+
+        return xsamples,ysamples,np.sqrt(xsamples**2+ysamples**2)
+
+
 
 
 

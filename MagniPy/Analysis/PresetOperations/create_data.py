@@ -79,8 +79,10 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
                                                res=0.001, source_shape='GAUSSIAN', ray_trace=ray_trace,
                                                raytrace_with=raytrace_with, source_size=source_size,
                                                multiplane=False)
-            dset[0].x += np.random.normal(0,astrometric_perturbation)
-            dset[0].y += np.random.normal(0,astrometric_perturbation)
+
+            dset[0].x += np.random.normal(0,astrometric_perturbation,size=4)
+
+            dset[0].y += np.random.normal(0,astrometric_perturbation,size=4)
 
             lens_system = solver.build_system(main=main,additional_halos=subhalo_realizations,multiplane=False)
             if return_gamma:

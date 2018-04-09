@@ -368,6 +368,10 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
 
     return newcomponents, new_redshift_list
 
+def copy_directory(dirname,location):
+
+    shutil.copy(dirname,location)
+
 def create_directory(dirname=''):
 
     proc = subprocess.Popen(['mkdir', dirname])

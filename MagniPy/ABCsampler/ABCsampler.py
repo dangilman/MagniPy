@@ -299,17 +299,17 @@ def runABC(inputfile_path='',Nsplit=1000):
     write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
                     chain_keys,chain_keys_to_vary,param_names_tovary)
 
-    flux_ratios = []
-    flux_ratios.append(datatofit.compute_flux_ratios())
+    fluxes = []
+    fluxes.append(datatofit.m)
 
     for dset in chain_data:
 
         if dset.nimg != datatofit.nimg:
-            flux_ratios.append(np.array([1000,1000,1000]))
+            fluxes.append(np.array([1000,1000,1000,1000]))
         else:
-            flux_ratios.append(dset.compute_flux_ratios())
+            fluxes.append(dset.m)
 
-    np.savetxt(fname=output_path+'fluxratios.txt',X=np.array(flux_ratios),fmt='%.6f')
+    np.savetxt(fname=output_path+'fluxes.txt',X=np.array(fluxes),fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -326,4 +326,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description']+'\n\n')
 
-runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')
+#runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')
