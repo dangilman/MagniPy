@@ -156,20 +156,3 @@ class Delta:
     def draw(self):
 
         return np.ones(self.norm)*self.mass
-
-def f(x,xmin=1e-9):
-    x[np.where(x<xmin)] = xmin
-    inds1,inds2 = np.where(x<1),np.where(x>1)
-    vals = np.ones_like(x)
-    vals[inds1] = np.arctanh((1-x[inds1]**2)**.5)*(1-x[inds1]**2)**-.5
-    vals[inds2] = np.arctan((x[inds2]**2-1)**.5)*(x[inds2]**2-1)**-.5
-    return vals
-
-def kr(r,rs=1):
-
-    return (1-f(r*rs**01))*((r*rs**-1)**2 - 1)**-1
-
-import matplotlib.pyplot as plt
-xvals = np.linspace(0,0.99,100)
-plt.plot(xvals,kr(xvals))
-plt.show()

@@ -189,7 +189,7 @@ def extract_chain(chain_name=''):
 #extract_chain('gamma_test_208_new')
 #add_flux_perturbations('gamma_test_208_new')
 
-#read_chain_info(chainpath + 'gamma_test_208_new' + '/simulation_info.txt')
+read_chain_info(chainpath + '/processed_chains/gamma_test_208_new' + '/simulation_info.txt')
 
 
 
