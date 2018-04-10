@@ -313,7 +313,7 @@ def runABC(inputfile_path='',Nsplit=1000):
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
-        f.write('# Ncores, cores_per_lens\n'+str(int(keys['sampler']['Ncores']))+' '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
+        f.write('Ncores = '+str(int(keys['sampler']['Ncores']))+'\ncore_per_lens = '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
 
         f.write('params varied = '+str(keys_to_vary))
 
