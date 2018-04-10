@@ -49,7 +49,7 @@ def read_run_partition(fname):
     with open(fname, 'r') as f:
         lines = f.readlines()
 
-    (Ncores, cores_per_lens) = (lines[1].split(' '))
+    (Ncores, cores_per_lens) = (lines[0].split(' '))
     Ncores, cores_per_lens = int(Ncores), int(cores_per_lens)
 
     return Ncores, cores_per_lens, int(Ncores * cores_per_lens ** -1)
@@ -189,7 +189,7 @@ def extract_chain(chain_name=''):
 #extract_chain('gamma_test_208_new')
 #add_flux_perturbations('gamma_test_208_new')
 
-read_chain_info(chainpath + '/processed_chains/gamma_test_208_new' + '/simulation_info.txt')
+#read_chain_info(chainpath + '/processed_chains/gamma_test_208_new' + '/simulation_info.txt')
 
 
 

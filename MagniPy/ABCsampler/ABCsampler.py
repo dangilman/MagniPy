@@ -186,6 +186,9 @@ def runABC(inputfile_path='',Nsplit=1000):
 
     param_names_tovary = prior.param_names
 
+    write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
+                    chain_keys, chain_keys_to_vary, param_names_tovary)
+
     chainkeys = {}
 
     for group,items in chain_keys.iteritems():
@@ -294,9 +297,6 @@ def runABC(inputfile_path='',Nsplit=1000):
     for name in param_names_tovary:
         header_string+= name + ' '
 
-    write_info_file(chainpath + chain_keys['sampler']['output_folder']+'simulation_info.txt',
-                    chain_keys,chain_keys_to_vary,param_names_tovary)
-
     fluxes = []
     fluxes.append(datatofit.m)
 
@@ -313,19 +313,31 @@ def runABC(inputfile_path='',Nsplit=1000):
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
-        f.write('Ncores = '+str(int(keys['sampler']['Ncores']))+'\ncore_per_lens = '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
+
+        f.write('Ncores\n'+str(int(keys['sampler']['Ncores']))+'\n\ncore_per_lens\n'+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
 
         f.write('# params_varied\n')
-        for key,item in keys_to_vary.iteritems():
-            f.write(key+' '+str(item))
 
+        for key,param in keys_to_vary.iteritems():
+
+            f.write(key+'\n')
         f.write('\n\n')
+        for key,param in keys_to_vary.iteritems():
 
-        f.write('# truths')
-        for key,item in keys['sampler']['chain_truths'].iteritems:
-            f.write(key+' '+str(item))
+            f.write(key+':\n')
+            for vary_param,value in param.iteritems():
 
-        f.write('# info\n')
+                f.write(vary_param+' '+str(value)+'\n')
+            f.write('\n')
+
+        f.write('\n')
+
+        f.write('# truths\n')
+
+        for key,item in keys['sampler']['chain_truths'].iteritems():
+            f.write(key+' '+str(item)+'\n')
+
+        f.write('\n# info\n')
 
         f.write(keys['sampler']['chain_description'])
 
