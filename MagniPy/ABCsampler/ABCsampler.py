@@ -315,12 +315,18 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
     with open(fpath,'w') as f:
         f.write('Ncores = '+str(int(keys['sampler']['Ncores']))+'\ncore_per_lens = '+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
 
-        f.write('params varied = '+str(keys_to_vary))
+        f.write('# params_varied\n')
+        for key,item in keys_to_vary.iteritems():
+            f.write(key+' '+str(item))
 
         f.write('\n\n')
 
-        f.write('truths = '+str(keys['sampler']['chain_truths'])+'\n')
+        f.write('# truths')
+        for key,item in keys['sampler']['chain_truths'].iteritems:
+            f.write(key+' '+str(item))
 
-        f.write('info = '+"'"+keys['sampler']['chain_description']+'\n\n'+"'")
+        f.write('# info\n')
+
+        f.write(keys['sampler']['chain_description'])
 
 #runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')
