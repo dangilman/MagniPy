@@ -1,8 +1,8 @@
 import numpy as np
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.MassModels.NFW import NFW
-from spatial_distribution import Localized_uniform
-from copy import deepcopy
+from spatial_distribution import NFW_2D
+import matplotlib.pyplot as plt
 
 class Plaw_secondary:
 
@@ -14,7 +14,7 @@ class Plaw_secondary:
 
     """
 
-    def __init__(self, M_parent=None, parent_r2d = None, x_locations=None, y_locations=None, N0=0.21, alpha_secondary=-0.8, xi=1,
+    def __init__(self, M_parent=None, parent_r2d = None, x_locations=None, y_locations=None, N0=0.21, alpha_secondary=-0.8,
                  log_mL = None,logmhm=None,cosmo_at_zlens=None):
 
         NFW_calculate = NFW(cosmology=cosmo_at_zlens)
@@ -31,24 +31,31 @@ class Plaw_secondary:
 
         for i,M in enumerate(M_parent):
 
-            M *= xi
-
             if M<10**log_mL:
                 normalization=0
             else:
-                normalization = N0*np.absolute(alpha_secondary)*M
+                normalization = N0*(np.absolute(alpha_secondary)*M)**np.absolute(alpha_secondary)
 
-            c = NFW_calculate.nfw_concentration(M*xi**-1,logmhm=logmhm)
+            c = NFW_calculate.nfw_concentration(M,logmhm=logmhm)
 
             # rmax2d in Mpc
-            rmax2d = NFW_calculate.nfwParam_physical(M * xi ** -1, c)[2] * NFW_calculate.cosmology.D_A(0,self.redshift) ** -1
-            rmax2d *= 1000*cosmo_at_zlens.kpc_per_asec(self.redshift)
+            _,Rs,r200 = NFW_calculate.nfwParam_physical(M, c)
 
-            locations = Localized_uniform(rmax2d=rmax2d, xlocations=x_locations[i],ylocations=y_locations[i],cosmology=cosmo_at_zlens)
+            D_a = NFW_calculate.cosmology.D_A(0,self.redshift)
+            factor = 1000*cosmo_at_zlens.kpc_per_asec(self.redshift)
+
+            Rs = Rs*D_a ** -1
+            Rs *= factor
+
+            rmax2d = r200*D_a ** -1
+            rmax2d *= factor
+
+            locations = NFW_2D(rmax2d=rmax2d, rs=Rs, xoffset=x_locations[i], yoffset=y_locations[i])
 
             self.locations.append(locations)
 
-            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M*xi**-1),logmhm=logmhm,plaw_index=alpha_secondary-1))
+            self.power_laws.append(Plaw(normalization=normalization,log_mL=log_mL,log_mH=np.log10(M),logmhm=logmhm,
+                                        plaw_index=alpha_secondary-1))
 
     def draw(self):
 
@@ -63,11 +70,11 @@ class Plaw_secondary:
                 if np.exp(-6.283*(halo*(0.8*self.parent_masses[i])**-1)**3) > np.random.random():
                     newhalos.append(halo)
 
-            newx,newy,R2d = self.locations[i].draw(N=int(len(newhalos)),z=self.redshift)
+            newx,newy,R2d = self.locations[i].draw(N=int(len(newhalos)))
 
             parent_mass = self.parent_masses[i] - np.sum(newhalos)
 
-            parent_x, parent_y = self.locations[i].xlocations, self.locations[i].ylocations
+            parent_x, parent_y = self.locations[i].xoffset, self.locations[i].yoffset
             parent_r2d = self.parent_r2d[i]
             zvals = np.random.uniform(-self.locations[i].rmax2d,self.locations[i].rmax2d,len(newhalos))
 
@@ -156,3 +163,5 @@ class Delta:
     def draw(self):
 
         return np.ones(self.norm)*self.mass
+
+

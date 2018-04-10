@@ -404,5 +404,31 @@ def convolve_image(image,kernel='Gaussian',scale=None):
     return grid
 
 
+def nfw_kr(X):
+    def f(x):
+
+        if isinstance(x, int) or isinstance(x, float):
+            if x > 1:
+                return np.arctan((x ** 2 - 1) ** .5) * (x ** 2 - 1) ** -.5
+            elif x < 1:
+                return np.arctanh((1 - x ** 2) ** .5) * (1 - x ** 2) ** -.5
+            else:
+                return 1
+        else:
+            inds1 = np.where(x < 1)
+            inds2 = np.where(x > 1)
+
+            vals = np.ones_like(x)
+            flow = (1 - x[inds1] ** 2) ** .5
+            fhigh = (x[inds2] ** 2 - 1) ** .5
+
+            vals[inds1] = np.arctanh(flow) * flow ** -1
+            vals[inds2] = np.arctan(fhigh) * fhigh ** -1
+
+            return vals
+
+    return 2 * (1 - f(X)) * (X ** 2 - 1) ** -1
+
+
 
 

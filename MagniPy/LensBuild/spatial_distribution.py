@@ -2,14 +2,13 @@ import numpy as np
 import random
 import math
 
-
 class TwoDCoords:
 
     def __init__(self, cosmology=None):
 
         self.cosmology = cosmology
 
-    def get_2dcoordinates(self,theta,Npoints,R_ein_deflection=1,z=None,zmain=None):
+    def get_2dcoordinates(self,theta,Npoints,z=None,zmain=None):
         """
 
         :param z: redshift
@@ -167,88 +166,108 @@ class Localized_uniform:
 
 class NFW_2D:
 
-    def __init__(self, rmax2d=None, rs = None):
+    def __init__(self, rmin = None, rmax2d=None, rs = None, xoffset=0, yoffset = 0, tidal_core=False):
 
         self.rmax2d = rmax2d
         self.rs = rs
-        self.xmin = 1e-9
-        self.profile = self.nfw_profile(np.linspace(self.rs*0.001,rmax2d,100))
-        start,end = self.profile[0],self.profile[-1]
 
-        self.slope = (end-start)*(rmax2d-0.001*self.rs)**-1
-        self.intercept = self.profile[0] - self.slope*self.rs*0.001
+        if rmin is None:
+            rmin = rs*0.1
 
+        self.xmin = rmin*rs**-1
+        self.xmax = rmax2d*rs**-1
+        self.xoffset,self.yoffset = xoffset,yoffset
+        self.tidal_core = tidal_core
+        assert self.xmax>self.xmin
 
+    def core_damp(self,r,gamma=0.8,rs_scale=0.6):
 
-    def bound(self,x):
+        x_inv = (rs_scale*self.rs)*r**-1
 
-        if isinstance(x,np.ndarray) or isinstance(x,list):
-            x[np.where(x<self.xmin)] = self.xmin
-        else:
-            if x<self.xmin:
-                return self.xmin
+        return np.exp(-gamma*x_inv)
 
-        return self.slope*x + self.intercept
+    def nfw_kr(self,X):
 
-    def prob(self,x):
-        return self.nfw_profile(x)*self.bound(x)**-1
+        def f(x):
 
-    def nfw_profile(self,r):
-
-        if isinstance(r,list) or isinstance(r,np.ndarray):
-            x = r*self.rs**-1
-            xmin = self.xmin
-            x[np.where(x<xmin)] = xmin
-
-            vals = np.ones_like(x)
-            inds1 = np.where(x<1)
-            inds2 = np.where(x>1)
-
-            vals[inds1] = np.arctanh((1-x[inds1]**2)**.5)*(1-x[inds1]**2)**-.5
-            vals[inds2] = np.arctan((x[inds2] ** 2 - 1) ** .5) * (x[inds2] ** 2-1) ** -.5
-
-            return vals
-        else:
-            xmin = self.xmin
-            x = r*self.rs**-1
-            if x<xmin:
-                x=xmin
-            if x<1:
-                return np.arctanh((1-x**2)**.5)*(1-x**2)**-.5
-            elif x>1:
-                return np.arctan((x ** 2-1) ** .5) * (x ** 2-1) ** -.5
+            if isinstance(x,int) or isinstance(x,float):
+                if x>1:
+                    return np.arctan((x**2-1)**.5)*(x**2-1)**-.5
+                elif x<1:
+                    return np.arctanh((1-x**2)**.5)*(1-x**2)**-.5
+                else:
+                    return 1
             else:
-                return 1
+                inds1 = np.where(x<1)
+                inds2 = np.where(x>1)
 
-    def cdf(self,x):
-        y2,y1 = self.rmax2d,0.001*self.rs
-        A = 0.5*self.slope*(y2**2-y1**2)**2+self.intercept*(y2-y1)
-        return -0.5+(self.intercept**2*self.slope**-2 - 2*A*self.slope**-1*x - 2*self.intercept*self.slope**-1*self.rs*0.001 - (self.rs*0.001)**2)**.5
+                vals = np.ones_like(x)
+                flow = (1-x[inds1]**2)**.5
+                fhigh = (x[inds2]**2-1)**.5
+
+                vals[inds1] = np.arctanh(flow)*flow**-1
+                vals[inds2] = np.arctan(fhigh)*fhigh**-1
+
+                return vals
+
+        return 2*(1-f(X))*(X**2-1)**-1
+
+    def nfw_bound(self,X,alpha=0.1,xmin=None):
+
+        norm = self.nfw_kr(self.xmin)
+
+        if isinstance(X,int) or isinstance(X,float):
+
+            if X>self.xmin:
+                return norm*(X*self.xmin**-1)**-alpha
+            else:
+                return norm
+
+        else:
+            return norm*(X*(self.xmin)**-1)**-alpha
+
+    def C_inv(self,x,xmax=10,xmin=1e-3,alpha=0.1):
+
+        a = 1-alpha
+        A0 = (1-alpha)*(xmax**a - xmin**a)**-1
+
+        return (a*x*A0**-1 + xmin**a)**(a**-1)
 
     def draw(self,N):
 
-        xsamples,ysamples = [],[]
-        while len(xsamples)<N:
-            r_rand = np.random.uniform(0,self.rmax2d**2)
-            theta = np.random.uniform(0,2*np.pi)
-            xrand = r_rand**.5*np.cos(theta)
-            yrand = r_rand**.5*np.sin(theta)
-            r2d_rand = (xrand**2+yrand**2)**.5
-            u = np.random.random()
+        r2d = self.draw_r2d(N)
+        x,y = self.r2d_to_xy(r2d)
+        return x+self.xoffset,y+self.yoffset,r2d
 
+    def draw_r2d(self,N):
 
-            if u<=self.prob(r2d_rand):
-                xsamples.append(xrand)
-                ysamples.append(yrand)
-        xsamples = np.array(xsamples)
-        ysamples = np.array(ysamples)
+        samples = []
 
-        return xsamples,ysamples,np.sqrt(xsamples**2+ysamples**2)
+        while len(samples)<N:
 
+            u = np.random.uniform(0,1)
+            x_sample = self.C_inv(u,xmax=self.xmax,xmin=0)
 
+            if x_sample<=self.xmin:
+                ratio = 1
+            else:
+                ratio = self.nfw_kr(x_sample) * self.nfw_bound(x_sample, xmin=self.xmin)
 
+            if self.tidal_core:
+                ratio *= self.core_damp(x_sample*self.rs)
 
+            if ratio > np.random.uniform(0,1):
+                samples.append(x_sample)
 
+        samples = np.array(samples)
+        return samples*self.rs
 
+    def r2d_to_xy(self,r2d):
+
+        theta = np.random.uniform(0,2*np.pi,len(r2d))
+        xcoord = r2d*np.cos(theta)
+        ycoord = r2d*np.sin(theta)
+
+        return np.array(xcoord),np.array(ycoord)
 
 

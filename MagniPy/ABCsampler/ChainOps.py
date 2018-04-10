@@ -9,39 +9,35 @@ def read_chain_info(fname):
     with open(fname,'r') as f:
         lines = f.read().splitlines()
 
+    params_varied = []
     nextline = False
+
     for line in lines:
 
-        if line == '# Truths:':
+        if line == '# params_varied':
             nextline = True
             continue
 
         if nextline:
-            print line
-            truths = line
-            break
+            if len(line)==0:
+                nextline=False
+                break
+            params_varied.append(line)
 
-    print eval(truths)
-    nextline = False
+    truth_dic = {}
     for line in lines:
 
-        if line == '# params varied':
+        if line == '# truths':
             nextline = True
             continue
 
         if nextline:
-            params_varied = eval(line)
+            if len(line)==0:
+                nextline=False
+                break
+            truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
 
-    nextline = False
-    for line in lines:
-        if line == '':
-            nextline = True
-            continue
-
-        if nextline:
-            chain_description = line
-
-    return params_varied,truths,chain_description
+    return params_varied,truth_dic
 
 
 def read_run_partition(fname):
@@ -49,8 +45,8 @@ def read_run_partition(fname):
     with open(fname, 'r') as f:
         lines = f.readlines()
 
-    (Ncores, cores_per_lens) = (lines[0].split(' '))
-    Ncores, cores_per_lens = int(Ncores), int(cores_per_lens)
+    Ncores = int(lines[1])
+    cores_per_lens = int(lines[4])
 
     return Ncores, cores_per_lens, int(Ncores * cores_per_lens ** -1)
 
@@ -189,7 +185,7 @@ def extract_chain(chain_name=''):
 #extract_chain('gamma_test_208_new')
 #add_flux_perturbations('gamma_test_208_new')
 
-#read_chain_info(chainpath + '/processed_chains/gamma_test_208_new' + '/simulation_info.txt')
+print read_chain_info(chainpath + '/LOS_test' + '/simulation_info.txt')
 
 
 
