@@ -1,4 +1,6 @@
 from MagniPy.util import polar_to_cart,cart_to_polar
+from MagniPy.Solver.LenstronomyWrap.kwargs_translate import model_translate_tolenstronomy
+from MagniPy.Solver.GravlensWrap.kwargs_translate import model_translate_togravlens
 
 class LensSystem:
 
@@ -63,6 +65,8 @@ class Deflector:
 
         self.args,self.other_args = subclass.params(**lens_kwargs)
 
+        self.lenstronomy_args = model_translate_tolenstronomy(self.args,name=self.other_args['name'])
+
         self.profname = self.other_args['name']
 
         self.redshift = redshift
@@ -99,58 +103,38 @@ class Deflector:
         if self.has_shear:
             print 'shear: ',self.shear
             print 'shear PA: ',self.shear_theta
-            print 'e1: ', self.e1
-            print 'e2: ', self.e2
 
 
-    def get_def_angle(self,method='',x_loc=None,y_loc=None):
+    def update(self, method=None,is_shear=False,**newparams):
 
-        if method=='lensmodel':
+        assert method in ['lensmodel','lenstronomy']
 
-            return self.lensing.def_angle(x_loc,y_loc,**self.args)
+        if method=='lenstronomy':
 
-        elif method == 'lenstronomy':
+            if is_shear:
+                s, spa = cart_to_polar(newparams['e1'], newparams['e2'])
 
-            if self.has_shear:
-                from lenstronomy.LensModel.Profiles.external_shear import ExternalShear
-                e1,e2 = polar_to_cart(self.args['shear'],self.args['lenstronomy_shear_theta'])
-                ext_shear = ExternalShear()
-                xshear,yshear = ext_shear.derivatives(x_loc,y_loc,e1,e2)
+                self.shear = s
+                self.shear_theta = spa
+                return
 
-            if self.args['lenstronomy_name']=='SPEMD':
-                from lenstronomy.LensModel.Profiles.sie import SIE
-                sie = SIE()
-                xdef,ydef = sie.derivatives(x_loc,y_loc,self.lenstronomy_args['theta_E'],self.lenstronomy_args['q'],
-                                            self.lenstronomy_args['phi_G'])
+            self.lenstronomy_args.update(newparams)
+            self.args = model_translate_togravlens(newparams,self.other_args['name'])
 
-            try:
-                return xdef+xshear,ydef+yshear
-            except:
-                return xdef,ydef
+        elif method=='lensmodel':
 
-    def update(self, method=None,**newparams):
+            self.args.update(newparams)
+            self.lenstronomy_args = model_translate_tolenstronomy(self.args,name=self.other_args['name'])
+            self.shear = newparams['shear']
+            self.shear_theta = newparams['shear_theta']
 
-        assert method is not None
+    def translate_model(self,to='lenstronomy'):
 
-        self.args.update(**newparams)
+        if to == 'lenstronomy':
 
-        if 'shear' in self.args:
-            del self.args['shear']
-        if 'shear_theta' in self.args:
-            del self.args['shear_theta']
+            return model_translate_tolenstronomy(self.args,name=self.other_args['name'])
 
+        if to == 'lensmodel':
 
-        if 'e1' in newparams and 'e2' in newparams:
+            return model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])
 
-            s,spa = cart_to_polar(newparams['e1'],newparams['e2'])
-
-            self.shear = s
-            self.shear_theta = spa
-
-        if self.has_shear:
-
-            if 'shear' in newparams:
-                assert 'shear_theta' in newparams
-                self.shear = newparams['shear']
-                self.shear_theta = newparams['shear_theta']
-                self.e1, self.e2 = polar_to_cart(self.shear, self.shear_theta)

@@ -1,7 +1,6 @@
 from MagniPy.util import *
 from kwargs_translate import lenstronomy_to_gravlens
 
-
 def gravlens_to_kwargs(model_string, deflector=None):
 
     if model_string[0]=='alpha':

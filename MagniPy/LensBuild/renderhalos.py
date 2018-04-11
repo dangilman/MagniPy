@@ -437,6 +437,7 @@ class HaloGen:
                     massfunction = Plaw(normalization=modelkwargs[i]['normalization'], log_mL=modelkwargs[i]['log_mL'],
                                                 log_mH=modelkwargs[i]['log_mH'], logmhm=modelkwargs[i]['logmhm'],
                                                 plaw_index=modelkwargs[i]['plaw_index'], turnover_index=modelkwargs[i]['turnover_index'])
+
                     masses = massfunction.draw()
 
                     if spatial_type == 'uniform2d':
@@ -459,8 +460,6 @@ class HaloGen:
                             raise Exception('supply spatial distribution type')
                         else:
                             raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
-
-
 
                 elif mass_func_type == 'delta':
 
@@ -487,8 +486,6 @@ class HaloGen:
                             raise Exception('supply spatial distribution type')
                         else:
                             raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
-
-
 
                 elif mass_function_type == 'plaw_order2':
 
@@ -519,7 +516,7 @@ class HaloGen:
                         else:
                             raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
 
-                    massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R,x_locations=x,y_locations=y,N0=0.1,log_mL=modelkwargs[i]['log_mL'],logmhm=modelkwargs[i]['logmhm'])
+                    massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R,x_locations=x,y_locations=y,log_mL=6.5,logmhm=modelkwargs[i]['logmhm'])
 
                     masses,x,y,R = massfunction.draw()
 

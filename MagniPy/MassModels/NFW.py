@@ -89,8 +89,6 @@ class NFW:
         subkwargs = {}
         otherkwargs = {}
 
-
-
         subkwargs['theta_Rs'] = rsdef
         subkwargs['Rs'] = Rs
         subkwargs['center_x'] = x

@@ -38,6 +38,7 @@ class RayTrace:
             raise ValueError('other source models not yet implemented')
 
         if self.raytrace_with == 'lenstronomy':
+
             self.multlenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
                                                                z_source=self.cosmo.zsrc,source_shape=source_shape,
                                                                gridsize=2*self.grid_rmax,res=self.res,

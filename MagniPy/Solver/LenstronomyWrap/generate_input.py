@@ -51,22 +51,7 @@ class LenstronomyWrap:
 
             lens_model_list.append(deflector.profname)
 
-            newargs = deepcopy(deflector.args)
-
-            if 'phi_G' in deflector.args:
-                newargs['phi_G'] = gravlens_to_lenstronomy(newargs['phi_G'],'phi_G')
-
-            if 'theta_E' in deflector.args and deflector.profname=='SPEMD':
-                q = deflector.args['q']
-                newargs['theta_E'] = gravlens_to_lenstronomy(newargs['theta_E'],'theta_E',q=q)
-
-            if deflector.profname=='SPEMD':
-                if 'e1' in newargs:
-                    del newargs['e1']
-                if 'e2' in deflector.args:
-                    del newargs['e2']
-
-            lens_model_params.append(newargs)
+            lens_model_params.append(deflector.lenstronomy_args)
             self.redshift_list.append(deflector.redshift)
 
             if deflector.has_shear:
@@ -75,8 +60,8 @@ class LenstronomyWrap:
 
                 self.redshift_list.append(deflector.redshift)
 
-                e1,e2 = polar_to_cart(deflector.shear,deflector.shear_theta)
-                lens_model_params.append({'e1':e1,'e2':e2})
+                shear_e1,shear_e2 = polar_to_cart(deflector.shear,deflector.shear_theta)
+                lens_model_params.append({'e1':shear_e1,'e2':shear_e2})
 
         self.lens_model_list, self.lens_model_params = lens_model_list,lens_model_params
 

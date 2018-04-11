@@ -1,5 +1,6 @@
 from time import time
 from MagniPy import paths
+from MagniPy.Solver.LenstronomyWrap.kwargs_translate import Rein_gravlens_to_lenstronomy
 import MagniPy.LensBuild.lens_assemble as build
 import MagniPy.LensBuild.renderhalos as halo_gen
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
@@ -48,9 +49,9 @@ class Magnipy:
             for component in system.lens_components:
                 component.print_args()
 
-    def update_system(self,lens_system,component_index,newkwargs,method):
+    def update_system(self,lens_system,component_index,newkwargs,method,is_shear=False):
 
-        lens_system.lens_components[component_index].update(method=method, **newkwargs)
+        lens_system.lens_components[component_index].update(method=method, is_shear=is_shear,**newkwargs)
 
         return lens_system
 
@@ -197,7 +198,7 @@ class Magnipy:
                 if solver_type=='PROFILE_SHEAR':
 
                     optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                                newkwargs=kwargs_fit[1], method='lenstronomy'))
+                                                                newkwargs=kwargs_fit[1], method='lenstronomy',is_shear=True))
 
 
                 lensModel = lenstronomywrap.model
