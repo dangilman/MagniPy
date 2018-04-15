@@ -5,6 +5,7 @@ from MagniPy.MassModels import TNFW
 from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
 from MagniPy.MassModels import PointMass
+from MagniPy.MassModels import uniformsheet
 from MagniPy.LensBuild.lens_assemble import Deflector
 from BuildRoutines.halo_environments import *
 from MagniPy.util import filter_by_position
@@ -259,9 +260,9 @@ class HaloGen:
                             redshift=zvals[p], Nrealizations=Nrealizations, mass_profile=[massprofile],
                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)[0]
 
-            halos.append(_plane_halos)
+            _plane_halos.append(_plane_halos)
 
-        return halos
+        return _plane_halos
 
     def _return_plaw_main(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
 
@@ -371,7 +372,7 @@ class HaloGen:
                 _plane_halos += self._halos(cosmo_at_plane=Cosmo(zd=zvals[p],zsrc=self.zsrc,compute=False),mass_function_type=mass_function_type,
                                             spatial_distribution=spatial_distribution_type, redshift=redshift,
                                             Nrealizations=1, mass_profile=[massprofile],
-                                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs],
+                                            modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs],add_mass_sheet=True,
                                             **position_filter_kwargs)[0]
 
             halos.append(_plane_halos)
@@ -393,7 +394,7 @@ class HaloGen:
 
         spatialkwargs['rmax2d'] = rmax2d
 
-        modelkwargs['N_per_image'] = np.random.poisson(N)
+        modelkwargs['N'] = np.random.poisson(N)
 
         modelkwargs['logmass'] = np.log10(model_kwargs['M'])
 
@@ -407,7 +408,7 @@ class HaloGen:
         return halos
 
     def _halos(self,cosmo_at_plane=None,mass_function_type=None,spatial_distribution=None,redshift=None,Nrealizations=1,
-                   mass_profile=None,modelkwargs={},spatialkwargs={},filter_halo_positions=False,**kwargs):
+                   mass_profile=None,modelkwargs={},spatialkwargs={},filter_halo_positions=False,add_mass_sheet=True,**kwargs):
         """
         :param mass_func_type: "plaw, delta, etc."
         :param spatial: 'uniformflat','uniformnfw'
@@ -440,52 +441,16 @@ class HaloGen:
 
                     masses = massfunction.draw()
 
-                    if spatial_type == 'uniform2d':
-
-                        spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs[i]['rmax2d'])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'uniform_cored_nfw':
-
-                        spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'localized_uniform':
-
-                        spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(spatialkwargs['N_per_image'], redshift)
-
-                    else:
-                        if spatial_type is None:
-                            raise Exception('supply spatial distribution type')
-                        else:
-                            raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
+                    x, y, R, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
+                                               cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
 
                 elif mass_func_type == 'delta':
 
-                    massfunction = Delta(N_per_image = modelkwargs[i]['N_per_image'],logmass=modelkwargs[i]['logmass'])
+                    massfunction = Delta(N = modelkwargs[i]['N'], logmass=modelkwargs[i]['logmass'])
                     masses = massfunction.draw()
 
-                    if spatial_type == 'uniform2d':
-
-                        spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs[i]['rmax2d'])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'uniform_cored_nfw':
-
-                        spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'localized_uniform':
-
-                        spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(spatialkwargs['N_per_image'], redshift)
-
-                    else:
-                        if spatial_type is None:
-                            raise Exception('supply spatial distribution type')
-                        else:
-                            raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
+                    x, y, R, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
+                                               cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
 
                 elif mass_function_type == 'plaw_order2':
 
@@ -495,26 +460,8 @@ class HaloGen:
 
                     masses = massfunction_primary.draw()
 
-                    if spatial_type == 'uniform2d':
-
-                        spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs[i]['rmax2d'])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'uniform_cored_nfw':
-
-                        spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(int(len(masses)), redshift)
-
-                    elif spatial_type == 'localized_uniform':
-
-                        spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs[i])
-                        x, y, R = spatial.draw(spatialkwargs['N_per_image'], redshift)
-
-                    else:
-                        if spatial_type is None:
-                            raise Exception('supply spatial distribution type')
-                        else:
-                            raise Exception('spatial distribution ' + str(mass_func_type) + ' not recognized')
+                    x,y,R,area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
+                                             cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
 
                     massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R,x_locations=x,y_locations=y,log_mL=6.5,logmhm=modelkwargs[i]['logmhm'])
 
@@ -579,15 +526,51 @@ class HaloGen:
                     subhalos.append(Deflector(subclass=lensmod, x=x[j],
                                   y=y[j], mass=masses[j], redshift=redshift, is_subhalo=True, **subhalo_args))
 
-
             if filter_halo_positions:
 
                 subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis=kwargs['mindis'],
                                                  log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=cosmo_at_plane)
 
+            if add_mass_sheet and len(subhalos)>0:
+
+                masses = [obj.other_args['mass'] for obj in subhalos]
+
+                mass_in_plane = np.sum(masses)
+
+                plane_kappa = (mass_in_plane*area**-1)*cosmo_at_plane.get_sigmacrit()**-1
+
+                subhalos.append(Deflector(subclass=uniformsheet.MassSheet(),redshift=redshift,is_subhalo=True,kappa_ext=-1*plane_kappa))
+
             realizations.append(subhalos)
 
         return realizations
+
+    def get_spatial(self,N=int,redshift=None,spatial_type='',cosmo_at_plane=None,spatialkwargs={}):
+
+        if spatial_type == 'uniform2d':
+
+            spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs['rmax2d'])
+            x, y, R = spatial.draw(N, redshift)
+
+        elif spatial_type == 'uniform_cored_nfw':
+
+            spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs)
+            x, y, R = spatial.draw(N, redshift)
+
+        elif spatial_type == 'localized_uniform':
+
+            spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs)
+            x, y, R = spatial.draw(N, redshift)
+
+        else:
+            if spatial_type is None:
+                raise Exception('supply spatial distribution type')
+            else:
+                raise Exception('spatial distribution ' + str(spatial_type) + ' not recognized')
+
+        area = np.pi*spatial.rmax2d**2
+
+        return x,y,R,area
 
     def get_masses(self, realization_list, mass_range = None, specific_redshift = None):
 

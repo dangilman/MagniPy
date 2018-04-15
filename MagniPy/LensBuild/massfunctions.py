@@ -26,8 +26,19 @@ class Plaw_secondary:
         self.locations = []
 
         self.alpha = alpha_secondary+1
+
+        if isinstance(M_parent,float) or isinstance(M_parent,int):
+            M_parent = [M_parent]
+        if isinstance(x_locations,float) or isinstance(x_locations,int):
+            x_locations = [x_locations]
+        if isinstance(y_locations,float) or isinstance(y_locations,int):
+            y_locations = [y_locations]
+        if isinstance(parent_r2d,float) or isinstance(parent_r2d,int):
+            parent_r2d = [parent_r2d]
+
         self.parent_masses = M_parent
         self.parent_r2d = parent_r2d
+        self.parent_rmax = []
 
         for i,M in enumerate(M_parent):
 
@@ -49,6 +60,8 @@ class Plaw_secondary:
 
             rmax2d = r200*D_a ** -1
             rmax2d *= factor
+
+            self.parent_rmax.append(rmax2d)
 
             locations = NFW_2D(rmax2d=rmax2d, rs=Rs, xoffset=x_locations[i], yoffset=y_locations[i])
 
@@ -155,13 +168,30 @@ class Plaw:
 
 class Delta:
 
-    def __init__(self,N_per_image,logmass):
+    def __init__(self, N, logmass):
 
-        self.norm = N_per_image
+        self.norm = N
         self.mass = 10**logmass
 
     def draw(self):
 
         return np.ones(self.norm)*self.mass
+
+if False:
+    p = Plaw(normalization=3*10**8,log_mL=6,log_mH=10)
+    main_halos = p.draw()
+    from spatial_distribution import Uniform_2d
+    s = Uniform_2d(3,cosmology=Cosmo(0.5,1.5))
+    x,y,r2d = s.draw(len(main_halos),0.5)
+
+    p2 = Plaw_secondary(M_parent=main_halos,parent_r2d=r2d,x_locations=x,y_locations=y,log_mL=6,logmhm=0,cosmo_at_zlens=Cosmo(0.5,1.5))
+    subhalos,subx,suby,subr2d = p2.draw()
+
+    plt.scatter(subx,suby,color='r',alpha=0.6,s=5+2*np.log10(subhalos)*10**-1)
+    plt.scatter(x,y,color='k',alpha=1,s=5+2*np.log10(main_halos)*10**-1)
+    for i,m in enumerate(main_halos):
+        if m>10**7:
+            plt.annotate(str(np.round(np.log10(main_halos[i]),1)),xy=(x[i],y[i]),fontsize=8)
+    plt.show()
 
 

@@ -10,6 +10,7 @@ def read_chain_info(fname):
         lines = f.read().splitlines()
 
     params_varied = []
+    varyparams_info = {}
     nextline = False
 
     for line in lines:
@@ -24,6 +25,25 @@ def read_chain_info(fname):
                 break
             params_varied.append(line)
 
+    for pname in params_varied:
+
+        args = {}
+
+        for line in lines:
+
+            if line == pname+':':
+                nextline=True
+                continue
+
+            if nextline:
+
+                if len(line)==0:
+                    nextline=False
+                    break
+                args[line.split(' ')[0]] = line.split(' ')[1]
+
+            varyparams_info[pname] = args
+
     truth_dic = {}
     for line in lines:
 
@@ -37,7 +57,7 @@ def read_chain_info(fname):
                 break
             truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
 
-    return params_varied,truth_dic
+    return params_varied,truth_dic,varyparams_info
 
 
 def read_run_partition(fname):
@@ -62,10 +82,10 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1):
 
     errors = [0]+errors
 
-    for n in range(1, int(Nlenses)):
+    for n in range(1, int(Nlenses)+1):
 
-        chain_file_path = chainpath + 'processed_chains/' + chain_name + 'lens'+str(n)+'/'
-        perturbed_path = chain_file_path + '/fluxratios/'
+        chain_file_path = chainpath + 'processed_chains/' + chain_name + '/lens'+str(n)+'/'
+        perturbed_path = chain_file_path + 'fluxratios/'
 
         if ~os.path.exists(perturbed_path):
             create_directory(perturbed_path)
@@ -132,37 +152,22 @@ def extract_chain(chain_name=''):
 
             folder_name = chain_file_path+str(counter)+'/'
 
-            inds_to_keep = []
-
-            #fluxes = np.loadtxt(folder_name+'fluxes.txt')
-
-            with open(folder_name+'chain.txt') as f:
-                lines=f.readlines()
-
-            for count,line in enumerate(lines):
-                line = line.split(' ')
-
-                if int(line[0])!=4:
-                    continue
-
-                inds_to_keep.append(count)
-
-                try:
-                    fluxes = np.vstack((fluxes,np.array([float(line[5]),float(line[9]),float(line[13]),float(line[17])])))
-                except:
-                    fluxes = np.array([float(line[5]),float(line[9]),float(line[13]),float(line[17])])
+            fluxes = np.loadtxt(folder_name+'fluxes.txt')
 
             observed_fluxes = fluxes[0,:]
 
             fluxes = np.delete(fluxes,0,axis=0)
 
             params = np.loadtxt(folder_name+'parameters.txt')
+
             if params_header is None:
                 with open(folder_name+'parameters.txt','r') as f:
-                    lines = f.readlines()
-                params_header = lines[0]
-
-            params = params[inds_to_keep,:]
+                    lines = f.read().splitlines()
+                head = lines[0].split(' ')
+                params_header = ''
+                for word in head:
+                    if word not in ['#','']:
+                        params_header+=word+' '
 
             try:
                 single_lens_fluxes = np.vstack((single_lens_fluxes,fluxes))
@@ -185,7 +190,7 @@ def extract_chain(chain_name=''):
 #extract_chain('gamma_test_208_new')
 #add_flux_perturbations('gamma_test_208_new')
 
-print read_chain_info(chainpath + '/LOS_test' + '/simulation_info.txt')
+#print read_chain_info(chainpath + '/LOS_test' + '/simulation_info.txt')
 
 
 

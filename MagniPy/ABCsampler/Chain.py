@@ -3,91 +3,155 @@ from SummaryStatistics import *
 
 class Chains:
 
-    def __init__(self, chain_name=''):
+    def __init__(self,chain_name='',Nlenses=None):
 
-        self.params_varied, self.truths = read_chain_info(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
+        self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
-        Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
+        self.pranges = self.get_pranges(self.prior_info)
+
+        if Nlenses is None:
+            Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
+        else:
+            self.Nlenses = Nlenses
+
+        self.weight = [1]*self.Nlenses
 
         self.chain_file_path = chainpath + '/processed_chains/' + chain_name +'/'
-
-    def import_all(self,error,index=1):
 
         self.lenses = []
 
         for i in range(0, self.Nlenses):
             self.lenses.append(SingleLensChain())
 
-        summary_statistics = self.compute_statistics(self.Nlenses,error,index)
+    def get_pranges(self,info):
 
-        parameters = self.import_parameters(self.Nlenses)
+        pranges = {}
 
-        for i,lens in enumerate(self.lenses):
+        for pname,keys in info.iteritems():
+            if keys['prior_type'] == 'Gaussian':
+                pranges[pname] = [float(keys['mean']) - float(keys['sigma'])*2,float(keys['mean'])+float(keys['sigma'])*2]
+            elif keys['prior_type'] == 'Uniform':
+                pranges[pname] = [float(keys['low']),float(keys['high'])]
 
-            lens.add_statistic(summary_statistics[i])
-            lens.add_parameters(parameters[i])
+        return pranges
+
+    def import_all(self,error=0,index=1):
+
+        self.import_parameters(self.Nlenses)
+        self.import_observed(self.Nlenses,error=error,index=index)
+        self.import_model(self.Nlenses,error=error,index=index)
+
+    def load_param_names(self,fname):
+
+        param_names = []
+
+        with open(fname, 'r') as f:
+            keys = f.readline().split(' ')
+        for word in keys:
+            if word not in ['#', '\n', '']:
+                param_names.append(word)
+
+        return param_names
 
     def import_parameters(self,Nlenses):
 
-        params = []
         for n in range(0,Nlenses):
-            fname = self.chain_file_path+'lens'+str(n+1)+'samples.txt'
-            params.append(np.loadtxt(fname))
 
-        return params
+            fname = self.chain_file_path+'lens'+str(n+1)+'/samples.txt'
 
+            param_values = np.loadtxt(fname)
+
+            param_names = self.load_param_names(fname)
+
+            param_dic = {}
+
+            for i,key in enumerate(param_names):
+                param_dic[key] = param_values[:,i]
+
+            self.lenses[n].add_parameters(param_dic)
 
     def compute_statistics(self,Nlenses,error,index,statistic='quadrature_piecewise'):
 
-        observed = self.import_observed(Nlenses,error=error,index=index)
-        model = self.import_model(Nlenses, error=error, index=index)
+        for i in range(0,Nlenses):
 
-        if statistic=='quadrature_piecewise':
-            return quadrature_piecewise(model,observed)
-        else:
-            raise Exception('statistic name '+statistic+' not recognized.')
+            self.lenses[i].compute_statistic(stat_function=quadrature_piecewise,weight=self.weight[i])
 
     def import_observed(self,Nlenses,error=0,index=1):
-
-        obs = []
-
-        if error==0:
-            index = ''
 
         for n in range(0,Nlenses):
 
             fname = self.chain_file_path+'lens'+str(n+1)+'/fluxratios/'+'observed_'+ str(int(error * 100)) + 'error_'+ str(index)+'.txt'
 
-            obs.append(np.loadtxt(fname))
-
-        return obs
+            self.lenses[n].add_observed_fluxratios(np.loadtxt(fname))
 
     def import_model(self,Nlenses,error=0,index=1):
-
-        model = []
-
-        if error == 0:
-            index = ''
 
         for n in range(0, Nlenses):
 
             fname = self.chain_file_path + 'lens' + str(n + 1) + '/fluxratios/' + 'model_' + str(
                 int(error * 100)) + 'error_' + str(index) + '.txt'
 
-            model.append(np.loadtxt(fname))
+            self.lenses[n].add_model_fluxratios(np.loadtxt(fname))
 
-        return model
+    def add_weights(self,param_name,weight_func='Gaussian',weight_kwargs = []):
 
-    def draw(self,tol=1000):
+        weight = []
+
+        if isinstance(param_name,str):
+
+            param_name = [param_name]
+
+            assert len(weight_kwargs==1),'number of weight kwargs must equal number of params.'
+
+        if isinstance(weight_func,str):
+
+            weight_func = [weight_func]
+
+            assert len(weight_kwargs == 1), 'number of weight kwargs must equal number of weight functions.'
+
+        for lens in self.lenses:
+
+            inv_weights = None
+
+            for i,func in weight_func:
+
+                if func=='Gaussian':
+
+                    mean = weight_kwargs[i]['mean']
+                    sigma = weight_kwargs[i]['sigma']
+
+                    weights = (2*np.pi*sigma**2)**-.5*np.exp(-0.5*(lens.parameters[param_name[i]]-mean)**2*sigma**-2)
+
+                elif func=='exp_high_trunc':
+
+                    cutoff = weight_kwargs[i]['cutoff']
+
+                    weights = np.exp(-(lens.parameters[param_name[i]]*cutoff**-1)**2)
+
+                weights[np.where(weights==0)] = 1e-9
+
+                if inv_weights is None:
+                    inv_weights = weights ** -1
+                else:
+                    inv_weights *= weights ** -1
+
+            weight.append(inv_weights)
+
+        self.weight = weight
+
+    def draw(self,tol=1000,error=0,index=1,stat_function='quadrature_piecewise'):
+
+        self.compute_statistics(self.Nlenses,error=error,index=index,statistic=stat_function)
 
         posterior_samples = []
 
         for i,lens in enumerate(self.lenses):
 
-            posterior_samples.append(lens.parameters[np.argsort(lens.statistic)[0:tol]])
+            lens_posterior = lens.draw(tol)
+
+            posterior_samples.append(lens_posterior)
 
         return posterior_samples
-
 
 class SingleLensChain:
 
@@ -96,6 +160,9 @@ class SingleLensChain:
         self.parameters = None
         self.fluxratios = None
         self.observed_fluxratios = None
+        self.statistic = None
+
+        self.posterior_samples = None
 
         self.perturbed_observed_fluxratios = []
         self.perturbed_model_fluxratios = []
@@ -112,6 +179,21 @@ class SingleLensChain:
 
         self.fluxratios = mod
 
-    def add_statistic(self,stat):
+    def compute_statistic(self,stat_function,weight):
 
-        self.statistic = stat
+        self.statistic = weight*stat_function(self.fluxratios,self.observed_fluxratios)
+
+    def draw(self,tol):
+
+        assert tol>1
+
+        indexes = np.argsort(self.statistic)[0:tol]
+
+        new_param_dic = {}
+
+        for key,values in self.parameters.iteritems():
+
+            new_param_dic.update({key:values[indexes]})
+
+        return new_param_dic
+

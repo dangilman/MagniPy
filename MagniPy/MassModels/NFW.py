@@ -11,12 +11,15 @@ class NFW:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
+            if z is None or zsrc is None:
+                print 'Warning; no cosmology specified.'
+            else:
+                self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
+                self.z, self.zsrc = z, zsrc
 
         else:
             self.cosmology = cosmology
-
-        self.z, self.zsrc = self.cosmology.zd, self.cosmology.zsrc
+            self.z, self.zsrc = cosmology.zd, cosmology.zsrc
 
         self.c_turnover=c_turnover
 
@@ -58,7 +61,7 @@ class NFW:
             else:
                 return (x ** 2 - 1) ** -.5 * np.arctan((x ** 2 - 1) ** .5)
 
-    def convergence(self,x,y,theta_Rs=None,Rs=None,center_x=None,center_y=None):
+    def kappa(self,x,y,theta_Rs=None,Rs=None,center_x=0,center_y=0):
 
         x,y = x - center_x,y - center_y
 
@@ -71,6 +74,7 @@ class NFW:
                 xnfw = 0.0001
         else:
             xnfw[np.where(xnfw)<0.0001] = 0.0001
+
         ks = theta_Rs*(4*Rs*(np.log(0.5)+1))**-1
 
         return 2*ks*(1-self.F(xnfw))*((xnfw)**2-1)**-1

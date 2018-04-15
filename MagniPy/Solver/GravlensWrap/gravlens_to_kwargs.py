@@ -101,5 +101,10 @@ def kwargs_to_gravlens(deflector=None,units='lensmodel'):
         p3 = str(args['center_y'])
         p8 = str(args['rt'])
 
+    elif deflector.profname == 'CONVERGENCE':
+
+        p0 = 'conv'
+        p1 = str(args['kappa_ext'])
+
     return str(p0) + ' ' + str(p1) + ' ' + str(p2) + ' ' + str(p3) + ' ' + str(p4) + ' ' + str(p5) + ' ' + \
            str(p6) + ' ' + str(p7) + ' ' + str(p8) + ' ' + str(p9) + ' ' + str(p10)+' '

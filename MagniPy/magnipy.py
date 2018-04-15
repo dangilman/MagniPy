@@ -39,6 +39,13 @@ class Magnipy:
 
         self.paths.gravlens_input_path_dump = self.paths.gravlens_input_path+self.temp_folder
 
+    def lenstronomy_build(self,system):
+
+        lenstronomywrap = LenstronomyWrap(multiplane=system.multiplane, cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+
+        lenstronomywrap.assemble(system)
+
+        return lenstronomywrap
 
     def print_system(self,system_index,component_index=None):
 
@@ -73,6 +80,7 @@ class Magnipy:
         newsystem.main_lens(main)
 
         if additional_halos is not None:
+
             newsystem.halos(additional_halos)
 
         return newsystem

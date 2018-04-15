@@ -14,14 +14,6 @@ class SIE:
         """
         self.Shear = Shear()
 
-    def kappa(self,x,y,theta_E,q,phi_G,center_x=0, center_y=0,gamma=2):
-
-        rtol = 1e-6
-        r = np.sqrt(x**2+y**2)
-        r[np.where(r<rtol)] = rtol
-
-        return 0.5*r**-1
-
     def def_angle(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2,shear=None,shear_theta=None):
 
         if gamma!=2:
@@ -70,8 +62,20 @@ class SIE:
 
             return xdef,ydef
 
-    def convergence(self, rcore, rtrunc):
-        return None
+    def kappa(self, x, y, theta_E, q, phi_G, center_x=0, center_y=0, gamma=2):
+
+        alpha = 3-gamma
+
+        r_ellip_square = ((x-center_x)**2 + (y-center_y)**2*q**-2)
+        rmin = 1e-9
+        try:
+            r_ellip_square[np.where(r_ellip_square<rmin)] = rmin
+        except:
+            r_ellip_square = np.max(r_ellip_square,rmin)
+
+        kappa = 0.5*theta_E**(2-alpha)*r_ellip_square**-(1-alpha*0.5)
+
+        return kappa
 
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
                y = None, gamma=2,trunc=None,**kwargs):

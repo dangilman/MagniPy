@@ -6,7 +6,7 @@ def model_translate_tolenstronomy(args,name):
 
     # convert gravlens arguments to lenstronomy arguments
 
-    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR']:
+    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','SNFW','CONVERGENCE']:
         raise Exception(name + ' not recognized.')
 
     newargs = {}
@@ -35,6 +35,13 @@ def model_translate_tolenstronomy(args,name):
     elif name == 'POINT_MASS':
 
         return args
+
+    elif name == 'CONVERGENCE':
+
+        return args
+
+    else:
+        raise Warning('specify translated kwargs for lens model.')
 
 def gravlens_to_lenstronomy(param,param_name,**kwargs):
 

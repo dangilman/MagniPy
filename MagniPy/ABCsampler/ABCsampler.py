@@ -2,6 +2,7 @@ from MagniPy.Analysis.PresetOperations.fluxratio_distributions import *
 from param_sample import ParamSample
 from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
 from copy import deepcopy
+from MagniPy.paths import *
 import shutil
 from time import time
 
@@ -144,7 +145,26 @@ def halo_model_args(mass_func_type='',params={}):
 
     return args
 
-def runABC(inputfile_path='',Nsplit=1000):
+def get_inputfile_path(chain_ID,core_index):
+
+    info_file = chain_ID + '/paramdictionary_1.txt'
+    temp_keys = read_paraminput(info_file)
+
+    cores_per_lens = temp_keys['main_keys']['sampler']['cores_per_lens']
+    Nlens = temp_keys['main_keys']['sampler']['Ncores'] * temp_keys['main_keys']['sampler']['cores_per_lens'] ** -1
+
+    data_id = []
+
+    for d in range(0, int(Nlens)):
+        data_id += [d + 1] * cores_per_lens
+
+    f_index = data_id[core_index]
+
+    return chain_ID + 'paramdictionary_' + str(f_index) + '.txt'
+
+def runABC(chain_ID='',core_index=int,Nsplit=1000):
+
+    inputfile_path = get_inputfile_path(chain_ID,core_index)
 
     all_keys = read_paraminput(inputfile_path)
 
@@ -254,8 +274,10 @@ def runABC(inputfile_path='',Nsplit=1000):
         macromodels = [macromodel]*len(run_commands)
 
     if chain_keys['modeling']['solve_method'] == 'lenstronomy':
-        Nsplit = len(run_commands)
+        #Nsplit = len(run_commands)
+        Nsplit = 100
     else:
+
         if len(run_commands) < 1000:
             Nsplit = len(run_commands)
 
@@ -276,6 +298,9 @@ def runABC(inputfile_path='',Nsplit=1000):
     chain_data = []
 
     for i in range(0, int(N_run)):
+
+        print 'set '+str(i+1) + 'of '+str(N_run)+'...'
+
         chain_data += reoptimize_with_halos(start_macromodels=macromodels[i*Nsplit:(i+1)*Nsplit],
                                                 realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
                                                 data2fit=datatofit, outfilename=run_commands[i]['chain_ID'],
@@ -340,5 +365,3 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write('\n# info\n')
 
         f.write(keys['sampler']['chain_description'])
-
-#runABC(os.getenv('HOME')+'/data/new_ABC_LOS/paramdictionary_1.txt')
