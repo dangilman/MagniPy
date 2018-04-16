@@ -158,7 +158,7 @@ def get_inputfile_path(chain_ID,core_index):
     for d in range(0, int(Nlens)):
         data_id += [d + 1] * cores_per_lens
 
-    f_index = data_id[core_index]
+    f_index = data_id[core_index-1]
 
     return chain_ID + 'paramdictionary_' + str(f_index) + '.txt'
 
