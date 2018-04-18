@@ -171,6 +171,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     chain_keys = all_keys['main_keys']
     chain_keys_to_vary = all_keys['tovary_keys']
 
+    chain_keys['sampler']['Nsamples'] = 1000
+
     output_path = chainpath + chain_keys['sampler']['output_folder']
 
     if os.path.exists(output_path):
@@ -178,7 +180,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     else:
         create_directory(output_path)
 
-    output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(chain_keys['sampler']['core_index'])+'/'
+    output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(core_index)+'/'
 
     if os.path.exists(output_path+'chain.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
         return
