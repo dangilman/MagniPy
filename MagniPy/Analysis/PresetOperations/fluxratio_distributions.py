@@ -66,13 +66,12 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=None, outfilepath=None, method='lenstronomy', **filter_kwargs):
 
-    datatofit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
+    if isinstance(data2fit,list):
+        data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
     if write_to_file:
 
-        if outfilepath is None:
-            outfilepath = fluxratio_data_path
-
+        print outfilepath
         assert os.path.exists(outfilepath)
 
     if start_macromodel is None:
@@ -111,15 +110,14 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=Nrealizations,
                                             filter_halo_positions=filter_halo_positions,**filter_kwargs)
 
-    model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=datatofit,realizations=halos,
+    model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data2fit,realizations=halos,
                                              multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                              identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                             source_size=source_size,raytrace_with=raytrace_with,print_mag=True)
 
 
     if write_to_file:
-        write_data(outfilepath+outfilename+'.txt', model_data)
+        write_data(outfilepath+outfilename+'.txt', model_data, mode='append')
     else:
         return model_data
-
 
