@@ -1,7 +1,7 @@
 from ChainOps import *
-from SummaryStatistics import *
+from summary_statistics import *
 
-class Chains:
+class ParamChains:
 
     def __init__(self,chain_name='',Nlenses=None):
 
@@ -93,7 +93,7 @@ class Chains:
 
             self.lenses[n].add_model_fluxratios(np.loadtxt(fname))
 
-    def add_weights(self,param_name,weight_func='Gaussian',weight_kwargs = []):
+    def add_weights(self,param_name,weight_kwargs = []):
 
         weight = []
 
@@ -103,17 +103,13 @@ class Chains:
 
             assert len(weight_kwargs==1),'number of weight kwargs must equal number of params.'
 
-        if isinstance(weight_func,str):
-
-            weight_func = [weight_func]
-
-            assert len(weight_kwargs == 1), 'number of weight kwargs must equal number of weight functions.'
-
         for lens in self.lenses:
 
             inv_weights = None
 
-            for i,func in weight_func:
+            for i,things in enumerate(weight_kwargs):
+
+                func = things['type']
 
                 if func=='Gaussian':
 

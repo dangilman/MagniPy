@@ -70,7 +70,7 @@ def read_run_partition(fname):
 
     return Ncores, cores_per_lens, int(Ncores * cores_per_lens ** -1)
 
-def add_flux_perturbations(chain_name='',errors=None,N_pert=1):
+def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None):
 
     Ncores, cores_per_lens, Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
@@ -83,6 +83,9 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1):
     errors = [0]+errors
 
     for n in range(1, int(Nlenses)+1):
+
+        if which_lens is not None and n!=which_lens:
+            continue
 
         chain_file_path = chainpath + 'processed_chains/' + chain_name + '/lens'+str(n)+'/'
         perturbed_path = chain_file_path + 'fluxratios/'
@@ -123,7 +126,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1):
                 if error==0:
                     break
 
-def extract_chain(chain_name=''):
+def extract_chain(chain_name='',which_lens = None):
 
     chain_info_path = chainpath + chain_name + '/simulation_info.txt'
 
@@ -141,6 +144,10 @@ def extract_chain(chain_name=''):
     copy_directory(chain_info_path,chainpath+'processed_chains/' + chain_name + '/')
 
     for i in range(0,Nlens):
+
+        if which_lens is None and i!=which_lens-1:
+            counter += 1
+            continue
 
         single_lens_fluxes = None
         single_lens_params = None
