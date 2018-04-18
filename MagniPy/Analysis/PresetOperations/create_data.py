@@ -1,5 +1,5 @@
 import numpy as np
-from halo_constructor import halo_constructor
+from halo_constructor import Realization
 from MagniPy.LensBuild.lens_assemble import Deflector
 from MagniPy.MassModels.SIE import SIE
 from MagniPy.Solver.solveroutines import SolveRoutines
@@ -7,9 +7,11 @@ from MagniPy.util import identify
 
 def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
                 sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
-                raytrace_with='lenstronomy',method='lenstronomy',solver_class=None,ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
+                raytrace_with='lenstronomy',method='lenstronomy',halo_model='',multiplane=False,solver_class=None,ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
 
     run = True
+
+    realization = Realization(zlens=zlens,zsrc=zsrc)
 
     if config=='cross':
         target = 0
@@ -54,8 +56,11 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
         main = Deflector(subclass=SIE(), redshift=zlens, tovary=True,
                          varyflags=['1', '1', '1', '1', '1', '0', '0', '0', '0', '0'], **truth)
 
+        if halo_model in ['plaw_LOS','composite_plaw']:
+            assert multiplane
+
         if subhalo_realizations is None:
-            subhalo_realizations = halo_constructor(massprofile=massprofile, model_name='plaw_main',model_args=substructure_model_args,
+            subhalo_realizations = realization.halo_constructor(massprofile=massprofile, model_name=halo_model,model_args=substructure_model_args,
                                                Nrealizations=1, zlens=zlens, zsrc=zsrc)
 
 
@@ -65,7 +70,7 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
                                            srcx=src_x, srcy=src_y, grid_rmax=.08,
                                            res=0.001, source_shape='GAUSSIAN', ray_trace=False,
                                            raytrace_with=raytrace_with, source_size=source_size,
-                                           multiplane=False)
+                                           multiplane=multiplane)
 
         if dset_v0[0].nimg != 4 or identify(dset_v0[0].x, dset_v0[0].y, R_ein) != target:
 
@@ -78,14 +83,13 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
                                                srcx=src_x, srcy=src_y, grid_rmax=.08,
                                                res=0.001, source_shape='GAUSSIAN', ray_trace=ray_trace,
                                                raytrace_with=raytrace_with, source_size=source_size,
-                                               multiplane=False)
+                                               multiplane=multiplane)
 
             dset[0].x += np.random.normal(0,astrometric_perturbation,size=4)
 
             dset[0].y += np.random.normal(0,astrometric_perturbation,size=4)
-
-            lens_system = solver.build_system(main=main,additional_halos=subhalo_realizations,multiplane=False)
+    
             if return_gamma:
-                return dset[0],lens_system,gamma
+                return dset[0],gamma
             else:
-                return dset[0],lens_system
+                return dset[0]

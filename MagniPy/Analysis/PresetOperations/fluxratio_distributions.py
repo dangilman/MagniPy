@@ -1,6 +1,6 @@
 import numpy as np
 from MagniPy.util import *
-from MagniPy.LensBuild.renderhalos import HaloGen
+from halo_constructor import Realization
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
@@ -41,7 +41,6 @@ def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=
     return macromodel[0].lens_components[0]
 
 
-
 def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='', zlens=None, multiplane_flag=None, zsrc=None,
                           start_macromodels=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                           source_size=None, raytrace_with=None, test_only=False, write_to_file=False,
@@ -61,16 +60,13 @@ def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='
     else:
         return model_data
 
-def compute_fluxratio_distributions(subhalo_model_profile='', subhalo_model_type='', subhalo_model_args={},
-                                    data2fit=[], Nrealizations=int, outfilename='', zlens=None, z_src=None,
+def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
+                                    data2fit=[], Nrealizations=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
-                                    source_size=None, raytrace_with=None, test_only=False, write_to_file=False,
-                                    filter_halo_positions=None, outfilepath=None, method=None, **filter_kwargs):
+                                    source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
+                                    filter_halo_positions=None, outfilepath=None, method='lenstronomy', **filter_kwargs):
 
     datatofit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
-
-    if method is None:
-        method = default_solve_method
 
     if write_to_file:
 
@@ -79,12 +75,13 @@ def compute_fluxratio_distributions(subhalo_model_profile='', subhalo_model_type
 
         assert os.path.exists(outfilepath)
 
-    if test_only:
-        print outfilename
-        print subhalo_model_profile
-        print subhalo_model_type
-        print subhalo_model_args
-        return
+    if start_macromodel is None:
+        start_macromodel = get_default_SIE(zlens)
+        start_macromodel.redshift = zlens
+    if sigmas is None:
+        sigmas = default_sigmas
+
+    halo_generator = Realization(zlens=zlens,zsrc=zsrc)
 
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
@@ -96,36 +93,23 @@ def compute_fluxratio_distributions(subhalo_model_profile='', subhalo_model_type
     if res is None:
         res = default_res(source_size)
 
-    halo_generator = HaloGen(zd=zlens,zsrc=z_src)
+    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, temp_folder=outfilename)
 
-    if start_macromodel is None:
-        start_macromodel = get_default_SIE(zlens)
-        start_macromodel.redshift = zlens
-    if sigmas is None:
-        sigmas = default_sigmas
-    if grid_rmax is None:
-        grid_rmax = default_gridrmax(source_size)
-    if res is None:
-        res = default_res(source_size)
+    if halo_model == 'plaw_main':
 
-    solver = SolveRoutines(zmain=zlens, zsrc=z_src, temp_folder=outfilename)
-
-    if subhalo_model_type == 'plaw_main':
-        spatial_name = 'uniform_cored_nfw'
         multiplane = False
-    elif subhalo_model_type == 'plaw_LOS':
-        spatial_name = 'uniform2d'
+    elif halo_model == 'plaw_LOS':
+
         multiplane = True
-    elif subhalo_model_type == 'delta_LOS':
-        spatial_name = 'uniform2d'
+    elif halo_model == 'delta_LOS':
+
         multiplane = True
-    elif subhalo_model_type == 'composite_plaw':
-        spatial_name = 'uniform_cored_nfw'
+    elif halo_model == 'composite_plaw':
+
         multiplane = True
 
-    halos = halo_generator.draw_model(model_name=subhalo_model_type, spatial_name=spatial_name,
-                                      massprofile=subhalo_model_profile, model_kwargs=subhalo_model_args, Nrealizations=Nrealizations,
-                                      filter_halo_positions=filter_halo_positions,**filter_kwargs)
+    halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=Nrealizations,
+                                            filter_halo_positions=filter_halo_positions,**filter_kwargs)
 
     model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=datatofit,realizations=halos,
                                              multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
@@ -137,3 +121,5 @@ def compute_fluxratio_distributions(subhalo_model_profile='', subhalo_model_type
         write_data(outfilepath+outfilename+'.txt', model_data)
     else:
         return model_data
+
+
