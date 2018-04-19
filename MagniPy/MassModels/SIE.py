@@ -28,10 +28,10 @@ class SIE:
 
         shearx,sheary = 0,0
 
-        if shear is not None:
-            assert shear_theta is not None
-            raise Exception('inner SIE shear not implemented.')
-            shearx,sheary = self.Shear.def_angle(xloc,yloc,shear,shear_theta)
+        #if shear is not None:
+        #    assert shear_theta is not None
+        #    raise Exception('inner SIE shear not implemented.')
+        #    shearx,sheary = self.Shear.def_angle(xloc,yloc,shear,shear_theta)
 
         if q==1:
 

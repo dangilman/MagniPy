@@ -30,13 +30,13 @@ import numpy as np
 
 default_startkwargs_random = {'R_ein':np.absolute(np.random.normal(1,0.1)),'ellip':np.absolute(np.random.normal(0.3,0.05)),'ellip_theta':np.random.uniform(-90,90),
                'x':0,'y':0,'shear':np.random.uniform(0.03,0.06),'shear_theta':np.random.uniform(-90,90)}
-def get_default_SIE_random(z):
-    return Deflector(subclass=SIE(),tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],redshift=z,**default_startkwargs_random)
+def get_default_SIE_random(z,varyflags=['1','1','1','1','1','1','1','0','0','0']):
+    return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs_random)
 
 default_startkwargs = {'R_ein':1,'ellip':0.2,'ellip_theta':45,
                'x':0,'y':0,'shear':0.05,'shear_theta':80}
-def get_default_SIE(z):
-    return Deflector(subclass=SIE(),tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],redshift=z,**default_startkwargs)
+def get_default_SIE(z,varyflags = ['1','1','1','1','1','1','1','0','0','0']):
+    return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs)
 
 sigma_pos,sigma_flux,sigma_time = [[0.003]*4]*2,[0.3]*4,[0,3,3,3]
 default_sigmas = [sigma_pos,sigma_flux,sigma_time]

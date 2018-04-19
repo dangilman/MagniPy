@@ -1,7 +1,7 @@
 from MagniPy.Analysis.PresetOperations.fluxratio_distributions import *
 from param_sample import ParamSample
 from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
-from copy import deepcopy
+from copy import deepcopy,copy
 from MagniPy.paths import *
 import shutil
 from time import time
@@ -243,10 +243,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     macromodel_default_start['shear'] = chainkeys['SIE_shear_start']
 
-    macromodel_start = Deflector(subclass=SIE(), tovary=True,
-                                 varyflags=chainkeys['varyflags'],
-                                 redshift=chain_keys['lens']['zlens'],
-                                 **macromodel_default_start)
+    macromodel_start = get_default_SIE(z=chainkeys['zlens'])
 
     macromodel = initialize_macromodel(macromodel_start, data2fit=datatofit, method=chainkeys['solve_method'],
                                        sigmas=chainkeys['sigmas'],
@@ -265,7 +262,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
             if 'SIE_gamma' in commands:
                 newmac.args['gamma'] = commands['SIE_gamma']
-            elif 'SIE_shear' in commands:
+            if 'SIE_shear' in commands:
                 newmac.args['shear'] = commands['SIE_shear']
 
             macromodels.append(newmac)
@@ -314,7 +311,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                                                 method=run_commands[i]['solve_method'])
 
 
-    write_data(output_path+'chain.txt',chain_data)
+    #write_data(output_path+'chain.txt',chain_data)
 
     write_data(output_path+'lensdata.txt',[datatofit])
 
@@ -330,11 +327,11 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
         if dset.nimg != datatofit.nimg:
             fluxes.append(np.array([1000,1000,1000,1000]))
+            astrometric_errors.append(1000)
 
         else:
             fluxes.append(dset.m)
-
-        astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x)**2 + (dset.y - datatofit.y)**2)))
+            astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x)**2 + (dset.y - datatofit.y)**2)))
 
     np.savetxt(fname=output_path+'astrometric_errors.txt',X=np.array(astrometric_errors),fmt='%.6f')
     np.savetxt(fname=output_path+'fluxes.txt',X=np.array(fluxes),fmt='%.6f')
@@ -371,4 +368,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
+#runABC(os.getenv('HOME')+'/data/gamma_test_iso/',1)
