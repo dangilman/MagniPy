@@ -16,8 +16,8 @@ class LenstronomyWrap:
         self.xtol = 1e-10
         self.min_distance = 0.01
         self.search_window = 4
-        self.precision_limit = 10**-9
-        self.num_iter_max = 250
+        self.precision_limit = 10**-10
+        self.num_iter_max = 500
         self.cosmo = cosmo
 
         assert z_source is not None
@@ -102,8 +102,10 @@ class LenstronomyWrap:
             decoupling = True
 
         solver4Point = Solver4Point(lensModel=self.model, decoupling=decoupling, solver_type=solver_type)
+
         kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
                                                        xtol=self.xtol)
+
 
         return kwargs_fit
 

@@ -103,7 +103,7 @@ def kwargs_to_gravlens(deflector=None,units='lensmodel'):
 
     elif deflector.profname == 'CONVERGENCE':
 
-        p0 = 'conv'
+        p0 = 'convrg'
         p1 = str(args['kappa_ext'])
 
     return str(p0) + ' ' + str(p1) + ' ' + str(p2) + ' ' + str(p3) + ' ' + str(p4) + ' ' + str(p5) + ' ' + \
