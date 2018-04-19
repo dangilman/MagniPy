@@ -533,13 +533,15 @@ class HaloGen:
 
             if add_mass_sheet and len(subhalos)>0:
 
-                masses = [obj.other_args['mass'] for obj in subhalos]
+                if redshift != self.zd:
 
-                mass_in_plane = np.sum(masses)
+                    masses = [obj.other_args['mass'] for obj in subhalos]
 
-                plane_kappa = (mass_in_plane*area**-1)*cosmo_at_plane.get_sigmacrit()**-1
+                    mass_in_plane = np.sum(masses)
 
-                subhalos.append(Deflector(subclass=uniformsheet.MassSheet(),redshift=redshift,is_subhalo=True,kappa_ext=-1*plane_kappa))
+                    plane_kappa = (mass_in_plane*area**-1)*cosmo_at_plane.get_sigmacrit()**-1
+
+                    subhalos.append(Deflector(subclass=uniformsheet.MassSheet(),redshift=redshift,is_subhalo=True,kappa_ext=-1*plane_kappa))
 
             realizations.append(subhalos)
 

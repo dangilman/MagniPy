@@ -93,34 +93,42 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
         if ~os.path.exists(perturbed_path):
             create_directory(perturbed_path)
 
+        fluxes_obs = np.loadtxt(chain_file_path + 'observedfluxes.txt')
+        fluxes = np.loadtxt(chain_file_path + 'modelfluxes.txt')
+
         for error in errors:
 
             for k in range(1, N_pert + 1):
 
                 perturbed_fname_obs = perturbed_path+'observed_'+ str(int(error * 100)) + 'error_'+ str(k)+'.txt'
-                fluxes_obs = np.loadtxt(chain_file_path + 'observedfluxes.txt')
 
                 if error!=0:
-                    flux_perturbations_obs = np.random.normal(0, error * fluxes_obs, size=fluxes_obs.shape)
+                    flux_perturbations_obs = np.random.normal(0, error * fluxes_obs)
                 else:
                     flux_perturbations_obs = np.zeros_like(fluxes_obs)
 
                 perturbed_obs = fluxes_obs + flux_perturbations_obs
 
                 perturbed_ratios_obs = np.delete(perturbed_obs*perturbed_obs[1]**-1,1)
+
                 np.savetxt(perturbed_fname_obs, perturbed_ratios_obs.reshape(1,3), fmt='%.6f')
 
-                perturbed_fname = perturbed_path+'model_'+ str(int(error * 100)) + 'error_'+str(k)+'.txt'
-                fluxes = np.loadtxt(chain_file_path + 'modelfluxes.txt')
+                ############################################################################
 
-                if error!=0:
-                    flux_perturbations = np.zeros_like(fluxes.shape)
+                perturbed_fname = perturbed_path+'model_'+ str(int(error * 100)) + 'error_'+str(k)+'.txt'
+
+                if error == 0:
+
+                    flux_perturbations = np.zeros_like(fluxes)
+
                 else:
-                    flux_perturbations = np.random.normal(0, error * fluxes, size=fluxes.shape)
+                    sigma = float(error)*fluxes
+                    flux_perturbations = np.random.normal(0, sigma)
 
                 perturbed_fluxes = fluxes + flux_perturbations
 
                 perturbed_ratios = np.delete(perturbed_fluxes*perturbed_fluxes[:,1,np.newaxis]**-1,1,axis=1)
+
                 np.savetxt(perturbed_fname,perturbed_ratios,fmt='%.6f')
 
                 if error==0:
@@ -145,7 +153,7 @@ def extract_chain(chain_name='',which_lens = None):
 
     for i in range(0,Nlens):
 
-        if which_lens is None and i!=which_lens-1:
+        if which_lens is not None and i != which_lens-1:
             counter += 1
             continue
 
@@ -194,8 +202,8 @@ def extract_chain(chain_name='',which_lens = None):
         np.savetxt(savename+'observedfluxes'+'.txt', observed_fluxes.reshape(1,4),fmt='%.6f')
         np.savetxt(savename+'samples.txt',single_lens_params,fmt='%.6f',header=params_header)
 
-#extract_chain('gamma_test_208_new')
-#add_flux_perturbations('gamma_test_208_new')
+#extract_chain('gamma_test_208_new',which_lens=1)
+#add_flux_perturbations('gamma_test_208_new',which_lens=1,errors=[0.02,0.05],N_pert=10)
 
 #print read_chain_info(chainpath + '/LOS_test' + '/simulation_info.txt')
 

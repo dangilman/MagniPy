@@ -79,14 +79,11 @@ class LenstronomyWrap:
 
         self.lens_model_list, self.lens_model_params = [], []
 
-    def solve_leq(self,xsrc,ysrc):
+    def solve_leq(self,xsrc,ysrc,lensModel=None,lens_model_params=None):
 
-        lensmodel = LensModel(lens_model_list=self.lens_model_list,z_source=self.zsrc,redshift_list=self.redshift_list,
-                              cosmo=self.cosmo,multi_plane=self.multiplane)
+        lensEquationSolver = LensEquationSolver(lensModel=lensModel)
 
-        lensEquationSolver = LensEquationSolver(lensModel=lensmodel)
-
-        x_image,y_image =  lensEquationSolver.findBrightImage(kwargs_lens=self.lens_model_params, sourcePos_x=xsrc, sourcePos_y=ysrc,
+        x_image,y_image =  lensEquationSolver.findBrightImage(kwargs_lens=lens_model_params, sourcePos_x=xsrc, sourcePos_y=ysrc,
                                                                          min_distance=self.min_distance, search_window=self.search_window,
                                                                          precision_limit=self.precision_limit, num_iter_max=self.num_iter_max)
 

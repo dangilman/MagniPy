@@ -171,8 +171,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     chain_keys = all_keys['main_keys']
     chain_keys_to_vary = all_keys['tovary_keys']
 
-    chain_keys['sampler']['Nsamples'] = 1000
-
     output_path = chainpath + chain_keys['sampler']['output_folder']
 
     if os.path.exists(output_path):

@@ -213,7 +213,8 @@ class Magnipy:
 
                 xsrc, ysrc = lensModel.ray_shooting(d2fit[0], d2fit[1], lenstronomywrap.lens_model_params)
 
-                x_image, y_image = lenstronomywrap.solve_leq(xsrc=np.mean(xsrc),ysrc=np.mean(ysrc))
+                x_image, y_image = lenstronomywrap.solve_leq(xsrc=np.mean(xsrc),ysrc=np.mean(ysrc),lensModel=lensModel,
+                                                             lens_model_params=kwargs_fit)
 
                 newdata = Data(x=x_image, y=y_image, m=None, t=None, source=[xsrc, ysrc])
 
@@ -301,7 +302,9 @@ class Magnipy:
 
                 lenstronomywrap.assemble(system)
 
-                x_image,y_image = lenstronomywrap.solve_leq(xsrc=srcx,ysrc=srcy)
+                x_image, y_image = lenstronomywrap.solve_leq(xsrc=srcx, ysrc=srcy,
+                                                             lensModel=lenstronomywrap.get_lensmodel(),
+                                                             lens_model_params=lenstronomywrap.lens_model_params)
 
                 data.append(Data(x=x_image, y=y_image, m=None, t=None, source=[srcx, srcy]))
 
