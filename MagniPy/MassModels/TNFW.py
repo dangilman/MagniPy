@@ -12,11 +12,15 @@ class TNFW:
         """
 
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
+            if z is None or zsrc is None:
+                print 'Warning; no cosmology specified.'
+            else:
+                self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
+                self.z, self.zsrc = z, zsrc
+
         else:
             self.cosmology = cosmology
-
-        self.z,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
+            self.z, self.zsrc = cosmology.zd, cosmology.zsrc
 
         self.c_turnover=c_turnover
 
@@ -69,15 +73,48 @@ class TNFW:
         (tau ** 2 + 1 + 2 * (x ** 2 - 1)) * self.F(x) + tau * np.pi + (tau ** 2 - 1) * np.log(tau) +
         np.sqrt(tau ** 2 + x ** 2) * (-np.pi + self.L(x, tau) * (tau ** 2 - 1) * tau ** -1))
 
-    def convergence(self,r=None,ks=None,rs=None,xy=None):
-        if xy is not None:
-            assert isinstance(xy,list)
-            assert len(xy)==2
+    def _F(self, X, tau):
+        """
+        analytic solution of the projection integral
+        (convergence)
 
-            r = np.sqrt(xy[0]**2+xy[1]**2)
-        if r is None:
-            r = np.sqrt(self.x**2+self.y**2)
-        return 2*ks*(1-self.F(r*rs**-1))*((r*rs**-1)**2-1)**-1
+        :param x: R/Rs
+        :type x: float >0
+        """
+        t2 = tau ** 2
+        Fx = self.F(X)
+
+        return t2 * (2 * np.pi * (t2 + 1) ** 2) ** -1 * (
+            ((t2 + 1) * (X ** 2 - 1) ** -1) * (1 - Fx)
+            +
+            2 * Fx
+            -
+            np.pi * (t2 + X ** 2) ** -.5
+            +
+            (t2 - 1) * (tau * (t2 + X ** 2) ** .5) ** -1 * self.L(X, tau)
+        )
+
+    def kappa(self,x, y, Rs=None, theta_Rs=None, r_trunc=None, center_x=0, center_y=0):
+
+        x_loc = x - center_x
+        y_loc = y - center_y
+
+        r = np.sqrt(x_loc ** 2 + y_loc ** 2)
+
+        xnfw = r * Rs ** -1
+
+        tau = r_trunc * Rs ** -1
+
+        xmin = 0.00000001
+
+        if isinstance(xnfw, float) or isinstance(xnfw, int):
+            xnfw = max(xmin, xnfw)
+        else:
+            xnfw[np.where(xnfw < xmin)] = xmin
+
+        ks = theta_Rs*(4*Rs*(np.log(0.5)+1))**-1
+
+        return 2*ks*self._F(xnfw,tau)
 
     def params(self, x=None,y=None,mass=float, mhm=None,truncation=None,**kwargs):
 

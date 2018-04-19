@@ -276,8 +276,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         macromodels = [macromodel]*len(run_commands)
 
     if chain_keys['modeling']['solve_method'] == 'lenstronomy':
-        #Nsplit = len(run_commands)
-        Nsplit = 100
+        Nsplit = len(run_commands)
+        #Nsplit = 100
     else:
 
         if len(run_commands) < 1000:
@@ -301,7 +301,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     for i in range(0, int(N_run)):
 
-        print 'set '+str(i+1) + 'of '+str(N_run)+'...'
+        #print 'set '+str(i+1) + 'of '+str(N_run)+'...'
 
         chain_data += reoptimize_with_halos(start_macromodels=macromodels[i*Nsplit:(i+1)*Nsplit],
                                                 realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
@@ -325,15 +325,20 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         header_string+= name + ' '
 
     fluxes = []
+    astrometric_errors = []
     fluxes.append(datatofit.m)
 
     for dset in chain_data:
 
         if dset.nimg != datatofit.nimg:
             fluxes.append(np.array([1000,1000,1000,1000]))
+
         else:
             fluxes.append(dset.m)
 
+        astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x)**2 + (dset.y - datatofit.y)**2)))
+
+    np.savetxt(fname=output_path+'astrometric_errors.txt',X=np.array(astrometric_errors),fmt='%.6f')
     np.savetxt(fname=output_path+'fluxes.txt',X=np.array(fluxes),fmt='%.6f')
     np.savetxt(output_path + 'parameters.txt', samples, header=header_string, fmt='%.6f')
 
@@ -367,3 +372,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write('\n# info\n')
 
         f.write(keys['sampler']['chain_description'])
+
+#runABC(os.getenv('HOME')+'/data/LOS_test/',1)

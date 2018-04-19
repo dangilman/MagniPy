@@ -4,7 +4,7 @@ __author__ = 'sibirrer'
 # the potential therefore is its integral
 
 import numpy as np
-
+import warnings
 
 class TNFW(object):
     """
@@ -160,7 +160,7 @@ class TNFW(object):
         m_3d = self.mass_3d(R, Rs, rho0, t)
         return m_3d
 
-    def nfwPot(self, R, Rs, rho0, t):
+    def nfwPot(self, R, Rs, rho0, r_trunc):
         """
         lensing potential of NFW profile (*Sigma_crit*D_OL**2)
 
@@ -175,7 +175,7 @@ class TNFW(object):
         :return: Epsilon(R) projected density at radius R
         """
         x = R / Rs
-        tau = t / Rs
+        tau = r_trunc / Rs
         hx = self._h(x, tau)
         return 2 * rho0 * Rs ** 3 * hx
 
@@ -276,6 +276,7 @@ class TNFW(object):
         )
 
     def _h(self, X, tau):
+
         """
         a horrible expression for the integral to compute potential
 
@@ -295,28 +296,54 @@ class TNFW(object):
                 inds1 = np.where(y < 1)
                 inds2 = np.where(y > 1)
                 values[inds1] = np.arccos(y[inds1])
-                values[inds2] = np.arccosh(y[inds2])
+                # values[inds2] = np.arccosh(y[inds2])
+                values[inds2] = np.arccos((1 - y[inds2]) ** .5)
                 return values
 
         t2 = tau ** 2
         u = X ** 2
-        Lx = self.L(X, tau)
+        c = 0.000001
 
-        return (t2 + 1) ** -2 * (
-            2 * t2 * np.pi * (tau - (t2 + u) ** .5 + tau * np.log(tau + (t2 + u) ** .5))
-            +
-            2 * (t2 - 1) * tau * (t2 + u) ** .5 * Lx
-            +
-            t2 * (t2 - 1) * Lx ** 2
-            +
-            4 * t2 * (u - 1) * self.F(X)
-            +
-            t2 * (t2 - 1) * (np.arccos(X ** -1)) ** 2
-            +
-            t2 * ((t2 - 1) * np.log(tau) - t2 - 1) * np.log(u)
-            -
-            t2 * ((t2 - 1) * np.log(tau) * np.log(4 * tau) + 2 * np.log(0.5 * tau) - 2 * tau * (tau - np.pi) * np.log(
-                tau * 2)))
+        if np.any(X-c<1):
+
+            warnings.warn('Truncated NFW potential not yet implemented for x<1. Using the expression for the NFW '
+                          'potential in this regime isntead.')
+
+
+            if isinstance(X, int) or isinstance(X, float):
+                if X < 1:
+                    x = max(0.001, X)
+                    a = np.log(x / 2.) ** 2 - np.arccosh(1. / x) ** 2
+                else:  # X >= 1:
+                    a = np.log(X / 2.) ** 2 + np.arccos(1. / X) ** 2
+            else:
+                a = np.empty_like(X)
+                X[X <= c] = 0.000001
+                x = X[X < 1]
+                a[X < 1] = np.log(x / 2.) ** 2 - np.arccosh(1. / x) ** 2
+                x = X[X >= 1]
+                a[X >= 1] = np.log(x / 2.) ** 2 + np.arccos(1. / x) ** 2
+            return a
+
+
+        else:
+            Lx = self.L(X, tau)
+
+            return (t2 + 1) ** -2 * (
+                2 * t2 * np.pi * (tau - (t2 + u) ** .5 + tau * np.log(tau + (t2 + u) ** .5))
+                +
+                2 * (t2 - 1) * tau * (t2 + u) ** .5 * Lx
+                +
+                t2 * (t2 - 1) * Lx ** 2
+                +
+                4 * t2 * (u - 1) * self.F(X)
+                +
+                t2 * (t2 - 1) * (cos_func(X ** -1)) ** 2
+                +
+                t2 * ((t2 - 1) * np.log(tau) - t2 - 1) * np.log(u)
+                -
+                t2 * ((t2 - 1) * np.log(tau) * np.log(4 * tau) + 2 * np.log(0.5 * tau) - 2 * tau * (tau - np.pi) * np.log(
+                    tau * 2)))
 
     def _alpha2rho0(self, theta_Rs, Rs):
         """

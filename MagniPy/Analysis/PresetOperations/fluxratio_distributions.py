@@ -115,9 +115,15 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                              identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                             source_size=source_size,raytrace_with=raytrace_with,print_mag=True)
 
+    data = []
+    for dset in model_data:
+        if dset.nimg ==data2fit.nimg:
+            data.append(dset)
 
     if write_to_file:
-        write_data(outfilepath+outfilename+'.txt', model_data, mode='append')
+
+        write_data(outfilepath+outfilename+'.txt', data, mode='append')
     else:
         return model_data
+
 
