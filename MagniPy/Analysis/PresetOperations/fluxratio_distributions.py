@@ -33,7 +33,7 @@ def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=
     if res is None:
         res = default_res(source_size)
 
-    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, temp_folder=outfilename)
+    solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=outfilename)
 
     _, macromodel = solver.two_step_optimize(macromodel=init_macromodel,datatofit=data2fit,multiplane=multiplane,sigmas=sigmas,identifier=None,
                              ray_trace=True,method=method,raytrace_with=raytrace_with,grid_rmax=grid_rmax,res=res,source_size=source_size)
@@ -47,7 +47,7 @@ def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='
                           filter_halo_positions=None, outfilepath=None, method=None, **filter_kwargs):
 
 
-    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, clean_up=True, temp_folder=outfilename)
+    solver = SolveRoutines(zlens=zlens, zsrc=zsrc, clean_up=True, temp_folder=outfilename)
 
     model_data, _ = solver.fit(macromodel=start_macromodels, datatofit=data2fit, realizations=realizations,
                                              multiplane=multiplane_flag, method=method, ray_trace=True, sigmas=sigmas,
@@ -64,7 +64,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     data2fit=[], Nrealizations=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
-                                    filter_halo_positions=None, outfilepath=None, method='lenstronomy', **filter_kwargs):
+                                    filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy', **filter_kwargs):
 
     if isinstance(data2fit,list):
         data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
@@ -92,7 +92,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     if res is None:
         res = default_res(source_size)
 
-    solver = SolveRoutines(zmain=zlens, zsrc=zsrc, temp_folder=outfilename)
+    solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=outfilename)
 
     if halo_model == 'plaw_main':
 
@@ -111,7 +111,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                             filter_halo_positions=filter_halo_positions,**filter_kwargs)
 
     model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data2fit,realizations=halos,
-                                             multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
+                                             multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
                                              identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                             source_size=source_size,raytrace_with=raytrace_with,print_mag=True)
 
