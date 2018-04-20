@@ -106,6 +106,5 @@ class LenstronomyWrap:
         kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
                                                        xtol=self.xtol)
 
-
         return kwargs_fit
 

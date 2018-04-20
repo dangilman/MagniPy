@@ -129,6 +129,7 @@ class Deflector:
                 return
 
             self.lenstronomy_args.update(newparams)
+
             self.args = model_translate_togravlens(newparams,self.other_args['name'])
 
         elif method=='lensmodel':

@@ -101,16 +101,17 @@ class SolveRoutines(Magnipy):
                                                            source_shape=source_shape, source_size=source_size, print_mag=print_mag,
                                                            filter_by_position=filter_by_position, filter_kwargs=filter_kwargs)
         else:
-            _, macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel),datatofit=datatofit,
-                                                            multiplane=multiplane, method='lenstronomy', ray_trace=ray_trace,
-                                                            sigmas=sigmas,srcx=srcx, srcy=srcy,
-                                                            grid_rmax=grid_rmax, res=res,
-                                                            source_shape=source_shape, source_size=source_size,
-                                                            print_mag=print_mag,
-                                                            filter_by_position=filter_by_position,
-                                                            filter_kwargs=filter_kwargs,solver_type=solver_type)
+            pass
+            #_, macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel),datatofit=datatofit,
+            #                                                multiplane=multiplane, method='lenstronomy', ray_trace=ray_trace,
+            #                                                sigmas=sigmas,srcx=srcx, srcy=srcy,
+            #                                                grid_rmax=grid_rmax, res=res,
+            #                                                source_shape=source_shape, source_size=source_size,
+            #                                                print_mag=print_mag,
+            #                                                filter_by_position=filter_by_position,
+            #                                                filter_kwargs=filter_kwargs,solver_type=solver_type)
 
-        optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
+        optimized_data, newsystem = self.fit(macromodel=macromodel, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
                                                        ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
                                                        source_shape=source_shape, source_size=source_size, print_mag=print_mag, raytrace_with=raytrace_with,
                                                        filter_by_position=filter_by_position, polar_grid=polar_grid,
@@ -144,6 +145,7 @@ class SolveRoutines(Magnipy):
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,
                                                     res=res, source_shape=source_shape, ray_trace=False,
                                                     source_size=source_size, print_mag=print_mag, opt_routine='randomize',solver_type=solver_type)
+
         newmacromodel = model[0].lens_components[0]
 
         return optimized_data,newmacromodel
@@ -189,7 +191,8 @@ class SolveRoutines(Magnipy):
         ################################################################################
 
         # If macromodel is a list same length as realizations, build the systems and fit each one
-
+        print macromodel
+        print realizations
         if isinstance(macromodel,list):
 
             assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
@@ -203,6 +206,7 @@ class SolveRoutines(Magnipy):
                                                           multiplane=multiplane))
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
+
 
         optimized_data, model = self.optimize_4imgs(lens_systems=lens_systems, data2fit=datatofit, method=method,
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,

@@ -19,13 +19,13 @@ class Magnipy:
     This class is used to specify a lens system and solve the lens equation or optimize a lens model
     """
 
-    def __init__(self, zmain, zsrc, clean_up=True, temp_folder=None):
+    def __init__(self, zlens, zsrc, clean_up=True, temp_folder=None):
 
-        self.zmain = zmain
+        self.zmain = zlens
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(zd=zmain, zsrc=zsrc)
+        self.lens_halos = halo_gen.HaloGen(zd=zlens, zsrc=zsrc)
 
-        self.cosmo = Cosmo(zd=zmain, zsrc=zsrc)
+        self.cosmo = Cosmo(zd=zlens, zsrc=zsrc)
         self.clean_up = clean_up
 
         self.paths = paths

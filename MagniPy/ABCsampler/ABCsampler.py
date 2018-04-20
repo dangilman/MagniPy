@@ -180,7 +180,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(core_index)+'/'
 
-    if os.path.exists(output_path+'chain.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
+    if os.path.exists(output_path+'fluxes.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
         return
 
     if os.path.exists(output_path):
@@ -240,17 +240,19 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
     print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
+    print 'intializing macromodels... '
 
     macromodel_default_start['shear'] = chainkeys['SIE_shear_start']
 
     macromodel_start = get_default_SIE(z=chainkeys['zlens'])
 
-    macromodel = initialize_macromodel(macromodel_start, data2fit=datatofit, method=chainkeys['solve_method'],
-                                       sigmas=chainkeys['sigmas'],
-                                       grid_rmax=chainkeys['grid_rmax'], res=chainkeys['grid_res'],
-                                       zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
-                                       source_size=chainkeys['source_size'], outfilename=chainkeys['scratch_file'],
-                                       multiplane=chainkeys['multiplane'], raytrace_with=chainkeys['raytrace_with'])
+    solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'])
+    opt_data,mod = solver.two_step_optimize(macromodel_start,datatofit=datatofit,realizations=None,multiplane=chainkeys['multiplane'],
+                                          method=chainkeys['solve_method'],ray_trace=False,sigmas=chainkeys['sigmas'],
+                                          identifier=run_commands[i]['chain_ID'],grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
+                                            source_size=run_commands[i]['source_size'])
+
+    macromodel = mod[0].lens_components[0]
 
     macromodels = []
 
@@ -269,6 +271,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     else:
         macromodels = [macromodel]*len(run_commands)
+
+    print 'done.'
 
     if chain_keys['modeling']['solve_method'] == 'lenstronomy':
         Nsplit = len(run_commands)
@@ -289,29 +293,22 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     assert len(run_commands)%Nsplit==0,'run_commands length '+str(len(run_commands))+\
                                        ' and Nsplit length '+str(Nsplit)+' not compatible.'
-
+    Nsplit = 1
     N_run = len(run_commands)*Nsplit**-1
 
     chain_data = []
 
+    print 'solving realizations... '
     for i in range(0, int(N_run)):
 
-        #print 'set '+str(i+1) + 'of '+str(N_run)+'...'
+        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'])
 
-        chain_data += reoptimize_with_halos(start_macromodels=macromodels[i*Nsplit:(i+1)*Nsplit],
-                                                realizations=realizations[i * Nsplit:(i + 1) * Nsplit],
-                                                data2fit=datatofit, outfilename=run_commands[i]['chain_ID'],
-                                                zlens=run_commands[i]['zlens'],
-                                                zsrc=run_commands[i]['zsrc'], identifier=run_commands[i]['chain_ID']+'_',
-                                                grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
-                                                multiplane_flag=run_commands[i]['multiplane'],sigmas=run_commands[i]['sigmas'],
-                                                source_size=run_commands[i]['source_size'],
-                                                raytrace_with=run_commands[i]['raytrace_with'],test_only=False,
-                                                write_to_file=False,outfilepath=run_commands[i]['scratch_file'],
-                                                method=run_commands[i]['solve_method'])
+        new,_ = solver.fit(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],realizations=realizations[i*Nsplit:(i+1)*Nsplit],datatofit=datatofit,
+                   multiplane=chainkeys['multiplane'],method=chainkeys['solve_method'],ray_trace=True,sigmas=chainkeys['sigmas'],
+                   identifier=run_commands[i]['chain_ID'],grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
+                   source_size=run_commands[i]['source_size'],print_mag=True,raytrace_with=run_commands[i]['raytrace_with'])
 
-
-    #write_data(output_path+'chain.txt',chain_data)
+        chain_data+=new
 
     write_data(output_path+'lensdata.txt',[datatofit])
 

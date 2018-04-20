@@ -33,7 +33,14 @@ class TwoDCoords:
 
             assert self.cosmology is not None
 
-            theta_new = theta*(1 - self.cosmology.D_A(zmain, z)*self.cosmology.D_s*(self.cosmology.D_A(0, z)*self.cosmology.D_ds)**-1)
+            D_12 = self.cosmology.D_A(zmain, z)
+            D_os = self.cosmology.D_A(0,self.cosmology.zsrc)
+            D_1s = self.cosmology.D_A(zmain, self.cosmology.zsrc)
+            D_o2 = self.cosmology.D_A(0, z)
+
+            beta = D_12 * D_os * (D_o2 * D_1s) ** -1
+            print beta,z
+            theta_new = theta*(1 - beta)
 
             angle = np.random.uniform(0, 2 * np.pi, Npoints)
             r = np.random.uniform(0, theta_new ** 2, Npoints)
@@ -269,5 +276,7 @@ class NFW_2D:
         ycoord = r2d*np.sin(theta)
 
         return np.array(xcoord),np.array(ycoord)
+
+
 
 

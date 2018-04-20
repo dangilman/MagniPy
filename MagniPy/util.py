@@ -342,7 +342,12 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             """
             for halos behind the main lens
             """
-            beta = cosmology.D_A(cosmology.zd, deflector.redshift)*cosmology.D_A(0,cosmology.zsrc)*(cosmology.D_A(0, deflector.redshift)*cosmology.D_A(cosmology.zd,cosmology.zsrc))**-1
+            D_12 = cosmology.D_A(zmain,deflector.redshift)
+            D_os = cosmology.D_A(0,cosmology.zsrc)
+            D_1s = cosmology.D_A(zmain,cosmology.zsrc)
+            D_o2 = cosmology.D_A(0,deflector.redshift)
+
+            beta = D_12*D_os*(D_o2*D_1s)**-1
 
             scale = np.ones_like(x_filter)*(1 - beta)
 
