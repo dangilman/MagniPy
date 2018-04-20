@@ -226,7 +226,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     realizations = []
     print 'building realizations... '
 
-    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'])
+    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'],LOS_mass_sheet=True)
 
     t0 = time()
     for index,params in enumerate(run_commands):
@@ -246,13 +246,14 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     macromodel_start = get_default_SIE(z=chainkeys['zlens'])
 
-    solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'])
+    solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'], temp_folder=chainkeys['scratch_file'])
     opt_data,mod = solver.two_step_optimize(macromodel_start,datatofit=datatofit,realizations=None,multiplane=chainkeys['multiplane'],
                                           method=chainkeys['solve_method'],ray_trace=False,sigmas=chainkeys['sigmas'],
                                           identifier=run_commands[i]['chain_ID'],grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
                                             source_size=run_commands[i]['source_size'])
 
     macromodel = mod[0].lens_components[0]
+    macromodel.set_varyflags(chainkeys['varyflags'])
 
     macromodels = []
 
@@ -269,7 +270,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
             macromodels.append(newmac)
 
+
     else:
+        macromodel.var
         macromodels = [macromodel]*len(run_commands)
 
     print 'done.'
@@ -293,7 +296,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     assert len(run_commands)%Nsplit==0,'run_commands length '+str(len(run_commands))+\
                                        ' and Nsplit length '+str(Nsplit)+' not compatible.'
-    Nsplit = 1
+
     N_run = len(run_commands)*Nsplit**-1
 
     chain_data = []
@@ -301,7 +304,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     print 'solving realizations... '
     for i in range(0, int(N_run)):
 
-        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'])
+        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],temp_folder=run_commands[i]['scratch_file'])
 
         new,_ = solver.fit(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],realizations=realizations[i*Nsplit:(i+1)*Nsplit],datatofit=datatofit,
                    multiplane=chainkeys['multiplane'],method=chainkeys['solve_method'],ray_trace=True,sigmas=chainkeys['sigmas'],
@@ -365,4 +368,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/gamma_test_iso/',1)
+#runABC(os.getenv('HOME')+'/data/LOS_test/',2)

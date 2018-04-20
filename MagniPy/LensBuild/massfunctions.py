@@ -15,7 +15,7 @@ class Plaw_secondary:
     """
 
     def __init__(self, M_parent=None, parent_r2d = None, x_locations=None, y_locations=None, N0=0.21, alpha_secondary=-0.8,
-                 log_mL = None,logmhm=None,cosmo_at_zlens=None):
+                 log_mL = None,logmhm=None,cosmo_at_zlens=None,parent_r3d=None):
 
         NFW_calculate = NFW(cosmology=cosmo_at_zlens)
 
@@ -38,6 +38,7 @@ class Plaw_secondary:
 
         self.parent_masses = M_parent
         self.parent_r2d = parent_r2d
+        self.parent_r3d = parent_r3d
         self.parent_rmax = []
 
         for i,M in enumerate(M_parent):
@@ -83,23 +84,30 @@ class Plaw_secondary:
                 if np.exp(-6.283*(halo*(0.8*self.parent_masses[i])**-1)**3) > np.random.random():
                     newhalos.append(halo)
 
-            newx,newy,R2d = self.locations[i].draw(N=int(len(newhalos)))
+            newx,newy,R2d,R3d = self.locations[i].draw(N=int(len(newhalos)))
 
             parent_mass = self.parent_masses[i] - np.sum(newhalos)
 
             parent_x, parent_y = self.locations[i].xoffset, self.locations[i].yoffset
             parent_r2d = self.parent_r2d[i]
+            parent_r3d = self.parent_r3d[i]
+
             zvals = np.random.uniform(-self.locations[i].rmax2d,self.locations[i].rmax2d,len(newhalos))
 
             if i==0:
-                halor2d = np.append(parent_r2d,np.sqrt(R2d**2+zvals**2))
+
+                halor2d = np.append(parent_r2d,R2d)
+                halor3d = np.append(parent_r3d,np.sqrt(R2d**2+zvals**2))
                 halos = np.append(parent_mass,newhalos)
                 halox,haloy = np.append(parent_x,np.array(newx)),np.append(parent_y,np.array(newy))
 
             else:
 
-                newR = np.append(parent_r2d,np.sqrt(R2d**2+zvals**2))
-                halor2d = np.append(halor2d, newR)
+                newR3d = np.append(parent_r3d,np.sqrt(R2d**2+zvals**2))
+                newR2d = np.append(parent_r2d,R2d)
+
+                halor2d = np.append(halor2d, newR2d)
+                halor3d = np.append(halor3d, newR3d)
 
                 newobjects = np.append(parent_mass,newhalos)
                 new_xloc = np.append(parent_x,newx)
@@ -109,7 +117,7 @@ class Plaw_secondary:
                 halox = np.append(halox,new_xloc)
                 haloy = np.append(haloy,new_yloc)
 
-        return halos,halox,haloy,halor2d
+        return halos,halox,haloy,halor2d,halor3d
 
 class Plaw:
 

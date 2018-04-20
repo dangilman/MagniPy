@@ -50,8 +50,6 @@ class LensSystem:
             component.print_args()
 
 
-
-
 class Deflector:
 
     def __init__(self, subclass=classmethod, use_lenstronomy_halos = False,

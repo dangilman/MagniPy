@@ -15,7 +15,7 @@ from halo_truncations import Truncation
 
 class HaloGen:
 
-    def __init__(self,zd=None,zsrc=None):
+    def __init__(self,zd=None,zsrc=None,LOS_mass_sheet=True):
 
         """
 
@@ -30,6 +30,7 @@ class HaloGen:
         self.A0_z = None
         self.plaw_index_z = None
         self.redshift_values = None
+        self.LOS_mass_sheet = LOS_mass_sheet
 
     def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1,
                    rescale_sigma8=False, filter_halo_positions=False, **filter_kwargs):
@@ -135,7 +136,7 @@ class HaloGen:
 
         if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_LOS']:
                 raise Exception('model name not recognized')
-        if spatial_name not in ['uniform2d','uniform_cored_nfw']:
+        if spatial_name not in ['uniform2d','uniform_cored_nfw','NFW_2D']:
                 raise Exception('spatial distribution not recognized')
 
         if isinstance(massprofile, list):
@@ -166,6 +167,20 @@ class HaloGen:
 
             else:
                 spatialkwargs['rc'] = spatial_defaults['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
+
+        elif spatial_name == 'NFW_2D':
+            if 'rmin' in model_kwargs:
+                spatialkwargs['rmin'] = model_kwargs['rmin'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
+            else:
+                spatialkwargs['rmin'] = 0.001
+
+            if 'Rs_parent' in model_kwargs:
+                spatialkwargs['rs'] = model_kwargs['Rs_parent'] * self.cosmology.kpc_per_asec(
+                    self.cosmology.zd) ** -1
+            else:
+                spatialkwargs['rs'] = 500 * self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
 
         position_filter_kwargs = {}
@@ -441,7 +456,7 @@ class HaloGen:
 
                     masses = massfunction.draw()
 
-                    x, y, R, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
+                    x, y, R2d, R3d, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
                                                cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
 
                 elif mass_func_type == 'delta':
@@ -449,29 +464,20 @@ class HaloGen:
                     massfunction = Delta(N = modelkwargs[i]['N'], logmass=modelkwargs[i]['logmass'])
                     masses = massfunction.draw()
 
-                    x, y, R, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
+                    x, y, R2d, R3d, area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
                                                cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
-
-                elif mass_function_type == 'plaw_order2':
-
-                    massfunction_primary = Plaw(normalization=modelkwargs[i]['normalization'], log_mL=modelkwargs[i]['log_mL'],
-                                                log_mH=modelkwargs[i]['log_mH'], logmhm=modelkwargs[i]['logmhm'],
-                                                plaw_index=modelkwargs[i]['plaw_index'], turnover_index=modelkwargs[i]['turnover_index'])
-
-                    masses = massfunction_primary.draw()
-
-                    x,y,R,area = self.get_spatial(N=int(len(masses)), redshift=redshift, spatial_type=spatial_type,
-                                             cosmo_at_plane=cosmo_at_plane, spatialkwargs=spatialkwargs[i])
-
-                    massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R,x_locations=x,y_locations=y,log_mL=6.5,logmhm=modelkwargs[i]['logmhm'])
-
-                    masses,x,y,R = massfunction.draw()
 
                 else:
                     if mass_func_type is None:
                         raise Exception('supply mass function type')
                     else:
                         raise Exception('mass function type '+str(mass_func_type)+' not recognized')
+
+                if 'plaw_order2' in modelkwargs[i].keys():
+
+                    massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R2d,x_locations=x,y_locations=y,log_mL=modelkwargs[i]['subhalo_log_mL'],logmhm=modelkwargs[i]['logmhm'])
+
+                    masses,x,y,R2d,R3d = massfunction.draw()
 
                 for j in range(0, int(len(masses))):
 
@@ -491,7 +497,7 @@ class HaloGen:
 
                             truncation = Truncation(truncation_routine='virial3d',
                                                     params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
-                                                            'r3d': R[j]})
+                                                            'r3d': R3d[j]})
 
                         subhalo_args['truncation'] = truncation
 
@@ -509,7 +515,7 @@ class HaloGen:
 
                         truncation = Truncation(truncation_routine='virial3d',
                                                 params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
-                                                        'r3d': R})
+                                                        'r3d': R3d[j]})
 
                         subhalo_args['truncation'] = truncation
 
@@ -531,7 +537,7 @@ class HaloGen:
                 subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis=kwargs['mindis'],
                                                  log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=cosmo_at_plane)
 
-            if add_mass_sheet and len(subhalos)>0:
+            if self.LOS_mass_sheet and len(subhalos)>0:
 
                 if redshift != self.zd:
 
@@ -552,17 +558,22 @@ class HaloGen:
         if spatial_type == 'uniform2d':
 
             spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs['rmax2d'])
-            x, y, R = spatial.draw(N, redshift)
+            x, y, R2d,R3d  = spatial.draw(N, redshift)
 
         elif spatial_type == 'uniform_cored_nfw':
 
             spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs)
-            x, y, R = spatial.draw(N, redshift)
+            x, y, R2d,R3d = spatial.draw(N, redshift)
 
         elif spatial_type == 'localized_uniform':
 
             spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs)
-            x, y, R = spatial.draw(N, redshift)
+            x, y, R2d,R3d  = spatial.draw(N, redshift)
+
+        elif spatial_type == 'NFW_2D':
+
+            spatial = NFW_2D(rmax2d = spatialkwargs['rmax2d'], rs = spatialkwargs['rs'], rmin = spatialkwargs['rmin'])
+            x, y, R2d,R3d  = spatial.draw(N)
 
         else:
             if spatial_type is None:
@@ -572,7 +583,7 @@ class HaloGen:
 
         area = np.pi*spatial.rmax2d**2
 
-        return x,y,R,area
+        return x,y,R2d,R3d,area
 
     def get_masses(self, realization_list, mass_range = None, specific_redshift = None):
 

@@ -74,7 +74,7 @@ class ParamChains:
 
         for i in range(0,Nlenses):
 
-            self.lenses[i].compute_statistic(stat_function=quadrature_piecewise,weight=self.weight[i])
+            self.lenses[i].compute_statistic(stat_function=quadrature_piecewise)
 
     def import_observed(self,Nlenses,error=0,index=1):
 
@@ -95,8 +95,6 @@ class ParamChains:
 
     def add_weights(self,param_name,weight_kwargs = []):
 
-        weight = []
-
         if isinstance(param_name,str):
 
             param_name = [param_name]
@@ -105,35 +103,7 @@ class ParamChains:
 
         for lens in self.lenses:
 
-            inv_weights = None
-
-            for i,things in enumerate(weight_kwargs):
-
-                func = things['type']
-
-                if func=='Gaussian':
-
-                    mean = weight_kwargs[i]['mean']
-                    sigma = weight_kwargs[i]['sigma']
-
-                    weights = (2*np.pi*sigma**2)**-.5*np.exp(-0.5*(lens.parameters[param_name[i]]-mean)**2*sigma**-2)
-
-                elif func=='exp_high_trunc':
-
-                    cutoff = weight_kwargs[i]['cutoff']
-
-                    weights = np.exp(-(lens.parameters[param_name[i]]*cutoff**-1)**2)
-
-                weights[np.where(weights==0)] = 1e-9
-
-                if inv_weights is None:
-                    inv_weights = weights ** -1
-                else:
-                    inv_weights *= weights ** -1
-
-            weight.append(inv_weights)
-
-        self.weight = weight
+            lens.compute_weight(param_name,weight_kwargs)
 
     def draw(self,tol=1000,error=0,index=1,stat_function='quadrature_piecewise'):
 
@@ -175,9 +145,34 @@ class SingleLensChain:
 
         self.fluxratios = mod
 
-    def compute_statistic(self,stat_function,weight):
+    def compute_statistic(self,stat_function):
 
-        self.statistic = weight*stat_function(self.fluxratios,self.observed_fluxratios)
+        self.statistic = stat_function(self.fluxratios,self.observed_fluxratios)
+
+    def compute_weight(self,param_name,weight_kwargs):
+
+        weight = 1
+
+        for i, things in enumerate(weight_kwargs):
+            print things
+
+            func = things['type']
+
+            if func == 'Gaussian':
+
+                mean = weight_kwargs[i]['mean']
+                sigma = weight_kwargs[i]['sigma']
+
+                weight *= (2 * np.pi*sigma**2) ** -.5 * np.exp(
+                    -0.5 * (self.parameters[param_name[i]] - mean) ** 2 * sigma ** -2)
+
+            elif func == 'exp_high_trunc':
+
+                cutoff = weight_kwargs[i]['cutoff']
+
+                weight *= np.exp(-(self.parameters[param_name[i]] * cutoff ** -1) ** 2)
+
+        self.weight = weight
 
     def draw(self,tol):
 
@@ -191,5 +186,10 @@ class SingleLensChain:
 
             new_param_dic.update({key:values[indexes]})
 
-        return new_param_dic
+        if self.weight is None:
+            weight = np.ones(len(indexes))
+        else:
+            weight = self.weight
+
+        return new_param_dic,weight[indexes]
 

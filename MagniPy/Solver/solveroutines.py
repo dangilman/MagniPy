@@ -191,8 +191,7 @@ class SolveRoutines(Magnipy):
         ################################################################################
 
         # If macromodel is a list same length as realizations, build the systems and fit each one
-        print macromodel
-        print realizations
+
         if isinstance(macromodel,list):
 
             assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'

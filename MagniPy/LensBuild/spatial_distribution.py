@@ -27,7 +27,7 @@ class TwoDCoords:
             y = r**.5*np.sin(angle)
             r2d = (x**2+y**2)**.5
 
-            return x,y,r2d
+            return x,y,r2d,None
 
         elif z > zmain:
 
@@ -48,7 +48,7 @@ class TwoDCoords:
             y = r ** .5 * np.sin(angle)
             r2d = (x ** 2 + y ** 2) ** .5
 
-            return x, y, r2d
+            return x, y, r2d, None
 
 class Uniform_2d:
 
@@ -64,9 +64,9 @@ class Uniform_2d:
 
     def draw(self,N,z):
 
-        x, y, r2d = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
+        x, y, r2d, r3d = self.TwoD.get_2dcoordinates(theta=self.rmax2d, Npoints=N, z=z, zmain = self.cosmology.zd)
 
-        return x,y,r2d
+        return x,y,r2d,r3d
 
 class Uniform_cored_nfw:
 
@@ -99,7 +99,7 @@ class Uniform_cored_nfw:
 
             return self.r3d_pdf_cored(r) * self.r3d_pdf_cored(0) ** -1
 
-        x, y, r2d =self.TwoD.draw(N=N,z=self.TwoD.cosmology.zd)
+        x, y, r2d, _ =self.TwoD.draw(N=N,z=self.TwoD.cosmology.zd)
 
         z = np.random.uniform(-self.zmax,self.zmax,N)
 
@@ -112,13 +112,14 @@ class Uniform_cored_nfw:
             accept = acceptance_prob(r3d[i])
 
             while u >= accept:
-                x_, y_, r2d_ = self.TwoD.draw(N=1,z=0)
+                x_, y_, r2d_, _ = self.TwoD.draw(N=1,z=0)
                 z = np.random.uniform(-self.zmax,self.zmax)
                 r3d[i] = (z**2+r2d_**2)**.5
+                r2d[i] = r2d_
                 u = np.random.rand()
                 accept = acceptance_prob(r3d[i])
 
-        return x,y,r3d
+        return x,y,r2d,r3d
 
 class Localized_uniform:
 
@@ -169,7 +170,7 @@ class Localized_uniform:
                 x = np.array(x_locations) + ximg
                 y = np.array(y_locations) + yimg
 
-        return x,y,np.sqrt(x**2+y**2)
+        return x,y,np.sqrt(x**2+y**2),None
 
 class NFW_2D:
 
@@ -244,7 +245,7 @@ class NFW_2D:
 
         r2d = self.draw_r2d(N)
         x,y = self.r2d_to_xy(r2d)
-        return x+self.xoffset,y+self.yoffset,r2d
+        return x+self.xoffset,y+self.yoffset,r2d,None
 
     def draw_r2d(self,N):
 
