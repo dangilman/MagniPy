@@ -7,11 +7,12 @@ from MagniPy.util import identify
 
 def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
                 sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
-                raytrace_with='lenstronomy',method='lenstronomy',halo_model='',multiplane=False,solver_class=None,ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True):
+                raytrace_with='lenstronomy',method='lenstronomy',halo_model='',multiplane=False,solver_class=None,
+                ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True,LOS_mass_sheet=True):
 
     run = True
 
-    realization = Realization(zlens=zlens,zsrc=zsrc)
+    realization = Realization(zlens=zlens,zsrc=zsrc,LOS_mass_sheet=LOS_mass_sheet)
 
     if config=='cross':
         target = 0
@@ -23,7 +24,7 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
         raise Exception('config must be one of cross, cusp, fold')
 
     if solver_class is None:
-        solver = SolveRoutines(zmain=zlens,zsrc=zsrc,temp_folder=identifier)
+        solver = SolveRoutines(zlens=zlens,zsrc=zsrc,temp_folder=identifier)
     else:
         solver = solver_class
 

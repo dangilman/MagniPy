@@ -473,11 +473,15 @@ class HaloGen:
                     else:
                         raise Exception('mass function type '+str(mass_func_type)+' not recognized')
 
-                if 'plaw_order2' in modelkwargs[i].keys():
+                if 'plaw_order2' in modelkwargs[i].keys() and redshift!=self.cosmology.zd and len(masses)>0:
 
-                    massfunction = Plaw_secondary(M_parent=masses,parent_r2d=R2d,x_locations=x,y_locations=y,log_mL=modelkwargs[i]['subhalo_log_mL'],logmhm=modelkwargs[i]['logmhm'])
+                    massfunction = Plaw_secondary(M_parent=masses, parent_r2d=R2d, parent_r3d=R3d, x_locations=x,
+                                                  y_locations=y,
+                                                  log_mL=modelkwargs[i]['subhalo_log_mL'],
+                                                  logmhm=modelkwargs[i]['logmhm'],
+                                                  cosmo_at_zlens=cosmo_at_plane)
 
-                    masses,x,y,R2d,R3d = massfunction.draw()
+                    masses, x, y, R2d, R3d = massfunction.draw()
 
                 for j in range(0, int(len(masses))):
 

@@ -33,8 +33,7 @@ default_startkwargs_random = {'R_ein':np.absolute(np.random.normal(1,0.1)),'elli
 def get_default_SIE_random(z,varyflags=['1','1','1','1','1','1','1','0','0','0']):
     return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs_random)
 
-default_startkwargs = {'R_ein':1,'ellip':0.3,'ellip_theta':30,
-               'x':0,'y':0,'shear':0.05,'shear_theta':80}
+default_startkwargs = {'R_ein':1,'x':0,'y':0,'ellip':0.12,'ellip_theta':0,'shear':0.05,'shear_theta':-20,'gamma':2}
 def get_default_SIE(z,varyflags = ['1','1','1','1','1','1','1','0','0','0']):
     return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs)
 

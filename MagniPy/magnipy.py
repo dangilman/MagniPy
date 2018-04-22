@@ -194,15 +194,17 @@ class Magnipy:
 
                 kwargs_fit = lenstronomywrap.optimize_lensmodel(d2fit[0], d2fit[1], solver_type=solver_type)
 
-                optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                            newkwargs=kwargs_fit[0], method='lenstronomy'))
+                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                            newkwargs=kwargs_fit[0], method='lenstronomy')
 
                 lenstronomywrap.update_lensparams(newparams=kwargs_fit)
 
                 if solver_type == 'PROFILE_SHEAR':
-                    optimized_systems.append(self.update_system(lens_system=lens_systems[i], component_index=0,
+                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
                                                                 newkwargs=kwargs_fit[1], method='lenstronomy',
-                                                                is_shear=True))
+                                                                is_shear=True)
+
+                optimized_systems.append(optimized_sys)
 
                 lensModel = lenstronomywrap.model
 

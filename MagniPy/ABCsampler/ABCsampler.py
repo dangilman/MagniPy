@@ -54,9 +54,8 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     chain_keys['data']['t_to_fit'] = data_to_fit.t.tolist()
     chain_keys['modeling']['sigmas'] = sigmas
     chain_keys['sampler']['chain_ID'] = chain_ID
-    chain_keys['sampler']['scratch_file'] = chain_keys['sampler']['chain_ID'] + '_' + str(core_index)
     chain_keys['sampler']['output_folder'] = chain_keys['sampler']['chain_ID'] + '/'
-    chain_keys['sampler']['core_index'] = core_index
+
     chain_keys['sampler']['Nsamples'] = Nsamples
     chain_keys['sampler']['chain_description'] = chain_description
     chain_keys['sampler']['chain_truths'] = chain_truths
@@ -169,6 +168,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     all_keys = read_paraminput(inputfile_path)
 
     chain_keys = all_keys['main_keys']
+
+    chain_keys['sampler']['scratch_file'] = chain_keys['sampler']['chain_ID'] + '_' + str(core_index)
+
     chain_keys_to_vary = all_keys['tovary_keys']
 
     output_path = chainpath + chain_keys['sampler']['output_folder']
@@ -180,8 +182,16 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(core_index)+'/'
 
-    if os.path.exists(output_path+'fluxes.txt') and os.path.exists(output_path+'parameters.txt')  and os.path.exists(output_path+'lensdata.txt'):
-        return
+    if os.path.exists(output_path+'fluxes.txt') and os.path.exists(output_path+'parameters.txt') and \
+            os.path.exists(output_path+'lensdata.txt') and os.path.exists(output_path+'astrometric_errors.txt'):
+
+        astro_error = np.loadtxt(output_path+'astrometric_errors.txt')
+        N = int(len(astro_error))
+
+        if N==chain_keys['sampler']['Nsamples']:
+            return
+        else:
+            chain_keys['sampler']['Nsamples'] = chain_keys['sampler']['Nsamples'] - N
 
     if os.path.exists(output_path):
         pass
@@ -205,6 +215,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     samples = prior.sample(scale_by='Nsamples')
 
     param_names_tovary = prior.param_names
+    header_string = ''
+    for name in param_names_tovary:
+        header_string += name + ' '
 
     write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
@@ -248,7 +261,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'], temp_folder=chainkeys['scratch_file'])
     opt_data,mod = solver.two_step_optimize(macromodel_start,datatofit=datatofit,realizations=None,multiplane=chainkeys['multiplane'],
-                                          method=chainkeys['solve_method'],ray_trace=False,sigmas=chainkeys['sigmas'],
+                                          method='lensmodel',ray_trace=False,sigmas=chainkeys['sigmas'],
                                           identifier=run_commands[i]['chain_ID'],grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
                                             source_size=run_commands[i]['source_size'])
 
@@ -272,70 +285,61 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
 
     else:
-        macromodel.var
+
         macromodels = [macromodel]*len(run_commands)
 
     print 'done.'
 
-    if chain_keys['modeling']['solve_method'] == 'lenstronomy':
-        Nsplit = len(run_commands)
-        #Nsplit = 100
-    else:
-
-        if len(run_commands) < 1000:
-            Nsplit = len(run_commands)
-
-        if len(run_commands)%Nsplit != 0:
-            Nsplit = 1000
-        if len(run_commands)%Nsplit !=0:
-            Nsplit = 800
-        if len(run_commands)%Nsplit !=0:
-            Nsplit = 600
-        if len(run_commands)%Nsplit !=0:
-            Nsplit = 500
-
-    assert len(run_commands)%Nsplit==0,'run_commands length '+str(len(run_commands))+\
-                                       ' and Nsplit length '+str(Nsplit)+' not compatible.'
-
-    N_run = len(run_commands)*Nsplit**-1
-
-    chain_data = []
+    Nsplit = 10
 
     print 'solving realizations... '
-    for i in range(0, int(N_run)):
+    i = 0
+    N_computed = 0
 
-        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],temp_folder=run_commands[i]['scratch_file'])
+    if ~os.path.exists(output_path + 'lensdata.txt'):
+        write_data(output_path + 'lensdata.txt', [datatofit])
 
-        new,_ = solver.fit(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],realizations=realizations[i*Nsplit:(i+1)*Nsplit],datatofit=datatofit,
-                   multiplane=chainkeys['multiplane'],method=chainkeys['solve_method'],ray_trace=True,sigmas=chainkeys['sigmas'],
-                   identifier=run_commands[i]['chain_ID'],grid_rmax=run_commands[i]['grid_rmax'],res=run_commands[i]['grid_res'],
-                   source_size=run_commands[i]['source_size'],print_mag=True,raytrace_with=run_commands[i]['raytrace_with'])
+    while N_computed<len(run_commands):
 
-        chain_data+=new
+        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
+                               temp_folder=run_commands[i]['scratch_file'])
 
-    write_data(output_path+'lensdata.txt',[datatofit])
-
-    header_string = ''
-    for name in param_names_tovary:
-        header_string+= name + ' '
-
-    fluxes = []
-    astrometric_errors = []
-    fluxes.append(datatofit.m)
-
-    for dset in chain_data:
-
-        if dset.nimg != datatofit.nimg:
-            fluxes.append(np.array([1000,1000,1000,1000]))
-            astrometric_errors.append(1000)
-
+        if (i+1)*Nsplit > len(macromodels):
+            macro_mods = macromodels[i * Nsplit:]
+            reals = realizations[i*Nsplit:]
         else:
-            fluxes.append(dset.m)
-            astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x)**2 + (dset.y - datatofit.y)**2)))
+            macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
+            reals = realizations[i * Nsplit:(i + 1) * Nsplit]
 
-    np.savetxt(fname=output_path+'astrometric_errors.txt',X=np.array(astrometric_errors),fmt='%.6f')
-    np.savetxt(fname=output_path+'fluxes.txt',X=np.array(fluxes),fmt='%.6f')
-    np.savetxt(output_path + 'parameters.txt', samples, header=header_string, fmt='%.6f')
+        new, _ = solver.fit(macromodel=macro_mods,
+                            realizations=reals, datatofit=datatofit,
+                            multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
+                            sigmas=chainkeys['sigmas'],
+                            identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
+                            res=run_commands[i]['grid_res'],
+                            source_size=run_commands[i]['source_size'], print_mag=True,
+                            raytrace_with=run_commands[i]['raytrace_with'])
+        N_computed += len(new)
+        i += Nsplit
+
+        fluxes,astrometric_errors = [],[]
+
+        for dset in new:
+
+            if dset.nimg != datatofit.nimg:
+                fluxes.append(np.array([1000, 1000, 1000, 1000]))
+                astrometric_errors.append(1000)
+
+            else:
+                fluxes.append(dset.m)
+                astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x) ** 2 + (dset.y - datatofit.y) ** 2)))
+
+        f_handle = file(output_path + 'astrometric_errors.txt', 'a')
+        np.savetxt(f_handle, X=np.array(astrometric_errors), fmt='%.6f')
+        f_handle = file(output_path+'fluxes.txt', 'a')
+        np.savetxt(f_handle, X=np.array(fluxes), fmt='%.6f')
+        f_handle = file(output_path+'parameters.txt', 'a')
+        np.savetxt(f_handle, samples, header=header_string, fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -368,4 +372,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',2)
+#runABC(os.getenv('HOME')+'/data/LOS_test/',200001)

@@ -169,9 +169,7 @@ def extract_chain(chain_name='',which_lens = None):
 
             fluxes = np.loadtxt(folder_name+'fluxes.txt')
 
-            observed_fluxes = fluxes[0,:]
-
-            fluxes = np.delete(fluxes,0,axis=0)
+            observed_fluxes = read_data(folder_name+'lensdata.txt')[0].m
 
             params = np.loadtxt(folder_name+'parameters.txt')
 

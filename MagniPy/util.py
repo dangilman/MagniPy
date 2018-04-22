@@ -308,7 +308,7 @@ def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
     return array2image(x_grid - shift), array2image(y_grid - shift)
 
 def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, log_masscut_low=7,
-                       zmain=None, cosmology=None, srcx = 0, srcy = 0):
+                       zmain=None, cosmology=None):
     """
     :param xsub: sub x coords
     :param ysub: sub y coords
