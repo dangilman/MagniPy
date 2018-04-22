@@ -239,7 +239,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     realizations = []
     print 'building realizations... '
 
-    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'],LOS_mass_sheet=True)
+    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'],LOS_mass_sheet=False)
 
     t0 = time()
     for index,params in enumerate(run_commands):
@@ -372,4 +372,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',200001)
+#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
