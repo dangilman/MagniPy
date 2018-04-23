@@ -219,7 +219,10 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     header_string = ''
     for name in param_names_tovary:
         header_string += name + ' '
-    if ~os.path.exists(output_path+'parameters.txt'):
+
+    if os.path.exists(output_path+'parameters.txt'):
+        pass
+    else:
         np.savetxt(output_path+'parameters.txt', [], header=header_string, fmt='%.6f')
 
     write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
@@ -293,13 +296,15 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
 
-    Nsplit = 5
+    Nsplit = 100
 
     print 'solving realizations... '
     i = 0
     N_computed = 0
 
-    if not os.path.exists(output_path + 'lensdata.txt'):
+    if os.path.exists(output_path + 'lensdata.txt'):
+        pass
+    else:
         write_data(output_path + 'lensdata.txt', [datatofit])
 
     while N_computed<len(run_commands):
@@ -310,12 +315,18 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         if (i+1)*Nsplit > len(macromodels):
             macro_mods = macromodels[i * Nsplit:]
             reals = realizations[i*Nsplit:]
-            split_samples = samples[i*Nsplit:]
+            try:
+                split_samples = samples[i*Nsplit:,:]
+            except:
+                split_samples = samples[i * Nsplit:]
         else:
             macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
             reals = realizations[i * Nsplit:(i + 1) * Nsplit]
-            split_samples = samples[i*Nsplit:(i+1)*Nsplit]
-
+            try:
+                split_samples = samples[i*Nsplit:(i+1)*Nsplit,:]
+            except:
+                split_samples = samples[i*Nsplit:(i+1)*Nsplit]
+        print split_samples
         new, _ = solver.fit(macromodel=macro_mods,
                             realizations=reals, datatofit=datatofit,
                             multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
@@ -344,7 +355,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         f_handle = file(output_path+'fluxes.txt', 'a')
         np.savetxt(f_handle, X=np.array(fluxes), fmt='%.6f')
         f_handle = file(output_path+'parameters.txt', 'a')
-        np.savetxt(f_handle, split_samples, fmt='%.6f')
+        np.savetxt(f_handle, X=np.array(split_samples), fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -377,4 +388,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-runABC(os.getenv('HOME')+'/data/LOS_test/',1)
+#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
