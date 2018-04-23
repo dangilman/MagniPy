@@ -186,6 +186,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
             os.path.exists(output_path+'lensdata.txt') and os.path.exists(output_path+'astrometric_errors.txt'):
 
         astro_error = np.loadtxt(output_path+'astrometric_errors.txt')
+
         N = int(len(astro_error))
 
         if N==chain_keys['sampler']['Nsamples']:
@@ -218,6 +219,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     header_string = ''
     for name in param_names_tovary:
         header_string += name + ' '
+    if ~os.path.exists(output_path+'parameters.txt'):
+        np.savetxt(output_path+'parameters.txt', [], header=header_string, fmt='%.6f')
 
     write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
@@ -290,13 +293,13 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
 
-    Nsplit = 10
+    Nsplit = 5
 
     print 'solving realizations... '
     i = 0
     N_computed = 0
 
-    if ~os.path.exists(output_path + 'lensdata.txt'):
+    if not os.path.exists(output_path + 'lensdata.txt'):
         write_data(output_path + 'lensdata.txt', [datatofit])
 
     while N_computed<len(run_commands):
@@ -307,9 +310,11 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         if (i+1)*Nsplit > len(macromodels):
             macro_mods = macromodels[i * Nsplit:]
             reals = realizations[i*Nsplit:]
+            split_samples = samples[i*Nsplit:]
         else:
             macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
             reals = realizations[i * Nsplit:(i + 1) * Nsplit]
+            split_samples = samples[i*Nsplit:(i+1)*Nsplit]
 
         new, _ = solver.fit(macromodel=macro_mods,
                             realizations=reals, datatofit=datatofit,
@@ -320,7 +325,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                             source_size=run_commands[i]['source_size'], print_mag=True,
                             raytrace_with=run_commands[i]['raytrace_with'])
         N_computed += len(new)
-        i += Nsplit
+        i += 1
 
         fluxes,astrometric_errors = [],[]
 
@@ -339,7 +344,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         f_handle = file(output_path+'fluxes.txt', 'a')
         np.savetxt(f_handle, X=np.array(fluxes), fmt='%.6f')
         f_handle = file(output_path+'parameters.txt', 'a')
-        np.savetxt(f_handle, samples, header=header_string, fmt='%.6f')
+        np.savetxt(f_handle, split_samples, fmt='%.6f')
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -372,4 +377,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
+runABC(os.getenv('HOME')+'/data/LOS_test/',1)
