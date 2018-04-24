@@ -1,5 +1,5 @@
 import numpy as np
-from MagniPy.MassModels.PointMass import PointMass
+from MagniPy.MassModels.PointMass import PTmass
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.LensBuild.lens_assemble import Deflector
 
@@ -8,14 +8,14 @@ def number_per_image(f_pbh=float,redshift=None,zsrc=None,cosmology_class=classme
     k_pbh = f_pbh*0.5
 
     if R_ein is None:
-        ptmass = PointMass(z = redshift,zsrc = zsrc)
+        ptmass = PTmass(z = redshift, zsrc = zsrc)
         R_ein = ptmass.R_ein(M)
 
-    return np.pi*k_pbh*cosmology_class.get_sigmacrit_z1z2(redshift,zsrc)*((distance_factor*R_ein)**2)*M**-1,R_ein
+    return np.pi*k_pbh*cosmology_class.get_sigmacrit_z1z2(redshift,zsrc)*((distance_factor*R_ein)**2)*M**-1,distance_factor*R_ein
 
 def drawPBH(ximgs=[],yimgs=[],f_pbh=float,redshift=None,zsrc=None,cosmology=classmethod,mass=float,distance_factor=25,Nrealizations=1):
 
-    ptmass = PointMass(z=redshift, zsrc=zsrc)
+    ptmass = PTmass(z=redshift, zsrc=zsrc)
 
     R_ein = ptmass.R_ein(mass)
 
@@ -56,7 +56,7 @@ def drawPBH(ximgs=[],yimgs=[],f_pbh=float,redshift=None,zsrc=None,cosmology=clas
 
                     lens_kwargs = {'x':x,'y':y,'mass':mass}
 
-                    black_holes.append(Deflector(subclass = PointMass(), redshift=cosmology.zd,is_subhalo=True,**lens_kwargs))
+                    black_holes.append(Deflector(subclass = PTmass(), redshift=cosmology.zd, is_subhalo=True, **lens_kwargs))
 
         realizations.append(black_holes)
 

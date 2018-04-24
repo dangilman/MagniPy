@@ -186,6 +186,9 @@ class SolveRoutines(Magnipy):
         if method is None:
             method = default_solve_method
 
+        if identifier is None:
+            identifier = default_file_identifier
+
         lens_systems= []
 
         ################################################################################

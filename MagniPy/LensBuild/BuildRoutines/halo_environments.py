@@ -59,7 +59,7 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc,cone_base):
 
     zvals = np.linspace(zmin,zmax,int(np.ceil((zmax-zmin)*zstep**-1)+1))
 
-    HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc)
+    HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc, )
 
     zstep = zvals[1]-zvals[0]
 
@@ -71,4 +71,4 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc,cone_base):
 
         N_z.append(Nz)
 
-    return Nz,zvals
+    return N_z,zvals

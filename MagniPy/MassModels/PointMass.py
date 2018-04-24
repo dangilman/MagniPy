@@ -1,7 +1,7 @@
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 import numpy as np
 
-class PointMass:
+class PTmass:
 
     #pcrit = 2.77536627e+11
 
@@ -13,11 +13,16 @@ class PointMass:
         :param h: little h
         """
         if cosmology is None:
-            self.cosmology = Cosmo(zd=z, zsrc=zsrc,compute=False)
+            self.cosmology = Cosmo(zd=z, zsrc=zsrc,compute=True)
+            self.D_s, self.D_d, self.D_ds = self.cosmology.D_s, self.cosmology.D_d, self.cosmology.D_ds
         else:
             self.cosmology = cosmology
-
-        self.D_s,self.D_d,self.D_ds = self.cosmology.D_A(0,zsrc),self.cosmology.D_A(0,z),self.cosmology.D_A(z,zsrc)
+            try:
+                self.D_s,self.D_d,self.D_ds = self.cosmology.D_s,self.cosmology.D_d,self.cosmology.D_ds
+            except:
+                self.D_s = self.cosmology.D_A(0,self.cosmology.zsrc)
+                self.D_d = self.cosmology.D_A(0,self.cosmology.zd)
+                self.D_ds = self.cosmology.D_A(self.cosmology.zd,self.cosmology.zsrc)
 
         self.rmin = 10**-9
 

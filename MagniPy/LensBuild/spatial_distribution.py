@@ -50,6 +50,14 @@ class TwoDCoords:
 
             return x, y, r2d, None
 
+    def distance_beta(self,z,zmain,zsrc):
+        D_12 = self.cosmology.D_A(zmain, z)
+        D_os = self.cosmology.D_A(0, zsrc)
+        D_1s = self.cosmology.D_A(zmain, zsrc)
+        D_o2 = self.cosmology.D_A(0, z)
+
+        return D_12 * D_os * (D_o2 * D_1s) ** -1
+
 class Uniform_2d:
 
     def __init__(self,rmax2d=None,cosmology=None):
@@ -123,13 +131,18 @@ class Uniform_cored_nfw:
 
 class Localized_uniform:
 
-    def __init__(self,xlocations=None,ylocations=None,rmax2d=None,cosmology=None):
+    def __init__(self,x_position=None,y_position=None,rmax2d=None,cosmology=None,main_lens_z=None):
 
-        self.xlocations = xlocations
-        self.ylocations = ylocations
+        self.xlocations = x_position
+        self.ylocations = y_position
         self.rmax2d = rmax2d
 
         self.TwoD = Uniform_2d(rmax2d=rmax2d, cosmology=cosmology)
+
+        if main_lens_z is None:
+            self.main_lens_z = cosmology.zd
+        else:
+            self.main_lens_z = main_lens_z
 
     def set_rmax2d(self,rmax2d):
 
@@ -151,16 +164,26 @@ class Localized_uniform:
 
         if isinstance(self.xlocations,float) or isinstance(self.xlocations,int):
             xloc = [self.xlocations]
+        else:
+            xloc = self.xlocations
         if isinstance(self.ylocations,float) or isinstance(self.ylocations,int):
             yloc = [self.ylocations]
+        else:
+            yloc = self.ylocations
+
+        if z > self.main_lens_z:
+            beta = self.TwoD.TwoD.distance_beta(z, self.main_lens_z, self.TwoD.cosmology.zsrc)
+            factor = (1 - beta)
+        else:
+            factor = 1
 
         for imgnum in range(0, len(xloc)):
 
-            ximg, yimg = xloc[imgnum], yloc[imgnum]
+            ximg, yimg = xloc[imgnum]*factor, yloc[imgnum]*factor
 
             n = self._prob_round(N)
 
-            x_locations,y_locations, R = self.TwoD.draw(n,z=z)
+            x_locations,y_locations, R2d, _ = self.TwoD.draw(n,z=z)
 
             try:
                 x = np.append(np.array(x_locations)+ximg)

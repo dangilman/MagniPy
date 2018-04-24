@@ -46,7 +46,7 @@ class HaloMassFunction:
         :param omega: density parameter; fraction of the matter density (not fraction of critical density)
         :return: the number of objects of mass M * Mpc^-3
         """
-        return self.cosmo.rho_matter_crit(z)*omega*M**-1
+        return self.extension.rho_matter_crit(z)*omega*M**-1
 
     def dN_dM_comoving(self,M,z):
         """

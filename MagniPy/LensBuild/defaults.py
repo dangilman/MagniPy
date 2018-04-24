@@ -37,7 +37,7 @@ default_startkwargs = {'R_ein':1,'x':0,'y':0,'ellip':0.12,'ellip_theta':0,'shear
 def get_default_SIE(z,varyflags = ['1','1','1','1','1','1','1','0','0','0']):
     return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs)
 
-sigma_pos,sigma_flux,sigma_time = [[0.003]*4]*2,[0.3]*4,[0,3,3,3]
+sigma_pos,sigma_flux,sigma_time = [[0.003]*4]*2,[0.3]*4,[0,2,2,2]
 default_sigmas = [sigma_pos,sigma_flux,sigma_time]
 
 default_solve_method = 'lenstronomy'

@@ -7,8 +7,8 @@ from MagniPy.util import identify
 
 def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.05,0.01],ePA_prior=[-90,90],
                 sPA_prior=[-90,90],gamma_prior=None,zlens=None,zsrc=None,substructure_model_args={},source_size=0.0012*2.355**-1,massprofile='TNFW',
-                raytrace_with='lenstronomy',method='lenstronomy',halo_model='',multiplane=False,solver_class=None,
-                ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True,LOS_mass_sheet=True):
+                raytrace_with='lenstronomy',method='lenstronomy',halo_model=None,multiplane=False,solver_class=None,
+                ray_trace=True,subhalo_realizations=None,astrometric_perturbation=0.003,return_gamma=True,LOS_mass_sheet=True,return_system=False):
 
     run = True
 
@@ -61,9 +61,11 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             assert multiplane
 
         if subhalo_realizations is None:
-            subhalo_realizations = realization.halo_constructor(massprofile=massprofile, model_name=halo_model,model_args=substructure_model_args,
+            if halo_model is not None:
+                subhalo_realizations = realization.halo_constructor(massprofile=massprofile, model_name=halo_model,model_args=substructure_model_args,
                                                Nrealizations=1, zlens=zlens, zsrc=zsrc)
-
+            else:
+                subhalo_realizations = None
 
 
         dset_v0 = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
@@ -89,8 +91,12 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             dset[0].x += np.random.normal(0,astrometric_perturbation,size=4)
 
             dset[0].y += np.random.normal(0,astrometric_perturbation,size=4)
+
+            system = solver.build_system(main,additional_halos=subhalo_realizations,multiplane=multiplane)
     
             if return_gamma:
                 return dset[0],gamma
+            elif return_system:
+                return dset[0],system
             else:
                 return dset[0]

@@ -134,9 +134,9 @@ class HaloGen:
 
         ############################################## MAIN PROGRAM ###################################################
 
-        if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_LOS']:
+        if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_LOS','delta_main']:
                 raise Exception('model name not recognized')
-        if spatial_name not in ['uniform2d','uniform_cored_nfw','NFW_2D']:
+        if spatial_name not in ['uniform2d','uniform_cored_nfw','NFW_2D','localized_uniform']:
                 raise Exception('spatial distribution not recognized')
 
         if isinstance(massprofile, list):
@@ -145,6 +145,27 @@ class HaloGen:
             if massprofile not in ['NFW', 'TNFW', 'PTmass', 'PJaffe']:
                     raise Exception('mass profile not recognized')
 
+        position_filter_kwargs = {}
+
+        if filter_halo_positions:
+
+            assert 'x_filter' in filter_kwargs
+            assert 'y_filter' in filter_kwargs
+
+            position_filter_kwargs['x_position'] = filter_kwargs['x_filter']
+            position_filter_kwargs['y_position'] = filter_kwargs['y_filter']
+
+            position_filter_kwargs['filter_halo_positions'] = True
+
+            if 'mindis' in filter_kwargs:
+                position_filter_kwargs['mindis'] = filter_kwargs['mindis']
+            else:
+                position_filter_kwargs['mindis'] = filter_args['mindis']
+
+            if 'log_masscut_low' in filter_kwargs:
+                position_filter_kwargs['log_masscut_low'] = filter_kwargs['log_masscut_low']
+            else:
+                position_filter_kwargs['log_masscut_low'] = filter_args['log_masscut_low']
 
         spatialkwargs = {}
 
@@ -183,27 +204,11 @@ class HaloGen:
                 spatialkwargs['rs'] = 500 * self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
 
-        position_filter_kwargs = {}
-
-        if filter_halo_positions:
-
-            assert 'x_filter' in filter_kwargs
-            assert 'y_filter' in filter_kwargs
-
-            position_filter_kwargs['x_position'] = filter_kwargs['x_filter']
-            position_filter_kwargs['y_position'] = filter_kwargs['y_filter']
-
-            position_filter_kwargs['filter_halo_positions'] = True
-
-            if 'mindis' in filter_kwargs:
-                position_filter_kwargs['mindis'] = filter_kwargs['mindis']
-            else:
-                position_filter_kwargs['mindis'] = filter_args['mindis']
-
-            if 'log_masscut_low' in filter_kwargs:
-                position_filter_kwargs['log_masscut_low'] = filter_kwargs['log_masscut_low']
-            else:
-                position_filter_kwargs['log_masscut_low'] = filter_args['log_masscut_low']
+        elif spatial_name == 'localized_uniform':
+            assert filter_halo_positions
+            spatialkwargs['x_position'] = filter_kwargs['x_filter']
+            spatialkwargs['y_position'] = filter_kwargs['y_filter']
+            spatialkwargs['main_lens_z'] = self.cosmology.zd
 
         if model_name == 'plaw_main':
 
@@ -238,10 +243,20 @@ class HaloGen:
                 HALOS.append(HALOS_LOS[n]+HALOS_main[n])
 
         elif model_name == 'delta_main':
-            raise Exception('not yet implemented')
+
+            HALOS = self._return_delta_main(_spatial_=spatial_name, position_filter_kwargs=position_filter_kwargs,
+                                                model_kwargs=model_kwargs, massprofile=massprofile,
+                                                spatialkwargs=spatialkwargs,
+                                                Nrealizations=Nrealizations)
 
         elif model_name == 'delta_LOS':
-            raise Exception('not yet implemented')
+
+            cone_base = spatial_defaults['default_cone_base_factor'] * spatialkwargs['rmax2d']
+
+            HALOS = self._return_delta_LOS(_spatial_=spatial_name, position_filter_kwargs=position_filter_kwargs,
+                                            model_kwargs=model_kwargs, massprofile=massprofile,
+                                            spatialkwargs=spatialkwargs,cone_base=cone_base,
+                                            Nrealizations=Nrealizations)
 
         elif model_name == 'composite_delta':
             raise Exception('not yet implemented')
@@ -258,10 +273,12 @@ class HaloGen:
                              zmax=model_kwargs['zmax'],
                              zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,cone_base=cone_base)
 
-        model_kwargs['logmass'] = np.log10(model_kwargs['M'])
+        modelkwargs['logmass'] = np.log10(model_kwargs['M'])
 
         mass_function_type.append('delta')
         spatial_distribution_type.append(_spatial_)
+
+        halos = []
 
         for N in range(0, Nrealizations):
 
@@ -275,9 +292,9 @@ class HaloGen:
                             redshift=zvals[p], Nrealizations=Nrealizations, mass_profile=[massprofile],
                             modelkwargs=[modelkwargs], spatialkwargs=[spatialkwargs], **position_filter_kwargs)[0]
 
-            _plane_halos.append(_plane_halos)
+            halos.append(_plane_halos)
 
-        return _plane_halos
+        return halos
 
     def _return_plaw_main(self,_spatial_,position_filter_kwargs,model_kwargs,massprofile,spatialkwargs,Nrealizations):
 
@@ -394,7 +411,7 @@ class HaloGen:
 
         return halos
 
-    def _return_delta_main(self, _spatial_, position_filter_kwargs, model_kwargs, massprofile, spatialkwargs, redshift,
+    def _return_delta_main(self, _spatial_, position_filter_kwargs, model_kwargs, massprofile, spatialkwargs,
                            Nrealizations):
 
         assert position_filter_kwargs['filter_halo_positions'] is True
@@ -404,7 +421,7 @@ class HaloGen:
         mass_function_type = []
         spatial_distribution_type = []
 
-        N,rmax2d = number_per_image(f_pbh=model_kwargs['f_PBH'], redshift=redshift, zsrc=self.cosmology.zsrc,
+        N,rmax2d = number_per_image(f_pbh=model_kwargs['f_PBH'], redshift=self.cosmology.zd, zsrc=self.cosmology.zsrc,
                              cosmology_class=self.cosmology, M=model_kwargs['M'], R_ein=None)
 
         spatialkwargs['rmax2d'] = rmax2d
@@ -475,8 +492,8 @@ class HaloGen:
 
                 if 'plaw_order2' in modelkwargs[i].keys() and redshift!=self.cosmology.zd and len(masses)>0:
 
-                    massfunction = Plaw_secondary(M_parent=masses, parent_r2d=R2d, parent_r3d=R3d, x_locations=x,
-                                                  y_locations=y,
+                    massfunction = Plaw_secondary(M_parent=masses, parent_r2d=R2d, parent_r3d=R3d, x_position=x,
+                                                  y_position=y,
                                                   log_mL=modelkwargs[i]['subhalo_log_mL'],
                                                   logmhm=modelkwargs[i]['logmhm'],
                                                   cosmo_at_zlens=cosmo_at_plane)
@@ -525,9 +542,9 @@ class HaloGen:
 
                         lensmod = PJaffe.PJaffe(cosmology=cosmo_at_plane)
 
-                    elif massprofile == 'ptmass':
+                    elif massprofile == 'PTmass':
 
-                        lensmod = PointMass.PointMass(cosmology=cosmo_at_plane)
+                        lensmod = PointMass.PTmass(cosmology=cosmo_at_plane)
 
                     else:
 

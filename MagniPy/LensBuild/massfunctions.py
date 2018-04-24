@@ -14,7 +14,7 @@ class Plaw_secondary:
 
     """
 
-    def __init__(self, M_parent=None, parent_r2d = None, x_locations=None, y_locations=None, N0=0.21, alpha_secondary=-0.8,
+    def __init__(self, M_parent=None, parent_r2d = None, x_position=None, y_position=None, N0=0.21, alpha_secondary=-0.8,
                  log_mL = None,logmhm=None,cosmo_at_zlens=None,parent_r3d=None):
 
         NFW_calculate = NFW(cosmology=cosmo_at_zlens)
@@ -29,10 +29,10 @@ class Plaw_secondary:
 
         if isinstance(M_parent,float) or isinstance(M_parent,int):
             M_parent = [M_parent]
-        if isinstance(x_locations,float) or isinstance(x_locations,int):
-            x_locations = [x_locations]
-        if isinstance(y_locations,float) or isinstance(y_locations,int):
-            y_locations = [y_locations]
+        if isinstance(x_position,float) or isinstance(x_position,int):
+            x_locations = [x_position]
+        if isinstance(y_position,float) or isinstance(y_position,int):
+            y_locations = [y_position]
         if isinstance(parent_r2d,float) or isinstance(parent_r2d,int):
             parent_r2d = [parent_r2d]
 
