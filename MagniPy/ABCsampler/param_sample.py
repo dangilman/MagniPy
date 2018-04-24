@@ -9,7 +9,7 @@ class ParamSample:
     recognized_param_precision['SIE_gamma'] = 3
     recognized_param_precision['SIE_shear'] = 4
 
-    def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5):
+    def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5,**kwargs):
         """
 
         :param params_to_vary (list): list of strings corresponding to parameters to vary
@@ -32,7 +32,11 @@ class ParamSample:
             elif pname in self.recognized_param_precision.keys():
                 decimals = self.recognized_param_precision[pname]
 
-            self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs,decimals=decimals))
+            if pargs['prior_type'] == 'initialized_resample':
+                self.priors.append(
+                    ProbabilityDistribution(distribution_type=pargs['prior_type'], args=pargs, decimals=decimals, macromodel=kwargs['macromodel']))
+            else:
+                self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs,decimals=decimals))
 
     def sample(self,scale_by='dimension'):
 

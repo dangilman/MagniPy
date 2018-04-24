@@ -3,7 +3,7 @@ from copy import deepcopy
 
 class ProbabilityDistribution:
 
-    def __init__(self,distribution_type='',args={},Nsamples=int,decimals=int):
+    def __init__(self,distribution_type='',args={},Nsamples=int,decimals=int,**kwargs):
 
         self.decimals = decimals
 
@@ -16,6 +16,10 @@ class ProbabilityDistribution:
             self.mean,self.sigma = args['mean'],args['sigma']
             self.positive_definite = args['positive_definite']
 
+        elif distribution_type=='initialized_resample_Gaussian_shear':
+            self.draw = self.Gaussian
+            self.mean,self.sigma = kwargs['macromodel'].shear,args['sigma']
+            self.positive_definite = True
         else:
             raise Exception('distribution_type not recognized: ')
 
