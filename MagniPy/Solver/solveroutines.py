@@ -101,7 +101,7 @@ class SolveRoutines(Magnipy):
                                                            source_shape=source_shape, source_size=source_size, print_mag=print_mag,
                                                            filter_by_position=filter_by_position, filter_kwargs=filter_kwargs)
         else:
-            pass
+            macromodel_init = macromodel
             #_, macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel),datatofit=datatofit,
             #                                                multiplane=multiplane, method='lenstronomy', ray_trace=ray_trace,
             #                                                sigmas=sigmas,srcx=srcx, srcy=srcy,
@@ -111,7 +111,7 @@ class SolveRoutines(Magnipy):
             #                                                filter_by_position=filter_by_position,
             #                                                filter_kwargs=filter_kwargs,solver_type=solver_type)
 
-        optimized_data, newsystem = self.fit(macromodel=macromodel, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
+        optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit, realizations=realizations, multiplane=multiplane, method=method,
                                                        ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
                                                        source_shape=source_shape, source_size=source_size, print_mag=print_mag, raytrace_with=raytrace_with,
                                                        filter_by_position=filter_by_position, polar_grid=polar_grid,

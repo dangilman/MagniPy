@@ -106,5 +106,8 @@ def kwargs_to_gravlens(deflector=None,units='lensmodel'):
         p0 = 'convrg'
         p1 = str(args['kappa_ext'])
 
+    else:
+        raise Exception('profile '+str(deflector.profname)+' not recognized.')
+
     return str(p0) + ' ' + str(p1) + ' ' + str(p2) + ' ' + str(p3) + ' ' + str(p4) + ' ' + str(p5) + ' ' + \
            str(p6) + ' ' + str(p7) + ' ' + str(p8) + ' ' + str(p9) + ' ' + str(p10)+' '

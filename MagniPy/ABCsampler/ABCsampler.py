@@ -326,7 +326,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                             raytrace_with=run_commands[i]['raytrace_with'])
         chaindata += new
         N_computed += len(new)
-        i += 1
 
     fluxes,astrometric_errors = [],[]
 
@@ -378,4 +377,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
+#runABC(os.getenv('HOME')+'/data/singleplane_test/',1)

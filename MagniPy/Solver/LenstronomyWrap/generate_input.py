@@ -43,27 +43,63 @@ class LenstronomyWrap:
 
     def assemble(self,system):
 
-        self.redshift_list = []
+        redshift_list = []
         lens_model_list = []
         lens_model_params = []
 
         for deflector in system.lens_components:
+            new_model, new_args, new_z = self.get_lens(deflector)
 
-            lens_model_list.append(deflector.profname)
+            lens_model_list += new_model
+            redshift_list += new_z
+            lens_model_params += new_args
 
-            lens_model_params.append(deflector.lenstronomy_args)
-            self.redshift_list.append(deflector.redshift)
+        self.lens_model_list, self.lens_model_params, self.redshift_list = lens_model_list,lens_model_params,redshift_list
+
+    def get_lens(self,deflector):
+
+        model_list = []
+        z_list = []
+        arg_list = []
+
+        if deflector.profname == 'SERSIC_NFW':
+            model_list.append('SERSIC')
+            z_list.append(deflector.redshift)
+            sersic_arg_names = ['k_eff', 'n_sersic', 'r_eff', 'center_x', 'center_y', 'e1', 'e2']
+            sersic_args = {}
+            for name in sersic_arg_names:
+                sersic_args.update({name: deflector.lenstronomy_args[name]})
+            arg_list.append(sersic_args)
 
             if deflector.has_shear:
+                model_list.append('SHEAR')
+                z_list.append(deflector.redshift)
+                shear_e1, shear_e2 = polar_to_cart(deflector.shear, deflector.shear_theta)
+                arg_list.append({'e1': shear_e1, 'e2': shear_e2})
 
-                lens_model_list.append('SHEAR')
+            model_list.append('NFW')
+            nfw_arg_names = ['theta_Rs', 'Rs', 'center_x', 'center_y']
+            nfw_args = {}
+            for name in nfw_arg_names:
+                nfw_args.update({name: deflector.lenstronomy_args[name]})
+            arg_list.append(nfw_args)
+            z_list.append(deflector.redshift)
+        else:
+            model_list.append(deflector.profname)
 
-                self.redshift_list.append(deflector.redshift)
+            arg_list.append(deflector.lenstronomy_args)
+            z_list.append(deflector.redshift)
 
-                shear_e1,shear_e2 = polar_to_cart(deflector.shear,deflector.shear_theta)
-                lens_model_params.append({'e1':shear_e1,'e2':shear_e2})
+            if deflector.has_shear:
+                model_list.append('SHEAR')
 
-        self.lens_model_list, self.lens_model_params = lens_model_list,lens_model_params
+                z_list.append(deflector.redshift)
+
+                shear_e1, shear_e2 = polar_to_cart(deflector.shear, deflector.shear_theta)
+                arg_list.append({'e1': shear_e1, 'e2': shear_e2})
+
+        return model_list,arg_list,z_list
+
 
     def get_lensmodel(self):
 

@@ -1,12 +1,13 @@
 import numpy as np
 from MagniPy.util import polar_to_cart
 from lenstronomy.Util.param_util import phi_q2_ellipticity
+from copy import deepcopy
 
 def model_translate_tolenstronomy(args,name):
 
     # convert gravlens arguments to lenstronomy arguments
 
-    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','SNFW','CONVERGENCE']:
+    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','SNFW','CONVERGENCE','SERSIC_NFW']:
         raise Exception(name + ' not recognized.')
 
     newargs = {}
@@ -18,6 +19,13 @@ def model_translate_tolenstronomy(args,name):
         newargs['center_x'] = args['center_x']
         newargs['center_y'] = args['center_y']
         newargs['theta_E'] = args['theta_E']*Rein_gravlens_to_lenstronomy(args['q'])
+        return newargs
+
+    elif name=='SERSIC_NFW':
+        newargs = deepcopy(args)
+        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(gravlens_to_lenstronomy(args['phi_G'], 'phi_G'), args['q'])
+        del newargs['phi_G']
+        del newargs['q']
         return newargs
 
     elif name == 'EXTERNAL_SHEAR':
