@@ -67,7 +67,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
-    data2fit = [[-0.65952,0.75946,0.0737,-0.05081],[-0.81511,-0.77629,-1.04516,0.86606],[0.602537,0.587671,1.,0.123883],[0.,0.,0.4,17]]
+    data2fit = [[-0.12992,-0.91168,0.87564,0.03536],[1.01623,0.56775,0.57489,-0.89155],[1.,0.723173,0.643823,0.264251],[0,0,0,0]]
+
     if isinstance(data2fit,list):
         data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
@@ -129,19 +130,20 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
 
         model_data, _ = solver.fit(macromodel=macro_init[0].lens_components[0],datatofit=data2fit,realizations=halos,
-                                                 multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
+                                                 multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                 source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
         dset = model_data[0]
 
         astro_error = np.sqrt(np.sum((dset.x - data2fit.x) ** 2 + (dset.y - data2fit.y) ** 2))
-        if astro_error<2*0.003:
+
+        if astro_error<1e-5:
 
             try:
-                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data2fit,index=2)))
+                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data2fit,index=0)))
             except:
-                fit_fluxes = model_data[0].flux_anomaly(data2fit,index=2)
+                fit_fluxes = model_data[0].flux_anomaly(data2fit,index=0)
             n += 1
             print n
 
@@ -151,3 +153,5 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
         write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=fit_fluxes,mode='append')
     else:
         return model_data
+
+
