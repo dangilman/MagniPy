@@ -17,6 +17,7 @@ def confidence_interval(percentile,data):
 
     L = len(data)
     counter = 0
+
     while True:
 
         value = data[counter]
@@ -46,6 +47,25 @@ def read_data(filename='',N=None):
             return data
         else:
             return data[0:N]
+
+def write_fluxes(filename='',fluxes = [], mode='append'):
+
+    if fluxes.ndim == 1:
+
+        with open(filename, 'a') as f:
+
+            for val in fluxes:
+                f.write(str(val) + ' ')
+            f.write('\n')
+    else:
+
+        N = int(np.shape(fluxes)[0])
+
+        with open(filename,'a') as f:
+            for n in range(0,N):
+                for val in fluxes[n,:]:
+                    f.write(str(val)+' ')
+                f.write('\n')
 
 def write_data(filename='',data_list=[],mode='append'):
 

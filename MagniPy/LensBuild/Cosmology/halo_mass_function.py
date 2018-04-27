@@ -139,3 +139,4 @@ class HaloMassFunction:
                 integral += self.dN_dM_comoving(M, z) * self.extension.comoving_volume_cone(z, z + dz,
                                                                                             cone_base, Rein_def= Rein_def)
         return integral
+

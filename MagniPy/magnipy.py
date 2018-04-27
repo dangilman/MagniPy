@@ -75,7 +75,8 @@ class Magnipy:
 
         newsystem = build.LensSystem(multiplane=multiplane)
 
-        newsystem.main_lens(main)
+        if main is not None:
+            newsystem.main_lens(main)
 
         if additional_halos is not None:
             newsystem.halos(additional_halos)

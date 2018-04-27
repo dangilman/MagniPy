@@ -32,6 +32,7 @@ class LensSystem:
 
         if self.multiplane:
             for object in halos:
+
                 self._redshift_list(object)
 
     def update_component(self, component_index=int, newkwargs={}, method = ''):
@@ -48,6 +49,23 @@ class LensSystem:
 
         for component in self.lens_components:
             component.print_args()
+
+    def lenstronomy_lists(self):
+
+        zlist = []
+        lens_list = []
+        arg_list = []
+        for component in self.lens_components:
+            zlist.append(component.redshift)
+            lens_list.append(component.other_args['name'])
+            arg_list.append(component.lenstronomy_args)
+            if component.has_shear:
+                shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
+
+                arg_list.append({'e1': shear_e1, 'e2': shear_e2})
+                zlist.append(component.redshift)
+                lens_list.append('SHEAR')
+        return zlist,lens_list,arg_list
 
 
 class Deflector:

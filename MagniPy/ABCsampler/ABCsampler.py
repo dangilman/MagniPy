@@ -308,7 +308,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     chaindata = []
 
-    for i in range(0,int(len(run_commands)*Nsplit**-1)):
+    #for i in range(0,int(len(run_commands)*Nsplit**-1)):
+    for i in range(0, 1):
+        Nsplit = 5
 
         solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
                                temp_folder=run_commands[i]['scratch_file'])
@@ -377,4 +379,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/singleplane_test/',1)
+#runABC(os.getenv('HOME')+'/data/LOS_test/',1)

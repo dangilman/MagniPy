@@ -15,7 +15,7 @@ from halo_truncations import Truncation
 
 class HaloGen:
 
-    def __init__(self,zd=None,zsrc=None,LOS_mass_sheet=True):
+    def __init__(self,zd=None,zsrc=None,LOS_mass_sheet=False):
 
         """
 
@@ -615,6 +615,7 @@ class HaloGen:
 
 
                 if mass_range is not None:
+
                     object_generator = (deflector.other_args['mass'] for deflector in realization
                                         if np.min(mass_range) <= deflector.other_args['mass'] < np.max(mass_range))
 
@@ -627,6 +628,7 @@ class HaloGen:
             for realization in realization_list:
 
                 if mass_range is not None:
+                    
                     object_generator = (deflector.other_args['mass'] for deflector in realization
                                         if (np.min(mass_range) <= deflector.other_args['mass'] <
                                             np.max(mass_range) and
@@ -635,15 +637,13 @@ class HaloGen:
                     realization_masses.append(list(object_generator))
 
                 else:
+
                     object_generator = (deflector.other_args['mass'] for deflector in realization
                                         if (deflector.redshift == specific_redshift))
 
                     realization_masses.append(list(object_generator))
 
         return realization_masses
-
-
-
 
 
 

@@ -61,16 +61,24 @@ def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='
         return model_data
 
 def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
-                                    data2fit=[], Nrealizations=int, outfilename='', zlens=None, zsrc=None,
+                                    data2fit=[], Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
-                                    filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy', **filter_kwargs):
+                                    filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy',
+                                    start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
+    data2fit = [[-0.65952,0.75946,0.0737,-0.05081],[-0.81511,-0.77629,-1.04516,0.86606],[0.602537,0.587671,1.,0.123883],[0.,0.,0.4,17]]
     if isinstance(data2fit,list):
         data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
-    if write_to_file:
+    if filter_halo_positions:
+        x_filter = data2fit.x
+        y_filter = data2fit.y
+        filter_kwargs = {'x_filter':x_filter,'y_filter':y_filter,'mindis':mindis,'log_masscut_low':log_masscut_low}
+    else:
+        filter_kwargs = {}
 
+    if write_to_file:
         print outfilepath
         assert os.path.exists(outfilepath)
 
@@ -95,35 +103,51 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=outfilename)
 
     if halo_model == 'plaw_main':
-
         multiplane = False
     elif halo_model == 'plaw_LOS':
-
         multiplane = True
     elif halo_model == 'delta_LOS':
-
         multiplane = True
     elif halo_model == 'composite_plaw':
-
         multiplane = True
 
-    halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=Nrealizations,
-                                            filter_halo_positions=filter_halo_positions,**filter_kwargs)
+    # initialize macromodel
+    start_macromodel.shear = start_shear
+    print 'initializing macromodel... '
+    _, macro_init = solver.fit(macromodel=start_macromodel,datatofit=data2fit,realizations=None,
+                                                 multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
+                                                 identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
+                                                source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
-    model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data2fit,realizations=halos,
-                                             multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
-                                             identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
-                                            source_size=source_size,raytrace_with=raytrace_with,print_mag=True)
+    fit_fluxes = None
+    n = 0
+    print 'solving realizations... '
+    while n<Ntotal:
 
-    data = []
-    for dset in model_data:
-        if dset.nimg ==data2fit.nimg:
-            data.append(dset)
+        halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
+                                                filter_halo_positions=filter_halo_positions,**filter_kwargs)
+
+
+        model_data, _ = solver.fit(macromodel=macro_init[0].lens_components[0],datatofit=data2fit,realizations=halos,
+                                                 multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
+                                                 identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
+                                                source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
+
+        dset = model_data[0]
+
+        astro_error = np.sqrt(np.sum((dset.x - data2fit.x) ** 2 + (dset.y - data2fit.y) ** 2))
+        if astro_error<2*0.003:
+
+            try:
+                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data2fit,index=2)))
+            except:
+                fit_fluxes = model_data[0].flux_anomaly(data2fit,index=2)
+            n += 1
+            print n
 
     if write_to_file:
 
-        write_data(outfilepath+outfilename+'.txt', data, mode='append')
+        #write_data(outfilepath+outfilename+'.txt', data, mode='append')
+        write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=fit_fluxes,mode='append')
     else:
         return model_data
-
-

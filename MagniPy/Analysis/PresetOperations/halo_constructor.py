@@ -1,4 +1,4 @@
-from MagniPy.LensBuild.renderhalos import HaloGen
+from MagniPy.LensBuild.renderhalos import *
 import numpy as np
 
 class Realization:
@@ -61,6 +61,14 @@ class Realization:
                 all_components += component[i]
             realizations.append(all_components)
         return realizations
+
+
+    def filter_position(self,halos,x_filter=None,y_filter=None,mindis=None,log_masscut_low=None):
+
+        return filter_by_position(halos,x_filter=x_filter,y_filter=y_filter,mindis=mindis,log_masscut_low=log_masscut_low,
+                           zmain=self.halo_generator.cosmology.zd,cosmology=self.halo_generator.cosmology)
+
+
 
 def get_redshifts(halos):
 
