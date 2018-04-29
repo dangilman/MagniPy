@@ -308,9 +308,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     chaindata = []
 
-    #for i in range(0,int(len(run_commands)*Nsplit**-1)):
-    for i in range(0, 1):
-        Nsplit = 5
+    for i in range(0,int(len(run_commands)*Nsplit**-1)):
 
         solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
                                temp_folder=run_commands[i]['scratch_file'])
