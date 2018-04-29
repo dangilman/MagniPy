@@ -12,14 +12,12 @@ def mainlens_plaw(fsub,plaw_index,cosmo,kappa_Rein=0.5, log_mL = None, log_mH = 
 
 def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=None,log_mH=None,cone_base=None):
 
-    from MagniPy.LensBuild.defaults import *
-
     if zmax >= zsrc:
         zmax = zsrc - 1e-3
 
     if zmin == 0:
         zmin = 1e-3
-
+    zstep = 0.02
     zvals = np.linspace(zmin,zmax,int(np.ceil((zmax-zmin)*zstep**-1)+1))
 
     HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc,
@@ -72,3 +70,5 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc,cone_base):
         N_z.append(Nz)
 
     return N_z,zvals
+
+

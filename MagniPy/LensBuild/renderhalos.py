@@ -373,6 +373,9 @@ class HaloGen:
             modelkwargs['rescale_sigma8'] = False
             modelkwargs['omega_M_void'] = None
 
+        if 'plaw_order2' in modelkwargs.keys() and 'subhalo_log_mL' not in modelkwargs.keys():
+            modelkwargs['subhalo_log_mL'] = model_kwargs['log_mL'] - powerlaw_defaults['subhalo_log_mL_low']
+
         if self.A0_z is None:
             A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
                                              zmax=modelkwargs['zmax'],rescale_sigma8=modelkwargs['rescale_sigma8'],
@@ -492,13 +495,15 @@ class HaloGen:
 
                 if 'plaw_order2' in modelkwargs[i].keys() and redshift!=self.cosmology.zd and len(masses)>0:
 
-                    massfunction = Plaw_secondary(M_parent=masses, parent_r2d=R2d, parent_r3d=R3d, x_position=x,
-                                                  y_position=y,
-                                                  log_mL=modelkwargs[i]['subhalo_log_mL'],
-                                                  logmhm=modelkwargs[i]['logmhm'],
-                                                  cosmo_at_zlens=cosmo_at_plane)
+                    if len(masses)>0:
 
-                    masses, x, y, R2d, R3d = massfunction.draw()
+                        massfunction = Plaw_secondary(M_parent=masses, parent_r2d=R2d, parent_r3d=R3d, x_position=x,
+                                                      y_position=y,
+                                                      log_mL=modelkwargs[i]['subhalo_log_mL'],
+                                                      logmhm=modelkwargs[i]['logmhm'],
+                                                      cosmo_at_zlens=cosmo_at_plane)
+
+                        masses, x, y, R2d, R3d = massfunction.draw()
 
                 for j in range(0, int(len(masses))):
 

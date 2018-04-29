@@ -48,6 +48,7 @@ class LenstronomyWrap:
         lens_model_params = []
 
         for deflector in system.lens_components:
+
             new_model, new_args, new_z = self.get_lens(deflector)
 
             lens_model_list += new_model
@@ -84,6 +85,7 @@ class LenstronomyWrap:
                 nfw_args.update({name: deflector.lenstronomy_args[name]})
             arg_list.append(nfw_args)
             z_list.append(deflector.redshift)
+
         else:
             model_list.append(deflector.profname)
 

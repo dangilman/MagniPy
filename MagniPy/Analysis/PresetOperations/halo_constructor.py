@@ -68,7 +68,14 @@ class Realization:
         return filter_by_position(halos,x_filter=x_filter,y_filter=y_filter,mindis=mindis,log_masscut_low=log_masscut_low,
                            zmain=self.halo_generator.cosmology.zd,cosmology=self.halo_generator.cosmology)
 
+def get_masses(halos):
 
+    mass = []
+    for halo in halos:
+
+        if 'mass' in halo.other_args.keys():
+            mass.append(halo.other_args['mass'])
+    return np.array(mass)
 
 def get_redshifts(halos):
 
@@ -86,5 +93,7 @@ def get_positions(halos):
         if 'center_x' in halo.args.keys():
             x.append(halo.args['center_x'])
             y.append(halo.args['center_y'])
+
+
 
     return np.array(x),np.array(y)
