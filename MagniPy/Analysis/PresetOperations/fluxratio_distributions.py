@@ -128,11 +128,6 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     # initialize macromodel
     start_macromodel.shear = start_shear
-    print 'initializing macromodel... '
-    _, macro_init = solver.fit(macromodel=start_macromodel,datatofit=data[0],realizations=None,
-                                                 multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
-                                                 identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
-                                                source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
     fit_fluxes = None
     n = 0
@@ -143,7 +138,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                                 filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
 
 
-        model_data, _ = solver.fit(macromodel=macro_init[0].lens_components[0],datatofit=data[n],realizations=halos,
+        model_data, _ = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
                                                  multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                 source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
