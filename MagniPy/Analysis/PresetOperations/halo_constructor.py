@@ -3,7 +3,7 @@ import numpy as np
 
 class Realization:
 
-    def __init__(self,zlens,zsrc,LOS_mass_sheet=False):
+    def __init__(self,zlens,zsrc,LOS_mass_sheet=True):
 
         self.halo_generator = HaloGen(zd=zlens,zsrc=zsrc,LOS_mass_sheet=LOS_mass_sheet)
 

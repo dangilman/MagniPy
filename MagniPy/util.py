@@ -30,23 +30,30 @@ def confidence_interval(percentile,data):
 
 def read_data(filename='',N=None):
 
-    nimg,srcx,srcy,xpos1,ypos1,m1,t1,xpos2,ypos2,m2,t2,\
-    xpos3,ypos3,m3,t3,xpos4,ypos4,m4,t4 = np.loadtxt(filename,unpack=True)
+    with open(filename,'r') as f:
+        lines = f.readlines()
 
-    if isinstance(xpos3,float):
-        return [Data(x=[xpos1,xpos2,xpos3,xpos4],y=[ypos1,ypos2,ypos3,ypos4],m=[m1,m2,m3,m4],
-                    t=[t1,t2,t3,t4],source=[srcx,srcy])]
-    else:
-        data = []
-        for i in range(0,len(xpos1)):
-            data.append(Data(x=[xpos1[i],xpos2[i],xpos3[i],xpos4[i]],y=[ypos1[i],ypos2[i],ypos3[i],ypos4[i]],
-                             m=[m1[i],m2[i],m3[i],m4[i]],t=[t1[i],t2[i],t3[i],t4[i]],source=[srcx[i],srcy[i]]))
-        if N is None:
-            return data
-        if N>=len(data):
-            return data
-        else:
-            return data[0:N]
+    dsets = []
+
+    for line in lines:
+
+        line = line.split(' ')
+        n = int(line[0])
+
+        try:
+            srcx,srcy = float(line[1]),float(line[2])
+        except:
+            srcx,srcy = None,None
+
+        x1,x2,x3,x4,y1,y2,y3,y4 = float(line[3]),float(line[7]),float(line[11]),float(line[15]),float(line[4]),\
+                                  float(line[8]),float(line[12]),float(line[16])
+        m1,m2,m3,m4 = float(line[5]),float(line[9]),float(line[13]),float(line[17])
+        t1,t2,t3,t4 = float(line[6]),float(line[10]),float(line[14]),float(line[18])
+        dsets.append(Data(x=[x1,x2,x3,x4],y=[y1,y2,y3,y4],m=[m1,m2,m3,m4],
+                    t=[t1,t2,t3,t4],source=[srcx,srcy]))
+
+    return dsets
+
 
 def write_fluxes(filename='',fluxes = [], mode='append'):
 

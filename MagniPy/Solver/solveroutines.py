@@ -262,35 +262,6 @@ class SolveRoutines(Magnipy):
 
         return fluxes*max(fluxes)**-1
 
-    def raytrace_images(self, full_system=None, macromodel=None, xcoord=None, ycoord = None, realizations=None, multiplane=None,
-                        identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
-                        source_shape='GAUSSIAN', source_size=None, filter_by_position=False,
-                        image_index=None):
-
-        lens_systems = []
-
-        assert image_index is not None
-
-        if full_system is None:
-
-            assert macromodel is not None
-            if realizations is not None:
-                assert len(realizations) == 1
-                for real in realizations:
-                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=real, multiplane=multiplane))
-
-        else:
-            lens_systems.append(copy.deepcopy(full_system))
-
-
-        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method='lensmodel', grid_rmax=grid_rmax, res=res,
-                         source_shape=source_shape,
-                         cosmology=self.cosmo, source_size=source_size)
-
-        magnifications, image = trace.get_images(xpos=[xcoord], ypos=[ycoord], lens_system=lens_systems[0],
-                                                 return_image=True,which_image=image_index)
-
-        return magnifications, image
 
 
 

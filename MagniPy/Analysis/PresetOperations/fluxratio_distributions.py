@@ -5,6 +5,8 @@ from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
 from MagniPy.lensdata import Data
+from create_data import create_data
+import random
 
 def initialize_macromodel(init_macromodel=None,data2fit=None,method=None,sigmas=None,grid_rmax=None,res=None,zlens=None,zsrc=None,
                           source_size=None,outfilename=None,multiplane=None,raytrace_with=None):
@@ -67,17 +69,29 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
-    data2fit = [[-0.12992,-0.91168,0.87564,0.03536],[1.01623,0.56775,0.57489,-0.89155],[1.,0.723173,0.643823,0.264251],[0,0,0,0]]
+    configs = ['cross','cusp','fold']
+    data = []
+    for i in range(0,Ntotal):
+        config = random.choice(configs)
+        print config
+        data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0},massprofile=massprofile,
+                         halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
+                                shear_prior=[start_shear,1e-9]))
 
-    if isinstance(data2fit,list):
-        data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
+    #if isinstance(data2fit,list):
+    #    data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
+    filter_kwargs_list = []
     if filter_halo_positions:
-        x_filter = data2fit.x
-        y_filter = data2fit.y
-        filter_kwargs = {'x_filter':x_filter,'y_filter':y_filter,'mindis':mindis,'log_masscut_low':log_masscut_low}
+
+        for i in range(0,Ntotal):
+
+            filter_kwargs_list.append({'x_filter':data[i].x,'y_filter':data[i].y,'mindis':mindis,'log_masscut_low':log_masscut_low})
     else:
-        filter_kwargs = {}
+
+        for i in range(0,Ntotal):
+
+            filter_kwargs_list.append({})
 
     if write_to_file:
         print outfilepath
@@ -115,7 +129,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     # initialize macromodel
     start_macromodel.shear = start_shear
     print 'initializing macromodel... '
-    _, macro_init = solver.fit(macromodel=start_macromodel,datatofit=data2fit,realizations=None,
+    _, macro_init = solver.fit(macromodel=start_macromodel,datatofit=data[0],realizations=None,
                                                  multiplane=multiplane,method=method,ray_trace=ray_trace,sigmas=sigmas,
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                 source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
@@ -126,24 +140,23 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     while n<Ntotal:
 
         halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
-                                                filter_halo_positions=filter_halo_positions,**filter_kwargs)
+                                                filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
 
 
-        model_data, _ = solver.fit(macromodel=macro_init[0].lens_components[0],datatofit=data2fit,realizations=halos,
+        model_data, _ = solver.fit(macromodel=macro_init[0].lens_components[0],datatofit=data[n],realizations=halos,
                                                  multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                 source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
-        dset = model_data[0]
 
-        astro_error = np.sqrt(np.sum((dset.x - data2fit.x) ** 2 + (dset.y - data2fit.y) ** 2))
+        astro_error = np.sqrt(np.sum((data[n].x - model_data[0].x) ** 2 + (data[n].y - model_data[0].y) ** 2))
 
         if astro_error<1e-5:
 
             try:
-                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data2fit,index=0)))
+                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data[n],index=0)))
             except:
-                fit_fluxes = model_data[0].flux_anomaly(data2fit,index=0)
+                fit_fluxes = model_data[0].flux_anomaly(data[n],index=0)
             n += 1
             print n
 
@@ -153,5 +166,3 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
         write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=fit_fluxes,mode='append')
     else:
         return model_data
-
-

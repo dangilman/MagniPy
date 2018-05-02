@@ -91,12 +91,11 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             dset[0].x += np.random.normal(0,astrometric_perturbation,size=4)
 
             dset[0].y += np.random.normal(0,astrometric_perturbation,size=4)
-
-            system = solver.build_system(main,additional_halos=subhalo_realizations,multiplane=multiplane)
     
             if return_gamma:
                 return dset[0],gamma
             elif return_system:
+                system = solver.build_system(main, additional_halos=subhalo_realizations, multiplane=multiplane)
                 return dset[0],system
             else:
                 return dset[0]

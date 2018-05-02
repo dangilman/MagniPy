@@ -8,42 +8,21 @@ default_colors = ['k',cnames['indianred'],cnames['royalblue'],
 
 class FluxRatioCumulative:
 
-    def __init__(self,datasets='load',fnames=None,refdataset='load',fname_ref=None):
+    def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True):
 
         lensdata = []
 
-        if datasets=='load':
+        for fname in fnames:
 
-            assert isinstance(fnames,list)
+            anomalies = np.loadtxt(fname)
 
-            for fname in fnames:
-                lensdata.append(read_data(fname))
-
-        else:
-            assert isinstance(datasets,list)
-            lensdata = datasets
-
-        if refdataset=='load':
-
-            refdata= read_data(fname_ref)[0]
-
-        else:
-            refdata = refdataset
+            lensdata.append(np.sqrt(np.sum(anomalies**2,axis=1)))
 
         self.lensdata = lensdata
 
-        self.set_reference_data(refdata)
-
     def set_reference_data(self,refdata):
 
-        self.reference_data = []
-
-        if isinstance(refdata,list):
-
-            self.reference_data = refdata
-
-        else:
-            self.reference_data = [refdata]*len(self.lensdata)
+        self.reference_data = refdata
 
     def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
                     xlims=None,ylims=None):
@@ -59,25 +38,15 @@ class FluxRatioCumulative:
         ax = plt.subplot(111)
         fig.set_size_inches(6,6)
 
-        count = 0
+        for i,anomalies in enumerate(self.lensdata):
 
-        for i,model_data in enumerate(self.lensdata):
-
-            flux_ratio_residuals = []
-
-            for j,dset in enumerate(model_data):
-
-                flux_ratio_residuals.append(dset.flux_anomaly(other_data=self.reference_data[count], index=1, sum_in_quad=True))
-            count+=1
-
-            #values, bins = np.histogram(flux_ratio_residuals, bins=nbins, range=(-0.00001, xmax))
-            L = len(model_data)
+            L = len(anomalies)
 
             y = []
             x = np.linspace(0,xmax,nbins)
 
             for k in range(0, len(x)):
-                y.append((len(flux_ratio_residuals) - sum(val < x[k] for val in flux_ratio_residuals))*L**-1)
+                y.append((L - sum(val < x[k] for val in anomalies))*L**-1)
 
             if labels is not None:
                 plt.plot(x, y, c=color[i], label=labels[i], linewidth=linewidth,

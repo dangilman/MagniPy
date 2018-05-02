@@ -39,7 +39,7 @@ class RayTrace:
 
         if self.raytrace_with == 'lenstronomy':
 
-            self.multlenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
+            self.multilenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
                                                                z_source=self.cosmo.zsrc,source_shape=source_shape,
                                                                gridsize=2*self.grid_rmax,res=self.res,
                                                                source_size=kwargs['source_size'])
@@ -47,23 +47,26 @@ class RayTrace:
 
     def get_images(self,xpos,ypos,lens_system,**kwargs):
 
-        return self.compute_mag(xpos,ypos,lens_system,**kwargs)
+        if self.raytrace_with == 'lensmodel':
+            return self.compute_mag(xpos,ypos,lens_system,**kwargs)
+        else:
+            return self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source)
 
     def compute_mag(self,xpos,ypos,lens_system,print_mag=False,**kwargs):
 
         if self.multiplane is False:
             if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos,ypos,lens_system)
+                return self.multlenswrap.compute_mag(xpos,ypos,lens_system,**kwargs)
 
             else:
                 return self._single_plane_trace(xpos,ypos,lens_system,print_mag,**kwargs)
         else:
             if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos, ypos, lens_system)
+                return self.multlenswrap.compute_mag(xpos, ypos, lens_system,**kwargs)
             else:
                 return self._multi_plane_trace(xpos,ypos,lens_system,**kwargs)
 
-    def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False,which_image=None):
+    def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False):
 
         if print_mag:
             print 'computing mag...'
@@ -101,7 +104,7 @@ class RayTrace:
             y_source = y_loc - ydef
             return x_source,y_source
 
-    def _single_plane_trace(self,xpos,ypos,lens_system,print_mag=False,return_image=False,which_image=None):
+    def _single_plane_trace(self,xpos,ypos,lens_system,print_mag=False,return_image=False):
 
         magnification = []
 
@@ -166,7 +169,7 @@ class RayTrace:
 
         return betax,betay
 
-    def _multi_plane_trace(self,xpos,ypos,lens_system):
+    def _multi_plane_trace(self,xpos,ypos,lens_system,return_image=False):
 
         magnification = []
 
@@ -179,7 +182,14 @@ class RayTrace:
 
             magnification.append(np.sum(self._eval_src(x_source, y_source) * self.res ** 2))
 
-        return np.array(magnification)
+            if return_image:
+
+                image = self._eval_src(x_source,y_source)
+
+        if return_image:
+            return np.array(magnification),image
+        else:
+            return np.array(magnification)
 
     def sort_redshift_indexes(self, redshift_list):
         """

@@ -1,5 +1,6 @@
 from MagniPy.Solver.LenstronomyWrap.generate_input import LenstronomyWrap
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+#from lenstronomy.util.util import array2image
 import numpy as np
 
 class MultiLensWrapper:
@@ -33,3 +34,18 @@ class MultiLensWrapper:
                                                           shape=self.source_shape)
 
         return np.array(fluxes)
+
+    def rayshoot(self,x,y,lens_system,source_function):
+
+        lenstronomywrap = LenstronomyWrap(multiplane=self.multiplane, cosmo=self.astropy_class,
+                                          z_source=self.z_source)
+        lenstronomywrap.assemble(lens_system)
+
+        lensModel = lenstronomywrap.get_lensmodel()
+
+        xnew,ynew = lensModel.ray_shooting(x,y,lenstronomywrap.lens_model_params)
+
+        beta = source_function(xnew,ynew)
+
+        return array2image(beta,len(beta)**.5,len(beta)**.5)
+

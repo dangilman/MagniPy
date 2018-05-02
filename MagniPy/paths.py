@@ -33,6 +33,6 @@ gravlens_input_path_dump = gravlens_input_path + 'dump/'
 
 chainpath = prefix + 'data/ABC_chains/'
 
-fluxratio_data_path = prefix+'data/lensdata/flux_ratios/'
+fluxratio_data_path = prefix+'data/fluxratio_distributions/'
 
 chain_output_path = prefix+'/data/ABC_chains/'
