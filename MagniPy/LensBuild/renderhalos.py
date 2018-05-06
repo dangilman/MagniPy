@@ -456,7 +456,7 @@ class HaloGen:
         :param modelkwargs: keyword args for a particular model
         :return:
         """
-
+        assert redshift!=0
         assert isinstance(mass_function_type,list)
         assert isinstance(spatial_distribution,list)
         assert len(mass_function_type)==len(spatial_distribution)
@@ -550,7 +550,7 @@ class HaloGen:
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 
-                    elif massprofile == 'pjaffe':
+                    elif massprofile == 'PJaffe':
 
                         truncation = Truncation(truncation_routine='virial3d',
                                                 params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
@@ -596,17 +596,17 @@ class HaloGen:
 
         if spatial_type == 'uniform2d':
 
-            spatial = Uniform_2d(cosmology=cosmo_at_plane, rmax2d=spatialkwargs['rmax2d'])
+            spatial = Uniform_2d(cosmology=self.cosmology, rmax2d=spatialkwargs['rmax2d'])
             x, y, R2d,R3d  = spatial.draw(N, redshift)
 
         elif spatial_type == 'uniform_cored_nfw':
 
-            spatial = Uniform_cored_nfw(cosmology=cosmo_at_plane, **spatialkwargs)
+            spatial = Uniform_cored_nfw(cosmology=self.cosmology, **spatialkwargs)
             x, y, R2d,R3d = spatial.draw(N, redshift)
 
         elif spatial_type == 'localized_uniform':
 
-            spatial = Localized_uniform(cosmology=cosmo_at_plane, **spatialkwargs)
+            spatial = Localized_uniform(cosmology=self.cosmology, **spatialkwargs)
             x, y, R2d,R3d  = spatial.draw(N, redshift)
 
         elif spatial_type == 'NFW_2D':

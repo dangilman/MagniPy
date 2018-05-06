@@ -21,9 +21,8 @@ default_halo_mass_function = 'reed07'
 
 kappa_Rein_default = 0.5
 
-#from astropy.cosmology import WMAP9 as cosmology
-from astropy.cosmology import FlatLambdaCDM
-default_cosmology = FlatLambdaCDM(H0=70,Om0=0.3,Ob0=0.046)
+from astropy.cosmology import WMAP9
+default_cosmology = WMAP9
 
 from MagniPy.LensBuild.lens_assemble import Deflector
 from MagniPy.MassModels.SIE import SIE

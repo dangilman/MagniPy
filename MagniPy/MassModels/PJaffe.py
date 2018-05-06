@@ -35,7 +35,7 @@ class PJaffe:
 
         subkwargs = {}
 
-        if truncation is not None and truncation.truncation_routine == 'virial3d':
+        if truncation is not None and truncation.routine == 'virial3d':
             subkwargs['r_trunc'] = truncation.virial3d(mass)
         else:
             subkwargs['r_trunc'] = r_trunc
@@ -46,7 +46,7 @@ class PJaffe:
 
         otherkwargs ={}
         otherkwargs['mass'] = mass
-        otherkwargs['name'] = 'PJaffe'
+        otherkwargs['name'] = 'PJAFFE'
 
         return subkwargs,otherkwargs
 

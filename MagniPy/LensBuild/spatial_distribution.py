@@ -17,7 +17,7 @@ class TwoDCoords:
         : R_ein_deflection: deflection at the Einstein radius in arcsec
         :return: x,y,r2d positions in comoving units
         """
-
+        assert z != 0
         if z <= self.cosmology.zd:
 
             angle = np.random.uniform(0,2*np.pi,int(Npoints))
@@ -26,8 +26,8 @@ class TwoDCoords:
             x = r**.5*np.cos(angle)
             y = r**.5*np.sin(angle)
             r2d = (x**2+y**2)**.5
-
-            return x,y,r2d,None
+            zcoord = np.random.uniform(0,(theta**2 - r2d**2)**0.5)
+            return x,y,r2d,zcoord
 
         elif z > zmain:
 
@@ -39,7 +39,7 @@ class TwoDCoords:
             D_o2 = self.cosmology.D_A(0, z)
 
             beta = D_12 * D_os * (D_o2 * D_1s) ** -1
-            print beta,z
+
             theta_new = theta*(1 - beta)
 
             angle = np.random.uniform(0, 2 * np.pi, Npoints)
@@ -47,8 +47,9 @@ class TwoDCoords:
             x = r ** .5 * np.cos(angle)
             y = r ** .5 * np.sin(angle)
             r2d = (x ** 2 + y ** 2) ** .5
+            zcoord = np.random.uniform(0, (theta ** 2 - r2d ** 2) ** 0.5)
 
-            return x, y, r2d, None
+            return x, y, r2d, zcoord
 
     def distance_beta(self,z,zmain,zsrc):
         D_12 = self.cosmology.D_A(zmain, z)
@@ -120,7 +121,7 @@ class Uniform_cored_nfw:
             accept = acceptance_prob(r3d[i])
 
             while u >= accept:
-                x_, y_, r2d_, _ = self.TwoD.draw(N=1,z=0)
+                x_, y_, r2d_, _ = self.TwoD.draw(N=1,z=self.TwoD.cosmology.zd)
                 z = np.random.uniform(-self.zmax,self.zmax)
                 r3d[i] = (z**2+r2d_**2)**.5
                 r2d[i] = r2d_

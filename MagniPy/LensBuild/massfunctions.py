@@ -190,22 +190,3 @@ class Delta:
     def draw(self):
 
         return np.ones(self.norm)*self.mass
-
-if False:
-    p = Plaw(normalization=3*10**8,log_mL=6,log_mH=10)
-    main_halos = p.draw()
-    from spatial_distribution import Uniform_2d
-    s = Uniform_2d(3,cosmology=Cosmo(0.5,1.5))
-    x,y,r2d = s.draw(len(main_halos),0.5)
-
-    p2 = Plaw_secondary(M_parent=main_halos,parent_r2d=r2d,x_locations=x,y_locations=y,log_mL=6,logmhm=0,cosmo_at_zlens=Cosmo(0.5,1.5))
-    subhalos,subx,suby,subr2d = p2.draw()
-
-    plt.scatter(subx,suby,color='r',alpha=0.6,s=5+2*np.log10(subhalos)*10**-1)
-    plt.scatter(x,y,color='k',alpha=1,s=5+2*np.log10(main_halos)*10**-1)
-    for i,m in enumerate(main_halos):
-        if m>10**7:
-            plt.annotate(str(np.round(np.log10(main_halos[i]),1)),xy=(x[i],y[i]),fontsize=8)
-    plt.show()
-
-
