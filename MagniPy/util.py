@@ -55,7 +55,18 @@ def read_data(filename='',N=None):
     return dsets
 
 
-def write_fluxes(filename='',fluxes = [], mode='append'):
+def write_fluxes(filename='',fluxes = [], mode='append',summed_in_quad=True):
+
+    if summed_in_quad:
+        fluxes = np.squeeze(fluxes)
+        with open(filename,'a') as f:
+            for val in fluxes:
+
+                f.write(str(val)+'\n')
+        return
+
+    if not isinstance(fluxes, np.ndarray):
+        fluxes = np.array(fluxes)
 
     if fluxes.ndim == 1:
 

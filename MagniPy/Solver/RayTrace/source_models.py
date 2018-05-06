@@ -7,8 +7,8 @@ class GAUSSIAN:
 
         self.xcenter,self.ycenter,self.width = x,y,width
 
-    def source_profile(self,betax,betay):
+    def __call__(self,betax,betay):
 
-        dx,dy = -self.xcenter + betax,-self.ycenter + betay
+        dx,dy = -self.xcenter + np.array(betax),-self.ycenter + np.array(betay)
 
         return (2*np.pi*self.width**2)**-1*np.exp(-0.5*(dx**2+dy**2)*self.width**-2)

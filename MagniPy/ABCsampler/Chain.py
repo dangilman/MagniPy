@@ -14,8 +14,6 @@ class ParamChains:
         else:
             self.Nlenses = Nlenses
 
-        self.weight = [1]*self.Nlenses
-
         self.chain_file_path = chainpath + '/processed_chains/' + chain_name +'/'
 
         self.lenses = []
@@ -127,6 +125,7 @@ class SingleLensChain:
         self.fluxratios = None
         self.observed_fluxratios = None
         self.statistic = None
+        self.weights = None
 
         self.posterior_samples = None
 
@@ -149,31 +148,6 @@ class SingleLensChain:
 
         self.statistic = stat_function(self.fluxratios,self.observed_fluxratios)
 
-    def compute_weight(self,param_name,weight_kwargs):
-
-        weight = 1
-
-        for i, things in enumerate(weight_kwargs):
-            print things
-
-            func = things['type']
-
-            if func == 'Gaussian':
-
-                mean = weight_kwargs[i]['mean']
-                sigma = weight_kwargs[i]['sigma']
-
-                weight *= (2 * np.pi*sigma**2) ** -.5 * np.exp(
-                    -0.5 * (self.parameters[param_name[i]] - mean) ** 2 * sigma ** -2)
-
-            elif func == 'exp_high_trunc':
-
-                cutoff = weight_kwargs[i]['cutoff']
-
-                weight *= np.exp(-(self.parameters[param_name[i]] * cutoff ** -1) ** 2)
-
-        self.weight = weight
-
     def draw(self,tol):
 
         assert tol>1
@@ -186,10 +160,56 @@ class SingleLensChain:
 
             new_param_dic.update({key:values[indexes]})
 
-        if self.weight is None:
-            weight = np.ones(len(indexes))
-        else:
-            weight = self.weight
+        return new_param_dic
 
-        return new_param_dic,weight[indexes]
+class WeightedSamples:
+
+    def __init__(self,params=None,weight_args=None):
+
+        if params is None:
+            self.functions = None
+        else:
+            self.functions = {}
+            for i,param in enumerate(params):
+                if weight_args[i]['type'] == 'Gaussian':
+                    self.functions.update({param:Gaussian(weight_args[i]['mean'],weight_args[i]['sigma'],param)})
+
+    def function(self,x,y=None):
+
+        weight = np.ones(len(x[x.keys()[0]]))
+
+        if self.functions is None:
+            return np.ones(len(x[x.keys()[0]]))
+
+        if x.keys()[0] in self.functions.keys():
+
+            pname = x.keys()[0]
+
+            which_func = self.functions[pname]
+
+            weight *= which_func(x=x[pname])
+
+        if y is not None:
+            if y.keys()[0] in self.functions.keys():
+
+                pname = y.keys()[0]
+
+                which_func = self.functions[pname]
+
+                weight *= which_func(x=y[pname])
+
+        return weight
+
+class Gaussian:
+
+    def __init__(self,mean,sigma,name):
+
+        self.mean = mean
+        self.sigma = sigma
+        self.name = name
+
+    def __call__(self, **kwargs):
+        return (2*np.pi*self.sigma**2)**-0.5*np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
+
+
 

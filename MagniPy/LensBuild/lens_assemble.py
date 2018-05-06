@@ -56,6 +56,7 @@ class LensSystem:
         lens_list = []
         arg_list = []
         for component in self.lens_components:
+
             zlist.append(component.redshift)
             lens_list.append(component.other_args['name'])
             arg_list.append(component.lenstronomy_args)
@@ -65,6 +66,7 @@ class LensSystem:
                 arg_list.append({'e1': shear_e1, 'e2': shear_e2})
                 zlist.append(component.redshift)
                 lens_list.append('SHEAR')
+
         return zlist,lens_list,arg_list
 
 

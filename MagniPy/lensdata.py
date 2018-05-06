@@ -23,7 +23,6 @@ class Data:
         else:
             self.set_src(None,None)
 
-
     def sort_by_pos(self,x,y):
 
         import itertools

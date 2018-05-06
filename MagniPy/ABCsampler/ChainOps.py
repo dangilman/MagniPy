@@ -134,7 +134,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
                 if error==0:
                     break
 
-def extract_chain(chain_name='',which_lens = None):
+def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     chain_info_path = chainpath + chain_name + '/simulation_info.txt'
 
@@ -169,9 +169,16 @@ def extract_chain(chain_name='',which_lens = None):
 
             fluxes = np.loadtxt(folder_name+'fluxes.txt')
 
+            astrometric_errors = np.loadtxt(folder_name+'astrometric_errors.txt')
+
+            inds = np.where(astrometric_errors>(2*position_tol))
+
             observed_fluxes = read_data(folder_name+'lensdata.txt')[0].m
 
             params = np.loadtxt(folder_name+'parameters.txt')
+
+            fluxes = np.delete(fluxes, inds, axis=0)
+            params = np.delete(params,inds,axis=0)
 
             if params_header is None:
                 with open(folder_name+'parameters.txt','r') as f:
@@ -200,12 +207,8 @@ def extract_chain(chain_name='',which_lens = None):
         np.savetxt(savename+'observedfluxes'+'.txt', observed_fluxes.reshape(1,4),fmt='%.6f')
         np.savetxt(savename+'samples.txt',single_lens_params,fmt='%.6f',header=params_header)
 
-#extract_chain('gamma_test_208_new',which_lens=1)
-#add_flux_perturbations('gamma_test_208_new',which_lens=1,errors=[0.02,0.05],N_pert=10)
-
-#print read_chain_info(chainpath + '/LOS_test' + '/simulation_info.txt')
-
-
-
+#for i in range(1,21):
+#    extract_chain('singleplane_test',i)
+#    add_flux_perturbations('singleplane_test',errors=[0.02,0.04],N_pert=1,which_lens=i)
 
 

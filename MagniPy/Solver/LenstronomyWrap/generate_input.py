@@ -11,7 +11,7 @@ import lenstronomy.Util.param_util as param_util
 
 class LenstronomyWrap:
 
-    def __init__(self,multiplane=None,cosmo=None,z_source = None):
+    def __init__(self,cosmo=None,z_source = None):
 
         self.xtol = 1e-10
         self.min_distance = 0.01
@@ -23,10 +23,8 @@ class LenstronomyWrap:
         assert z_source is not None
         self.zsrc = z_source
 
-        assert multiplane is not None
-        self.multiplane = multiplane
-
         self.lens_model_list,self.lens_model_params = [],[]
+        self.current_lensmodel = None
 
     def update_settings(self,xtol=None,min_distance=None,search_window = None,precision_limit=None,num_iter_max = None):
 
@@ -55,7 +53,14 @@ class LenstronomyWrap:
             redshift_list += new_z
             lens_model_params += new_args
 
-        self.lens_model_list, self.lens_model_params, self.redshift_list = lens_model_list,lens_model_params,redshift_list
+        return lens_model_list,lens_model_params,redshift_list
+
+    def get_lensmodel(self,lens_system):
+
+        lens_list,lens_params,redshift_list = self.assemble(lens_system)
+
+        return LensModel(lens_model_list=lens_list,z_source=self.zsrc,redshift_list=redshift_list,cosmo=self.cosmo,
+                         multi_plane=lens_system.multiplane),lens_params
 
     def get_lens(self,deflector):
 
@@ -102,47 +107,38 @@ class LenstronomyWrap:
 
         return model_list,arg_list,z_list
 
+    def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params):
 
-    def get_lensmodel(self):
-
-        return LensModel(lens_model_list=self.lens_model_list, z_source=self.zsrc,
-                              redshift_list=self.redshift_list,
-                              cosmo=self.cosmo, multi_plane=self.multiplane)
-
-    def update_lensparams(self, newparams):
-
-        self.lens_model_params = newparams
-
-    def reset_assemble(self):
-
-        self.lens_model_list, self.lens_model_params = [], []
-
-    def solve_leq(self,xsrc,ysrc):
-
-        lensmodel = LensModel(lens_model_list=self.lens_model_list, z_source=self.zsrc,
-                              redshift_list=self.redshift_list,cosmo = self.cosmo, multi_plane = self.multiplane)
 
         lensEquationSolver = LensEquationSolver(lensModel=lensmodel)
 
-        x_image, y_image = lensEquationSolver.findBrightImage(kwargs_lens=self.lens_model_params, sourcePos_x=xsrc,
+        x_image, y_image = lensEquationSolver.findBrightImage(kwargs_lens=lens_model_params, sourcePos_x=xsrc,
                                                               sourcePos_y=ysrc,min_distance=self.min_distance, search_window=self.search_window,
                                                                          precision_limit=self.precision_limit, num_iter_max=self.num_iter_max)
 
         return x_image,y_image
 
-    def optimize_lensmodel(self, x_image, y_image, solver_type):
+    def optimize_lensmodel(self, x_image, y_image, model, solver_type, lens_model_params, multiplane):
 
-        self.model = self.get_lensmodel()
-
-        if self.multiplane:
+        if multiplane:
             decoupling = False
         else:
             decoupling = True
 
-        solver4Point = Solver4Point(lensModel=self.model, decoupling=decoupling, solver_type=solver_type)
+        solver4Point = Solver4Point(lensModel=model, decoupling=decoupling, solver_type=solver_type)
 
-        kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=self.lens_model_params,
+        kwargs_fit,acc = solver4Point.constraint_lensmodel(x_pos=x_image, y_pos=y_image, kwargs_list=lens_model_params,
                                                        xtol=self.xtol)
 
         return kwargs_fit
+
+    def compute_mags(self,x_pos,y_pos,lensmodel,lens_args,source_size,grid_rmax,grid_number,source_shape):
+
+        extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,z_source=lensmodel.z_source,
+                                        redshift_list=lensmodel.redshift_list,cosmo=lensmodel.cosmo,multi_plane=lensmodel.multi_plane)
+
+        magnification = extension.magnification_finite(x_pos,y_pos,kwargs_lens=lens_args,source_sigma=source_size,window_size=grid_rmax,grid_number=grid_number,
+                                                       shape=source_shape)
+
+        return magnification
 

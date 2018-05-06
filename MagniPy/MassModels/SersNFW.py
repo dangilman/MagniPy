@@ -1,100 +1,78 @@
 import numpy as np
+from Sersic import Sersic
+from NFW import NFW
+from TNFW import TNFW
+from scipy.special import gammainc,gamma
 
 class SersNFW:
 
-    def __init__(self, xgrid=None, ygrid=None):
-        if xgrid is None and ygrid is None:
-            x, y = np.linspace(-500, 500, 1000), np.linspace(-500, 500, 1000)
-            xgrid,ygrid = np.meshgrid(x,y)
-            print Warning('Did not specify grid position, defaulting to (0,0), (1000,1000) pixels')
+    def __init__(self):
 
-        self.x, self.y = xgrid, ygrid
-        self.f, self.r0fac, self.rsfac = 1*3**-1,0.5,5
-        self.nfw = NFW(xgrid=self.x, ygrid=self.y)
-        self.sers = Sersic(xgrid=self.x, ygrid=self.y)
+        self.sersic = Sersic()
+        self.nfw = NFW()
+        self.R0_fac = 0.5
+        self.Rs_fac = 5
+
+    def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
+               y = None, r_eff=None, n_sersic=None):
+
+        subparams = {}
+        otherkwargs = {}
+
+        otherkwargs['name']='SERSIC_NFW'
+        q = 1-ellip
+        subparams['q'] = q
+        subparams['phi_G'] = (ellip_theta)*np.pi*180**-1
+
+        subparams['Rs'] = r_eff*self.Rs_fac
+        subparams['center_x'] = x
+        subparams['center_y'] = y
+
+        subparams['r_eff'] = r_eff
+        subparams['n_sersic'] = n_sersic
+
+        k_eff,ks_nfw = self.normalizations(Rein=R_ein,re=r_eff,Rs=self.Rs_fac*r_eff,n=n_sersic,R0=self.R0_fac*r_eff,f=self.f)
+
+        subparams['k_eff'] = k_eff
+        subparams['theta_Rs'] = 4*ks_nfw*r_eff*self.Rs_fac*(1+np.log(0.5))
+
+        return subparams,otherkwargs
+
+    def kappa(self,x,y,theta_E=None,r_eff=None,n_sersic=None,q=None,separate=False,f=0.333,r0fac=0.5,rsfac=5):
+
+        Rs = rsfac*r_eff
+        R0 = r0fac*r_eff
+
+        sersnorm,nfwnorm = self.normalizations(Rein=theta_E,re=r_eff,Rs=Rs,R0=R0,n=n_sersic,f=f)
+
+        nfw_kappa = self.nfw.kappa(x,y,theta_Rs=4*nfwnorm*Rs*(np.log(0.5)+1),Rs=Rs)
+        sersic_kappa = self.sersic.kappa(x, y, n_sersic, r_eff, sersnorm, q, center_x=0, center_y=0)
+
+        if separate:
+            return nfw_kappa,sersic_kappa
+        else:
+            return nfw_kappa+sersic_kappa
 
     def b(self,n):
         return 1.9992*n - 0.3271 + 4*(405*n)**-1
-    def get_rs(self,re):
-        return self.rsfac*re
 
-    def normalizations(self,Rein=None,re=None,n=None,f=1./3,r0fac=0.5,rsfac=5):
+    def normalizations(self,Rein=None,re=None,Rs=None,R0=None,n=None,f=None):
 
-        def G(x):
-
+        def F(x):
             return np.log(0.25*x**2)+2*np.arctanh(np.sqrt(1-x**2))*np.sqrt(1-x**2)**-1
-        def C(r,R_e,n):
-
+        def G(x,n):
             b = self.b(n)
-            return (n*np.exp(b)*b**(-2*n))*(gamma(2*n) - gammainc(2*n,b*(r*R_e**-1)**(1*n**-1)))
+            X = b*x**(n**-1)
+            return n*np.exp(b)*b**(-2*n)*gammainc(2*n,X)
+        def denom(R_ein,R_eff,Rs,R0,f,n):
+            return f*F(R_ein*Rs**-1)*G(R0*R_eff**-1,n)+(1-f)*F(R0*Rs**-1)*G(R_ein*R_eff,n)
+        def norm_sersic(R_ein,R_eff,Rs,R0,f,n):
+            return 0.5*R_ein**2*Rs**-2*((1-f)*F(R0*Rs**-1))*denom(R_ein,R_eff,Rs,R0,f,n)**-1
+        def norm_nfw(R_ein,R_eff,Rs,R0,f,n):
+            return 0.5*R_ein**2*R_eff**-2*(f*G(R0*R_eff**-1,n))*denom(R_ein,R_eff,Rs,R0,f,n)**-1
 
-        def norm_sersic(ks,R_ein,re,n,f=1*3**-1,r0fac=0.5,rsfac=5):
-            r0 = r0fac*re
-            rs = rsfac*re
-            n2 = r0*rs**-1
-            f_fac = (1-f)*f**-1
-            ratio = (rs*re**-1)**2
-            return f_fac*ks*G(n2)*ratio**2*C(r0,re,n)**-1
 
-
-        def norm_nfw(R_ein,re,n,f=1*3**-1,r0fac=0.5,rsfac=5):
-            r0 = r0fac * re
-            rs = rsfac * re
-            n1 = R_ein * rs ** -1
-            n2 = r0 * rs ** -1
-            f_fac = (1 - f) * f ** -1
-            ratio1 = (R_ein * rs ** -1) ** 2
-
-            return 0.5*ratio1*(G(n1)+f_fac*G(n2)*C(R_ein,re,n)*C(r0,re,n)**-1)**-1
-
-        nfwnorm = norm_nfw(Rein, re, n, f, r0fac, rsfac)
-        snorm = norm_sersic(nfwnorm,Rein,re,n,f,r0fac,rsfac)
+        nfwnorm = norm_nfw(Rein, re, Rs, R0,f,n)
+        snorm = norm_sersic(Rein, re, Rs, R0,f,n)
 
         return snorm,nfwnorm
-
-    def convergence(self,Rein=None,re=None,n=None,ellip=None,ellip_PA=None,shear=None,shear_PA=None):
-
-        f,r0fac,rsfac = self.f,self.r0fac,self.rsfac
-
-        rs = rsfac*re
-
-        ks,sersnorm = self.normalizations(Rein,re,n,f,r0fac,rsfac)
-
-        if ellip is None or ellip==0:
-
-            return self.nfw.convergence(ks=ks,rs=rs)+self.sers.convergence(b=sersnorm,re=re,n=n,ellip=ellip)
-
-    def conv_insersic(self,Rein=None,re=None,n=None,ellip=None,ellip_PA=None,shear=None,shear_PA=None):
-
-        f,r0fac,rsfac = self.f,self.r0fac,self.rsfac
-
-        rs = rsfac*re
-
-        ks,sersnorm = self.normalizations(Rein,re,n,f,r0fac,rsfac)
-
-        if ellip is None or ellip==0:
-
-            return self.sers.convergence(b=sersnorm,re=re,n=n,ellip=ellip)
-
-    def conv_innfw(self,Rein=None,re=None,n=None,ellip=None,ellip_PA=None,shear=None,shear_PA=None):
-
-        f,r0fac,rsfac = self.f,self.r0fac,self.rsfac
-
-        rs = rsfac*re
-
-        ks,sersnorm = self.normalizations(Rein,re,n,f,r0fac,rsfac)
-
-        if ellip is None or ellip==0:
-
-            return self.nfw.convergence(ks=ks,rs=rs)
-
-    def def_angle(self,x0=None,y0=None,Rein=None,re=None,n=None,ellip=None,ellip_PA=None,shear=None,shear_PA=None):
-
-        f, r0fac, rsfac = self.f, self.r0fac, self.rsfac
-
-        rs = rsfac * re
-
-        ks, sersnorm = self.normalizations(Rein, re, n, f, r0fac, rsfac)
-
-        return self.nfw.def_angle(x0=x0, y0=y0, rs=rs, ks=ks) + self.sers.def_angle(x0=x0, y0=y0, n=n, re=re, ke=sersnorm,
-                                                                                    ellip=ellip, ellip_PA=ellip_PA)

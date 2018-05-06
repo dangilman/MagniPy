@@ -25,7 +25,7 @@ class ProbabilityDensity:
     default_contour_colors = (colors.cnames['orchid'],colors.cnames['darkviolet'],'k')
 
     def __init__(self,param_names=[],posterior_samples=None,pranges=None,kde_class ='getdist',ax=None,fig=None,
-                 boundary_correction_order=1):
+                 boundary_correction_order=1,weight_function=None):
 
         self.density = None
 
@@ -43,6 +43,8 @@ class ProbabilityDensity:
 
         dimension = len(param_names)
         self.param_names = param_names
+
+        self.weight_func = weight_function
 
         if dimension==1:
             self.posteriorsamples = []
@@ -78,22 +80,22 @@ class ProbabilityDensity:
             else:
                 self.kde = KDE(p1_range=p1_range,boundary_correction_order=boundary_correction_order,dim=1)
 
+
     def _get1ddensity(self,data,bins=20,kde=True):
 
         if kde:
-            counts = self.kde.density(data)
-
+            counts,xvals = self.kde.density(data)
 
         else:
-            counts,bin_edges = np.histogram(data,bins=bins,range=[self.p1_range[0],self.p1_range[1]],normed=True)
+            counts,xvals = np.histogram(data,bins=bins,range=[self.p1_range[0],self.p1_range[1]],normed=True)
 
-        return counts
+        return counts,xvals
 
     def _get2ddensity(self,data_p1,data_p2,bins=20,kde=True):
 
         if kde:
             data_array = np.vstack([np.array(data_p1), np.array(data_p2)])
-            counts = self.kde.density(data_array.T).T
+            counts,x,y = self.kde.density(data_array.T)
 
         else:
 
@@ -102,35 +104,37 @@ class ProbabilityDensity:
 
         self.density = counts.T
 
-        return counts.T
+        return counts.T,x,y
 
     def _get_binned_counts_2d(self, bins, kde):
 
         for index in range(0,len(self.posteriorsamples[0])):
 
+            b, xvals, yvals = self._get2ddensity(self.posteriorsamples[0][index], self.posteriorsamples[1][index],bins=bins, kde=kde)
             try:
-                binned_counts *= self._get2ddensity(self.posteriorsamples[0][index],self.posteriorsamples[1][index],bins=bins,kde=kde)
+                binned_counts *= b
             except:
-                binned_counts = self._get2ddensity(self.posteriorsamples[0][index],self.posteriorsamples[1][index],bins=bins,kde=kde)
+                binned_counts = b
 
         self.binned_counts = binned_counts
-
-        return binned_counts
+        xx,yy = np.meshgrid(xvals,yvals)
+        return binned_counts,xx.ravel(),yy.ravel()
 
     def _get_binned_counts_1d(self, bins, kde):
 
         for index in range(0,len(self.posteriorsamples)):
-
+            b,xvals = self._get1ddensity(self.posteriorsamples[index], bins=bins, kde=kde)
             try:
-                binned_counts *= self._get1ddensity(self.posteriorsamples[index],bins=bins,kde=kde)
+                binned_counts *= b
             except:
-                binned_counts = self._get1ddensity(self.posteriorsamples[index],bins=bins,kde=kde)
+                binned_counts = b
 
         self.binned_counts = binned_counts
 
-        return binned_counts
+        return binned_counts,xvals
 
-    def MakeConditional1D(self,bins=20,kde=True,xlabel=None,ylabel=None,xtick_labels=None,xticks=None,ytick_labels=None,tick_font=12,tick_label_font=12,):
+    def MakeConditional1D(self,bins=20,kde=True,xlabel=None,ylabel=None,xtick_labels=None,xticks=None,ytick_labels=None,
+                          tick_font=12,tick_label_font=12,**kwargs):
 
         r1 = self.p1_range[1] - self.p1_range[0]
 
@@ -140,10 +144,10 @@ class ProbabilityDensity:
 
         if len(binned_counts)>25:
 
-            marginalized = self.bar_plot(binned_counts,prange=self.p1_range,rebin=25)
+            marginalized = self.bar_plot(binned_counts,prange=self.p1_range,rebin=25,**kwargs)
 
         else:
-            marginalized = self.bar_plot(binned_counts,prange=self.p1_range)
+            marginalized = self.bar_plot(binned_counts,prange=self.p1_range,**kwargs)
 
         if xlabel is None:
             xlabel = self.param_names[0]
@@ -158,33 +162,54 @@ class ProbabilityDensity:
 
         return self.ax
 
+    def _get_weights2d(self,sample_weight,x={},y={}):
+
+        if self.weight_func is None:
+            return sample_weight
+
+        prior_weight = self.weight_func(x,y)
+
+        return prior_weight*sample_weight
+
+    def _get_weights1d(self, sample_weight, x={}):
+
+        if self.weight_func is None:
+            return sample_weight
+
+        prior_weight = self.weight_func(x)
+
+        return prior_weight*sample_weight
+
     def MakeJointPlot(self,bins=20,kde=True,xlabel=None,ylabel=None,xtick_labels=None,xticks=None,ytick_labels=None,yticks=None,tick_font = 12,
-                      filled_contours=True,contour_colors=None,contour_alpha=0.6,tick_label_font=12):
+                      filled_contours=True,contour_colors=None,contour_alpha=0.6,tick_label_font=12,levels=[.05,.22],**kwargs):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
 
         r1,r2 = self.p1_range[1]-self.p1_range[0],self.p2_range[1]-self.p2_range[0]
 
-        binned_counts = self._get_binned_counts_2d(bins, kde)
+        binned_counts,x,y = self._get_binned_counts_2d(bins, kde)
 
-        # normalize
-        binned_counts *= len(binned_counts)**2*(np.sum(binned_counts))**-1
+        weights = self._get_weights2d(binned_counts.ravel(),{self.param_names[0]:x},{self.param_names[1]:y})
+
+        binned_counts,xvals,yvals = np.histogram2d(x=x,y=y,weights=weights,normed=True,bins=50)
 
         if filled_contours:
+
             aspect = r1*r2**-1
             extent = [self.p1_range[0],self.p1_range[1],self.p2_range[0],self.p2_range[1]]
             x,y = np.linspace(self.p1_range[0],self.p1_range[1],len(binned_counts)),np.linspace(self.p2_range[0],self.p2_range[1],len(binned_counts))
-            self.contours(x,y,binned_counts,contour_colors=contour_colors,contour_alpha=contour_alpha, extent=extent,aspect=aspect)
+            self.contours(x,y,binned_counts,contour_colors=contour_colors,contour_alpha=contour_alpha, extent=extent,aspect=aspect,
+                          levels=levels)
             self.ax.imshow(binned_counts, extent=[self.p1_range[0], self.p1_range[1], self.p2_range[0],
                                                   self.p2_range[1]],
                            aspect=(r1 * r2 ** -1), origin='lower', cmap=self.cmap, alpha=0)
 
-
         else:
+
             self.ax.imshow(binned_counts,extent=[self.p1_range[0], self.p1_range[1], self.p2_range[0],
                                                          self.p2_range[1]],
-                                   aspect=(r1 * r2 ** -1), origin='lower', cmap=self.cmap, alpha=0)
+                                   aspect=(r1 * r2 ** -1), origin='lower', cmap=self.cmap, alpha=1)
 
 
         if xlabel is None:
@@ -280,17 +305,14 @@ class ProbabilityDensity:
         axis.set_ylim(0, max(bar_heights) * 1.05)
         return axis
 
-    def contours(self, x,y,grid, levels = [.95,.68], linewidths=3.5, filled_contours=True,contour_colors='',
+    def contours(self, x,y,grid, levels = [.05,.22], linewidths=3.5, filled_contours=True,contour_colors='',
                  contour_alpha=1,extent=None,aspect=None):
 
-        for i,lev in enumerate(levels):
-            levels[i] = 1-lev
-
+        levels.append(1)
+        levels = np.array(levels)*np.max(grid)
         X, Y = np.meshgrid(x, y)
 
         if filled_contours:
-            levels.append(1)
-            levels = np.array(levels)*np.max(grid)
 
             plt.contour(X, Y, grid, levels, extent=extent,
                               colors=contour_colors, linewidths=linewidths, zorder=1)
@@ -301,7 +323,6 @@ class ProbabilityDensity:
         else:
             plt.contour(X, Y, grid, extent=extent, colors=contour_colors,
                                   levels=np.array(levels) * np.max(grid), linewidths=linewidths)
-
 
 
 def bar_plot(bar_heights, prange, color='0', alpha='1', rebin=None, ax=None):

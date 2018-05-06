@@ -2,8 +2,6 @@ import numpy as np
 from source_models import *
 from MagniPy.util import *
 import matplotlib.pyplot as plt
-from lenstronomy.LensModel.Profiles.sie import SPEMD
-from lenstronomy.LensModel.Profiles.nfw import NFW
 from MagniPy.Solver.LenstronomyWrap import generate_input,MultiLensWrap
 
 class RayTrace:
@@ -29,8 +27,19 @@ class RayTrace:
         self.xsrc,self.ysrc = xsrc,ysrc
 
         self.cosmo = cosmology
+
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
+
+        polar_grid = True
+        self.x_grid_0 = self.x_grid_0.ravel()
+        self.y_grid_0 = self.y_grid_0.ravel()
+
+        if polar_grid:
+
+            inds = np.where(np.sqrt(self.x_grid_0**2+self.y_grid_0**2)<=self.grid_rmax)
+            self.x_grid_0 = self.x_grid_0[inds]
+            self.y_grid_0 = self.y_grid_0[inds]
 
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'],xgrid0=self.x_grid_0,ygrid0=self.y_grid_0)
@@ -39,10 +48,7 @@ class RayTrace:
 
         if self.raytrace_with == 'lenstronomy':
 
-            self.multilenswrap = MultiLensWrap.MultiLensWrapper(multiplane=self.multiplane,astropy_class=self.cosmo.cosmo,
-                                                               z_source=self.cosmo.zsrc,source_shape=source_shape,
-                                                               gridsize=2*self.grid_rmax,res=self.res,
-                                                               source_size=kwargs['source_size'])
+            self.multilenswrap = MultiLensWrap.MultiLensWrapper()
 
 
     def get_images(self,xpos,ypos,lens_system,**kwargs):
@@ -52,19 +58,18 @@ class RayTrace:
         else:
             return self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source)
 
-    def compute_mag(self,xpos,ypos,lens_system,print_mag=False,**kwargs):
+    def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None,
+                    print_mag=False,**kwargs):
 
-        if self.multiplane is False:
-            if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos,ypos,lens_system,**kwargs)
+        if self.raytrace_with == 'lenstronomy':
+            return self.multilenswrap.magnification(xpos,ypos,self.x_grid_0,self.y_grid_0,lensmodel,lens_model_params,
+                                                        self.source,self.res)
 
-            else:
-                return self._single_plane_trace(xpos,ypos,lens_system,print_mag,**kwargs)
         else:
-            if self.raytrace_with == 'lenstronomy':
-                return self.multlenswrap.compute_mag(xpos, ypos, lens_system,**kwargs)
+            if self.multiplane:
+                return self._multi_plane_trace(xpos, ypos, lens_system, **kwargs)
             else:
-                return self._multi_plane_trace(xpos,ypos,lens_system,**kwargs)
+                return self._single_plane_trace(xpos,ypos,lens_system,**kwargs)
 
     def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False):
 
@@ -161,7 +166,7 @@ class RayTrace:
         #plt.imshow(self.source.source_profile(betax=betax,betay=betay))
         #plt.show()
 
-        return self.source.source_profile(betax=betax,betay=betay)
+        return self.source(betax=betax,betay=betay)
 
     def multi_plane_trace_full(self,xx,yy,lens_system):
 
@@ -357,7 +362,6 @@ class RayTrace:
         print 'src pos (true): ',str(self.xsrc) + ' ' + str(self.ysrc)
 
         return betax,betay
-
 
 
 
