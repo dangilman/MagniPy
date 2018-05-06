@@ -3,6 +3,7 @@ from cosmology import ParticleMasses
 from scipy.integrate import quad
 from MagniPy.LensBuild.defaults import *
 from scipy.special import hyp2f1
+from colossus.halo.concentration import *
 from copy import deepcopy
 
 class CosmoExtension(Cosmo):
@@ -22,6 +23,22 @@ class CosmoExtension(Cosmo):
                           'omega_n_0':0,'N_nu':1,'h':self.h,'sigma_8':self.sigma_8,'n':1}
 
         self.dm_particles = ParticleMasses(h=self.h)
+
+        self.cosmo_set = False
+
+    def _set_cosmo(self):
+
+        if self.cosmo_set is True:
+            return self.colossus_cosmo
+
+        self.cosmo_set = True
+
+        params = {'flat': True, 'H0': self.cosmology_params['h']*100, 'Om0':self.cosmology_params['omega_M_0'],
+                  'Ob0':self.cosmology_params['omega_b_0'], 'sigma8':self.cosmology_params['sigma_8'], 'ns': 0.9608}
+
+        self.colossus_cosmo = cosmology.setCosmology('custom',params)
+
+        return cosmology.setCosmology('custom',params)
 
     def D_growth(self,z,omega_M,omega_L):
 
@@ -196,3 +213,34 @@ class CosmoExtension(Cosmo):
                 integral.append(quad(integrand, z1, value, args=(angle, z_base, Rein_def))[0])
             return np.array(integral)
 
+    def NFW_concentration(self,M,model='bullock01',mdef='200c',logmhm=0,z=None,
+                           g1=60,concentration_turnover=True):
+
+        # WDM relation adopted from Ludlow et al
+        # scatter adopted from Ludlow et al CDM
+
+        g2 = concentration_power
+
+        def beta(z_val):
+            return 0.026*z_val - 0.04
+
+        if self.cosmo_set is False:
+            self._set_cosmo()
+
+        c_cdm = concentration(M*self.cosmo.h,mdef=mdef,model=model,z=z)
+
+        if concentration_turnover is False:
+            #c_cdm = np.random.lognormal(c_cdm,sigma=0.11)
+            return c_cdm
+
+        if logmhm == 0:
+            #c_cdm = np.random.lognormal(c_cdm, sigma=0.11)
+            return c_cdm
+
+        else:
+            mhm = 10**logmhm
+            factor = (1+g1*mhm*M**-1)**g2
+            c_wdm = c_cdm*factor**-1
+            c_wdm *= (1+z)**beta(z)
+            #c_wdm = np.random.lognormal(c_wdm, sigma=0.11)
+            return c_wdm

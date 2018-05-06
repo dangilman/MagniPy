@@ -6,7 +6,6 @@ from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
 from MagniPy.MassModels import PointMass
 from MagniPy.MassModels import uniformsheet
-from MagniPy.LensBuild.lens_assemble import Deflector
 from BuildRoutines.halo_environments import *
 from MagniPy.util import filter_by_position
 from MagniPy.LensBuild.BuildRoutines import PBHgen
@@ -23,7 +22,7 @@ class HaloGen:
         :param zsrc: source redshift
         """
 
-        self.cosmology = Cosmo(zd=zd,zsrc=zsrc)
+        self.cosmology = CosmoExtension(zd=zd,zsrc=zsrc)
 
         self.zd,self.zsrc = self.cosmology.zd,self.cosmology.zsrc
 
@@ -351,6 +350,12 @@ class HaloGen:
         halos = []
         modelkwargs = deepcopy(model_kwargs)
 
+        if 'zmin' not in modelkwargs:
+            modelkwargs['zmin'] = 0
+
+        if 'zmax' not in modelkwargs:
+            modelkwargs['zmax'] = self.cosmology.zsrc
+
         if 'kappa_Rein' not in modelkwargs:
             modelkwargs['kappa_Rein'] = kappa_Rein_default
 
@@ -501,7 +506,8 @@ class HaloGen:
                                                       y_position=y,
                                                       log_mL=modelkwargs[i]['subhalo_log_mL'],
                                                       logmhm=modelkwargs[i]['logmhm'],
-                                                      cosmo_at_zlens=cosmo_at_plane)
+                                                      cosmo_at_zlens=cosmo_at_plane,
+                                                      concentration_func=self.cosmology.NFW_concentration,c_turnover=concentration_turnover)
 
                         masses, x, y, R2d, R3d = massfunction.draw()
 
@@ -527,13 +533,20 @@ class HaloGen:
 
                         subhalo_args['truncation'] = truncation
 
+
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
+                        subhalo_args['c'] = self.cosmology.NFW_concentration(masses[j], logmhm=modelkwargs[i]['logmhm'], z=redshift,
+                                                             concentration_turnover=c_turnover)
 
                     elif massprofile == 'NFW':
 
                         c_turnover = concentration_turnover
 
                         lensmod = NFW.NFW(cosmology=cosmo_at_plane, c_turnover=c_turnover)
+
+                        subhalo_args['c'] = self.cosmology.NFW_concentration(masses[j], logmhm=modelkwargs[i]['logmhm'],
+                                                                             z=redshift,
+                                                                             concentration_turnover=c_turnover)
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 

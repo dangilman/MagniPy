@@ -15,7 +15,7 @@ class Plaw_secondary:
     """
 
     def __init__(self, M_parent=None, parent_r2d = None, x_position=None, y_position=None, N0=0.21, alpha_secondary=-0.8,
-                 log_mL = None,logmhm=None,cosmo_at_zlens=None,parent_r3d=None):
+                 log_mL = None,logmhm=None,cosmo_at_zlens=None,parent_r3d=None,concentration_func=None,c_turnover=True):
 
         NFW_calculate = NFW(cosmology=cosmo_at_zlens)
 
@@ -48,7 +48,7 @@ class Plaw_secondary:
             else:
                 normalization = N0*(np.absolute(alpha_secondary)*M)**np.absolute(alpha_secondary)
 
-            c = NFW_calculate.nfw_concentration(M,logmhm=logmhm)
+            c = concentration_func(M,logmhm=logmhm,z=self.redshift,concentration_turnover=c_turnover)
 
             # rmax2d in Mpc
             _,Rs,r200 = NFW_calculate.nfwParam_physical(M, c)

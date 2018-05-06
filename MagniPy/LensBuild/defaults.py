@@ -13,6 +13,7 @@ default_source_shape = 'GAUSSIAN'
 default_source_size = 0.0012*2.355**-1 #FWHM 10pc
 
 concentration_turnover = True
+concentration_power = 0.17
 
 default_sigma8 = 0.82
 

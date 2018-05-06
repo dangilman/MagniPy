@@ -132,6 +132,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     fit_fluxes = None
     n = 0
     print 'solving realizations... '
+
     while n<Ntotal:
 
         halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
@@ -150,10 +151,11 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         if astro_error<1e-5:
 
-            try:
-                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data[n],index=0,sum_in_quad=True)))
-            except:
-                fit_fluxes = model_data[0].flux_anomaly(data[n],index=0,sum_in_quad=True)
+            if fit_fluxes is None:
+                fit_fluxes = model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)
+            else:
+                fit_fluxes = np.vstack((fit_fluxes, model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)))
+
             n += 1
             print n
 
@@ -164,4 +166,3 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     else:
 
         return model_data
-

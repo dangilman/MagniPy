@@ -79,12 +79,10 @@ class NFW:
 
         return 2*ks*(1-self.F(xnfw))*((xnfw)**2-1)**-1
 
-    def params(self, x=None,y=None,mass=float, mhm=None ,trunc = None):
+    def params(self, x=None,y=None,mass=float, mhm=None, c = None, trunc = None):
 
         assert mhm is not None
         assert mass is not None
-
-        c = self.nfw_concentration(mass, mhm)
 
         rsdef,Rs = self.nfw_physical2angle(mass, c)
 
@@ -197,12 +195,12 @@ class NFW:
 
         return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
 
-    def M_physical(self,m200,mhm=0):
+    def M_physical(self,m200,mhm=0,c=None):
         """
 
         :param m200: m200
         :return: physical mass corresponding to m200
         """
-        c = self.nfw_concentration(m200,mhm=mhm)
+        #c = self.nfw_concentration(m200,mhm=mhm)
         rho0, Rs, r200 = self.nfwParam_physical(m200,c)
         return 4*np.pi*rho0*Rs**3*(np.log(1+c)-c*(1+c)**-1)
