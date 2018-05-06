@@ -66,14 +66,14 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     data2fit=[], Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
-                                    filter_halo_positions=None, outfilepath=None,ray_trace=True, method='lenstronomy',
+                                    filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
     configs = ['cross','cusp','fold']
     data = []
     for i in range(0,Ntotal):
         config = random.choice(configs)
-        print config
+
         data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0},massprofile=massprofile,
                          halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
                                 shear_prior=[start_shear,1e-9]))
@@ -94,7 +94,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             filter_kwargs_list.append({})
 
     if write_to_file:
-        print outfilepath
+        assert outfilepath is not None
         assert os.path.exists(outfilepath)
 
     if start_macromodel is None:
@@ -143,21 +143,25 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                 source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
+        if model_data[0].nimg!=data[n].nimg:
+            continue
 
         astro_error = np.sqrt(np.sum((data[n].x - model_data[0].x) ** 2 + (data[n].y - model_data[0].y) ** 2))
 
         if astro_error<1e-5:
 
             try:
-                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data[n],index=0)))
+                fit_fluxes = np.vstack((fit_fluxes,model_data[0].flux_anomaly(data[n],index=0,sum_in_quad=True)))
             except:
-                fit_fluxes = model_data[0].flux_anomaly(data[n],index=0)
+                fit_fluxes = model_data[0].flux_anomaly(data[n],index=0,sum_in_quad=True)
             n += 1
             print n
 
     if write_to_file:
 
-        #write_data(outfilepath+outfilename+'.txt', data, mode='append')
         write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=fit_fluxes,mode='append')
+
     else:
+
         return model_data
+
