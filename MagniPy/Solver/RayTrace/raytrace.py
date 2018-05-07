@@ -7,7 +7,7 @@ from MagniPy.Solver.LenstronomyWrap import generate_input,MultiLensWrap
 class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None, raytrace_with=None,
-                 polar_grid=False, **kwargs):
+                 polar_grid=False, polar_q = 0.1,**kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -17,6 +17,7 @@ class RayTrace:
         :param res: pixel resolution asec per pixel
         """
         self.raytrace_with = raytrace_with
+        print polar_grid
 
         self.polar_grid = polar_grid
         self.grid_rmax = grid_rmax
@@ -36,13 +37,20 @@ class RayTrace:
         self.y_grid_0 = self.y_grid_0.ravel()
 
         if polar_grid:
-
-            inds = np.where(np.sqrt(self.x_grid_0**2+self.y_grid_0**2)<=self.grid_rmax)
-            self.x_grid_0 = self.x_grid_0[inds]
-            self.y_grid_0 = self.y_grid_0[inds]
+            self.polar_q = polar_q
+            self.x_grid_0 = self.x_grid_0.ravel()
+            self.y_grid_0 = self.y_grid_0.ravel()
 
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
+        elif source_shape == 'TORUS':
+            self.source = TORUS(x=xsrc,y=ysrc,inner=kwargs['inner_radius'],outer=kwargs['outer'])
+        elif source_shape == 'GAUSSIAN_TORUS':
+            self.source = GAUSSIAN_TORUS(x=xsrc, y=ysrc, width=kwargs['source_size'],inner=kwargs['inner_radius'],outer=kwargs['outer_radius'])
+        elif source_shape == 'SERSIC':
+            self.source = SERSIC(x=xsrc,y=ysrc,r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
+        elif source_shape == 'GAUSSIAN_SERSIC':
+            self.source = GAUSSIAN_SERSIC(x=xsrc,y=ysrc,width=kwargs['source_size'],r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
         else:
             raise ValueError('other source models not yet implemented')
 
@@ -50,28 +58,54 @@ class RayTrace:
 
             self.multilenswrap = MultiLensWrap.MultiLensWrapper()
 
+    def _get_grids(self,xpos,ypos,Nimg):
+
+        x_loc,y_loc = [],[]
+        for i in range(0,Nimg):
+            if self.polar_grid:
+                #ellipse_inds = np.where(np.sqrt(self.x_grid_0 ** 2 + self.y_grid_0 ** 2) <= self.grid_rmax)
+                ellipse_inds = ellipse_coordinates(self.x_grid_0, self.y_grid_0, self.grid_rmax,q=self.polar_q,
+                                                   theta=np.arctan2(ypos[i], xpos[i]) + np.pi * 0.5)
+                x_loc.append(xpos[i] + self.x_grid_0[ellipse_inds])
+                y_loc.append(ypos[i] + self.y_grid_0[ellipse_inds])
+            else:
+                x_loc.append(xpos[i] + self.x_grid_0)
+                y_loc.append(ypos[i] + self.y_grid_0)
+        return x_loc,y_loc
+
     def get_images(self,xpos,ypos,lens_system,**kwargs):
 
-        xpos,ypos = xpos+self.x_grid_0,ypos+self.y_grid_0
+        if isinstance(xpos,float) or isinstance(xpos,int):
+            xpos,ypos = self._get_grids([xpos],[ypos],1)
+            xpos = xpos[0]
+            ypos = ypos[0]
+        else:
+            xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
 
         if self.raytrace_with == 'lensmodel':
             return self.compute_mag(xpos,ypos,lens_system,**kwargs)
         else:
             img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
-            return np.sum(img)*self.res**2,img
+            if self.polar_grid:
+                return np.sum(img)*self.res**2,img
+            else:
+                return np.sum(img)*self.res**2,array2image(img,len(img)**.5,len(img)**.5)
 
     def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None,
                     print_mag=False,**kwargs):
 
+        x_loc, y_loc = self._get_grids(xpos, ypos, len(xpos))
+        N = len(xpos)
         if self.raytrace_with == 'lenstronomy':
-            return self.multilenswrap.magnification(xpos,ypos,self.x_grid_0,self.y_grid_0,lensmodel,lens_model_params,
-                                                        self.source,self.res)
+
+            return self.multilenswrap.magnification(x_loc,y_loc,lensmodel,lens_model_params,
+                                                        self.source,self.res,n=N)
 
         else:
             if self.multiplane:
-                return self._multi_plane_trace(xpos, ypos, lens_system, **kwargs)
+                return self._multi_plane_trace(x_loc, y_loc, lens_system, **kwargs)
             else:
-                return self._single_plane_trace(xpos,ypos,lens_system,**kwargs)
+                return self._single_plane_trace(x_loc,y_loc,lens_system,**kwargs)
 
     def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False):
 
@@ -120,8 +154,8 @@ class RayTrace:
 
         for i in range(0,len(xpos)):
 
-            x_loc = xpos[i]*np.ones_like(self.x_grid_0)+self.x_grid_0
-            y_loc = ypos[i]*np.ones_like(self.y_grid_0)+self.y_grid_0
+            x_loc = xpos[i]
+            y_loc = ypos[i]
 
             xdef = np.zeros_like(x_loc)
             ydef = np.zeros_like(y_loc)
@@ -177,8 +211,8 @@ class RayTrace:
 
         for i in range(0,len(xpos)):
 
-            xcoords = self.x_grid_0 + xpos[i]
-            ycoords = self.y_grid_0 + ypos[i]
+            xcoords = xpos[i]
+            ycoords = ypos[i]
 
             x_source, y_source = self._multi_plane_shoot(lens_system,xcoords,ycoords)
 

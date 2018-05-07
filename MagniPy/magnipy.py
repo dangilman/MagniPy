@@ -119,7 +119,7 @@ class Magnipy:
                 optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
                                                    newkwargs=kwargs_lens[1], method='lenstronomy',
                                                    is_shear=True)
-            data.append(Data(x_img,y_img,fluxes,None,None))
+            data.append(Data(x_img,y_img,fluxes,None,[xsrc,ysrc]))
             opt_sys.append(optimized_sys)
 
         return data,opt_sys
@@ -201,7 +201,7 @@ class Magnipy:
 
     def solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,
-                    raytrace_with=''):
+                    raytrace_with='',polar_grid=True):
 
         if method == 'lensmodel':
 
@@ -243,7 +243,7 @@ class Magnipy:
                                                         grid_rmax=grid_rmax,
                                                         res=res, source_shape=source_shape, source_size=source_size,
                                                         cosmology=self.cosmo, zsrc=self.zsrc,
-                                                        raytrace_with=raytrace_with)
+                                                        raytrace_with=raytrace_with,polar_grid=polar_grid)
 
                     data[i].set_mag(fluxes)
 
@@ -274,7 +274,7 @@ class Magnipy:
 
                     fluxes = self.do_raytrace(x_image,y_image,xsrc=srcx,ysrc=srcy,multiplane=system.multiplane,lensmodel=lensModel,grid_rmax=grid_rmax,
                                               res=res,source_shape=source_shape,source_size=source_size,raytrace_with=raytrace_with,
-                                              lens_model_params=lensmodel_params)
+                                              lens_model_params=lensmodel_params,polar_grid=polar_grid)
 
                 data.append(Data(x=x_image,y=y_image,m=fluxes,t=None,source=[srcx,srcy]))
 

@@ -474,6 +474,20 @@ def nfw_kr(X):
 
     return 2 * (1 - f(X)) * (X ** 2 - 1) ** -1
 
+def ellipse_coordinates(coordinatesx,coordinatesy,rmax,q=0.08,theta=None):
+
+    a = rmax
+    b = q*rmax
+    x,y = rotate(coordinatesx,coordinatesy,theta)
+    ellipse = (x*a**-1) ** 2 + (y*b**-1) ** 2 <= 1
+    #return x[ellipse],y[ellipse]
+    return ellipse
+
+
+
+
+
+
 
 
 

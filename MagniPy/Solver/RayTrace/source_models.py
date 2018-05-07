@@ -61,4 +61,4 @@ class SERSIC:
         bn = 1.9992*self.n - 0.3271 + 4*(405*self.n)**-1
         norm = self.r_half**2*(2*np.pi*self.n)*np.exp(bn)*(bn)**(-2*self.n)*gamma(2*self.n)
 
-        return norm*np.exp(-bn*((dr*self.r_half**-1)**self.n**-1-1))
+        return norm**-1*np.exp(-bn*((dr*self.r_half**-1)**self.n**-1-1))
