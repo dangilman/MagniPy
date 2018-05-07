@@ -84,7 +84,7 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             dset = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                                identifier=identifier,
                                                srcx=src_x, srcy=src_y, grid_rmax=.08,
-                                               res=0.001, source_shape='GAUSSIAN', ray_trace=ray_trace,
+                                               res=0.001, source_shape='GAUSSIAN', ray_trace=True,
                                                raytrace_with=raytrace_with, source_size=source_size,
                                                multiplane=multiplane)
 

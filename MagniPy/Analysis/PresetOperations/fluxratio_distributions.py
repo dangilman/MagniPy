@@ -71,15 +71,17 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     configs = ['cross','cusp','fold']
     data = []
-    for i in range(0,Ntotal):
-        config = random.choice(configs)
 
-        data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0},massprofile=massprofile,
-                         halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
-                                shear_prior=[start_shear,1e-9]))
+    if data2fit is None:
+        for i in range(0,Ntotal):
+            config = random.choice(configs)
 
-    #if isinstance(data2fit,list):
-    #    data2fit = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
+            data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0},massprofile=massprofile,
+                             halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
+                                    shear_prior=[start_shear,1e-9]))
+
+    else:
+        data = [Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)]*Ntotal
 
     filter_kwargs_list = []
     if filter_halo_positions:
