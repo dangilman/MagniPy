@@ -6,15 +6,13 @@ import numpy as np
 
 class MultiLensWrapper:
 
-    def magnification(self,xpos,ypos,xcoords,ycoords,lensmodel,lens_model_params,source_function,res):
+    def magnification(self,xpos,ypos,lensmodel,lens_model_params,source_function,res,n=4):
 
         flux = []
 
-        for i in range(0,len(xpos)):
+        for i in range(0,n):
 
-            x,y = xpos[i]+xcoords,ypos[i]+ycoords
-
-            betax,betay = lensmodel.ray_shooting(x,y,lens_model_params)
+            betax,betay = lensmodel.ray_shooting(xpos[i],ypos[i],lens_model_params)
 
             image = source_function(betax,betay)
 
@@ -22,18 +20,17 @@ class MultiLensWrapper:
 
         return np.array(flux)
 
-    def rayshoot(self,x,y,lens_system,source_function):
+    def rayshoot(self,x,y,lens_system,source_function,astropy,zsrc):
 
-        lenstronomywrap = LenstronomyWrap(multiplane=self.multiplane, cosmo=self.astropy_class,
-                                          z_source=self.z_source)
-        lenstronomywrap.assemble(lens_system)
+        lenstronomywrap = LenstronomyWrap(cosmo=astropy,
+                                          z_source=zsrc)
 
-        lensModel = lenstronomywrap.get_lensmodel()
+        lensModel,lens_model_params = lenstronomywrap.get_lensmodel(lens_system)
 
-        xnew,ynew = lensModel.ray_shooting(x,y,lenstronomywrap.lens_model_params)
+        xnew,ynew = lensModel.ray_shooting(x,y,lens_model_params)
 
         beta = source_function(xnew,ynew)
 
-        return array2image(beta,len(beta)**.5,len(beta)**.5)
+        return beta
 
 
