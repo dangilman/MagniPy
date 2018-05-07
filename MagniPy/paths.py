@@ -13,13 +13,15 @@ if homedir == '/u/home/g/gilmanda/':
 
 elif homedir == '/Users/danielgi/':
     prefix = homedir
+    IO_directory = prefix
     path_2_lensmodel = homedir + '/Code/'
 
 elif homedir == '/Users/mcsedarous/':
     prefix = homedir
+    IO_directory = prefix
     path_2_lensmodel = homedir + 'Desktop/research_Treu/'
 
-gravlens_input_path = prefix+'data/gravlens_input/'
+gravlens_input_path = IO_directory+'data/gravlens_input/'
 
 kapmappath = gravlens_input_path+'gravlens_maps/'
 

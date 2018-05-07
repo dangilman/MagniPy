@@ -12,7 +12,7 @@ def ray_position(z,zmain,zsrc,x,y,cosmology_calc=None,angle_deflection=None):
             cosmology_calc = Cosmo(zmain,zsrc,compute=False)
         r = (x ** 2 + y ** 2) ** .5
 
-        rnew = r * cosmology_calc.D_A(0, z) - angle_deflection * cosmology_calc.D_A(zmain, z)
+        rnew = r*(1-cosmology_calc.beta(z,zmain,zsrc))
 
         theta = np.arctan2(y,x)
 

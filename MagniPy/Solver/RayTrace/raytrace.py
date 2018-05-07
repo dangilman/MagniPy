@@ -31,7 +31,7 @@ class RayTrace:
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-        polar_grid = True
+
         self.x_grid_0 = self.x_grid_0.ravel()
         self.y_grid_0 = self.y_grid_0.ravel()
 
@@ -42,7 +42,7 @@ class RayTrace:
             self.y_grid_0 = self.y_grid_0[inds]
 
         if source_shape == 'GAUSSIAN':
-            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'],xgrid0=self.x_grid_0,ygrid0=self.y_grid_0)
+            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
         else:
             raise ValueError('other source models not yet implemented')
 
@@ -50,13 +50,15 @@ class RayTrace:
 
             self.multilenswrap = MultiLensWrap.MultiLensWrapper()
 
-
     def get_images(self,xpos,ypos,lens_system,**kwargs):
+
+        xpos,ypos = xpos+self.x_grid_0,ypos+self.y_grid_0
 
         if self.raytrace_with == 'lensmodel':
             return self.compute_mag(xpos,ypos,lens_system,**kwargs)
         else:
-            return self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source)
+            img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
+            return np.sum(img)*self.res**2,img
 
     def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None,
                     print_mag=False,**kwargs):

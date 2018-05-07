@@ -117,7 +117,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     if res is None:
         res = default_res(source_size)
 
-    solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=outfilename)
+    solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=identifier)
 
     if halo_model == 'plaw_main':
         multiplane = False
