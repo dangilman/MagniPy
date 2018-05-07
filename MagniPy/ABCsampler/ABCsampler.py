@@ -293,7 +293,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     if len(run_commands)<1000 or chainkeys['solve_method']=='lenstronomy':
         Nsplit = len(run_commands)
-    else: Nsplit = 500
+    else: Nsplit = 1000
 
     assert len(run_commands)%Nsplit == 0
 
@@ -316,14 +316,25 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
         reals = realizations[i * Nsplit:(i + 1) * Nsplit]
 
-        new, _ = solver.fit(macromodel=macro_mods,
-                            realizations=reals, datatofit=datatofit,
-                            multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
-                            sigmas=chainkeys['sigmas'],
-                            identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
-                            res=run_commands[i]['grid_res'],
-                            source_size=run_commands[i]['source_size'], print_mag=True,
-                            raytrace_with=run_commands[i]['raytrace_with'])
+        if chainkeys['solve_method'] == 'lensmodel':
+            new, _ = solver.fit(macromodel=macro_mods[i],
+                                realizations=reals, datatofit=datatofit,
+                                multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
+                                sigmas=chainkeys['sigmas'],
+                                identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
+                                res=run_commands[i]['grid_res'],
+                                source_size=run_commands[i]['source_size'], print_mag=True,
+                                raytrace_with=run_commands[i]['raytrace_with'])
+        else:
+            new, _ = solver.fit(macromodel=macro_mods[i],realizations=reals, datatofit=datatofit,
+                                              multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'],
+                                              ray_trace=True,
+                                              sigmas=chainkeys['sigmas'],
+                                              identifier=run_commands[i]['chain_ID'],
+                                              grid_rmax=run_commands[i]['grid_rmax'],
+                                              res=run_commands[i]['grid_res'],
+                                              source_size=run_commands[i]['source_size'], print_mag=True,
+                                              raytrace_with=run_commands[i]['raytrace_with'])
         chaindata += new
         N_computed += len(new)
 
@@ -377,4 +388,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_test/',1)
+#runABC(os.getenv('HOME')+'/data/singleplane_test_lensmod/',1)
