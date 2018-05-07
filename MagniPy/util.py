@@ -60,9 +60,11 @@ def write_fluxes(filename='',fluxes = [], mode='append',summed_in_quad=True):
     if summed_in_quad:
         fluxes = np.squeeze(fluxes)
         with open(filename,'a') as f:
-            print fluxes
-            for val in fluxes:
-                f.write(str(val)+'\n')
+            if isinstance(fluxes,float):
+                f.write(str(fluxes)+'\n')
+            else:
+                for val in fluxes:
+                    f.write(str(val)+'\n')
         return
 
     if not isinstance(fluxes, np.ndarray):
