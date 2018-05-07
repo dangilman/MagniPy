@@ -128,6 +128,15 @@ class Cosmo:
 
         return self.kpc_per_asec(zd)*self.vdis_to_Rein(zd,zsrc,vdis)
 
+    def beta(self,z,zmain,zsrc):
+
+        D_12 = self.D_A(zmain, z)
+        D_os = self.D_A(0, zsrc)
+        D_1s = self.D_A(zmain, zsrc)
+        D_o2 = self.D_A(0, z)
+
+        return D_12 * D_os * (D_o2 * D_1s) ** -1
+
 
 class ParticleMasses:
 

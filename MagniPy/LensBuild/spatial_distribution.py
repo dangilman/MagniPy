@@ -2,6 +2,24 @@ import numpy as np
 import random
 import math
 
+def ray_position(z,zmain,zsrc,x,y,cosmology_calc=None,angle_deflection=None):
+
+    if z<=zmain:
+        return x,y
+    else:
+        if cosmology_calc is None:
+            from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
+            cosmology_calc = Cosmo(zmain,zsrc,compute=False)
+        r = (x ** 2 + y ** 2) ** .5
+
+        rnew = r * cosmology_calc.D_A(0, z) - angle_deflection * cosmology_calc.D_A(zmain, z)
+
+        theta = np.arctan2(y,x)
+
+        xnew = rnew*np.cos(theta)
+        ynew = rnew*np.sin(theta)
+        return xnew,ynew
+
 class TwoDCoords:
 
     def __init__(self, cosmology=None):
@@ -27,18 +45,13 @@ class TwoDCoords:
             y = r**.5*np.sin(angle)
             r2d = (x**2+y**2)**.5
             zcoord = np.random.uniform(0,(theta**2 - r2d**2)**0.5)
-            return x,y,r2d,zcoord
+            return x,y,r2d,(zcoord**2+r2d**2)**.5
 
         elif z > zmain:
 
             assert self.cosmology is not None
 
-            D_12 = self.cosmology.D_A(zmain, z)
-            D_os = self.cosmology.D_A(0,self.cosmology.zsrc)
-            D_1s = self.cosmology.D_A(zmain, self.cosmology.zsrc)
-            D_o2 = self.cosmology.D_A(0, z)
-
-            beta = D_12 * D_os * (D_o2 * D_1s) ** -1
+            beta = self.cosmology.beta(z,self.cosmology.zd,self.cosmology.zsrc)
 
             theta_new = theta*(1 - beta)
 
@@ -49,7 +62,7 @@ class TwoDCoords:
             r2d = (x ** 2 + y ** 2) ** .5
             zcoord = np.random.uniform(0, (theta ** 2 - r2d ** 2) ** 0.5)
 
-            return x, y, r2d, zcoord
+            return x, y, r2d, (zcoord**2+r2d**2)**.5
 
     def distance_beta(self,z,zmain,zsrc):
         D_12 = self.cosmology.D_A(zmain, z)
@@ -301,7 +314,6 @@ class NFW_2D:
         ycoord = r2d*np.sin(theta)
 
         return np.array(xcoord),np.array(ycoord)
-
 
 
 

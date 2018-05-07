@@ -169,29 +169,35 @@ class Magnipy:
                 self.update_system(lens_system=lens_systems[i], component_index=0, newkwargs=newmacromodel,
                                    method='lensmodel'))
 
-            if ray_trace:
+        if ray_trace:
 
-                for i, name in enumerate(outputfile):
+            for i, name in enumerate(outputfile):
 
-                    if print_mag:
-                        print 'computing mag #: ', i + 1
+                if print_mag:
+                    print 'computing mag #: ', i + 1
 
-                    fluxes = self.do_raytrace(xpos=lensdata[i].x,ypos=lensdata[i].y,lens_system=optimized_systems[i],
-                                                        xsrc=lensdata[i].srcx, ysrc=lensdata[i].srcy,
-                                                        multiplane=optimized_systems[i].multiplane,
-                                                        grid_rmax=grid_rmax,res=res, source_shape=source_shape, source_size=source_size,
-                                                        cosmology=self.cosmo, zsrc=self.zsrc,
-                                                        raytrace_with=raytrace_with, polar_grid=polar_grid)
+                if raytrace_with == 'lenstronomy':
+                    redshift_list, lens_list, lensmodel_params = optimized_systems[i].lenstronomy_lists()
+                    lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
+                                                    redshift_list=redshift_list, z_source=self.zsrc)
+                else:
+                    lensModel = None
+                    lensmodel_params = None
 
-                    lensdata[i].set_mag(fluxes)
+                fluxes = self.do_raytrace(lensdata[i].x, lensdata[i].y,lens_system=optimized_systems[i],lensmodel=lensModel,xsrc=lensdata[i].srcx,
+                                          ysrc=lensdata[i].srcy,multiplane=system.multiplane, grid_rmax=grid_rmax,
+                                          res=res, source_shape=source_shape, source_size=source_size,
+                                          raytrace_with=raytrace_with,polar_grid=polar_grid,lens_model_params=lensmodel_params)
 
-            for dataset in lensdata:
-                dataset.sort_by_pos(data2fit.x, data2fit.y)
+                lensdata[i].set_mag(fluxes)
 
-            if self.clean_up:
-                delete_dir(self.paths.gravlens_input_path_dump)
+        for dataset in lensdata:
+            dataset.sort_by_pos(data2fit.x, data2fit.y)
 
-            return lensdata, optimized_systems
+        if self.clean_up:
+            delete_dir(self.paths.gravlens_input_path_dump)
+
+        return lensdata, optimized_systems
 
     def solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,

@@ -121,11 +121,6 @@ class RayTrace:
             x_loc = xpos[i]*np.ones_like(self.x_grid_0)+self.x_grid_0
             y_loc = ypos[i]*np.ones_like(self.y_grid_0)+self.y_grid_0
 
-            if self.polar_grid:
-
-                x_loc = x_loc[self.r_indicies]
-                y_loc = y_loc[self.r_indicies]
-
             xdef = np.zeros_like(x_loc)
             ydef = np.zeros_like(y_loc)
 
