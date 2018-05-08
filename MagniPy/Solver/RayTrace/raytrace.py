@@ -17,7 +17,6 @@ class RayTrace:
         :param res: pixel resolution asec per pixel
         """
         self.raytrace_with = raytrace_with
-        print polar_grid
 
         self.polar_grid = polar_grid
         self.grid_rmax = grid_rmax
@@ -32,9 +31,6 @@ class RayTrace:
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-
-        self.x_grid_0 = self.x_grid_0.ravel()
-        self.y_grid_0 = self.y_grid_0.ravel()
 
         if polar_grid:
             self.polar_q = polar_q
@@ -83,13 +79,17 @@ class RayTrace:
             xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
 
         if self.raytrace_with == 'lensmodel':
+
             return self.compute_mag(xpos,ypos,lens_system,**kwargs)
+
         else:
+
             img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
+
             if self.polar_grid:
                 return np.sum(img)*self.res**2,img
             else:
-                return np.sum(img)*self.res**2,array2image(img,len(img)**.5,len(img)**.5)
+                return np.sum(img)*self.res**2,array2image(img)
 
     def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None,
                     print_mag=False,**kwargs):
