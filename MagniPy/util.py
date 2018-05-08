@@ -51,6 +51,8 @@ def read_data(filename='',N=None):
         t1,t2,t3,t4 = float(line[6]),float(line[10]),float(line[14]),float(line[18])
         dsets.append(Data(x=[x1,x2,x3,x4],y=[y1,y2,y3,y4],m=[m1,m2,m3,m4],
                     t=[t1,t2,t3,t4],source=[srcx,srcy]))
+        if N is not None and len(dsets)>=N:
+            break
 
     return dsets
 

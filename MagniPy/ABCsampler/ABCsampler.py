@@ -316,25 +316,15 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
         reals = realizations[i * Nsplit:(i + 1) * Nsplit]
 
-        if chainkeys['solve_method'] == 'lensmodel':
-            new, _ = solver.fit(macromodel=macro_mods[i],
+        new, _ = solver.fit(macromodel=macro_mods,
                                 realizations=reals, datatofit=datatofit,
                                 multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
                                 sigmas=chainkeys['sigmas'],
                                 identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
-                                res=run_commands[i]['grid_res'],
+                                res=run_commands[i]['grid_res'],polar_grid=True,
                                 source_size=run_commands[i]['source_size'], print_mag=True,
                                 raytrace_with=run_commands[i]['raytrace_with'])
-        else:
-            new, _ = solver.fit(macromodel=macro_mods[i],realizations=reals, datatofit=datatofit,
-                                              multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'],
-                                              ray_trace=True,
-                                              sigmas=chainkeys['sigmas'],
-                                              identifier=run_commands[i]['chain_ID'],
-                                              grid_rmax=run_commands[i]['grid_rmax'],
-                                              res=run_commands[i]['grid_res'],
-                                              source_size=run_commands[i]['source_size'], print_mag=True,
-                                              raytrace_with=run_commands[i]['raytrace_with'])
+
         chaindata += new
         N_computed += len(new)
 

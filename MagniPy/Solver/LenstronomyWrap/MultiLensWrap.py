@@ -12,7 +12,7 @@ class MultiLensWrapper:
 
         for i in range(0,n):
 
-            betax,betay = lensmodel.ray_shooting(xpos[i],ypos[i],lens_model_params)
+            betax,betay = lensmodel.ray_shooting(xpos[i].ravel(),ypos[i].ravel(),lens_model_params)
 
             image = source_function(betax,betay)
 
@@ -27,7 +27,7 @@ class MultiLensWrapper:
 
         lensModel,lens_model_params = lenstronomywrap.get_lensmodel(lens_system)
 
-        xnew,ynew = lensModel.ray_shooting(x,y,lens_model_params)
+        xnew,ynew = lensModel.ray_shooting(x.ravel(),y.ravel(),lens_model_params)
 
         beta = source_function(xnew,ynew)
 

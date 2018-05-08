@@ -9,6 +9,7 @@ from MagniPy.Solver.GravlensWrap.gravlens_to_kwargs import gravlens_to_kwargs
 from MagniPy.Solver.LenstronomyWrap.generate_input import *
 from MagniPy.Solver.RayTrace import raytrace
 from MagniPy.lensdata import Data
+import os
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from lenstronomy.LensModel.lens_model import LensModel
 
@@ -134,6 +135,11 @@ class Magnipy:
 
         d2fit = [data2fit.x,data2fit.y,data2fit.m,data2fit.t]
         optimized_systems = []
+
+        if os.path.exists(self.paths.gravlens_input_path):
+            pass
+        else:
+            create_directory(self.paths.gravlens_input_path)
 
         create_directory(self.paths.gravlens_input_path_dump)
 
