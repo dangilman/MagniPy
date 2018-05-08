@@ -4,24 +4,28 @@ homedir = os.getenv('HOME')+'/'
 
 if homedir == '/u/home/g/gilmanda/':
     prefix = '/u/flashscratch/g/gilmanda/'
+
     try:
         IO_directory = os.getenv('TMPDIR') + '/'
     except:
         IO_directory = os.getenv('NEWSCRATCH')+ '/'
+
     lensmodel_location = homedir+'/Code/lensmodel_folder/'
     path_2_lensmodel = IO_directory
+    gravlens_input_path = IO_directory + '/gravlens_input/'
 
 elif homedir == '/Users/danielgi/':
     prefix = homedir
     IO_directory = prefix
     path_2_lensmodel = homedir + '/Code/'
+    gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
 elif homedir == '/Users/mcsedarous/':
     prefix = homedir
     IO_directory = prefix
     path_2_lensmodel = homedir + 'Desktop/research_Treu/'
+    gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
-gravlens_input_path = IO_directory+'data/gravlens_input/'
 
 kapmappath = gravlens_input_path+'gravlens_maps/'
 
