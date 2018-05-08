@@ -289,8 +289,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
 
-    Nsplit = len(run_commands)
-
     if len(run_commands)<1000 or chainkeys['solve_method']=='lenstronomy':
         Nsplit = len(run_commands)
     else: Nsplit = 1000
@@ -378,4 +376,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/singleplane_test_lensmod/',1)
+#runABC(os.getenv('HOME')+'/data/singleplane_test_lensmod/',4)

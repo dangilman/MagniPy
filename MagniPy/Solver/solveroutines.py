@@ -219,7 +219,7 @@ class SolveRoutines(Magnipy):
         if method == 'lenstronomy':
             optimized_data, model = self.optimize_4imgs_lenstronomy(lens_systems=lens_systems,data2fit=datatofit,grid_rmax=grid_rmax,
                                                                     res=res,source_shape=source_shape,source_size=source_size,
-                                                                    raytrace_with=raytrace_with,solver_type=solver_type)
+                                                                    raytrace_with=raytrace_with,solver_type=solver_type,print_mag=print_mag)
 
         else:
             optimized_data, model = self.optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit,

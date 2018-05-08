@@ -106,7 +106,7 @@ class Magnipy:
             x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc)
 
             if print_mag:
-                print 'computing mag # '+str(i+1)+' of '+len(lens_systems)
+                print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
 
             fluxes = self.do_raytrace(x_img,y_img,lensmodel=lensModel,xsrc=xsrc,ysrc=ysrc,multiplane=system.multiplane,grid_rmax=grid_rmax,
                                           res=res,source_shape=source_shape,source_size=source_size,
@@ -120,7 +120,9 @@ class Magnipy:
                 optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
                                                    newkwargs=kwargs_lens[1], method='lenstronomy',
                                                    is_shear=True)
-            data.append(Data(x_img,y_img,fluxes,None,[xsrc,ysrc]))
+            new_data = Data(x_img,y_img,fluxes,None,[xsrc,ysrc])
+            new_data.sort_by_pos(data2fit.x,data2fit.y)
+            data.append(new_data)
             opt_sys.append(optimized_sys)
 
         return data,opt_sys
