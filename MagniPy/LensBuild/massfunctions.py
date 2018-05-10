@@ -1,7 +1,7 @@
 import numpy as np
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.MassModels.NFW import NFW
-from spatial_distribution import NFW_2D
+from spatial_distribution import NFW_3D
 import matplotlib.pyplot as plt
 
 class Plaw_secondary:
@@ -64,7 +64,8 @@ class Plaw_secondary:
 
             self.parent_rmax.append(rmax2d)
 
-            locations = NFW_2D(rmax2d=rmax2d, rs=Rs, xoffset=x_locations[i], yoffset=y_locations[i])
+            locations = NFW_3D(rmax2d=rmax2d, rmax3d=rmax2d, rs=Rs, xoffset=x_locations[i],
+                               yoffset=y_locations[i], tidal_core=False)
 
             self.locations.append(locations)
 

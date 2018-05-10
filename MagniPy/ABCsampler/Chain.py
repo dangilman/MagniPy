@@ -1,9 +1,10 @@
+from Analysis.Statistics.summary_statistics import *
 from ChainOps import *
-from summary_statistics import *
 
-class ParamChains:
 
-    def __init__(self,chain_name='',Nlenses=None):
+class FullChains:
+
+    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
@@ -18,8 +19,38 @@ class ParamChains:
 
         self.lenses = []
 
-        for i in range(0, self.Nlenses):
-            self.lenses.append(SingleLensChain())
+        if which_lens is None:
+            which_lens = np.arange(1,self.Nlenses+1)
+
+        for ind in which_lens:
+
+            new_lens = SingleLens(Nparams=len(self.params_varied))
+
+            new_lens.add_parameters(fname=self.chain_file_path+'lens'+str(ind)+'/samples.txt')
+
+            new_lens.compute_summary_statistic(self.import_observed(ind, error=error, index=index),
+                                               self.import_model(ind, error=error, index=index))
+            self.lenses.append(new_lens)
+
+    def get_posteriors(self,tol=None):
+
+        posteriors = []
+
+        for lens in self.lenses:
+
+            if lens.posterior is None:
+
+                lens.draw(tol)
+
+            posteriors.append(lens.posterior)
+
+        return posteriors
+
+    def draw(self,tol):
+
+        for lens in self.lenses:
+
+            lens.draw(tol)
 
     def get_pranges(self,info):
 
@@ -33,12 +64,6 @@ class ParamChains:
 
         return pranges
 
-    def import_all(self,error=0,index=1):
-
-        self.import_parameters(self.Nlenses)
-        self.import_observed(self.Nlenses,error=error,index=index)
-        self.import_model(self.Nlenses,error=error,index=index)
-
     def load_param_names(self,fname):
 
         param_names = []
@@ -51,152 +76,136 @@ class ParamChains:
 
         return param_names
 
-    def import_parameters(self,Nlenses):
+    def import_observed(self,ind,error=0,index=1):
 
-        for n in range(0,Nlenses):
+        fname = self.chain_file_path+'lens'+str(ind)+'/fluxratios/'+'observed_'+ str(int(error * 100)) + 'error_'+ str(index)+'.txt'
 
-            fname = self.chain_file_path+'lens'+str(n+1)+'/samples.txt'
+        return np.loadtxt(fname)
 
-            param_values = np.loadtxt(fname)
+    def import_model(self,ind,error=0,index=1):
 
-            param_names = self.load_param_names(fname)
+        fname = self.chain_file_path + 'lens' + str(ind) + '/fluxratios/' + 'model_' + str(
+            int(error * 100)) + 'error_' + str(index) + '.txt'
 
-            param_dic = {}
+        return np.loadtxt(fname)
 
-            for i,key in enumerate(param_names):
-                param_dic[key] = param_values[:,i]
+    def re_weight(self,posteriors,weight_function,indexes=None):
 
-            self.lenses[n].add_parameters(param_dic)
+        if indexes is None:
 
-    def compute_statistics(self,Nlenses,error,index,statistic='quadrature_piecewise'):
+            for posterior in posteriors:
 
-        for i in range(0,Nlenses):
+                posterior.change_weights(weight_function)
 
-            self.lenses[i].compute_statistic(stat_function=quadrature_piecewise)
+            return posteriors
 
-    def import_observed(self,Nlenses,error=0,index=1):
+        else:
 
-        for n in range(0,Nlenses):
+            if isinstance(indexes,list):
 
-            fname = self.chain_file_path+'lens'+str(n+1)+'/fluxratios/'+'observed_'+ str(int(error * 100)) + 'error_'+ str(index)+'.txt'
+                assert isinstance(weight_function,list),'If apply a prior on a lens by lens basis, must provide a ' \
+                                                        'list of individual weight functions'
+                count = 0
+                for i in range(1,len(self.lenses)+1):
+                    if i in indexes:
+                        posteriors[i-1].change_weights(weight_function[count])
+                        count+=1
+            return posteriors
 
-            self.lenses[n].add_observed_fluxratios(np.loadtxt(fname))
+class SingleLens:
 
-    def import_model(self,Nlenses,error=0,index=1):
+    def __init__(self,Nparams=int,weights=None):
 
-        for n in range(0, Nlenses):
-
-            fname = self.chain_file_path + 'lens' + str(n + 1) + '/fluxratios/' + 'model_' + str(
-                int(error * 100)) + 'error_' + str(index) + '.txt'
-
-            self.lenses[n].add_model_fluxratios(np.loadtxt(fname))
-
-    def add_weights(self,param_name,weight_kwargs = []):
-
-        if isinstance(param_name,str):
-
-            param_name = [param_name]
-
-            assert len(weight_kwargs==1),'number of weight kwargs must equal number of params.'
-
-        for lens in self.lenses:
-
-            lens.compute_weight(param_name,weight_kwargs)
-
-    def draw(self,tol=1000,error=0,index=1,stat_function='quadrature_piecewise'):
-
-        self.compute_statistics(self.Nlenses,error=error,index=index,statistic=stat_function)
-
-        posterior_samples = []
-
-        for i,lens in enumerate(self.lenses):
-
-            lens_posterior = lens.draw(tol)
-
-            posterior_samples.append(lens_posterior)
-
-        return posterior_samples
-
-class SingleLensChain:
-
-    def __init__(self):
-
-        self.parameters = None
-        self.fluxratios = None
-        self.observed_fluxratios = None
-        self.statistic = None
-        self.weights = None
-
-        self.posterior_samples = None
-
-        self.perturbed_observed_fluxratios = []
-        self.perturbed_model_fluxratios = []
-
-    def add_observed_fluxratios(self,obs):
-
-        self.observed_fluxratios = obs
-
-    def add_parameters(self,params):
-
-        self.parameters = params
-
-    def add_model_fluxratios(self,mod):
-
-        self.fluxratios = mod
-
-    def compute_statistic(self,stat_function):
-
-        self.statistic = stat_function(self.fluxratios,self.observed_fluxratios)
+        self.weights = weights
+        self.posterior = None
 
     def draw(self,tol):
 
-        assert tol>1
-
-        indexes = np.argsort(self.statistic)[0:tol]
+        inds = np.argsort(self.statistic)[0:tol]
 
         new_param_dic = {}
 
-        for key,values in self.parameters.iteritems():
+        for key, values in self.parameters.iteritems():
+            new_param_dic.update({key:values[inds]})
 
-            new_param_dic.update({key:values[indexes]})
+        self.posterior = PosteriorSamples(new_param_dic,weights=None)
 
-        return new_param_dic
+    def add_parameters(self,params=None,fname=None):
+
+        with open(fname,'r') as f:
+            names = f.readline().split(' ')
+        pnames = []
+        for name in names:
+            if name =='#' or name =='\n':
+                continue
+            else:
+                pnames.append(name)
+
+        params = np.loadtxt(fname)
+
+        new_dictionary = {}
+
+        for i,pname in enumerate(pnames):
+            new_dictionary.update({pname:params[:,i]})
+
+        self.parameters = new_dictionary
+
+    def add_weights(self,params,weight_function):
+        """
+        :param params: dictionary with param names and values
+        :param weight_function: a function that takes the 'params' dictionary and returns a
+        1d array of weight with same length as params
+        :return:
+        """
+        self.weights = weight_function(params)
+
+    def compute_summary_statistic(self,observed=None,model=None):
+
+        self.statistic = quadrature_piecewise(model,observed)
+
+class PosteriorSamples:
+
+    def __init__(self,samples,weights=None):
+
+        self.samples = samples
+        self.pnames = samples.keys()
+        self.length = len(samples[samples.keys()[0]])
+
+        if weights is None:
+            self.weights = np.ones(self.length)
+        else:
+            assert len(weights) == self.length
+            self.weights = weights
+
+    def change_weights(self,weight_function):
+
+        self.weights = weight_function(self)
+        assert len(self.weights) == self.length
 
 class WeightedSamples:
 
-    def __init__(self,params=None,weight_args=None):
+    def __init__(self,params_to_weight=None,weight_args=None):
 
-        if params is None:
+        if params_to_weight is None:
             self.functions = None
         else:
             self.functions = {}
-            for i,param in enumerate(params):
+            for i,param in enumerate(params_to_weight):
                 if weight_args[i]['type'] == 'Gaussian':
+
                     self.functions.update({param:Gaussian(weight_args[i]['mean'],weight_args[i]['sigma'],param)})
 
-    def function(self,x,y=None):
+    def __call__(self,samples):
 
-        weight = np.ones(len(x[x.keys()[0]]))
+        pnames = samples.pnames
 
-        if self.functions is None:
-            return np.ones(len(x[x.keys()[0]]))
+        weight = 1
 
-        if x.keys()[0] in self.functions.keys():
+        for name, function in self.functions.iteritems():
 
-            pname = x.keys()[0]
+            if name in pnames:
 
-            which_func = self.functions[pname]
-
-            weight *= which_func(x=x[pname])
-
-        if y is not None:
-            if y.keys()[0] in self.functions.keys():
-
-                pname = y.keys()[0]
-
-                which_func = self.functions[pname]
-
-                weight *= which_func(x=y[pname])
+                weight *= function(x=samples.samples[name])
 
         return weight
 

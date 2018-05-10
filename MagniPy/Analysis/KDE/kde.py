@@ -1,100 +1,116 @@
 import numpy as np
-from methods import *
-import matplotlib.pyplot as plt
+from kernels import *
 from scipy.stats import gaussian_kde
-from getdist.mcsamples import *
-from math import erf
+
 
 class KDE_scipy:
 
-    def __init__(self,p1_range,p2_range=None,steps=100):
+    def __init__(self,dim):
 
-        if p2_range is not None:
-            self.X, self.Y = np.linspace(p1_range[0],p1_range[1],steps),np.linspace(p2_range[0],p2_range[1],steps)
-            self.dimension = 2
-        else:
-            self.X = np.linspace(p1_range[0],p1_range[1],steps)
-            self.dimension = 1
+        self.dimension = dim
 
-    def boundary_correction(self,data,kernel_size,xrange,yrange=None):
-
-        factor = 2
-
-        if self.dimension==1:
-
-            dis_low = (data - xrange[0]) * (kernel_size*factor)**-1
-            dis_high = (xrange[1] - data) * (kernel_size*factor)**-1
-            weights_low = np.ones_like(data)
-            indslow = np.where(dis_low<1)
-            weights_low[indslow] = erf(dis_low[indslow])**-1
-
-            indshigh = np.where(dis_high<1)
-            weights_high = np.ones_like(data)
-            weights_high[indshigh] = erf(dis_high)**-1
-
-            data*=weights_high*weights_low
-
-        else:
-            raise ValueError('not yet implemented')
-
-        return data
-
-    def density(self,data):
+    def __call__(self,data,X=None,Y=None,**kwargs):
 
         if self.dimension==1:
 
             kernel = gaussian_kde(data.T)
 
-            positions = self.X
+            positions = X
 
             return kernel(positions)
 
         elif self.dimension == 2:
-            kernel = gaussian_kde(data.T)
-            xx,yy = np.meshgrid(self.X,self.Y)
+
+            if 'bw_method' in kwargs:
+                kernel = gaussian_kde(data.T,bw_method=kwargs['bw_method'])
+            else:
+                kernel = gaussian_kde(data.T)
+
+            xx,yy = np.meshgrid(X,Y)
+
             positions = np.vstack([xx.ravel(),yy.ravel()])
 
-            return kernel(positions).reshape(len(self.X),len(self.X))
+            return kernel(positions).reshape(len(X),len(X)),xx.ravel(),yy.ravel()
 
-class KDE:
+        else:
 
-    def __init__(self,p1_range,p2_range=None,steps=100,boundary_correction_order=1,dim=2,weights=None):
+            kernel = gaussian_kde(data)
 
+            coords = np.meshgrid(*kwargs['params'])
 
-        self.steps = steps
-        self.xmin,self.xmax = p1_range[0],p1_range[1]
-        self.pranges = {'x': [p1_range[0], p1_range[1]]}
+            positions = np.vstack([coords[i].ravel() for i in range(0,len(coords))])
 
-        if p2_range is not None:
-            self.pranges.update({'y': [p2_range[0], p2_range[1]]})
-            self.ymin,self.ymax = p2_range[0],p2_range[1]
+            return kernel(positions)
 
-        self.boundary_correction_order = boundary_correction_order
-        self.dim = dim
-        self.weights = None
+class KernelDensity:
 
-    def density(self,data,steps=100):
+    def __init__(self,reweight,scale,bandwidth_scale=1,kernel='Gaussian'):
 
-        if self.dim ==1:
+        self.reweight = reweight
+        self.scale = scale
+        self.bandwidth_scale = bandwidth_scale
 
-            self.kde_getdist = MCSamples(samples=data, names=['x'], ranges=self.pranges)
+        if kernel == 'Gaussian':
+            self._kernel_function = Gaussian2d
+        elif kernel == 'Silverman':
+            self._kernel_function = Silverman2d
+        elif kernel == 'Epanechnikov':
+            self._kernel_function = Epanechnikov
+            self.bandwidth_scale = 2.5
+        elif kernel == 'Sigmoid':
+            self._kernel_function = Sigmoid
+        else:
+            raise Exception('Kernel function not recognized.')
 
-            density = self.kde_getdist.get1DDensityGridData('x', get_density=True,
-                                                            boundary_correction_order=self.boundary_correction_order)
+    def kernel(self, xsamples, ysamples,dx,dy, pranges, prior_weights):
 
-            xvals = np.linspace(self.xmin, self.xmax, self.steps)
+        h = self.scotts_factor(n=len(xsamples))*self.bandwidth_scale
 
-            return density.Prob(xvals),xvals,_
+        functions = []
 
-        elif self.dim == 2:
+        data_cov = np.cov(np.array([xsamples, ysamples]))
 
-            self.kde_getdist = MCSamples(samples=data, names=['x', 'y'], ranges=self.pranges)
+        hx = h*data_cov[0][0]**0.5
+        hy = h*data_cov[1][1]**0.5
 
-            density = self.kde_getdist.get2DDensityGridData('x','y',get_density=True,boundary_correction_order=self.boundary_correction_order)
+        covmat = [[hx ** -2, 0], [0, hy ** -2]]
 
-            xvals = np.linspace(self.xmin,self.xmax,self.steps)
-            yvals = np.linspace(self.ymin,self.ymax,self.steps)
-            xx,yy = np.meshgrid(xvals,yvals)
+        for i in range(0, len(xsamples)):
+            xi, yi = xsamples[i], ysamples[i]
 
-            return density.Prob(xx,yy),xvals,yvals
+            if self.reweight:
+                weight = prior_weights[i]*self.boundary.renormalize(xi, yi, hx, hy, pranges)
+            else:
+                weight = prior_weights[i]
 
+            functions.append(self._kernel_function(xi, yi, weight=weight, covmat=covmat))
+
+        return functions
+
+    def scotts_factor(self, n, d=2):
+
+        return n ** (-1. / (d + 4))
+
+    def __call__(self, data, xpoints, ypoints, pranges, prior_weights):
+
+        assert len(xpoints) == len(ypoints)
+
+        xx, yy = np.meshgrid(xpoints, ypoints)
+        xx, yy = xx.ravel(), yy.ravel()
+
+        self.boundary = Boundary(scale=self.scale)
+
+        functions = self.kernel(data[:,0],data[:,1],np.absolute(xpoints[1]-xpoints[0]),
+                                np.absolute(ypoints[1]-ypoints[0]),pranges,prior_weights)
+
+        xy = zip(xx,yy)
+
+        estimate = np.zeros(len(xy))
+
+        for i, coord in enumerate(xy):
+
+            for func in functions:
+
+                estimate[i] += func(*xy[i])
+
+        return estimate,xx,yy

@@ -1,35 +1,118 @@
 import numpy as np
-from scipy.integrate import dblquad
 
-class GaussianKernel:
+class Gaussian2d:
 
-    def __init__(self,Nsamples=None):
+    def __init__(self, meanx, meany, weight,covmat=None):
 
-        self.h = self.scotts_factor(n=Nsamples)**2
+        self.meanx = meanx
+        self.meany = meany
 
-    def evaluate(self,x_point,y_point,x_sample,y_sample,boundary_correction=None,**correction_kwargs):
+        self.weight = weight
+        self.covmat = covmat
 
-        dx2 = np.array(x_point - x_sample) ** 2*self.h**-2
-        dy2 = np.array(y_point - y_sample) ** 2*self.h**-2
+    def __call__(self, x, y):
 
-        func = np.exp(-0.5*(dx2 + dy2))
+        vec = np.array([x-self.meanx,y-self.meany])
 
-        norm = 1
+        dr2 = np.dot(vec.T,np.dot(vec,self.covmat))
 
-        if boundary_correction == 're_normlize':
+        exponent = -0.5 * dr2
 
-            def integrand(d_y,d_x,h):
-                return np.exp(-0.5*(d_y**2+d_x**2)*h**-2)
+        return self.weight*np.exp(exponent)
 
-            ylow,yhigh,xlow,xhigh = correction_kwargs['ymin'],correction_kwargs['ymax'],correction_kwargs['xmin'],correction_kwargs['xmax']
+class Silverman2d:
 
-            norm = dblquad(integrand,xlow,xhigh,ylow,yhigh,args=(self.h))[0]
-            print norm
-            a=input('continue')
+    def __init__(self, meanx, meany, weight,covmat=None):
 
-        return func*norm**-1
+        self.meanx = meanx
+        self.meany = meany
 
-    def scotts_factor(self,n,d=2):
+        self.weight = weight
+        self.covmat = covmat
 
-        return n ** (-1. / (d + 4))
+    def __call__(self, x, y):
+
+        vec = np.array([x-self.meanx,y-self.meany])
+
+        dr = np.dot(vec.T,np.dot(vec,self.covmat))**0.5
+
+        root2 = 2**0.5
+        exponent = -root2**-1 * dr
+
+        return 0.5*self.weight*np.exp(exponent)*np.sin(dr*root2**-1 + np.pi*0.25)
+
+class Epanechnikov:
+
+    def __init__(self, meanx, meany, weight,covmat=None):
+
+        self.meanx = meanx
+        self.meany = meany
+
+        self.weight = weight
+        self.covmat = covmat
+
+    def __call__(self, x, y):
+
+        vec = np.array([x-self.meanx,y-self.meany])
+
+        dr2 = np.dot(vec.T,np.dot(vec,self.covmat))
+
+        if dr2 > 1:
+            return 0
+        return 0.75*(1-dr2)
+
+class Sigmoid:
+
+    def __init__(self, meanx, meany, weight,covmat=None):
+
+        self.meanx = meanx
+        self.meany = meany
+
+        self.weight = weight
+        self.covmat = covmat
+
+    def __call__(self, x, y):
+
+        vec = np.array([x-self.meanx,y-self.meany])
+
+        dr = np.dot(vec.T,np.dot(vec,self.covmat))**0.5
+
+        return 2*np.pi**-1*(np.exp(dr)+np.exp(-dr))**-1
+
+
+class Boundary:
+
+    def __init__(self,scale=2,size=250):
+        self.size = size
+        self.scale = scale
+
+    def outside_boundary(self,x,low,high):
+
+        return np.logical_or(x<low ,x>high)
+
+    def renormalize(self,xi,yi,kx,ky,pranges):
+
+        cov = [[(kx) ** 2, 0], [0, (ky) ** 2]]
+
+        if self.outside_boundary(xi-kx*self.scale,pranges[0][0],pranges[0][1]):
+            samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
+        elif self.outside_boundary(xi+kx*self.scale,pranges[0][0],pranges[0][1]):
+            samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
+        elif self.outside_boundary(yi-ky*self.scale,pranges[1][0],pranges[1][1]):
+            samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
+        elif self.outside_boundary(yi+ky*self.scale,pranges[1][0],pranges[1][1]):
+            samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
+        else:
+            return 1
+
+        xsamp,ysamp = samples[:,0],samples[:,1]
+
+        inside_y = np.logical_and(ysamp>pranges[1][0],ysamp<pranges[1][1])
+        inside_x = np.logical_and(xsamp>pranges[0][0],xsamp<pranges[0][1])
+
+        inside_inds = np.logical_and(inside_x,inside_y)
+
+        return self.size*float(np.sum(inside_inds))**-1
+
+
 

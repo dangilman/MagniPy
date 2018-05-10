@@ -8,17 +8,24 @@ default_colors = ['k',cnames['indianred'],cnames['royalblue'],
 
 class FluxRatioCumulative:
 
-    def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True):
+    def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True,cut=None):
 
+        self.lensdata = []
         lensdata = []
 
         for fname in fnames:
 
             anomalies = np.loadtxt(fname)
 
-            lensdata.append(np.sqrt(np.sum(anomalies**2,axis=1)))
+            lensdata.append(anomalies)
 
-        self.lensdata = lensdata
+        if cut is not None:
+
+            for dset in lensdata:
+                dset=dset[np.where(dset<=cut)]
+                self.lensdata.append(dset)
+        else:
+            self.lensdata = lensdata
 
     def set_reference_data(self,refdata):
 

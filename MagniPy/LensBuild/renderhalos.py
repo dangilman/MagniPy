@@ -197,11 +197,23 @@ class HaloGen:
                 spatialkwargs['rmin'] = 0.001
 
             if 'Rs_parent' in model_kwargs:
-                spatialkwargs['rs'] = model_kwargs['Rs_parent'] * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
+                spatialkwargs['rs'] = model_kwargs['Rs_parent']
             else:
-                spatialkwargs['rs'] = 500 * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
+                spatialkwargs['rs'] = 150
+
+            if 'rmaxz_kpc' in model_kwargs:
+                spatialkwargs['rmaxz'] = model_kwargs['Rmax_z_kpc']
+            else:
+                spatialkwargs['rmaxz'] = spatial_defaults['Rmax_z_kpc']
+            if 'tidal_core' in model_kwargs:
+                spatialkwargs['tidal_core'] = model_kwargs['tidal_core']
+                if 'r_core' in model_kwargs:
+                    spatialkwargs['r_core'] = model_kwargs['r_core']
+                else:
+                    spatialkwargs['r_core'] = spatialkwargs['rs']
+            else:
+                spatialkwargs['tidal_core'] = False
+                spatialkwargs['r_core'] = None
 
         elif spatial_name == 'localized_uniform':
             assert filter_halo_positions
@@ -602,6 +614,7 @@ class HaloGen:
         elif spatial_type == 'uniform_cored_nfw':
 
             spatial = Uniform_cored_nfw(cosmology=self.cosmology, **spatialkwargs)
+
             x, y, R2d,R3d = spatial.draw(N, redshift)
 
         elif spatial_type == 'localized_uniform':
@@ -611,7 +624,9 @@ class HaloGen:
 
         elif spatial_type == 'NFW_2D':
 
-            spatial = NFW_2D(rmax2d = spatialkwargs['rmax2d'], rs = spatialkwargs['rs'], rmin = spatialkwargs['rmin'])
+            spatial = NFW_3D(rmax2d = spatialkwargs['rmax2d'], rs = spatialkwargs['rs'], rmax3d=spatialkwargs['rmaxz'],
+                             rmin = spatialkwargs['rmax2d']*0.1, tidal_core=spatialkwargs['tidal_core'],
+                             r_core=spatialkwargs['r_core'])
             x, y, R2d,R3d  = spatial.draw(N)
 
         else:

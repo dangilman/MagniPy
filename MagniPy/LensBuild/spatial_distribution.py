@@ -209,57 +209,52 @@ class Localized_uniform:
 
         return x,y,np.sqrt(x**2+y**2),None
 
-class NFW_2D:
+class NFW_3D:
 
-    def __init__(self, rmin = None, rmax2d=None, rs = None, xoffset=0, yoffset = 0, tidal_core=False):
+    def __init__(self, rmin = None, rmax3d=None, rmax2d = None, rs = None, xoffset=0, yoffset = 0,
+                 tidal_core=False, r_core = None, cosmology=None):
 
+        self.rmax3d = rmax3d
         self.rmax2d = rmax2d
         self.rs = rs
 
+        self.xoffset = xoffset
+        self.yoffset = yoffset
+
         if rmin is None:
-            rmin = rs*0.1
+            rmin = rs*0.001
 
         self.xmin = rmin*rs**-1
-        self.xmax = rmax2d*rs**-1
+        self.xmax = rmax3d*rs**-1
         self.xoffset,self.yoffset = xoffset,yoffset
         self.tidal_core = tidal_core
+        self.core_fac = 1
+        self.r_core = r_core
+
+        assert cosmology is not None
+        self.cosmology = cosmology
+
         assert self.xmax>self.xmin
 
-    def core_damp(self,r,gamma=0.8,rs_scale=0.6):
+    def kpc_to_asec(self,kpc):
 
-        x_inv = (rs_scale*self.rs)*r**-1
+        return kpc*self.cosmology.kpc_per_asec(self.cosmology.zd)
 
-        return np.exp(-gamma*x_inv)
+    def nfw_rho_r(self,r):
 
-    def nfw_kr(self,X):
+        x = r*self.rs**-1
 
-        def f(x):
+        if isinstance(x,float) or isinstance(x,int):
+            x = max(self.xmin,x)
+        else:
+            x[np.where(x<self.xmin)] = self.xmin
 
-            if isinstance(x,int) or isinstance(x,float):
-                if x>1:
-                    return np.arctan((x**2-1)**.5)*(x**2-1)**-.5
-                elif x<1:
-                    return np.arctanh((1-x**2)**.5)*(1-x**2)**-.5
-                else:
-                    return 1
-            else:
-                inds1 = np.where(x<1)
-                inds2 = np.where(x>1)
+        return (x*(1+x)**2)**-1
 
-                vals = np.ones_like(x)
-                flow = (1-x[inds1]**2)**.5
-                fhigh = (x[inds2]**2-1)**.5
+    def nfw_bound(self,r,alpha=0.9999999):
 
-                vals[inds1] = np.arctanh(flow)*flow**-1
-                vals[inds2] = np.arctan(fhigh)*fhigh**-1
-
-                return vals
-
-        return 2*(1-f(X))*(X**2-1)**-1
-
-    def nfw_bound(self,X,alpha=0.1,xmin=None):
-
-        norm = self.nfw_kr(self.xmin)
+        X = r*self.rs**-1
+        norm = self.nfw_rho_r(self.xmin*self.rs)
 
         if isinstance(X,int) or isinstance(X,float):
 
@@ -269,51 +264,65 @@ class NFW_2D:
                 return norm
 
         else:
-            return norm*(X*(self.xmin)**-1)**-alpha
+            X[np.where(X < self.xmin)] = self.xmin
+            return norm*(X*self.xmin**-1)**-alpha
 
-    def C_inv(self,x,xmax=10,xmin=1e-3,alpha=0.1):
+    def _core_damp(self,r3d):
+
+        if self.tidal_core:
+            x = self.core_fac*self.r_core*r3d**-1
+            return np.exp(-x)
+        else:
+            return 1
+
+    def C_inv(self,x,alpha=0.99):
 
         a = 1-alpha
-        A0 = (1-alpha)*(xmax**a - xmin**a)**-1
+        A0 = (1-alpha)*(self.xmax**a - self.xmin**a)**-1
 
-        return (a*x*A0**-1 + xmin**a)**(a**-1)
+        return (a*x*A0**-1 + self.xmin**a)**(a**-1)
 
     def draw(self,N):
 
-        r2d = self.draw_r2d(N)
-        x,y = self.r2d_to_xy(r2d)
-        return x+self.xoffset,y+self.yoffset,r2d,None
+        r3d, x, y, r2d = [], [], [], []
 
-    def draw_r2d(self,N):
+        while len(r3d) < N:
 
-        samples = []
+            u = np.random.uniform(0, 1)
 
-        while len(samples)<N:
+            theta = np.random.uniform(0,2*np.pi)
 
-            u = np.random.uniform(0,1)
-            x_sample = self.C_inv(u,xmax=self.xmax,xmin=0)
+            r = np.random.uniform(0,self.rmax2d**2)
+            x_,y_ = r**0.5*np.cos(theta),r**0.5*np.sin(theta)
+            r = np.random.uniform(0,self.rmax3d**2)
+            z_ = r**0.5*np.sin(np.random.uniform(0,2*np.pi))
 
-            if x_sample<=self.xmin:
+            r2d_ = (x_**2+y_**2)**0.5
+
+            r3d_ = (r2d_**2+z_**2)**0.5
+
+            if r3d_*self.rs**-1 <= self.xmin:
                 ratio = 1
             else:
-                ratio = self.nfw_kr(x_sample) * self.nfw_bound(x_sample, xmin=self.xmin)
+                ratio = self.nfw_rho_r(r3d_) * self.nfw_bound(r3d_) ** -1
+                ratio *= self._core_damp(r3d_)
 
-            if self.tidal_core:
-                ratio *= self.core_damp(x_sample*self.rs)
+            if ratio > np.random.uniform(0,1) and r2d_ <= self.rmax2d:
+                r3d.append(r3d_)
+                x.append(x_+self.xoffset)
+                y.append(y_+self.yoffset)
+                r2d.append(r2d_)
 
-            if ratio > np.random.uniform(0,1):
-                samples.append(x_sample)
+        x = np.array(x)
+        y = np.array(y)
+        r2d = np.array(r2d)
+        r3d = np.array(r3d)
 
-        samples = np.array(samples)
-        return samples*self.rs
+        return x,y,r2d,r3d
 
-    def r2d_to_xy(self,r2d):
 
-        theta = np.random.uniform(0,2*np.pi,len(r2d))
-        xcoord = r2d*np.cos(theta)
-        ycoord = r2d*np.sin(theta)
 
-        return np.array(xcoord),np.array(ycoord)
+
 
 
 
