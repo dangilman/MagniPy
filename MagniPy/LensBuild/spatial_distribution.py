@@ -211,21 +211,21 @@ class Localized_uniform:
 
 class NFW_3D:
 
-    def __init__(self, rmin = None, rmax3d=None, rmax2d = None, rs = None, xoffset=0, yoffset = 0,
+    def __init__(self, rmin = None, rmax3d=None, rmax2d = None, Rs = None, xoffset=0, yoffset = 0,
                  tidal_core=False, r_core = None, cosmology=None):
 
         self.rmax3d = rmax3d
         self.rmax2d = rmax2d
-        self.rs = rs
+        self.rs = Rs
 
         self.xoffset = xoffset
         self.yoffset = yoffset
 
         if rmin is None:
-            rmin = rs*0.001
+            rmin = Rs*0.001
 
-        self.xmin = rmin*rs**-1
-        self.xmax = rmax3d*rs**-1
+        self.xmin = rmin*Rs**-1
+        self.xmax = rmax3d*Rs**-1
         self.xoffset,self.yoffset = xoffset,yoffset
         self.tidal_core = tidal_core
         self.core_fac = 1

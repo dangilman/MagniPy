@@ -1,4 +1,4 @@
-from Analysis.Statistics.summary_statistics import *
+from MagniPy.Analysis.Statistics.summary_statistics import *
 from ChainOps import *
 
 
@@ -105,11 +105,10 @@ class FullChains:
 
                 assert isinstance(weight_function,list),'If apply a prior on a lens by lens basis, must provide a ' \
                                                         'list of individual weight functions'
-                count = 0
-                for i in range(1,len(self.lenses)+1):
-                    if i in indexes:
-                        posteriors[i-1].change_weights(weight_function[count])
-                        count+=1
+
+                for i,index in enumerate(indexes):
+                    posteriors[index-1].change_weights(weight_function[i])
+
             return posteriors
 
 class SingleLens:

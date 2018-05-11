@@ -135,7 +135,7 @@ class HaloGen:
 
         if model_name not in ['plaw_main','plaw_LOS','composite_plaw','delta_LOS','delta_main']:
                 raise Exception('model name not recognized')
-        if spatial_name not in ['uniform2d','uniform_cored_nfw','NFW_2D','localized_uniform']:
+        if spatial_name not in ['uniform2d','localized_uniform','NFW']:
                 raise Exception('spatial distribution not recognized')
 
         if isinstance(massprofile, list):
@@ -145,6 +145,7 @@ class HaloGen:
                     raise Exception('mass profile not recognized')
 
         position_filter_kwargs = {}
+        spatialkwargs = {}
 
         if filter_halo_positions:
 
@@ -166,54 +167,56 @@ class HaloGen:
             else:
                 position_filter_kwargs['log_masscut_low'] = filter_args['log_masscut_low']
 
-        spatialkwargs = {}
-
         if 'rmax2d_asec' in model_kwargs:
             spatialkwargs['rmax2d'] = model_kwargs['rmax2d_asec']
         else:
             spatialkwargs['rmax2d'] = spatial_defaults['theta_max']
 
-        if spatial_name == 'uniform_cored_nfw':
-            if 'rmaxz_kpc' in model_kwargs:
-                spatialkwargs['rmaxz'] = model_kwargs['Rmax_z_kpc'] * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
-            else:
-                spatialkwargs['rmaxz'] = spatial_defaults['Rmax_z_kpc'] * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
+        if spatial_name == 'NFW':
 
-            if 'nfw_core_kpc' in model_kwargs:
-                spatialkwargs['rc'] = model_kwargs['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
+            if 'rmin_asec' in model_kwargs:
+                spatialkwargs['rmin_asec'] = model_kwargs['rmin_asec']
+            else:
+                spatialkwargs['rmin_asec'] = 0.1
+
+            if 'M_halo' in model_kwargs:
+
+                _,Rs_kpc,r200_kpc = self.cosmology.NFW(model_kwargs['M_halo'],None,self.cosmology.zd)
+
+            else:
+
+                assert 'Rs_kpc' in model_kwargs
+                Rs_kpc = model_kwargs['Rs_kpc']
+                assert 'r200_kpc' in model_kwargs
+                r200_kpc = model_kwargs['r200_kpc']
+
+            spatialkwargs['Rs'] = Rs_kpc* self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
+            spatialkwargs['r200_asec'] = r200_kpc * self.cosmology.kpc_per_asec(
+                self.cosmology.zd) ** -1
 
-            else:
-                spatialkwargs['rc'] = spatial_defaults['nfw_core_kpc'] * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
-
-        elif spatial_name == 'NFW_2D':
-            if 'rmin' in model_kwargs:
-                spatialkwargs['rmin'] = model_kwargs['rmin'] * self.cosmology.kpc_per_asec(
-                    self.cosmology.zd) ** -1
-            else:
-                spatialkwargs['rmin'] = 0.001
-
-            if 'Rs_parent' in model_kwargs:
-                spatialkwargs['rs'] = model_kwargs['Rs_parent']
-            else:
-                spatialkwargs['rs'] = 150
-
-            if 'rmaxz_kpc' in model_kwargs:
-                spatialkwargs['rmaxz'] = model_kwargs['Rmax_z_kpc']
-            else:
-                spatialkwargs['rmaxz'] = spatial_defaults['Rmax_z_kpc']
             if 'tidal_core' in model_kwargs:
                 spatialkwargs['tidal_core'] = model_kwargs['tidal_core']
                 if 'r_core' in model_kwargs:
-                    spatialkwargs['r_core'] = model_kwargs['r_core']
+                    if isinstance(model_kwargs['r_core'],str):
+                        if model_kwargs['r_core'] == 'Rs':
+                            spatialkwargs['r_core_asec'] = spatialkwargs['Rs']
+                        else:
+                            assert model_kwargs['r_core'][-2:] == 'Rs'
+                            scale = float(model_kwargs['r_core'][:-2])
+                            spatialkwargs['r_core_asec'] = scale*spatialkwargs['Rs']
+
+                    else:
+                        assert isinstance(model_kwargs['r_core'],float) or \
+                               isinstance(model_kwargs['r_core'],int)
+                        spatialkwargs['r_core_asec'] = model_kwargs['r_core']*\
+                                                   self.cosmology.kpc_per_asec(self.cosmology.zd)
+
                 else:
-                    spatialkwargs['r_core'] = spatialkwargs['rs']
+                    raise AssertionError('if tidal_core is True, must specify core radius')
             else:
                 spatialkwargs['tidal_core'] = False
-                spatialkwargs['r_core'] = None
+                spatialkwargs['r_core_asec'] = None
 
         elif spatial_name == 'localized_uniform':
             assert filter_halo_positions
@@ -341,8 +344,25 @@ class HaloGen:
 
             A0 = modelkwargs['A0_perasec']*np.pi*spatialkwargs['rmax2d']**2
 
+        elif 'M_halo' in modelkwargs and 'c' in modelkwargs and 'fsub_halo' in modelkwargs:
+
+            if 'r_core_asec' in spatialkwargs:
+                r_core_asec = spatialkwargs['rmin_asec']
+            else:
+                raise AssertionError('must specify rmin')
+
+            _, _, r200_kpc = self.cosmology.NFW(model_kwargs['M_halo'], model_kwargs['c'], self.cosmology.zd)
+
+            r200_asec = r200_kpc * self.cosmology.kpc_per_asec(self.cosmology.zd)**-1
+
+            A0 = normalize_M200(fsub=modelkwargs['fsub_halo'],M200=modelkwargs['M_halo'],
+                                c=modelkwargs['c'],rmax2d=spatialkwargs['rmax2d'],R200=r200_asec,
+                                mH=10**modelkwargs['log_mH'],mL=10**modelkwargs['log_mL'],
+                                rmin=r_core_asec,plaw_index=modelkwargs['plaw_index'])
+
+
         else:
-            raise Exception('either fsub or A0_perasec must be specified for plaw_main')
+            raise Exception('either fsub or A0_perasec or (M_halo, c) must be specified for plaw_main')
 
         modelkwargs['normalization'] = A0
 
@@ -391,7 +411,7 @@ class HaloGen:
             modelkwargs['omega_M_void'] = None
 
         if 'plaw_order2' in modelkwargs.keys() and 'subhalo_log_mL' not in modelkwargs.keys():
-            modelkwargs['subhalo_log_mL'] = model_kwargs['log_mL'] - powerlaw_defaults['subhalo_log_mL_low']
+            modelkwargs['subhalo_log_mL'] = model_kwargs['log_mL']
 
         if self.A0_z is None:
             A0_z, plaw_index_z, zvals = LOS_plaw(zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,zmin=modelkwargs['zmin'],
@@ -471,6 +491,7 @@ class HaloGen:
         assert redshift!=0
         assert isinstance(mass_function_type,list)
         assert isinstance(spatial_distribution,list)
+        assert isinstance(spatial_distribution,list)
         assert len(mass_function_type)==len(spatial_distribution)
 
         realizations = []
@@ -537,7 +558,7 @@ class HaloGen:
 
                             truncation = Truncation(truncation_routine='fixed_radius')
 
-                        elif spatial_distribution[i] == 'uniform_cored_nfw':
+                        elif spatial_distribution[i] == 'NFW':
 
                             truncation = Truncation(truncation_routine='virial3d',
                                                     params={'sigmacrit': cosmo_at_plane.get_sigmacrit(), 'Rein': 1,
@@ -591,10 +612,14 @@ class HaloGen:
             if self.LOS_mass_sheet and len(subhalos)>0:
 
                 if redshift != self.zd:
+                    plane_mass = []
+                    for obj in subhalos:
+                        if obj.other_args['name'] == 'TNFW':
+                            plane_mass.append(obj.other_args['mass_finite'])
+                        else:
+                            plane_mass.append(obj.other_args['mass'])
 
-                    masses = [obj.other_args['mass'] for obj in subhalos]
-
-                    mass_in_plane = np.sum(masses)
+                    mass_in_plane = np.sum(plane_mass)
 
                     plane_kappa = (mass_in_plane*area**-1)*cosmo_at_plane.get_sigmacrit()**-1
 
@@ -611,22 +636,16 @@ class HaloGen:
             spatial = Uniform_2d(cosmology=self.cosmology, rmax2d=spatialkwargs['rmax2d'])
             x, y, R2d,R3d  = spatial.draw(N, redshift)
 
-        elif spatial_type == 'uniform_cored_nfw':
-
-            spatial = Uniform_cored_nfw(cosmology=self.cosmology, **spatialkwargs)
-
-            x, y, R2d,R3d = spatial.draw(N, redshift)
-
         elif spatial_type == 'localized_uniform':
 
             spatial = Localized_uniform(cosmology=self.cosmology, **spatialkwargs)
             x, y, R2d,R3d  = spatial.draw(N, redshift)
 
-        elif spatial_type == 'NFW_2D':
+        elif spatial_type == 'NFW':
 
-            spatial = NFW_3D(rmax2d = spatialkwargs['rmax2d'], rs = spatialkwargs['rs'], rmax3d=spatialkwargs['rmaxz'],
-                             rmin = spatialkwargs['rmax2d']*0.1, tidal_core=spatialkwargs['tidal_core'],
-                             r_core=spatialkwargs['r_core'])
+            spatial = NFW_3D(rmax2d = spatialkwargs['rmax2d'], Rs = spatialkwargs['Rs'], rmax3d=spatialkwargs['r200_asec'],
+                             rmin = spatialkwargs['rmin_asec'],tidal_core=spatialkwargs['tidal_core'],
+                             r_core=spatialkwargs['r_core_asec'],cosmology=cosmo_at_plane)
             x, y, R2d,R3d  = spatial.draw(N)
 
         else:

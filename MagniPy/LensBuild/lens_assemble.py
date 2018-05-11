@@ -57,9 +57,19 @@ class LensSystem:
         arg_list = []
         for component in self.lens_components:
 
-            zlist.append(component.redshift)
-            lens_list.append(component.other_args['name'])
-            arg_list.append(component.lenstronomy_args)
+            if component.other_args['name'] == 'SERSIC_NFW':
+                zlist.append(component.redshift)
+                zlist.append(component.redshift)
+                lens_list.append('NFW')
+                lens_list.append('SERSIC')
+                arg_list.append(component.lenstronomy_args['SERSIC'])
+                arg_list.append(component.lenstronomy_args['NFW'])
+
+            else:
+                zlist.append(component.redshift)
+                lens_list.append(component.other_args['name'])
+                arg_list.append(component.lenstronomy_args)
+
             if component.has_shear:
                 shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
 
@@ -131,7 +141,6 @@ class Deflector:
         if self.has_shear:
             print 'shear: ',self.shear
             print 'shear PA: ',self.shear_theta
-
 
     def update(self, method=None,is_shear=False,**newparams):
 

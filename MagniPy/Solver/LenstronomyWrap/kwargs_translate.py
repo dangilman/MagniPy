@@ -26,6 +26,11 @@ def model_translate_tolenstronomy(args,name):
         newargs['e1'], newargs['e2'] = phi_q2_ellipticity(gravlens_to_lenstronomy(args['phi_G'], 'phi_G'), args['q'])
         del newargs['phi_G']
         del newargs['q']
+        newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],
+                             'center_x':newargs['center_x'],'center_x':newargs['center_x'],
+                             'r_eff':newargs['r_eff'],'n_sersic':newargs['n_sersic']}
+        newargs['NFW'] = {'center_x': newargs['center_x'], 'center_x': newargs['center_x'],
+                             'theta_Rs': newargs['theta_Rs'], 'Rs': newargs['Rs']}
         return newargs
 
     elif name == 'EXTERNAL_SHEAR':

@@ -1,6 +1,7 @@
 import numpy as np
 from MagniPy.LensBuild.defaults import *
 from scipy.integrate import quad
+from colossus.halo.concentration import *
 
 class Cosmo:
 
@@ -44,6 +45,7 @@ class Cosmo:
 
         return self.cosmo.critical_density0.value * self.density_to_MsunperMpc*self.cosmo.h**-2
 
+
     def get_epsiloncrit(self,z1,z2):
 
         D_ds = self.D_A(z1, z2)
@@ -79,6 +81,14 @@ class Cosmo:
         returns scale factor (a_0 = 1) for given redshift
         """
         return 1. / (1 + z)
+
+    def radian_to_asec(self,x):
+        """
+
+        :param x: angle in radians
+        :return:
+        """
+        return x*self.arcsec**-1
 
     def kpc_per_asec(self,z):
         return self.cosmo.arcsec_per_kpc_proper(z).value**-1
@@ -136,6 +146,63 @@ class Cosmo:
         D_o2 = self.D_A(0, z)
 
         return D_12 * D_os * (D_o2 * D_1s) ** -1
+
+    def NFW(self,M_200,c,z):
+
+        h = self.h
+
+        rho = self.get_rhoc()
+
+        r200 = (3*M_200*h*(4*np.pi*rho*200)**-1)**(1./3.) * h * self.a_z(z)
+
+        if c is None:
+            c = self.NFW_concentration(M_200,z=z)
+
+        rho0_c = 200./3*rho*c**3/(np.log(1+c)-c/(1+c))
+
+        rho0 = rho0_c / h ** 2 / self.a_z(z) ** 3
+
+        rho0_kpc = rho0*(1000)**-3
+        r200_kpc = r200 * 1000
+
+        Rs = r200_kpc / c
+
+        return rho0_kpc, Rs, r200_kpc
+
+    def NFW_concentration(self,M,model='bullock01',mdef='200c',logmhm=0,z=None,
+                           g1=60,concentration_turnover=True):
+
+        # WDM relation adopted from Ludlow et al
+        # scatter adopted from Ludlow et al CDM
+
+        g2 = concentration_power
+
+        def beta(z_val):
+            return 0.026*z_val - 0.04
+
+        if self.cosmo_set is False:
+            self._set_cosmo()
+
+        if z is None:
+            z = self.zd
+
+        c_cdm = concentration(M*self.h,mdef=mdef,model=model,z=z)
+
+        if concentration_turnover is False:
+            #c_cdm = np.random.lognormal(c_cdm,sigma=0.11)
+            return c_cdm
+
+        if logmhm == 0:
+            #c_cdm = np.random.lognormal(c_cdm, sigma=0.11)
+            return c_cdm
+
+        else:
+            mhm = 10**logmhm
+            factor = (1+g1*mhm*M**-1)**g2
+            c_wdm = c_cdm*factor**-1
+            c_wdm *= (1+z)**beta(z)
+            #c_wdm = np.random.lognormal(c_wdm, sigma=0.11)
+            return c_wdm
 
 
 class ParticleMasses:

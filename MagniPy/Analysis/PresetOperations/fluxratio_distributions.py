@@ -63,20 +63,20 @@ def reoptimize_with_halos(data2fit=classmethod, realizations=None, outfilename='
         return model_data
 
 def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
-                                    data2fit=[], Ntotal=int, outfilename='', zlens=None, zsrc=None,
+                                    data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
-    configs = ['cross','cusp','fold']
+    configs = ['cross']
     data = []
 
     if data2fit is None:
         for i in range(0,Ntotal):
             config = random.choice(configs)
 
-            data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0},massprofile=massprofile,
+            data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0,'M_halo':10**13},massprofile=massprofile,
                              halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
                                     shear_prior=[start_shear,1e-9]))
 
@@ -140,7 +140,6 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
         halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
                                                 filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
 
-
         model_data, system = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
                                                  multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                                  identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
@@ -168,3 +167,5 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     else:
 
         return model_data,fit_fluxes,system
+
+

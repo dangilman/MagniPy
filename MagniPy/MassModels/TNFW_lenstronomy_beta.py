@@ -228,15 +228,41 @@ class TNFW(object):
             R = max(R, c)
         else:
             R[R <= c] = c
+
         x = R / Rs
+
         tau = r_trunc * Rs ** -1
 
         gx = self._g(x, tau)
         Fx = self._F(x, tau)
 
-        a = 2 * rho0 * Rs * (2 * gx / x ** 2 - Fx)  # /x #2*rho0*Rs*(2*gx/x**2 - Fx)*axis/x
+        a = 2*rho0*Rs*(2*gx/x**2 - Fx)  # /x #2*rho0*Rs*(2*gx/x**2 - Fx)*axis/x
 
         return a * (ax_y ** 2 - ax_x ** 2) / R ** 2, -a * 2 * (ax_x * ax_y) / R ** 2
+
+    def mass_2d(self,R,Rs,rho0,r_trunc):
+
+        """
+        analytic solution of the projection integral
+        (convergence)
+
+        :param x: R/Rs
+        :type x: float >0
+        """
+
+        x = R / Rs
+        tau = r_trunc / Rs
+        gx = self._g(x,tau)
+        m_2d = 4 * rho0 * Rs * R ** 2 * gx / x ** 2 * np.pi
+        return m_2d
+
+        #return t2 * (t2 + 1) ** -2 * ((t2 + 1 + 2 * (X ** 2 - 1)) * Fx
+        #                              +
+        #                              np.pi * tau
+        #                              +
+        #                              (t2 - 1) * np.log(tau)
+        #                              +
+        #                              np.sqrt(tau ** 2 + X ** 2) * (-np.pi + (t2 - 1) * self.L(X, tau) * tau ** -1))
 
     def _F(self, X, tau):
         """
@@ -249,14 +275,14 @@ class TNFW(object):
         t2 = tau ** 2
         Fx = self.F(X)
 
-        return t2 * (2 * np.pi * (t2 + 1) ** 2) ** -1 * (
-            ((t2 + 1) * (X ** 2 - 1) ** -1) * (1 - Fx)
+        return t2*(t2+1)**-2*(
+            (t2+1)*(X**2-1)**-1*(1-self.F(X))
             +
-            2 * Fx
-            -
-            np.pi * (t2 + X ** 2) ** -.5
+            2*self.F(X)
             +
-            (t2 - 1) * (tau * (t2 + X ** 2) ** .5) ** -1 * self.L(X, tau)
+            -np.pi*(t2+X**2)**-0.5
+            +
+            (t2-1)*(tau*(t2+X**2)**0.5)**-1*self.L(X,tau)
         )
 
     def _g(self, X, tau):
@@ -300,34 +326,26 @@ class TNFW(object):
                 values[inds2] = np.arccos((1 - y[inds2]) ** .5)
                 return values
 
-        t2 = tau ** 2
-        u = X ** 2
-        c = 0.000001
-
-        if np.any(X-c<1):
-
-            warnings.warn('Truncated NFW potential not yet implemented for x<1. Using the expression for the NFW '
-                          'potential in this regime isntead.')
-
-
-            if isinstance(X, int) or isinstance(X, float):
-                if X < 1:
-                    x = max(0.001, X)
-                    a = np.log(x / 2.) ** 2 - np.arccosh(1. / x) ** 2
-                else:  # X >= 1:
-                    a = np.log(X / 2.) ** 2 + np.arccos(1. / X) ** 2
+        def nfw_func(x):
+            if isinstance(x,float) or isinstance(x,int):
+                if x<1:
+                    return np.log(x / 2.) ** 2 - np.arccosh(1. / x) ** 2
+                else:
+                    return np.log(x / 2.)**2 - np.arccos(1. /x)**2
             else:
-                a = np.empty_like(X)
-                X[X <= c] = 0.000001
-                x = X[X < 1]
-                a[X < 1] = np.log(x / 2.) ** 2 - np.arccosh(1. / x) ** 2
-                x = X[X >= 1]
-                a[X >= 1] = np.log(x / 2.) ** 2 + np.arccos(1. / x) ** 2
-            return a
+                inds1 = np.where(x < 1)
+                inds2 = np.where(x >= 1)
+                y = np.zeros_like(x)
+                y[inds1] = np.log(x[inds1] / 2.) ** 2 - np.arccosh(1. / x[inds1]) ** 2
+                y[inds2] = np.log(x[inds2] / 2.) ** 2 - np.arccosh(1. / x[inds2]) ** 2
 
+                return y
 
-        else:
-            Lx = self.L(X, tau)
+        def tnfw_func(x,tau):
+
+            u = x**2
+            t2 = tau**2
+            Lx = self.L(u**.5, tau)
 
             return (t2 + 1) ** -2 * (
                 2 * t2 * np.pi * (tau - (t2 + u) ** .5 + tau * np.log(tau + (t2 + u) ** .5))
@@ -336,14 +354,41 @@ class TNFW(object):
                 +
                 t2 * (t2 - 1) * Lx ** 2
                 +
-                4 * t2 * (u - 1) * self.F(X)
+                4 * t2 * (u - 1) * self.F(u**.5)
                 +
-                t2 * (t2 - 1) * (cos_func(X ** -1)) ** 2
+                t2 * (t2 - 1) * (cos_func(u ** -0.5)) ** 2
                 +
                 t2 * ((t2 - 1) * np.log(tau) - t2 - 1) * np.log(u)
                 -
-                t2 * ((t2 - 1) * np.log(tau) * np.log(4 * tau) + 2 * np.log(0.5 * tau) - 2 * tau * (tau - np.pi) * np.log(
+                t2 * (
+                (t2 - 1) * np.log(tau) * np.log(4 * tau) + 2 * np.log(0.5 * tau) - 2 * tau * (tau - np.pi) * np.log(
                     tau * 2)))
+
+        c = 1e-9
+        rescale = 1
+
+        if np.any(X-c<1):
+
+            warnings.warn('Truncated NFW potential not yet implemented for x<1. Using the expression for the NFW '
+                          'potential in this regime isntead.')
+            rescale = tnfw_func(1.00001,tau)*nfw_func(1)**-1
+
+        if isinstance(X,float) or isinstance(X,int):
+            if X<1:
+                X = min(X,0.001)
+                return nfw_func(X)*rescale
+            else:
+                return tnfw_func(X,tau)
+        else:
+
+            X[np.where(X<0.001)] = 0.001
+
+            values = np.zeros_like(X)
+            inds1,inds2 = np.where(X<1),np.where(X>=1)
+            values[inds1] = nfw_func(X[inds1])*rescale
+            values[inds2] = tnfw_func(X[inds2],tau)
+
+            return values
 
     def _alpha2rho0(self, theta_Rs, Rs):
         """
@@ -363,4 +408,3 @@ class TNFW(object):
         """
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
         return theta_Rs
-

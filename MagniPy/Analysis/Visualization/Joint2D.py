@@ -20,6 +20,7 @@ class Joint2D:
 
     #default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
     default_contour_colors = (colors.cnames['skyblue'], colors.cnames['blue'], 'k')
+    truth_color = 'r'
     tick_font = 12
 
     def __init__(self,densities=[],ax=None,fig=None):
@@ -50,26 +51,43 @@ class Joint2D:
         extent = [param_ranges[param_names[0]][0],param_ranges[param_names[0]][1],param_ranges[param_names[1]][0],
                   param_ranges[param_names[1]][1]]
 
-        density = 1
-        for density in self.densities:
-            density *= density
+        final_density = np.ones_like(self.densities[0])
 
-        density = self._norm_density(density)
+        for density in self.densities:
+            density = self._norm_density(density)
+            final_density *= density
+
+        final_density = self._norm_density(final_density)
 
         if filled_contours:
 
             x,y = np.linspace(extent[0],extent[1],density.shape[0]),np.linspace(extent[2],extent[3],density.shape[0])
-            self.contours(x,y,density,contour_colors=contour_colors,contour_alpha=contour_alpha, extent=extent,aspect=aspect,
+            self.contours(x,y,final_density,contour_colors=contour_colors,contour_alpha=contour_alpha, extent=extent,aspect=aspect,
                           levels=levels)
 
-            self.ax.imshow(density, extent=extent,
+            self.ax.imshow(final_density, extent=extent,
                            aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
 
         else:
 
-            self.ax.imshow(density, extent=extent,
-                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=1)
+            self.ax.imshow(final_density, extent=extent,
+                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(final_density))
 
+        if 'truths' in kwargs:
+
+            truth1,truth2 = kwargs['truths'][param_names[0]],kwargs['truths'][param_names[1]]
+
+            inside1 = truth1 >= param_ranges[param_names[0]][0] and \
+                              truth1 <= param_ranges[param_names[0]][1]
+            inside2 = truth2 >= param_ranges[param_names[1]][0] and \
+                              truth2 <= param_ranges[param_names[1]][1]
+
+            if inside1:
+                self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
+            if inside2:
+                self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
+            if inside1 and inside2:
+                self.ax.scatter(truth1,truth2,color=self.truth_color)
 
         self.ax.set_xlabel(param_names[0])
         self.ax.set_ylabel(param_names[1])

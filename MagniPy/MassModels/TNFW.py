@@ -24,6 +24,12 @@ class TNFW:
 
         self.c_turnover=c_turnover
 
+    def M_finite(self, rho, Rs, tau):
+
+        t2 = tau**2
+        return 4*np.pi*Rs**3*rho*t2*(t2+1)**-2*(
+            (t2-1)*np.log(tau) + np.pi*tau - (t2+1))
+
     def def_angle(self, x, y, Rs=None, theta_Rs=None, r_trunc=None, center_x=0, center_y=0):
 
         x_loc = x - center_x
@@ -116,14 +122,12 @@ class TNFW:
 
         return 2*ks*self._F(xnfw,tau)
 
-    def params(self, x=None,y=None,mass=float, mhm=None,truncation=None,**kwargs):
+    def params(self, x=None,y=None,mass=float, mhm=None,truncation=None,c=None,**kwargs):
 
         assert mhm is not None
         assert mass is not None
 
-        c = self.nfw_concentration(mass, mhm)
-
-        rsdef,Rs = self.nfw_physical2angle(mass, c)
+        rsdef,Rs,rho_mpc,Rs_mpc,r200_mpc = self.nfw_physical2angle(mass, c)
 
         #ks = rsdef*(4*rs*(np.log(0.5)+1))**-1
 
@@ -146,10 +150,11 @@ class TNFW:
             else:
                 raise Exception('specify truncation.')
 
-
         otherkwargs['mass'] = mass
         otherkwargs['c'] = c
         otherkwargs['name'] = 'TNFW'
+
+        otherkwargs['mass_finite'] = self.M_finite(rho_mpc,Rs_mpc,subkwargs['r_trunc']*Rs**-1)
 
         return subkwargs,otherkwargs
 
@@ -193,23 +198,6 @@ class TNFW:
         """
         return 200./3*self.cosmology.get_rhoc()*c**3/(np.log(1+c)-c/(1+c))
 
-    def nfw_concentration(self, m, mhm, g1=60,g2=.17):
-
-        def beta(z):
-            return 0.026*z - 0.04
-
-        redshift_factor = 0.842 # corrects to z=0.5 result in COCO Statistical Props
-        c_cdm = redshift_factor*7*(m*10**-12)**-.098 # from Maccio et al 2008; similar to Bullock model
-
-        if self.c_turnover:
-
-            c_wdm = c_cdm*(1+g1*mhm*m**-1)**-g2
-            #c_wdm *= (1+z)**beta(z)
-
-            return c_wdm
-        else:
-
-            return c_cdm
 
     def tau(self,m,rt,mhm=False):
 
@@ -243,7 +231,8 @@ class TNFW:
 
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
 
-        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.cosmology.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
+        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.cosmology.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, \
+               Rs_angle, rho0, Rs, r200
 
     def M_physical(self,m200,mhm=0):
         """

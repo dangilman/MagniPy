@@ -8,7 +8,7 @@ class Realization:
         self.halo_generator = HaloGen(zd=zlens,zsrc=zsrc,LOS_mass_sheet=LOS_mass_sheet)
 
     def halo_constructor(self,massprofile='', model_name='', model_args={},
-                       Nrealizations=int, filter_halo_positions=False,spatial_name=None,
+                       Nrealizations=int, filter_halo_positions=False,spatial_model=None,
                        **filter_kwargs):
 
         if not isinstance(model_name,list):
@@ -17,8 +17,8 @@ class Realization:
             model_args = [model_args]
         if not isinstance(massprofile,list):
             massprofile = [massprofile]
-        if not isinstance(spatial_name,list):
-            spatial_name = [spatial_name]*len(massprofile)
+        if not isinstance(spatial_model,list):
+            spatial_name = [spatial_model]*len(massprofile)
 
         assert len(model_name)==len(model_args) and len(model_args)==len(massprofile) and len(massprofile),\
             'Must specifiy arguments for each model.'
@@ -31,20 +31,21 @@ class Realization:
             prof = massprofile[i]
             mod_args = model_args[i]
 
-            if mod == 'plaw_LOS':
-                spatial_name[i] = 'uniform2d'
+            if spatial_model is None:
+                if mod == 'plaw_LOS':
+                    spatial_name[i] = 'uniform2d'
+                elif mod == 'delta_LOS':
+                    spatial_name[i] = 'uniform2d'
 
-            elif mod == 'delta_LOS':
-                spatial_name[i] = 'uniform2d'
+                elif mod == 'delta_main':
+                    spatial_name[i] = 'localized_uniform'
 
-            elif mod == 'delta_main':
-                spatial_name[i] = 'localized_uniform'
-
-            elif mod == 'delta_LOS':
-                spatial_name[i] = 'localized_uniform'
-
+                elif mod == 'delta_LOS':
+                    spatial_name[i] = 'localized_uniform'
+                else:
+                    spatial_name[i] = 'NFW'
             else:
-                spatial_name[i] = 'uniform_cored_nfw'
+                spatial_name[i] = spatial_model[i]
 
             if filter_halo_positions:
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
@@ -93,7 +94,5 @@ def get_positions(halos):
         if 'center_x' in halo.args.keys():
             x.append(halo.args['center_x'])
             y.append(halo.args['center_y'])
-
-
 
     return np.array(x),np.array(y)

@@ -4,7 +4,20 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import cnames
 
 default_colors = ['k',cnames['indianred'],cnames['royalblue'],
-                  cnames['mediumpurple'],cnames['darkmagenta'],cnames['forestgreen']]
+                  cnames['mediumpurple'],cnames['forestgreen']]
+
+plt.rcParams['axes.linewidth'] = 2.5
+
+plt.rcParams['xtick.major.width'] = 2.5
+plt.rcParams['xtick.major.size'] = 8
+plt.rcParams['xtick.minor.size'] = 2
+
+plt.rcParams['ytick.major.width'] = 2.5
+plt.rcParams['ytick.major.size'] = 8
+plt.rcParams['ytick.minor.size'] = 2
+
+plt.rcParams['xtick.labelsize'] = 12
+plt.rcParams['ytick.labelsize'] = 12
 
 class FluxRatioCumulative:
 
@@ -32,7 +45,7 @@ class FluxRatioCumulative:
         self.reference_data = refdata
 
     def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
-                    xlims=None,ylims=None):
+                    xlims=None,ylims=None,legend_args={}):
 
         if color is None:
             color = default_colors
@@ -42,8 +55,8 @@ class FluxRatioCumulative:
             ylabel = 'Percent\n'+r'$ > x$'
 
         fig = plt.figure(1)
+        fig.set_size_inches(7,7)
         ax = plt.subplot(111)
-        fig.set_size_inches(6,6)
 
         for i,anomalies in enumerate(self.lensdata):
 
@@ -64,21 +77,27 @@ class FluxRatioCumulative:
                          linestyle=linestyle, alpha=alpha)
                 leg = False
 
-        ax.set_xlabel(xlabel,fontsize=20)
+        ax.set_xlabel(xlabel,fontsize=18)
         ax.set_ylabel(ylabel,rotation=90,fontsize=18)
+
         if xlims is None:
             ax.set_xlim(0,xmax)
         else:
             ax.set_xlim(xlims[0],xlims[1])
 
         if ylims is None:
-            ax.set_ylim(0,1)
+            ylims = [0,1]
 
-        else:
-            ax.set_ylim(ylims[0],ylims[1])
+        ax.set_ylim(ylims[0],ylims[1])
+
+        yticks = np.linspace(ylims[0],ylims[1],5)
+        yticklabels = [str(int(tick*100))+'%' for tick in yticks]
+
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticklabels)
 
         if leg:
-            plt.legend()
+            plt.legend(**legend_args)
 
         return fig,ax
 

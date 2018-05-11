@@ -3,7 +3,7 @@ from cosmology import ParticleMasses
 from scipy.integrate import quad
 from MagniPy.LensBuild.defaults import *
 from scipy.special import hyp2f1
-from colossus.halo.concentration import *
+from colossus.cosmology import cosmology
 from copy import deepcopy
 
 class CosmoExtension(Cosmo):
@@ -212,35 +212,3 @@ class CosmoExtension(Cosmo):
 
                 integral.append(quad(integrand, z1, value, args=(angle, z_base, Rein_def))[0])
             return np.array(integral)
-
-    def NFW_concentration(self,M,model='bullock01',mdef='200c',logmhm=0,z=None,
-                           g1=60,concentration_turnover=True):
-
-        # WDM relation adopted from Ludlow et al
-        # scatter adopted from Ludlow et al CDM
-
-        g2 = concentration_power
-
-        def beta(z_val):
-            return 0.026*z_val - 0.04
-
-        if self.cosmo_set is False:
-            self._set_cosmo()
-
-        c_cdm = concentration(M*self.cosmo.h,mdef=mdef,model=model,z=z)
-
-        if concentration_turnover is False:
-            #c_cdm = np.random.lognormal(c_cdm,sigma=0.11)
-            return c_cdm
-
-        if logmhm == 0:
-            #c_cdm = np.random.lognormal(c_cdm, sigma=0.11)
-            return c_cdm
-
-        else:
-            mhm = 10**logmhm
-            factor = (1+g1*mhm*M**-1)**g2
-            c_wdm = c_cdm*factor**-1
-            c_wdm *= (1+z)**beta(z)
-            #c_wdm = np.random.lognormal(c_wdm, sigma=0.11)
-            return c_wdm
