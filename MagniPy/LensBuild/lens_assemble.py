@@ -55,14 +55,23 @@ class LensSystem:
         zlist = []
         lens_list = []
         arg_list = []
+
         for component in self.lens_components:
 
             if component.other_args['name'] == 'SERSIC_NFW':
                 zlist.append(component.redshift)
+                lens_list.append('SERSIC_ELLIPSE')
+                arg_list.append(component.lenstronomy_args['SERSIC'])
+
+                if component.has_shear:
+                    shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
+
+                    arg_list.append({'e1': shear_e1, 'e2': shear_e2})
+                    zlist.append(component.redshift)
+                    lens_list.append('SHEAR')
+
                 zlist.append(component.redshift)
                 lens_list.append('NFW')
-                lens_list.append('SERSIC')
-                arg_list.append(component.lenstronomy_args['SERSIC'])
                 arg_list.append(component.lenstronomy_args['NFW'])
 
             else:
@@ -70,12 +79,12 @@ class LensSystem:
                 lens_list.append(component.other_args['name'])
                 arg_list.append(component.lenstronomy_args)
 
-            if component.has_shear:
-                shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
+                if component.has_shear:
+                    shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
 
-                arg_list.append({'e1': shear_e1, 'e2': shear_e2})
-                zlist.append(component.redshift)
-                lens_list.append('SHEAR')
+                    arg_list.append({'e1': shear_e1, 'e2': shear_e2})
+                    zlist.append(component.redshift)
+                    lens_list.append('SHEAR')
 
         return zlist,lens_list,arg_list
 
@@ -124,6 +133,7 @@ class Deflector:
             self.e1,self.e2 = polar_to_cart(self.shear,self.shear_theta)
         else:
             self.has_shear = False
+
         if self.has_shear:
             from MagniPy.MassModels.ExternalShear import Shear
             self.Shear = Shear()
@@ -155,9 +165,18 @@ class Deflector:
                 self.shear_theta = spa
                 return
 
-            self.lenstronomy_args.update(newparams)
+            if self.other_args['name'] == 'SERSIC_NFW':
 
-            self.args = model_translate_togravlens(newparams,self.other_args['name'])
+                if 'theta_Rs' in newparams.keys():
+                    self.lenstronomy_args['NFW'].update(newparams)
+                else:
+                    self.lenstronomy_args['SERSIC'].update(newparams)
+
+            else:
+
+                self.lenstronomy_args.update(newparams)
+
+                self.args = model_translate_togravlens(newparams,self.other_args['name'])
 
         elif method=='lensmodel':
 

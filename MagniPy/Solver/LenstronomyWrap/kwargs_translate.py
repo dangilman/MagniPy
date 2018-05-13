@@ -7,7 +7,7 @@ def model_translate_tolenstronomy(args,name):
 
     # convert gravlens arguments to lenstronomy arguments
 
-    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','SNFW','CONVERGENCE','SERSIC_NFW']:
+    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','CONVERGENCE','SERSIC_NFW']:
         raise Exception(name + ' not recognized.')
 
     newargs = {}
@@ -27,9 +27,9 @@ def model_translate_tolenstronomy(args,name):
         del newargs['phi_G']
         del newargs['q']
         newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],
-                             'center_x':newargs['center_x'],'center_x':newargs['center_x'],
-                             'r_eff':newargs['r_eff'],'n_sersic':newargs['n_sersic']}
-        newargs['NFW'] = {'center_x': newargs['center_x'], 'center_x': newargs['center_x'],
+                             'center_x':newargs['center_x'],'center_y':newargs['center_y'],
+                             'r_eff':newargs['r_eff'],'n_sersic':newargs['n_sersic'],'k_eff':newargs['k_eff']}
+        newargs['NFW'] = {'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
                              'theta_Rs': newargs['theta_Rs'], 'Rs': newargs['Rs']}
         return newargs
 

@@ -10,7 +10,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
                    SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None, mass_profile=None, mass_func_type=None,
                    log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},core_index=int,
-                   chain_description='',chain_truths={},Ncores=int,cores_per_lens=int):
+                   chain_description='',chain_truths={},Ncores=int,cores_per_lens=int,main_halo_args={}):
 
     chain_keys = {}
     chain_keys['sampler'] = {}
@@ -29,6 +29,9 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     chain_keys['lens']['SIE_shear'] = SIE_shear_start
     chain_keys['lens']['SIE_shear_start'] = SIE_shear_start
     chain_keys['lens']['multiplane'] = multiplane
+
+    for param,value in main_halo_args.iteritems():
+        chain_keys['lens'].update({param:value})
 
     chain_keys['modeling']['mindis'] = mindis
     chain_keys['modeling']['log_masscut_low'] = log_masscut_low
@@ -134,10 +137,24 @@ def halo_model_args(mass_func_type='',params={}):
         args.update({name: params[name]})
 
     if mass_func_type=='plaw_main' or mass_func_type=='composite_plaw':
+
         if 'A0_perasec2' in params.keys():
             args.update({'A0_perasec2':params['A0_perasec2']})
         elif 'fsub' in params.keys():
             args.update({'fsub':params['fsub']})
+
+        if 'M_halo' in params.keys():
+            args.update({'M_halo':params['M_halo']})
+            args.update({'tidal_core':params['tidal_core']})
+            args.update({'r_core':params['r_core']})
+
+        elif 'Rs' in params.keys():
+            args.update({'Rs': params['Rs']})
+            args.update({'r200_kpc':params['r200_kpc']})
+
+        if 'plaw_order2' in params.keys():
+            args.update({'plaw_order2':True})
+
     if mass_func_type=='composite_plaw':
         args.update({'zmin':params['zmin']})
         args.update({'zmax':params['zmax']})
@@ -211,20 +228,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     macromodel_start = get_default_SIE(z=chain_keys['lens']['zlens'])
 
-    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'], temp_folder=chain_keys['sampler']['scratch_file'])
-
-    opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
-                                             multiplane=chain_keys['lens']['multiplane'],
-                                             method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
-                                             identifier=chain_keys['sampler']['chain_ID'],
-                                             grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
-                                             source_size=chain_keys['lens']['source_size'])
-
-    macromodel = mod[0].lens_components[0]
-    macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
-
     # Get parameters to vary
-    prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'],macromodel=macromodel)
+    prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'])
     samples = prior.sample(scale_by='Nsamples')
 
     param_names_tovary = prior.param_names
@@ -264,8 +269,23 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                                          x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
 
+
     print 'done.'
     print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
+
+    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
+                           temp_folder=chain_keys['sampler']['scratch_file'])
+
+    #opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
+    #                                         multiplane=chain_keys['lens']['multiplane'],
+    #                                         method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
+    #                                         identifier=chain_keys['sampler']['chain_ID'],
+    #                                         grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
+    #                                         source_size=chain_keys['lens']['source_size'])
+
+    #macromodel = mod[0].lens_components[0]
+    macromodel = macromodel_start
+    macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
 
     macromodels = []
 
@@ -376,4 +396,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/singleplane_test_lensmod/',4)
+#runABC(os.getenv('HOME')+'/data/LOS_v1/',2)

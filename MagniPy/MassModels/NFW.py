@@ -12,7 +12,7 @@ class NFW:
         """
         if cosmology is None:
             if z is None or zsrc is None:
-                print 'Warning; no cosmology specified.'
+                pass
             else:
                 self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
                 self.z, self.zsrc = z, zsrc

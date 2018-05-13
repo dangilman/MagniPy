@@ -112,14 +112,26 @@ class Magnipy:
                                           res=res,source_shape=source_shape,source_size=source_size,
                                           raytrace_with=raytrace_with,lens_model_params=kwargs_lens,polar_grid=polar_grid)
 
+            if lens_systems[i].lens_components[0].other_args['name'] == 'SERSIC_NFW':
 
-            optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                               newkwargs=kwargs_lens[0], method='lenstronomy')
-
-            if solver_type == 'PROFILE_SHEAR':
                 optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                   newkwargs=kwargs_lens[1], method='lenstronomy',
-                                                   is_shear=True)
+                                               newkwargs=kwargs_lens[0], method='lenstronomy')
+                optimized_sys = self.update_system(lens_system=lens_systems[i],component_index=1,
+                                                   newkwargs=kwargs_lens[1],method='lenstronomy')
+                if solver_type == 'PROFILE_SHEAR':
+                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                       newkwargs=kwargs_lens[2], method='lenstronomy',
+                                                       is_shear=True)
+
+            else:
+                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                   newkwargs=kwargs_lens[0], method='lenstronomy')
+                if solver_type == 'PROFILE_SHEAR':
+
+                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
+                                                       newkwargs=kwargs_lens[1], method='lenstronomy',
+                                                       is_shear=True)
+
             new_data = Data(x_img,y_img,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
             data.append(new_data)

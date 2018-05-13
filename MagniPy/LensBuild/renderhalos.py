@@ -338,6 +338,7 @@ class HaloGen:
 
             A0_perasec, _ = mainlens_plaw(fsub=modelkwargs['fsub'],plaw_index=modelkwargs['plaw_index'],cosmo=self.cosmology,
                                   kappa_Rein=modelkwargs['kappa_Rein'], log_mL = modelkwargs['log_mL'], log_mH = modelkwargs['log_mH'])
+
             A0 = A0_perasec*np.pi*spatialkwargs['rmax2d']**2
 
         elif 'A0_perasec' in modelkwargs:
@@ -345,7 +346,7 @@ class HaloGen:
             A0 = modelkwargs['A0_perasec']*np.pi*spatialkwargs['rmax2d']**2
 
         elif 'M_halo' in modelkwargs and 'c' in modelkwargs and 'fsub_halo' in modelkwargs:
-
+            raise Exception('not yet implemented')
             if 'r_core_asec' in spatialkwargs:
                 r_core_asec = spatialkwargs['rmin_asec']
             else:

@@ -4,6 +4,7 @@ import subprocess
 import shutil
 import scipy.ndimage.filters as sfilt
 
+
 def coordinates_inbox(box_dx,box_dy,centered_x,centered_y):
 
     return np.logical_and(np.logical_and(-0.5*box_dx < centered_x, centered_x <=  0.5*box_dx),

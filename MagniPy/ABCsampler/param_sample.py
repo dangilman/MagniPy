@@ -34,7 +34,7 @@ class ParamSample:
 
             if pargs['prior_type'] == 'initialized_resample':
                 self.priors.append(
-                    ProbabilityDistribution(distribution_type=pargs['prior_type'], args=pargs, decimals=decimals, macromodel=kwargs['macromodel']))
+                    ProbabilityDistribution(distribution_type=pargs['prior_type'], args=pargs, decimals=decimals))
             else:
                 self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs,decimals=decimals))
 

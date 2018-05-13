@@ -284,11 +284,9 @@ class NFW_3D:
 
     def draw(self,N):
 
-        r3d, x, y, r2d = [], [], [], []
+        r3d, x, y, r2d,z = [], [], [], [],[]
 
         while len(r3d) < N:
-
-            u = np.random.uniform(0, 1)
 
             theta = np.random.uniform(0,2*np.pi)
 
@@ -311,6 +309,7 @@ class NFW_3D:
                 r3d.append(r3d_)
                 x.append(x_+self.xoffset)
                 y.append(y_+self.yoffset)
+                z.append(z_)
                 r2d.append(r2d_)
 
         x = np.array(x)
@@ -319,6 +318,7 @@ class NFW_3D:
         r3d = np.array(r3d)
 
         return x,y,r2d,r3d
+
 
 
 

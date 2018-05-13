@@ -274,3 +274,5 @@ def normalize_M200(fsub,M200,c,rmax2d,R200,mH,mL,rmin,plaw_index):
     fsub_effective = fsub_volume*fsub
 
     return prefactor*0.5*fsub_effective*_r*_m**2*c**2*f_xmin*(2+plaw_index)**-1*(1-beta**(2+plaw_index))
+
+

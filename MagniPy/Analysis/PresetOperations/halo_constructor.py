@@ -25,7 +25,6 @@ class Realization:
 
         halos = []
 
-
         for i in range(0,int(len(model_name))):
             mod = model_name[i]
             prof = massprofile[i]
