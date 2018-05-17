@@ -69,7 +69,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
-    configs = ['cross']
+    configs = ['cross','cusp','fold']
     data = []
 
     if data2fit is None:
@@ -77,7 +77,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             config = random.choice(configs)
 
             data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0,'M_halo':10**13},massprofile=massprofile,
-                             halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,return_gamma=False,
+                             halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,
                                     shear_prior=[start_shear,1e-9]))
 
     else:
