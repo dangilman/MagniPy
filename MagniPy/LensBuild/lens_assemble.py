@@ -30,10 +30,9 @@ class LensSystem:
 
         self.lens_components += halos
 
-        if self.multiplane:
-            for object in halos:
+        for object in halos:
 
-                self._redshift_list(object)
+            self._redshift_list(object)
 
     def update_component(self, component_index=int, newkwargs={}, method = ''):
 

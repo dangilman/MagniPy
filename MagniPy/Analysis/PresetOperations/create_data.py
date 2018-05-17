@@ -62,13 +62,14 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             assert multiplane
 
         if subhalo_realizations is None:
+            print 'generating halos... '
             if halo_model is not None:
                 subhalo_realizations = realization.halo_constructor(massprofile=massprofile, model_name=halo_model,model_args=substructure_model_args,
                                                Nrealizations=1, zlens=zlens, zsrc=zsrc)
             else:
                 subhalo_realizations = None
-
-
+            print 'done.'
+        print 'solving lens equation... '
         dset_v0 = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                            identifier=identifier,
                                            srcx=src_x, srcy=src_y, grid_rmax=.08,
@@ -81,7 +82,7 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             continue
 
         else:
-
+            print 'found the image configuration, ray tracing... '
             dset = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                                identifier=identifier,
                                                srcx=src_x, srcy=src_y, grid_rmax=.08,
@@ -92,12 +93,10 @@ def create_data(identifier='create_data',config=None,b_prior=[1,0.2],ellip_prior
             dset[0].x += np.random.normal(0,astrometric_perturbation,size=4)
 
             dset[0].y += np.random.normal(0,astrometric_perturbation,size=4)
-    
-            if return_gamma:
-                return dset[0],gamma
-            elif return_system:
-                system = solver.build_system(main, additional_halos=subhalo_realizations, multiplane=multiplane)
-                return dset[0],system
+
+            if return_system:
+                system = solver.build_system(main=main, additional_halos=subhalo_realizations[0], multiplane=multiplane)
+                return dset[0],system,gamma
             else:
                 return dset[0]
 
@@ -185,7 +184,7 @@ def create_data_SERSICNFW(identifier='create_data', config=None, R_ein=[1, 0.2],
 
             dset = solver.solve_lens_equation(macromodel=main, method=method, realizations=subhalo_realizations,
                                               identifier=identifier,
-                                              srcx=src_x, srcy=src_y, grid_rmax=.08,
+                                              srcx=src_x, srcy=src_y, grid_rmax=.12,
                                               res=0.001, source_shape='GAUSSIAN', ray_trace=True,
                                               raytrace_with=raytrace_with, source_size=source_size,
                                               multiplane=multiplane)
@@ -198,4 +197,10 @@ def create_data_SERSICNFW(identifier='create_data', config=None, R_ein=[1, 0.2],
                 return dset[0], [N_sersic,Rs,R_ein,R_ein*reff_thetaE_Ratio]
 
             else:
-                return dset[0]
+                if return_system:
+                    return dset[0],[main,subhalo_realizations]
+                else:
+                    return dset[0]
+
+#data,system,gamma = create_data('test',config='cross',zlens=0.5,zsrc=1.5,substructure_model_args=
+#        {'fsub':0.0,'M_halo':10**13,'logmhm':9},multiplane=True,halo_model='composite_plaw',return_system=True)
