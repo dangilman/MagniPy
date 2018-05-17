@@ -113,6 +113,11 @@ def cross_section_compute(massprofile='', halo_model='', model_args={},
                                                         source_size=source_size, raytrace_with=raytrace_with,
                                                         print_mag=False)
 
+        astro_error = np.sqrt(np.sum((data[n].x - newdata[0].x) ** 2 + (data[n].y - newdata[0].y) ** 2))
+
+        if astro_error > 1e-5:
+            continue
+
         residuals.append(newdata[0].flux_anomaly(data_control[0],sum_in_quad=True))
         bin_centers.append(mass_bin_center)
         n+=1
