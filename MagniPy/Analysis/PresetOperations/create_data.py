@@ -58,8 +58,10 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
 
         data = solver.solve_lens_equation(macromodel=start_SIE,realizations=halos,multiplane=multiplane,method=method,ray_trace=True,
                                                srcx=srcx,srcy=srcy,grid_rmax=0.12,res=0.001,source_size=source_size)
-
-        imgconfig = identify(data_init[0].x, data_init[0].y, R_ein)
+        if data[0].nimg != 4:
+            continue
+            
+        imgconfig = identify(data[0].x, data[0].y, R_ein)
 
         if imgconfig != target:
             continue
