@@ -65,13 +65,14 @@ class HaloMassFunction:
         return h**3*massFunction(M_h,z,q_out=q_out,model=self.model,**self.modelkwargs)*M_h**-1
 
     def dN_dM_physical(self, M, z):
-        """
 
+        """
         :param M: m200 in comoving units
         :param z: redshift
         :return: differential number per unit mass per cubic Mpc (physical)
         [h^3 N / M_odot / Mpc^3] where Mpc is comoving
         """
+
         return (1+z)**3*self.dN_dM_comoving(M,z)
 
     def fit_norm_index(self,M,dNdM,order=1):

@@ -267,14 +267,6 @@ class NFW_3D:
             X[np.where(X < self.xmin)] = self.xmin
             return norm*(X*self.xmin**-1)**-alpha
 
-    def _core_damp(self,r3d):
-
-        if self.tidal_core:
-            x = self.core_fac*self.r_core*r3d**-1
-            return np.exp(-x)
-        else:
-            return 1
-
     def C_inv(self,x,alpha=0.99):
 
         a = 1-alpha
@@ -302,8 +294,12 @@ class NFW_3D:
             if r3d_*self.rs**-1 <= self.xmin:
                 ratio = 1
             else:
-                ratio = self.nfw_rho_r(r3d_) * self.nfw_bound(r3d_) ** -1
-                ratio *= self._core_damp(r3d_)
+
+                if self.tidal_core:
+                    ratio = self.nfw_rho_r(max(self.r_core,r3d_)) * self.nfw_bound(r3d_)**-1
+                else:
+                    ratio = self.nfw_rho_r(r3d_) * self.nfw_bound(r3d_) ** -1
+
 
             if ratio > np.random.uniform(0,1) and r2d_ <= self.rmax2d:
                 r3d.append(r3d_)

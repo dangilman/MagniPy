@@ -57,7 +57,7 @@ class Magnipy:
 
         return lens_system
 
-    def build_system(self, main=None, additional_halos=None, multiplane=None, filter_by_pos=False, **filter_kwargs):
+    def build_system(self, main=None, additional_halos=None, multiplane=None):
 
         """
         This routine sets up the lens model. It assembles a "system", which is a list of Deflector instances
@@ -79,6 +79,46 @@ class Magnipy:
             newsystem.halos(additional_halos)
 
         return newsystem
+
+    def build_system_fromlists(self,redshift_list=[],lens_list=[],arg_list=[],multiplane=None,zsrc=None):
+
+        assert len(redshift_list) == len(lens_list) == len(arg_list)
+
+        from MassModels.ExternalShear import Shear
+        from MassModels.SIE import SIE
+        from MassModels.NFW import NFW
+        from MassModels.TNFW import TNFW
+        halos = []
+        main = None
+
+        for i in range(0,len(redshift_list)):
+
+            name = lens_list[i]
+            z = redshift_list[i]
+            args = arg_list[i]
+
+            if name == 'SPEMD':
+
+                if lens_list[i+1] == 'SHEAR':
+                    shear_mag,shear_pa = cart_to_polar(arg_list[i+1]['e1'],arg_list[i+1]['e2'])
+                    main = build.Deflector(subclass=SIE(),redshift=z,lens_params=args,shear=shear_mag,shear_theta=shear_pa,name=name)
+                else:
+                    main = build.Deflector(subclass=SIE(), redshift=z, lens_params=args, shear=shear_mag,
+                                           shear_theta=shear_pa,name=name)
+
+            elif name=='SHEAR':
+                continue
+
+            elif name=='NFW':
+                halo = build.Deflector(subclass=NFW(z,zsrc),redshift=z,lens_params=args,name=name)
+                halos.append(halo)
+
+            elif name == 'TNFW':
+                halo = build.Deflector(subclass=TNFW(z, zsrc), redshift=z, lens_params=args,name=name)
+                halos.append(halo)
+
+
+        return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
     def optimize_4imgs_lenstronomy(self,lens_systems,data2fit=None,method=str,sigmas=None,ray_trace=True,grid_rmax=None,res=None,
                                    source_shape='GAUSSIAN',source_size=None,print_mag=False,raytrace_with=None,polar_grid=True,

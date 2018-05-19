@@ -1,12 +1,27 @@
 from MagniPy.magnipy import Magnipy
 from RayTrace.raytrace import RayTrace
 import copy
-from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_gridrmax,default_res,\
-    default_source_shape,default_source_size,default_solve_method,default_file_identifier
 import numpy as np
 import matplotlib.pyplot as plt
+from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 
 class Analysis(Magnipy):
+
+    def critical_cruves_caustics(self,lens_system=None,main=None,halos=None,multiplane=None,compute_window=1.2,scale=0.01):
+
+        if lens_system is None:
+            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
+
+        extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,redshift_list=lensmodel.redshift_list,
+                            cosmo=lensmodel.cosmo,multi_plane=multiplane,z_source=lensmodel.z_source)
+
+        xcrit, ycrit, xcaus, ycaus = extension.critical_curve_caustics(lensmodel_params,compute_window=compute_window,grid_scale=scale)
+
+        return xcrit,ycrit,xcaus,ycaus
 
     def rayshoot(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 

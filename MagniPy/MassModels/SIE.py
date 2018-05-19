@@ -78,7 +78,7 @@ class SIE:
         return kappa
 
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
-               y = None, gamma=2,trunc=None,**kwargs):
+               y = None, gamma=2,**kwargs):
 
         subparams = {}
         otherkwargs = {}

@@ -102,16 +102,19 @@ class Deflector:
 
         if lens_params is None:
             self.args,self.other_args = subclass.params(**lens_kwargs)
+            self.lenstronomy_args = model_translate_tolenstronomy(self.args, name=self.other_args['name'])
 
         else:
             self.other_args = {}
             self.args = lens_params
 
-            self.other_args['name'] = self.args['name']
+            try:
+                self.other_args['name'] = self.args['name']
+                del self.args['name']
+            except:
+                self.other_args['name'] = lens_kwargs['name']
 
-            del self.args['name']
-
-        self.lenstronomy_args = model_translate_tolenstronomy(self.args,name=self.other_args['name'])
+            self.lenstronomy_args = self.args
 
         self.profname = self.other_args['name']
 

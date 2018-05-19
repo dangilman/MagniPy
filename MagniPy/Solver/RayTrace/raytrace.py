@@ -16,6 +16,7 @@ class RayTrace:
         :param size: width of the box in asec
         :param res: pixel resolution asec per pixel
         """
+
         self.raytrace_with = raytrace_with
 
         self.polar_grid = polar_grid
@@ -58,6 +59,7 @@ class RayTrace:
 
         x_loc,y_loc = [],[]
         for i in range(0,Nimg):
+
             if self.polar_grid:
                 #ellipse_inds = np.where(np.sqrt(self.x_grid_0 ** 2 + self.y_grid_0 ** 2) <= self.grid_rmax)
                 ellipse_inds = ellipse_coordinates(self.x_grid_0, self.y_grid_0, self.grid_rmax,q=self.polar_q,
@@ -96,6 +98,7 @@ class RayTrace:
 
         x_loc, y_loc = self._get_grids(xpos, ypos, len(xpos))
         N = len(xpos)
+
         if self.raytrace_with == 'lenstronomy':
 
             return self.multilenswrap.magnification(x_loc,y_loc,lensmodel,lens_model_params,
@@ -133,7 +136,7 @@ class RayTrace:
             xdef += xplus
             ydef += yplus
 
-            if print_mag and i==0:
+            if print_mag and count==0:
                 print count+1
 
         if to_img_plane:

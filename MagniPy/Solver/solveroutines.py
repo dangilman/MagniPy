@@ -13,7 +13,7 @@ class SolveRoutines(Magnipy):
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                             ray_trace=None, identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None, filter_subhalos=False,
-                            filter_by_pos=False, filter_kwargs={},raytrace_with=None):
+                            filter_by_pos=False, filter_kwargs={},raytrace_with=None,polar_grid=True):
 
 
         if raytrace_with is None:
@@ -56,8 +56,8 @@ class SolveRoutines(Magnipy):
         assert method in ['lensmodel', 'lenstronomy']
 
         data = self.solve_4imgs(lens_systems=lens_systems, method=method, identifier=identifier, srcx=srcx, srcy=srcy,
-                                    grid_rmax=grid_rmax,
-                                    res=res, source_shape=source_shape, ray_trace=ray_trace, raytrace_with=raytrace_with, source_size=source_size)
+                                    grid_rmax=grid_rmax,res=res, source_shape=source_shape, ray_trace=ray_trace,
+                                raytrace_with=raytrace_with, source_size=source_size,polar_grid=polar_grid)
 
         if sort_by_pos is not None:
             data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)
@@ -160,7 +160,7 @@ class SolveRoutines(Magnipy):
     def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False,
-                    polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR'):
+                      polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR'):
 
         # uses source plane chi^2
 
@@ -218,7 +218,7 @@ class SolveRoutines(Magnipy):
 
         if method == 'lenstronomy':
             optimized_data, model = self.optimize_4imgs_lenstronomy(lens_systems=lens_systems,data2fit=datatofit,grid_rmax=grid_rmax,
-                                                                    res=res,source_shape=source_shape,source_size=source_size,
+                                                                    res=res,source_shape=source_shape,source_size=source_size,polar_grid=polar_grid,
                                                                     raytrace_with=raytrace_with,solver_type=solver_type,print_mag=print_mag)
 
         else:
