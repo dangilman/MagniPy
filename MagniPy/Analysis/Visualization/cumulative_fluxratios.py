@@ -44,7 +44,7 @@ class FluxRatioCumulative:
 
         self.reference_data = refdata
 
-    def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle='-',alpha=0.8,
+    def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle=None,alpha=0.8,
                     xlims=None,ylims=None,legend_args={}):
 
         if color is None:
@@ -53,6 +53,8 @@ class FluxRatioCumulative:
             xlabel = r'$\sqrt{\sum_{i=1}^{3} \left( \frac{F_{\rm{SIE(i)}} - F_{\rm{data(i)}}}{F_{\rm{data(i)}}} \right)^2}$'
         if ylabel is None:
             ylabel = 'Percent\n'+r'$ > x$'
+        if linestyle is None:
+            linestyle = ['-']*len(self.lensdata)
 
         fig = plt.figure(1)
         fig.set_size_inches(7,7)
@@ -70,11 +72,11 @@ class FluxRatioCumulative:
 
             if labels is not None:
                 plt.plot(x, y, c=color[i], label=labels[i], linewidth=linewidth,
-                         linestyle=linestyle, alpha=alpha)
+                         linestyle=linestyle[i], alpha=alpha)
                 leg = True
             else:
                 plt.plot(x, y, c=color[i], linewidth=linewidth,
-                         linestyle=linestyle, alpha=alpha)
+                         linestyle=linestyle[i], alpha=alpha)
                 leg = False
 
         ax.set_xlabel(xlabel,fontsize=18)
