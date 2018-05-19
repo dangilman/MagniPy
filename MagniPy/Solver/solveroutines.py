@@ -43,8 +43,7 @@ class SolveRoutines(Magnipy):
             assert macromodel is not None
             if realizations is not None:
                 for real in realizations:
-                    lens_systems.append(self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane,
-                                                          filter_by_pos=filter_by_pos,**filter_kwargs))
+                    lens_systems.append(self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane))
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=None,multiplane=multiplane))
 
@@ -145,8 +144,7 @@ class SolveRoutines(Magnipy):
 
         lens_systems = []
 
-        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=None, multiplane=multiplane,
-                                              filter_by_position=filter_by_position,**filter_kwargs))
+        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=None, multiplane=multiplane))
 
         optimized_data, model = self.optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit, method=method,
                                                     sigmas=sigmas, identifier=identifier, grid_rmax=grid_rmax,

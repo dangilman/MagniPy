@@ -28,7 +28,6 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         theta = np.random.uniform(0,2*np.pi)
         srcx,srcy = src_r**0.5*np.cos(theta),src_r**0.5*np.sin(theta)
 
-        srcx = np.random
         R_ein = np.random.normal(b_prior[0],b_prior[1])
         ellip = np.random.normal(ellip_prior[0],ellip_prior[1])
         epa = np.random.uniform(ePA_prior[0],ePA_prior[1])
