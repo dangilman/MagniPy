@@ -29,7 +29,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         srcx,srcy = src_r**0.5*np.cos(theta),src_r**0.5*np.sin(theta)
 
         srcx = np.random
-        Rein = np.random.normal(b_prior[0],b_prior[1])
+        R_ein = np.random.normal(b_prior[0],b_prior[1])
         ellip = np.random.normal(ellip_prior[0],ellip_prior[1])
         epa = np.random.uniform(ePA_prior[0],ePA_prior[1])
         shear = np.random.normal(shear_prior[0],shear_prior[1])
@@ -40,7 +40,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         else:
             gamma = np.random.normal(gamma_prior[0],gamma_prior[1])
 
-        start_SIE = Deflector(subclass=SIE(),redshift=zlens,theta_E=Rein,ellip=ellip,ellip_theta = epa, x=0,
+        start_SIE = Deflector(subclass=SIE(),redshift=zlens,R_ein=R_ein,ellip=ellip,ellip_theta = epa, x=0,
                    y = 0, gamma=gamma,shear=shear,shear_theta=shear_pa)
 
         halos = realizations.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=substructure_model_args,
@@ -52,7 +52,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         if data_init[0].nimg != 4:
             continue
 
-        imgconfig = identify(data_init[0].x,data_init[0].y,Rein)
+        imgconfig = identify(data_init[0].x,data_init[0].y,R_ein)
 
         if imgconfig != target:
             continue
@@ -60,7 +60,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         data = solver.solve_lens_equation(macromodel=start_SIE,realizations=halos,multiplane=multiplane,method=method,ray_trace=True,
                                                srcx=srcx,srcy=srcy,grid_rmax=0.12,res=0.001,source_size=source_size)
 
-        imgconfig = identify(data_init[0].x, data_init[0].y, Rein)
+        imgconfig = identify(data_init[0].x, data_init[0].y, R_ein)
 
         if imgconfig != target:
             continue
