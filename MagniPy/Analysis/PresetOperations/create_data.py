@@ -40,7 +40,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         else:
             gamma = np.random.normal(gamma_prior[0],gamma_prior[1])
 
-        start_SIE = Deflector(subclass=SIE(),redshift=zlens,Rein=Rein,ellip=ellip,ellip_theta = epa, x=0,
+        start_SIE = Deflector(subclass=SIE(),redshift=zlens,theta_E=Rein,ellip=ellip,ellip_theta = epa, x=0,
                    y = 0, gamma=gamma,shear=shear,shear_theta=shear_pa)
 
         halos = realizations.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=substructure_model_args,
