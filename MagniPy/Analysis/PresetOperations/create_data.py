@@ -66,7 +66,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         else:
             break
 
-    system = solver.build_system(main=start_SIE,additional_halos=halos,multiplane=multiplane)
+    system = solver.build_system(main=start_SIE,additional_halos=halos[0],multiplane=multiplane)
 
     return data,system,gamma
 
