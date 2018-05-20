@@ -92,6 +92,7 @@ class LenstronomyWrap:
             z_list.append(deflector.redshift)
 
         else:
+
             model_list.append(deflector.profname)
 
             arg_list.append(deflector.lenstronomy_args)

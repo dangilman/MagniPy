@@ -14,16 +14,16 @@ def model_translate_tolenstronomy(args,name):
 
     if name =='SPEMD':
 
-        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(gravlens_to_lenstronomy(args['phi_G'],'phi_G'),args['q'])
+        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(args['phi_G'],args['q'])
         newargs['gamma'] = args['gamma']
         newargs['center_x'] = args['center_x']
         newargs['center_y'] = args['center_y']
-        newargs['theta_E'] = args['theta_E']*Rein_gravlens_to_lenstronomy(args['q'])
+        newargs['theta_E'] = args['theta_E']
         return newargs
 
     elif name=='SERSIC_NFW':
         newargs = deepcopy(args)
-        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(gravlens_to_lenstronomy(args['phi_G'], 'phi_G'), args['q'])
+        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(args['phi_G'], args['q'])
         del newargs['phi_G']
         del newargs['q']
         newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],

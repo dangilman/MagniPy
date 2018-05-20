@@ -143,7 +143,10 @@ class Magnipy:
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-            x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc)
+            #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc)
+
+            x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
+                                                                        arrival_time_sort=False)
 
             if print_mag:
                 print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
@@ -328,7 +331,10 @@ class Magnipy:
 
                 LEQ = LensEquationSolver(lensModel)
 
-                x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params)
+                #x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params)
+                x_image,y_image = LEQ.image_position_from_source(sourcePos_x=srcx,sourcePos_y=srcy,
+                                                                 kwargs_lens=lensmodel_params,arrival_time_sort=False)
+
                 fluxes = None
                 if ray_trace:
 

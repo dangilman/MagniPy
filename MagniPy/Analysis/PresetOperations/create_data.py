@@ -55,12 +55,12 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
 
         if imgconfig != target:
             continue
-
+        solver = SolveRoutines(zlens, zsrc)
         data = solver.solve_lens_equation(macromodel=start_SIE,realizations=halos,multiplane=multiplane,method=method,ray_trace=True,
                                                srcx=srcx,srcy=srcy,grid_rmax=0.12,res=0.001,source_size=source_size)
         if data[0].nimg != 4:
             continue
-            
+
         imgconfig = identify(data[0].x, data[0].y, R_ein)
 
         if imgconfig != target:
@@ -68,6 +68,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         else:
             break
 
+    solver = SolveRoutines(zlens, zsrc)
     system = solver.build_system(main=start_SIE,additional_halos=halos[0],multiplane=multiplane)
 
     return data,system,gamma

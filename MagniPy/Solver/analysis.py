@@ -19,7 +19,7 @@ class Analysis(Magnipy):
         extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,redshift_list=lensmodel.redshift_list,
                             cosmo=lensmodel.cosmo,multi_plane=multiplane,z_source=lensmodel.z_source)
 
-        xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,start_scale=scale)
+        xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,start_scale=scale,max_order=4)
 
         return xcrit,ycrit
 

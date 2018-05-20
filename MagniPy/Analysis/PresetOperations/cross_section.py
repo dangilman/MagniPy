@@ -125,8 +125,9 @@ def cross_section_compute(massprofile='', halo_model='', model_args={},
     return bin_centers,residuals
 
 #print cross_section_compute('TNFW',halo_model='plaw_main',
-#                            model_args={'fsub':0.01,'log_mL':7,'log_mH':10,'M_halo':10**13,'tidal_core':True,'r_core':'Rs'},
-#                            zlens=0.5,zsrc=1.5,Ntotal=1,grid_rmax=0.12,res=0.001,source_size=0.0005,filter_halo_positions=True)
+#                            model_args={'fsub':0.005,'log_mL':7,'log_mH':10,'M_halo':10**13,'tidal_core':True,'r_core':'Rs'},
+#                           zlens=0.5,zsrc=1.5,Ntotal=1,grid_rmax=0.12,res=0.001,source_size=0.0005,filter_halo_positions=True)
+
 
 
 

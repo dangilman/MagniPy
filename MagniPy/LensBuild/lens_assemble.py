@@ -1,6 +1,7 @@
 from MagniPy.util import polar_to_cart,cart_to_polar
 from MagniPy.Solver.LenstronomyWrap.kwargs_translate import model_translate_tolenstronomy
 from MagniPy.Solver.GravlensWrap.kwargs_translate import model_translate_togravlens
+from MagniPy.MassModels.ExternalShear import Shear
 
 class LensSystem:
 
@@ -74,13 +75,14 @@ class LensSystem:
                 arg_list.append(component.lenstronomy_args['NFW'])
 
             else:
+
                 zlist.append(component.redshift)
                 lens_list.append(component.other_args['name'])
                 arg_list.append(component.lenstronomy_args)
 
                 if component.has_shear:
-                    shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
 
+                    shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
                     arg_list.append({'e1': shear_e1, 'e2': shear_e2})
                     zlist.append(component.redshift)
                     lens_list.append('SHEAR')
@@ -137,7 +139,7 @@ class Deflector:
             self.has_shear = False
 
         if self.has_shear:
-            from MagniPy.MassModels.ExternalShear import Shear
+
             self.Shear = Shear()
 
     def set_varyflags(self,flags):
