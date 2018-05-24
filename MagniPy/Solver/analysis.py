@@ -7,7 +7,8 @@ from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 
 class Analysis(Magnipy):
 
-    def critical_cruves_caustics(self,lens_system=None,main=None,halos=None,multiplane=None,compute_window=1.5,scale=0.01):
+    def critical_cruves_caustics(self,lens_system=None,main=None,halos=None,multiplane=None,compute_window=1.5,
+                                 scale=0.5,max_order=10):
 
         if lens_system is None:
             lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
@@ -19,7 +20,8 @@ class Analysis(Magnipy):
         extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,redshift_list=lensmodel.redshift_list,
                             cosmo=lensmodel.cosmo,multi_plane=multiplane,z_source=lensmodel.z_source)
 
-        xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,start_scale=scale,max_order=4)
+        xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,
+                                                       start_scale=scale,max_order=max_order)
 
         return xcrit,ycrit
 

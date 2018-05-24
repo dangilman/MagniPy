@@ -133,32 +133,66 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     fit_fluxes = None
     n = 0
-    print 'solving realizations... '
 
-    while n<Ntotal:
+    if method=='lenstronomy':
+        print 'solving realizations... '
 
-        halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
-                                                filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
+        while n<Ntotal:
 
-        model_data, system = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
-                                                 multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
-                                                 identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
-                                                source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
+            halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
+                                                    filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
 
-        if model_data[0].nimg!=data[n].nimg:
-            continue
+            model_data, system = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
+                                                     multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
+                                                     identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
+                                                    source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
-        astro_error = np.sqrt(np.sum((data[n].x - model_data[0].x) ** 2 + (data[n].y - model_data[0].y) ** 2))
+            if model_data[0].nimg!=data[n].nimg:
+                continue
 
-        if astro_error<1e-5:
+            astro_error = np.sqrt(np.sum((data[n].x - model_data[0].x) ** 2 + (data[n].y - model_data[0].y) ** 2))
+
+            if astro_error<1e-5:
+
+                if fit_fluxes is None:
+                    fit_fluxes = model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)
+                else:
+                    fit_fluxes = np.vstack((fit_fluxes, model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)))
+
+                n += 1
+                print n
+
+    elif method=='lensmodel':
+
+        print 'building realizations... '
+        halos = halo_generator.halo_constructor(massprofile=massprofile, model_name=halo_model, model_args=model_args,
+                                                Nrealizations=Ntotal,
+                                                filter_halo_positions=filter_halo_positions, **filter_kwargs_list[0])
+
+        print 'solving realizations... '
+
+        model_data, system = solver.two_step_optimize(macromodel=start_macromodel, datatofit=data[0],
+                                                      realizations=halos,
+                                                      multiplane=multiplane, method=method, ray_trace=True,
+                                                      sigmas=sigmas,
+                                                      identifier=identifier, grid_rmax=grid_rmax, res=res,
+                                                      source_shape='GAUSSIAN',
+                                                      source_size=source_size, raytrace_with=raytrace_with,
+                                                      print_mag=False)
+
+        for dset in model_data:
+
+            astro_error = np.sqrt(np.sum((data[0].x - dset.x) ** 2 + (data[0].y - dset.y) ** 2))
+
+            if astro_error > 0.003*2:
+                continue
 
             if fit_fluxes is None:
-                fit_fluxes = model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)
+                fit_fluxes = dset.flux_anomaly(data[0], index=0, sum_in_quad=True)
             else:
-                fit_fluxes = np.vstack((fit_fluxes, model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)))
+                fit_fluxes = np.vstack((fit_fluxes, dset.flux_anomaly(data[0], index=0, sum_in_quad=True)))
 
-            n += 1
-            print n
+
 
     if write_to_file:
 

@@ -227,7 +227,7 @@ class SingleModel:
 
     def _get_model(self,multiplane=False):
 
-        lensparams = kwargs_to_gravlens(self.deflector,self.units)
+        lensparams = kwargs_to_gravlens(self.deflector)
 
         if multiplane:
             lensparams += str(self.deflector.redshift)

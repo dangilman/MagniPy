@@ -276,15 +276,15 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
                            temp_folder=chain_keys['sampler']['scratch_file'])
 
-    #opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
-    #                                         multiplane=chain_keys['lens']['multiplane'],
-    #                                         method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
-    #                                         identifier=chain_keys['sampler']['chain_ID'],
-    #                                         grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
-    #                                         source_size=chain_keys['lens']['source_size'])
+    opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
+                                                 multiplane=chain_keys['lens']['multiplane'],
+                                                 method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
+                                                 identifier=chain_keys['sampler']['chain_ID'],
+                                                 grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
+                                                 source_size=chain_keys['lens']['source_size'])
 
-    #macromodel = mod[0].lens_components[0]
-    macromodel = macromodel_start
+    macromodel = mod[0].lens_components[0]
+    #macromodel = macromodel_start
     macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
 
     macromodels = []
@@ -396,4 +396,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_v1/',2)
+#runABC(os.getenv('HOME')+'/data/LOS_v1/',5000)

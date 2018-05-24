@@ -75,3 +75,5 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
 
 
 
+
+

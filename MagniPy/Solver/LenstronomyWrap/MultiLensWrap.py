@@ -16,6 +16,9 @@ class MultiLensWrapper:
 
             image = source_function(betax,betay)
 
+            #plt.imshow(image.reshape(240, 240))
+            #plt.show()
+
             flux.append(np.sum(image*res**2))
 
         return np.array(flux)

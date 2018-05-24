@@ -21,7 +21,7 @@ plt.rcParams['ytick.labelsize'] = 12
 
 class FluxRatioCumulative:
 
-    def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True,cut=None):
+    def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True,cut_high=None):
 
         self.lensdata = []
         lensdata = []
@@ -32,20 +32,22 @@ class FluxRatioCumulative:
 
             lensdata.append(anomalies)
 
-        if cut is not None:
+        for dset in lensdata:
 
-            for dset in lensdata:
-                dset=dset[np.where(dset<=cut)]
-                self.lensdata.append(dset)
-        else:
-            self.lensdata = lensdata
+            dset = dset[np.where(np.isfinite(dset))]
+
+            if cut_high is not None:
+                dset = dset[np.where(dset<=cut_high)]
+
+
+            self.lensdata.append(dset)
 
     def set_reference_data(self,refdata):
 
         self.reference_data = refdata
 
     def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle=None,alpha=0.8,
-                    xlims=None,ylims=None,legend_args={}):
+                    xlims=None,ylims=None,legend_args={},shift_left=None):
 
         if color is None:
             color = default_colors
@@ -68,13 +70,21 @@ class FluxRatioCumulative:
             x = np.linspace(0,xmax,nbins)
 
             for k in range(0, len(x)):
-                y.append((L - sum(val < x[k] for val in anomalies))*L**-1)
+                if shift_left is None:
+                    shift = 0
+                else:
+                    shift = shift_left[i]
+                y.append((L - sum(val < (x[k]+shift) for val in anomalies))*L**-1)
+
+            y = np.array(y)
 
             if labels is not None:
                 plt.plot(x, y, c=color[i], label=labels[i], linewidth=linewidth,
                          linestyle=linestyle[i], alpha=alpha)
                 leg = True
+
             else:
+
                 plt.plot(x, y, c=color[i], linewidth=linewidth,
                          linestyle=linestyle[i], alpha=alpha)
                 leg = False

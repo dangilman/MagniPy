@@ -437,6 +437,7 @@ class HaloGen:
             _plane_halos = []
 
             for p in range(0, len(A0_z)):
+
                 modelkwargs['normalization'] = A0_z[p]
                 modelkwargs['plaw_index'] = plaw_index_z[p]
 

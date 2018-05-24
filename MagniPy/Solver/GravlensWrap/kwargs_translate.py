@@ -2,18 +2,31 @@ import numpy as np
 from MagniPy.util import cart_to_polar
 from lenstronomy.Util.param_util import ellipticity2phi_q
 
+
 def model_translate_togravlens(args, name):
 
     newargs = {}
 
     if name == 'SPEMD':
 
-        newargs['phi_G'],newargs['q'] = ellipticity2phi_q(-args['e1'],-args['e2'])
+        newargs['phi_G'],newargs['q'] = ellipticity2phi_q(args['e1'],args['e2'])
+
+        newargs['phi_G'] = newargs['phi_G'] - 0.5*np.pi
+
+        newargs['ellip_theta'] = 180 * newargs['phi_G'] * np.pi ** -1
+
+        newargs['ellip'] = 1- newargs['q']
+
         newargs['gamma'] = args['gamma']
+
         newargs['center_x'] = args['center_x']
+
         newargs['center_y'] = args['center_y']
 
         newargs['theta_E'] = args['theta_E'] * (((1+newargs['q']**2)*(2*newargs['q'])**-1)**.5)**-1
+
+        del newargs['q']
+        del newargs['phi_G']
 
         return newargs
 

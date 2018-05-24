@@ -1,5 +1,6 @@
 import numpy as np
 from colossus.lss.mass_function import *
+from colossus.lss.bias import haloBiasFromNu,twoHaloTerm
 from MagniPy.LensBuild.defaults import default_Rein_deflection,spatial_defaults,default_sigma8,default_halo_mass_function
 import matplotlib.pyplot as plt
 from MagniPy.LensBuild.Cosmology.extension import CosmoExtension
@@ -47,6 +48,18 @@ class HaloMassFunction:
         :return: the number of objects of mass M * Mpc^-3
         """
         return self.extension.rho_matter_crit(z)*omega*M**-1
+
+    def linear_bias(self,M,z):
+
+        M_h = M*self.extension.h
+
+        nu = peaks.peakHeight(M_h,z)
+
+        return haloBiasFromNu(nu,z=z,mdef='vir')
+
+    def two_halo_term(self,R,M,z,mdef='vir'):
+
+        return twoHaloTerm(R,M*self.extension.h,z,mdef=mdef)
 
     def dN_dM_comoving(self,M,z):
         """

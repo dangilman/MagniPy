@@ -1,5 +1,6 @@
 from MagniPy.util import *
 from kwargs_translate import lenstronomy_to_gravlens
+from MagniPy.Solver.LenstronomyWrap.kwargs_translate import *
 
 def gravlens_to_kwargs(model_string, deflector=None):
 
@@ -11,10 +12,11 @@ def gravlens_to_kwargs(model_string, deflector=None):
         ellip,ellip_theta = cart_to_polar(e1, e2)
 
         q = 1-ellip
-        prefactor = ((1 + q ** 2) * (2 * q)**-1) ** .5
-        prefactor = 1
-        R_ein = float(model_string[1]) * prefactor**-1
-        phi_G = ellip_theta*np.pi*180**-1
+
+        R_ein = float(model_string[1])*(((1+q**2)*(2*q)**-1)**.5)
+
+        phi_G = ellip_theta*np.pi*180**-1 + 0.5*np.pi
+
         shear = float(model_string[6])
         shear_theta = float(model_string[7])
 
@@ -32,9 +34,9 @@ def gravlens_to_kwargs(model_string, deflector=None):
 
         return {'name':name,'R_ein':R_ein,'x':x,'y':y}
 
-def kwargs_to_gravlens(deflector=None,units='lensmodel'):
+def kwargs_to_gravlens(deflector=None):
 
-    args = deflector.args
+    args = deflector.gravlens_args
 
     p1, p2, p3, p4, p5, p6, p7, p8, p9, p10 = '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'
 
@@ -42,18 +44,12 @@ def kwargs_to_gravlens(deflector=None,units='lensmodel'):
 
         p0 = 'alpha'
 
-        if units=='lensmodel':
-            p1 = str(args['theta_E'])
-        else:
-            p1 = str(lenstronomy_to_gravlens(args['theta_E'],'theta_E',q=args['q']))
+        p1 = str(args['theta_E'])
 
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
 
-        if units=='lenstronomy':
-            args['phi_G'] = lenstronomy_to_gravlens(args['phi_G'],'phi_G')
-
-        p4,p5 = polar_to_cart(1-args['q'],(args['phi_G'])*180*np.pi**-1)
+        p4,p5 = polar_to_cart(args['ellip'],args['ellip_theta'])
 
         p4,p5 = str(p4),str(p5)
 
@@ -105,6 +101,24 @@ def kwargs_to_gravlens(deflector=None,units='lensmodel'):
 
         p0 = 'convrg'
         p1 = str(args['kappa_ext'])
+
+    elif deflector.profname == 'SERSIC':
+
+        p0 = 'sersic'
+        p1 = str(args['k_eff'])
+        p2 = str(args['center_x'])
+        p3 = str(args['center_y'])
+        p4, p5 = polar_to_cart(args['ellip'], args['ellip_theta'])
+        p4 = str(args[p4])
+        p5 = str(args[p5])
+
+        if deflector.has_shear:
+            s,spa = polar_to_cart(deflector.shear,deflector.shear_theta)
+            p6 = str(s)
+            p7 = str(spa)
+
+        p8 = str(args['r_eff'])
+        p10 = str(args['n_sersic'])
 
     else:
         raise Exception('profile '+str(deflector.profname)+' not recognized.')

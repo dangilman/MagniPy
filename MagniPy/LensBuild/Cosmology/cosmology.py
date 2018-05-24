@@ -23,6 +23,8 @@ class Cosmo:
 
         self.zd, self.zsrc = zd, zsrc
 
+        self.cosmo_set = False
+
         if compute:
 
             self.h = self.cosmo.h
@@ -112,6 +114,16 @@ class Cosmo:
 
         return T_xy
 
+    def physical_distance_z1z2(self,z1,z2):
+
+        a1 = (1+z1)**-1
+        a2 = (1+z2)**-1
+
+        d1 = self.T_xy(0,z1)
+        d2 = self.T_xy(0,z2)
+
+        return d2 - d1
+
     def D_xy(self, z_observer, z_source):
         """
         angular diamter distance in units of Mpc
@@ -189,21 +201,21 @@ class Cosmo:
         c_cdm = concentration(M*self.h,mdef=mdef,model=model,z=z)
 
         if concentration_turnover is False:
-            #c_cdm = np.random.lognormal(c_cdm,sigma=0.11)
-            return c_cdm
+            # scatter from Dutton, maccio et al 2014
+            return np.random.lognormal(np.log(c_cdm),0.13)
 
         if logmhm == 0:
-            #c_cdm = np.random.lognormal(c_cdm, sigma=0.11)
-            return c_cdm
+            # scatter from Dutton, maccio et al 2014
+            return np.random.lognormal(np.log(c_cdm),0.13)
 
         else:
+
             mhm = 10**logmhm
             factor = (1+g1*mhm*M**-1)**g2
             c_wdm = c_cdm*factor**-1
             c_wdm *= (1+z)**beta(z)
-            #c_wdm = np.random.lognormal(c_wdm, sigma=0.11)
-            return c_wdm
-
+            # scatter from Dutton, maccio et al 2014
+            return np.random.lognormal(np.log(c_wdm),0.13)
 
 class ParticleMasses:
 
@@ -221,11 +233,7 @@ class ParticleMasses:
 
     def thermal_to_sterile(self,m,w=0.1225):
 
-        return 4.43*(m)**1.333*(w*0.1225**-1)**-0.333
-
-    def sterile_to_thermal(self,m,w=0.1225):
-
-        return (4.43**-1*(w*0.1225**-1)**0.333)**0.75
+        return 3.9*m**1.294
 
     def hm_to_thermal(self,m,as_string=False,h=0.7):
 

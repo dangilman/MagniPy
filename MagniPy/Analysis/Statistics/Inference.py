@@ -7,9 +7,9 @@ def sample_chain(chain_name='',which_lenses=None, parameters=[]):
 
     full_chain = FullChains(chain_name,which_lens=which_lenses)
 
-    posteriors = full_chain.get_posteriors(800)
+    posteriors = full_chain.get_posteriors(400)
 
-    prior_weights_global_gamma = WeightedSamples(params_to_weight=['SIE_gamma'],weight_args=[{'type':'Gaussian','mean':2,'sigma':1}])
+    prior_weights_global_gamma = WeightedSamples(params_to_weight=['SIE_gamma'],weight_args=[{'type':'Gaussian','mean':2.08,'sigma':.05}])
 
     prior_weights_global_shear = WeightedSamples(params_to_weight=['SIE_shear'],
                                                  weight_args=[{'type': 'Gaussian', 'mean': 0.05, 'sigma': .01}])
@@ -33,4 +33,4 @@ def sample_chain(chain_name='',which_lenses=None, parameters=[]):
 
     plt.show()
 
-sample_chain('singleplane_test',which_lenses=[1,2,3,4,5,6,7],parameters=['fsub','SIE_gamma'])
+sample_chain('singleplane_test',which_lenses=[1,2,3,4,5,6],parameters=['fsub','logmhm'])

@@ -122,7 +122,7 @@ class Magnipy:
 
     def optimize_4imgs_lenstronomy(self,lens_systems,data2fit=None,method=str,sigmas=None,ray_trace=True,grid_rmax=None,res=None,
                                    source_shape='GAUSSIAN',source_size=None,print_mag=False,raytrace_with=None,polar_grid=True,
-                                   solver_type=None):
+                                   solver_type=None,N_iter_max=None):
 
         data,opt_sys = [],[]
 
@@ -146,7 +146,7 @@ class Magnipy:
             #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc)
 
             x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
-                                                                        arrival_time_sort=False)
+                                                                        arrival_time_sort=False,num_iter_max=N_iter_max)
 
             if print_mag:
                 print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
@@ -264,7 +264,7 @@ class Magnipy:
 
     def solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,
-                    raytrace_with='',polar_grid=True):
+                    raytrace_with='',polar_grid=True,arrival_time=True):
 
         if method == 'lensmodel':
 
@@ -301,12 +301,15 @@ class Magnipy:
                     if print_mag:
                         print 'computing mag #: ', i + 1
 
+                    redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
+                    lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
+                                                    redshift_list=redshift_list, z_source=self.zsrc)
+
                     fluxes = self.do_raytrace(lens_system=system, xpos=data[i].x, ypos=data[i].y, xsrc=srcx,
                                                         ysrc=srcy, multiplane=lens_systems[i].multiplane,
-                                                        grid_rmax=grid_rmax,
-                                                        res=res, source_shape=source_shape, source_size=source_size,
-                                                        cosmology=self.cosmo, zsrc=self.zsrc,
-                                                        raytrace_with=raytrace_with,polar_grid=polar_grid)
+                                                        grid_rmax=grid_rmax,res=res, source_shape=source_shape,lensmodel=lensModel,
+                                                    source_size=source_size,raytrace_with=raytrace_with,polar_grid=polar_grid,
+                                              lens_model_params=lensmodel_params)
 
                     data[i].set_mag(fluxes)
 
@@ -332,17 +335,33 @@ class Magnipy:
                 LEQ = LensEquationSolver(lensModel)
 
                 #x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params)
+
                 x_image,y_image = LEQ.image_position_from_source(sourcePos_x=srcx,sourcePos_y=srcy,
                                                                  kwargs_lens=lensmodel_params,arrival_time_sort=False)
+
+
 
                 fluxes = None
                 if ray_trace:
 
-                    fluxes = self.do_raytrace(x_image,y_image,xsrc=srcx,ysrc=srcy,multiplane=system.multiplane,lensmodel=lensModel,grid_rmax=grid_rmax,
+                    fluxes = self.do_raytrace(x_image,y_image,xsrc=srcx,ysrc=srcy,multiplane=system.multiplane,lens_system=system,lensmodel=lensModel,grid_rmax=grid_rmax,
                                               res=res,source_shape=source_shape,source_size=source_size,raytrace_with=raytrace_with,
                                               lens_model_params=lensmodel_params,polar_grid=polar_grid)
 
-                data.append(Data(x=x_image,y=y_image,m=fluxes,t=None,source=[srcx,srcy]))
+                if arrival_time:
+
+                    if system.multiplane:
+                        arrival_times = lensModel.arrival_time(x_image,y_image,lensmodel_params)
+
+                    else:
+                        arrival_times = [0,0,0,0]
+                        #raise Exception('arrival times not yet implemented for single plane')
+                        #fermat_potential = lensModel.fermat_potential(x_image,y_image,x_source=srcx,y_source=srcy,kwargs_lens=lensmodel_params)
+
+
+                    arrival_times -= np.min(arrival_times)
+
+                data.append(Data(x=x_image,y=y_image,m=fluxes,t=arrival_times,source=[srcx,srcy]))
 
             return data
 

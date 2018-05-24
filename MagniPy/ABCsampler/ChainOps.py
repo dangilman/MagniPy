@@ -70,7 +70,8 @@ def read_run_partition(fname):
 
     return Ncores, cores_per_lens, int(Ncores * cores_per_lens ** -1)
 
-def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None):
+def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None, parameters=None,fluxes_obs=None,
+                           fluxes=None):
 
     #Ncores, cores_per_lens, Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
@@ -88,8 +89,8 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
     if ~os.path.exists(perturbed_path):
         create_directory(perturbed_path)
 
-    fluxes_obs = np.loadtxt(chain_file_path + 'observedfluxes.txt')
-    fluxes = np.loadtxt(chain_file_path + 'modelfluxes.txt')
+    #fluxes_obs = np.loadtxt(chain_file_path + 'observedfluxes.txt')
+    #fluxes = np.loadtxt(chain_file_path + 'modelfluxes.txt')
     inds = np.where(np.sum(fluxes,axis=1)==4000)
 
     for error in errors:
@@ -131,7 +132,10 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
 
             summary_statistic = np.sqrt(np.sum((perturbed_ratios-perturbed_obs)**2,axis=1))
 
-            np.savetxt(perturbed_fname+ 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic)
+            ordered_inds = np.argsort(summary_statistic)
+
+            np.savetxt(perturbed_fname+ 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic[ordered_inds])
+            np.savetxt(perturbed_fname + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds])
 
             if error == 0:
                 break
@@ -185,14 +189,22 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
             lens_fluxes = np.vstack((lens_fluxes,fluxes))
             lens_params = np.vstack((lens_params,params))
 
-    savename = chainpath + 'processed_chains/' + chain_name + '/' + 'lens' + str(which_lens) + '/'
+    #savename = chainpath + 'processed_chains/' + chain_name + '/' + 'lens' + str(which_lens) + '/'
 
     inds_to_keep = np.where(lens_fluxes[:,0]!=1000)
 
-    np.savetxt(savename + 'modelfluxes' + '.txt', lens_fluxes[inds_to_keep], fmt='%.6f')
-    np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
-    np.savetxt(savename + 'samples.txt', lens_params[inds_to_keep], fmt='%.6f', header=params_header)
+    return lens_fluxes[inds_to_keep],observed_fluxes.reshape(1,4),lens_params[inds_to_keep]
 
+    #np.savetxt(savename + 'modelfluxes' + '.txt', lens_fluxes[inds_to_keep], fmt='%.6f')
+    #np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
+    #np.savetxt(savename + 'samples.txt', lens_params[inds_to_keep], fmt='%.6f', header=params_header)
+
+def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
+
+    fluxes,fluxes_obs,parameters = extract_chain(name,which_lens)
+
+    add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
+                           fluxes_obs=fluxes_obs,fluxes=fluxes)
 #for j in range(2,10):
 #    extract_chain('singleplane_test_2',j)
 #    add_flux_perturbations('singleplane_test_2',which_lens=j)

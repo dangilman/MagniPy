@@ -105,6 +105,7 @@ class Deflector:
         if lens_params is None:
             self.args,self.other_args = subclass.params(**lens_kwargs)
             self.lenstronomy_args = model_translate_tolenstronomy(self.args, name=self.other_args['name'])
+            self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])
 
         else:
             self.other_args = {}
@@ -117,6 +118,7 @@ class Deflector:
                 self.other_args['name'] = lens_kwargs['name']
 
             self.lenstronomy_args = self.args
+            self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name = self.other_args['name'])
 
         self.profname = self.other_args['name']
 
@@ -179,13 +181,14 @@ class Deflector:
             else:
 
                 self.lenstronomy_args.update(newparams)
-
-                self.args = model_translate_togravlens(newparams,self.other_args['name'])
+                self.gravlens_args = model_translate_togravlens(newparams,self.other_args['name'])
 
         elif method=='lensmodel':
 
             self.args.update(newparams)
             self.lenstronomy_args = model_translate_tolenstronomy(self.args,name=self.other_args['name'])
+            self.gravlens_args = model_translate_togravlens(self.lenstronomy_args,self.other_args['name'])
+
             self.shear = newparams['shear']
             self.shear_theta = newparams['shear_theta']
 

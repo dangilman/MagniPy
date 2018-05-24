@@ -66,7 +66,7 @@ class SolveRoutines(Magnipy):
     def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
                           identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                           source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
-                          filter_by_position=False, polar_grid=True, filter_kwargs={},solver_type='PROFILE_SHEAR'):
+                          filter_by_position=False, polar_grid=True, filter_kwargs={},solver_type='PROFILE_SHEAR',N_iter_max=100):
 
         # optimizes the macromodel first, then uses it to optimize with additional halos in the lens model
 
@@ -119,7 +119,7 @@ class SolveRoutines(Magnipy):
                                                  source_shape=source_shape, source_size=source_size,
                                                  print_mag=print_mag, raytrace_with=raytrace_with,
                                                  filter_by_position=filter_by_position, polar_grid=polar_grid,
-                                                 filter_kwargs=filter_kwargs, solver_type=solver_type)
+                                                 filter_kwargs=filter_kwargs, solver_type=solver_type,N_iter_max=N_iter_max)
 
 
 
@@ -158,7 +158,7 @@ class SolveRoutines(Magnipy):
     def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False,
-                      polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR'):
+                      polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR',N_iter_max=100):
 
         # uses source plane chi^2
 
@@ -217,7 +217,8 @@ class SolveRoutines(Magnipy):
         if method == 'lenstronomy':
             optimized_data, model = self.optimize_4imgs_lenstronomy(lens_systems=lens_systems,data2fit=datatofit,grid_rmax=grid_rmax,
                                                                     res=res,source_shape=source_shape,source_size=source_size,polar_grid=polar_grid,
-                                                                    raytrace_with=raytrace_with,solver_type=solver_type,print_mag=print_mag)
+                                                                    raytrace_with=raytrace_with,solver_type=solver_type,
+                                                                    print_mag=print_mag,N_iter_max=N_iter_max)
 
         else:
             optimized_data, model = self.optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit,

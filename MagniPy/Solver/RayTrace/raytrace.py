@@ -32,7 +32,9 @@ class RayTrace:
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-
+        #print 'polar_grid is False'
+        #polar_grid = False
+        #self.polar_grid = False
         if polar_grid:
             self.polar_q = polar_q
             self.x_grid_0 = self.x_grid_0.ravel()
