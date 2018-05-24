@@ -183,9 +183,11 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     savename = chainpath + 'processed_chains/' + chain_name + '/' + 'lens' + str(which_lens) + '/'
 
-    np.savetxt(savename + 'modelfluxes' + '.txt', lens_fluxes, fmt='%.6f')
+    inds_to_keep = np.where(lens_fluxes[:,0]!=1000)
+
+    np.savetxt(savename + 'modelfluxes' + '.txt', lens_fluxes[inds_to_keep], fmt='%.6f')
     np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
-    np.savetxt(savename + 'samples.txt', lens_params, fmt='%.6f', header=params_header)
+    np.savetxt(savename + 'samples.txt', lens_params[inds_to_keep], fmt='%.6f', header=params_header)
 
 #for j in range(2,10):
 #    extract_chain('singleplane_test_2',j)

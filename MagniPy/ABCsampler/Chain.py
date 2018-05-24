@@ -1,7 +1,6 @@
 from MagniPy.Analysis.Statistics.summary_statistics import *
 from ChainOps import *
 
-
 class FullChains:
 
     def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0):
@@ -26,10 +25,16 @@ class FullChains:
 
             new_lens = SingleLens(Nparams=len(self.params_varied))
 
-            new_lens.add_parameters(fname=self.chain_file_path+'lens'+str(ind)+'/samples.txt')
+            model = self.import_model(ind, error=error, index=index)
+            observed = self.import_observed(ind, error=error, index=index)
 
-            new_lens.compute_summary_statistic(self.import_observed(ind, error=error, index=index),
-                                               self.import_model(ind, error=error, index=index))
+            keep_inds = np.where(model[:,0] != 1000)
+
+            model = model[keep_inds]
+
+            new_lens.add_parameters(fname=self.chain_file_path+'lens'+str(ind)+'/samples.txt',keep_inds=np.squeeze(keep_inds))
+
+            new_lens.compute_summary_statistic(observed,model)
             self.lenses.append(new_lens)
 
     def get_posteriors(self,tol=None):
@@ -129,7 +134,7 @@ class SingleLens:
 
         self.posterior = PosteriorSamples(new_param_dic,weights=None)
 
-    def add_parameters(self,params=None,fname=None):
+    def add_parameters(self,params=None,fname=None,keep_inds=None):
 
         with open(fname,'r') as f:
             names = f.readline().split(' ')
@@ -145,7 +150,12 @@ class SingleLens:
         new_dictionary = {}
 
         for i,pname in enumerate(pnames):
-            new_dictionary.update({pname:params[:,i]})
+
+            newparams = params[:,i]
+
+            newparams = newparams[keep_inds]
+
+            new_dictionary.update({pname:newparams})
 
         self.parameters = new_dictionary
 
