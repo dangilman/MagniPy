@@ -274,10 +274,10 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
 
     solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
-                           temp_folder=chain_keys['sampler']['scratch_file'])
+                           temp_folder=chain_keys['sampler']['scratch_file'],clean_up=True)
 
     opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
-                                                 multiplane=chain_keys['lens']['multiplane'],
+                                                 multiplane=False,
                                                  method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
                                                  identifier=chain_keys['sampler']['chain_ID'],
                                                  grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
@@ -325,6 +325,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         write_data(output_path + 'lensdata.txt', [datatofit])
 
     chaindata = []
+
+    print len(run_commands),Nsplit
 
     for i in range(0,int(len(run_commands)*Nsplit**-1)):
 
@@ -396,4 +398,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_v1/',5000)
+#runABC(os.getenv('HOME')+'/data/test_LOS/',1)
+
