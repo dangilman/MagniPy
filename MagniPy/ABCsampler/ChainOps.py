@@ -130,7 +130,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
             #np.savetxt(perturbed_fname, perturbed_ratios, fmt='%.6f')
 
-            summary_statistic = np.sqrt(np.sum((perturbed_ratios-perturbed_obs)**2,axis=1))
+            summary_statistic = np.sqrt(np.sum((perturbed_ratios-perturbed_ratios_obs)**2,axis=1))
 
             ordered_inds = np.argsort(summary_statistic)
 
