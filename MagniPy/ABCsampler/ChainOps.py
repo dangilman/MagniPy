@@ -107,7 +107,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
 
             perturbed_ratios_obs = np.delete(perturbed_obs * perturbed_obs[1] ** -1, 1)
 
-            np.savetxt(perturbed_fname_obs, perturbed_ratios_obs.reshape(1, 3), fmt='%.6f')
+            #np.savetxt(perturbed_fname_obs, perturbed_ratios_obs.reshape(1, 3), fmt='%.6f')
 
             ############################################################################
 
@@ -127,7 +127,11 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None)
 
             perturbed_ratios[inds, :] = 1000 * np.ones_like(3)
 
-            np.savetxt(perturbed_fname, perturbed_ratios, fmt='%.6f')
+            #np.savetxt(perturbed_fname, perturbed_ratios, fmt='%.6f')
+
+            summary_statistic = np.sqrt(np.sum((perturbed_ratios-perturbed_obs)**2,axis=1))
+
+            np.savetxt(perturbed_fname+ 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic)
 
             if error == 0:
                 break
