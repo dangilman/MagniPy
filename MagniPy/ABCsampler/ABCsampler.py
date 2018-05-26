@@ -328,21 +328,21 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print len(run_commands),Nsplit
 
-    for i in range(0,int(len(run_commands)*Nsplit**-1)):
+    solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
+                           temp_folder=run_commands[i]['scratch_file'])
 
-        solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
-                               temp_folder=run_commands[i]['scratch_file'])
+    for i in range(0,int(len(run_commands))):
+        print 'computing '+str(i+1)+' of '+str(len(run_commands))
+        #macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
+        #reals = realizations[i * Nsplit:(i + 1) * Nsplit]
 
-        macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
-        reals = realizations[i * Nsplit:(i + 1) * Nsplit]
-
-        new, _ = solver.fit(macromodel=macro_mods,
-                                realizations=reals, datatofit=datatofit,
+        new, _ = solver.fit(macromodel=macromodels[i],
+                                realizations=[realizations[i]], datatofit=datatofit,
                                 multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
                                 sigmas=chainkeys['sigmas'],
                                 identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
                                 res=run_commands[i]['grid_res'],polar_grid=True,
-                                source_size=run_commands[i]['source_size'], print_mag=True,
+                                source_size=run_commands[i]['source_size'], print_mag=False,
                                 raytrace_with=run_commands[i]['raytrace_with'])
 
         chaindata += new
@@ -352,11 +352,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     for dset in chaindata:
 
-        if dset.nimg != datatofit.nimg:
-            fluxes.append(np.array([1000, 1000, 1000, 1000]))
-            astrometric_errors.append(1000)
-
-        else:
+        if dset.nimg == datatofit.nimg:
             fluxes.append(dset.m)
             astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x) ** 2 + (dset.y - datatofit.y) ** 2)))
 
@@ -398,5 +394,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_CDM_run/',1)
+#runABC(os.getenv('HOME')+'/data/LOS_CDM_run/',500)
 
