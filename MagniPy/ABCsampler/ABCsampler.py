@@ -333,7 +333,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     for i in range(0,int(len(run_commands))):
         print 'computing '+str(i+1)+' of '+str(len(run_commands))
-        
+
         new, _ = solver.fit(macromodel=macromodels[i],
                                 realizations=[realizations[i]], datatofit=datatofit,
                                 multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
