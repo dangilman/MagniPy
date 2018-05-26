@@ -265,7 +265,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         realizations += constructor.halo_constructor(massprofile=params['mass_profile'],
                                          model_name=params['mass_func_type'],
                                          model_args=params['halo_model_args'], Nrealizations=1,
-                                        filter_halo_positions=True,
+                                        filter_halo_positions=False,
                                          x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
 
@@ -273,8 +273,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     print 'done.'
     print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
 
-    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
-                           temp_folder=chain_keys['sampler']['scratch_file'],clean_up=True)
+    #solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
+    #                       temp_folder=chain_keys['sampler']['scratch_file'],clean_up=True)
 
     #opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
     #                                             multiplane=False,
@@ -296,9 +296,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
             newmac = deepcopy(macromodel)
 
             if 'SIE_gamma' in commands:
-                newmac.args['gamma'] = commands['SIE_gamma']
+                newmac.lenstronomy_args['gamma'] = commands['SIE_gamma']
             if 'SIE_shear' in commands:
-                newmac.args['shear'] = commands['SIE_shear']
+                newmac.set_shear(commands['SIE_shear'])
 
             macromodels.append(newmac)
 
@@ -333,9 +333,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     for i in range(0,int(len(run_commands))):
         print 'computing '+str(i+1)+' of '+str(len(run_commands))
-        #macro_mods = macromodels[i*Nsplit:(i+1)*Nsplit]
-        #reals = realizations[i * Nsplit:(i + 1) * Nsplit]
-
+        
         new, _ = solver.fit(macromodel=macromodels[i],
                                 realizations=[realizations[i]], datatofit=datatofit,
                                 multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
@@ -348,20 +346,24 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         chaindata += new
         N_computed += len(new)
 
-    fluxes,astrometric_errors = [],[]
+    fluxes,astrometric_errors,parameters = [],[],[]
 
-    for dset in chaindata:
+    for index,dset in enumerate(chaindata):
 
         if dset.nimg == datatofit.nimg:
             fluxes.append(dset.m)
             astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x) ** 2 + (dset.y - datatofit.y) ** 2)))
+            try:
+                parameters.append(samples[index,:])
+            except:
+                parameters.append(samples[index])
 
     f_handle = file(output_path + 'astrometric_errors.txt', 'a')
     np.savetxt(f_handle, X=np.array(astrometric_errors), fmt='%.6f')
     f_handle = file(output_path+'fluxes.txt', 'a')
     np.savetxt(f_handle, X=np.array(fluxes), fmt='%.6f')
     f_handle = file(output_path+'parameters.txt', 'a')
-    np.savetxt(f_handle, X=np.array(samples), fmt='%.6f',header=header_string)
+    np.savetxt(f_handle, X=np.array(parameters), fmt='%.6f',header=header_string)
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
@@ -394,5 +396,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/LOS_CDM_run/',500)
+#runABC(os.getenv('HOME')+'/data/LOS_CDM_run/',1)
 

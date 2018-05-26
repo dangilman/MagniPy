@@ -400,7 +400,7 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             """
             scale = np.ones_like(x_filter)
 
-        x, y = deflector.args['center_x'], deflector.args['center_y']
+        x, y = deflector.lenstronomy_args['center_x'], deflector.lenstronomy_args['center_y']
 
         for i in range(0, len(x_filter)):
 

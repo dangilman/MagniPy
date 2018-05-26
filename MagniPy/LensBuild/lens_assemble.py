@@ -103,21 +103,21 @@ class Deflector:
         self.subclass = subclass
 
         if lens_params is None:
-            self.args,self.other_args = subclass.params(**lens_kwargs)
-            self.lenstronomy_args = model_translate_tolenstronomy(self.args, name=self.other_args['name'])
+            args,self.other_args = subclass.params(**lens_kwargs)
+            self.lenstronomy_args = model_translate_tolenstronomy(args, name=self.other_args['name'])
             self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])
 
         else:
             self.other_args = {}
-            self.args = lens_params
+            args = lens_params
 
             try:
                 self.other_args['name'] = self.args['name']
-                del self.args['name']
+                del args['name']
             except:
                 self.other_args['name'] = lens_kwargs['name']
 
-            self.lenstronomy_args = self.args
+            self.lenstronomy_args = args
             self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name = self.other_args['name'])
 
         self.profname = self.other_args['name']
@@ -134,9 +134,9 @@ class Deflector:
         if 'shear' in lens_kwargs:
             assert 'shear_theta' in lens_kwargs
             self.has_shear = True
-            self.shear = lens_kwargs['shear']
             self.shear_theta = lens_kwargs['shear_theta']
-            self.e1,self.e2 = polar_to_cart(self.shear,self.shear_theta)
+            self.set_shear(lens_kwargs['shear'])
+
         else:
             self.has_shear = False
 
@@ -157,6 +157,10 @@ class Deflector:
         if self.has_shear:
             print 'shear: ',self.shear
             print 'shear PA: ',self.shear_theta
+
+    def set_shear(self,newshear):
+
+        self.shear = newshear
 
     def update(self, method=None,is_shear=False,**newparams):
 
