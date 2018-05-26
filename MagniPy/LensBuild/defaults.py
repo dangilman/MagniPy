@@ -46,21 +46,18 @@ default_file_identifier = 'run'
 
 def default_gridrmax(srcsize):
 
-    if srcsize <= 0.0013*2.355**-1:
-        return 0.045
-    elif srcsize <= 0.0018*2.355**-1:
-        return 0.08
+    if srcsize <= 0.0006:
+        return 0.05
+    elif srcsize <= 0.0012:
+        return 0.15
+    elif srcsize <= 0.0016:
+        return 0.18
     else:
-        raise Exception('manually enter grid size')
+        return 0.19
 
 def default_res(srcsize):
 
-    if srcsize <= 0.0013*2.355**-1:
-        return 0.0008
-    elif srcsize <= 0.0018*2.355**-1:
-        return 0.001
-    else:
-        raise Exception('manually enter grid size')
+    return 0.001
 
 def default_Rein_deflection(cone_angle_size):
 

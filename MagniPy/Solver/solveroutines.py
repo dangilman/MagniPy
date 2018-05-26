@@ -15,7 +15,6 @@ class SolveRoutines(Magnipy):
                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={},raytrace_with=None,polar_grid=True):
 
-
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
 

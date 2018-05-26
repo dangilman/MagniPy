@@ -6,8 +6,9 @@ from MagniPy.Solver.LenstronomyWrap import generate_input,MultiLensWrap
 
 class RayTrace:
 
-    def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None, raytrace_with=None,
-                 polar_grid=False, polar_q = 0.1,**kwargs):
+    def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None,
+                 raytrace_with=None,
+                 polar_grid=False, polar_q = 0.2,**kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)

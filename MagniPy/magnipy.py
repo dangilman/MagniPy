@@ -370,7 +370,6 @@ class Magnipy:
                               raytrace_with=None,
                               polar_grid=None,lens_model_params=None):
 
-
         if raytrace_with == 'lenstronomy':
 
             assert lensmodel is not None

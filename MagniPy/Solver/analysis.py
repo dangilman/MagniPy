@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+from MagniPy.LensBuild.defaults import *
 
 class Analysis(Magnipy):
 
@@ -117,6 +118,15 @@ class Analysis(Magnipy):
                         image_index=None,polar_grid=True,**kwargs):
 
         lens_systems = []
+
+        if source_size is None:
+            raise Exception('specify source size')
+
+        if grid_rmax is None:
+            grid_rmax = default_gridrmax(source_size)
+
+        if res is None:
+            res = default_res(source_size)
 
         if full_system is None:
 
