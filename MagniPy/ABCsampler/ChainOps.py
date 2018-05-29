@@ -75,6 +75,8 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
     #Ncores, cores_per_lens, Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
+    flux_ratio_index = 1
+
     if errors is None:
         errors = []
 
@@ -89,10 +91,6 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
     if ~os.path.exists(perturbed_path):
         create_directory(perturbed_path)
 
-    #fluxes_obs = np.loadtxt(chain_file_path + 'observedfluxes.txt')
-    #fluxes = np.loadtxt(chain_file_path + 'modelfluxes.txt')
-    inds = np.where(np.sum(fluxes,axis=1)==4000)
-
     np.savetxt(chain_file_path + 'modelfluxes' + '.txt',fluxes, fmt='%.6f')
     np.savetxt(chain_file_path + 'observedfluxes' + '.txt',fluxes_obs, fmt='%.6f')
     np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.6f',header=header)
@@ -101,8 +99,6 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
         for k in range(1, N_pert + 1):
 
-            perturbed_fname_obs = perturbed_path + 'observed_' + str(int(error * 100)) + 'error_' + str(k) + '.txt'
-
             if error != 0:
                 flux_perturbations_obs = np.random.normal(0, error * fluxes_obs)
             else:
@@ -110,7 +106,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
             perturbed_obs = fluxes_obs + flux_perturbations_obs
 
-            perturbed_ratios_obs = np.delete(perturbed_obs * perturbed_obs[1] ** -1, 1)
+            perturbed_ratios_obs = perturbed_obs*perturbed_obs[flux_ratio_index]**-1
 
             #np.savetxt(perturbed_fname_obs, perturbed_ratios_obs.reshape(1, 3), fmt='%.6f')
 
@@ -128,20 +124,16 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
             perturbed_fluxes = fluxes + flux_perturbations
 
-            perturbed_ratios = np.delete(perturbed_fluxes * perturbed_fluxes[:, 1, np.newaxis] ** -1, 1, axis=1)
+            for i in range(0,int(np.shape(perturbed_fluxes)[0])):
+                perturbed_fluxes[i,:] = perturbed_fluxes[i,:]*perturbed_fluxes[i,flux_ratio_index]**-1
 
-            perturbed_ratios[inds, :] = 1000 * np.ones_like(3)
-
-            #np.savetxt(perturbed_fname, perturbed_ratios, fmt='%.6f')
-
-            summary_statistic = np.sqrt(np.sum((perturbed_ratios-perturbed_ratios_obs)**2,axis=1))
+            summary_statistic = np.sqrt(np.sum((perturbed_fluxes-perturbed_ratios_obs)**2,axis=1))
 
             ordered_inds = np.argsort(summary_statistic)
 
             np.savetxt(perturbed_path+ 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic[ordered_inds])
             np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds])
 
-            ordered_statistics = summary_statistic[ordered_inds]
             ordered_parameters = parameters[ordered_inds]
 
             if tol<1:
@@ -156,8 +148,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
             if error == 0:
                 break
-
-
+                
 def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     chain_info_path = chainpath + chain_name + '/simulation_info.txt'
@@ -182,11 +173,17 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
     for i in range(start,end):
 
         folder_name = chain_file_path + str(i+1) + '/'
-        fluxes = np.loadtxt(folder_name + 'fluxes.txt')
-        astrometric_errors = np.loadtxt(folder_name + 'astrometric_errors.txt')
 
-        observed_fluxes = read_data(folder_name + 'lensdata.txt')[0].m
-        params = np.loadtxt(folder_name + 'parameters.txt')
+        try:
+            fluxes = np.loadtxt(folder_name + 'fluxes.txt')
+            astrometric_errors = np.loadtxt(folder_name + 'astrometric_errors.txt')
+
+            observed_fluxes = read_data(folder_name + 'lensdata.txt')[0].m
+            params = np.loadtxt(folder_name + 'parameters.txt')
+
+        except:
+            continue
+
         if params_header is None:
             with open(folder_name + 'parameters.txt', 'r') as f:
                 lines = f.read().splitlines()
@@ -208,9 +205,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     #savename = chainpath + 'processed_chains/' + chain_name + '/' + 'lens' + str(which_lens) + '/'
 
-    inds_to_keep = np.where(lens_fluxes[:,0]!=1000)
-
-    return lens_fluxes[inds_to_keep],observed_fluxes.reshape(1,4),lens_params[inds_to_keep],params_header
+    return lens_fluxes,observed_fluxes.reshape(1,4),lens_params,params_header
 
     #np.savetxt(savename + 'modelfluxes' + '.txt', lens_fluxes[inds_to_keep], fmt='%.6f')
     #np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
