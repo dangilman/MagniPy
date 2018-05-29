@@ -266,7 +266,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         realizations += constructor.halo_constructor(massprofile=params['mass_profile'],
                                          model_name=params['mass_func_type'],
                                          model_args=params['halo_model_args'], Nrealizations=1,
-                                        filter_halo_positions=True,
+                                         filter_halo_positions=True,
                                          x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
 
@@ -339,7 +339,7 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                                 realizations=[realizations[i]], datatofit=datatofit,
                                 multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
                                 sigmas=chainkeys['sigmas'],
-                                identifier=run_commands[i]['chain_ID'], grid_rmax=run_commands[i]['grid_rmax'],
+                                identifier=run_commands[i]['chain_ID'], grid_rmax=None,
                                 res=run_commands[i]['grid_res'],polar_grid=True,
                                 source_size=run_commands[i]['source_size'], print_mag=False,
                                 raytrace_with=run_commands[i]['raytrace_with'])
