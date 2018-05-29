@@ -204,7 +204,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
         return
 
-
     if os.path.exists(output_path):
         pass
     else:
@@ -255,17 +254,19 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     # Draw realizations
     realizations = []
+
     print 'building realizations... '
 
-    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'],LOS_mass_sheet=False)
+    constructor = Realization(zlens=run_commands[0]['zlens'],zsrc=run_commands[0]['zsrc'],LOS_mass_sheet=True)
 
     t0 = time()
+
     for index,params in enumerate(run_commands):
 
         realizations += constructor.halo_constructor(massprofile=params['mass_profile'],
                                          model_name=params['mass_func_type'],
                                          model_args=params['halo_model_args'], Nrealizations=1,
-                                        filter_halo_positions=False,
+                                        filter_halo_positions=True,
                                          x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
                                          log_masscut_low=params['log_masscut_low'])
 

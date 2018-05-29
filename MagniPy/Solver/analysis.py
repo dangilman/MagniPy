@@ -9,7 +9,7 @@ from MagniPy.LensBuild.defaults import *
 class Analysis(Magnipy):
 
     def critical_cruves_caustics(self,lens_system=None,main=None,halos=None,multiplane=None,compute_window=1.5,
-                                 scale=0.5,max_order=10):
+                                 scale=0.5,max_order=10,method=None,grid_scale=0.005):
 
         if lens_system is None:
             lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
@@ -21,10 +21,15 @@ class Analysis(Magnipy):
         extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,redshift_list=lensmodel.redshift_list,
                             cosmo=lensmodel.cosmo,multi_plane=multiplane,z_source=lensmodel.z_source)
 
-        xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,
+        if method=='tiling':
+            xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,
                                                        start_scale=scale,max_order=max_order)
+            return xcrit, ycrit
+        else:
+            ra_crit_list, dec_crit_list, ra_caustic_list, dec_caustic_list = \
+                extension.critical_curve_caustics(lensmodel_params,compute_window=5,grid_scale=grid_scale)
 
-        return xcrit,ycrit
+            return ra_crit_list, dec_crit_list,ra_caustic_list, dec_caustic_list
 
     def rayshoot(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 

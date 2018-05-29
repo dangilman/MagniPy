@@ -1,7 +1,6 @@
 import numpy as np
 from Sersic import Sersic
 from NFW import NFW
-from TNFW import TNFW
 from scipy.special import gammainc,gamma
 
 class SersicNFW:
