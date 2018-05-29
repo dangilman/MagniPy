@@ -211,12 +211,12 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
     #np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
     #np.savetxt(savename + 'samples.txt', lens_params[inds_to_keep], fmt='%.6f', header=params_header)
 
-def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
+def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None,tol=None):
 
     fluxes,fluxes_obs,parameters,header = extract_chain(name,which_lens)
     
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
-                           fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header)
+                           fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,tol=tol)
 
 #for j in range(2,10):
 #    extract_chain('singleplane_test_2',j)
