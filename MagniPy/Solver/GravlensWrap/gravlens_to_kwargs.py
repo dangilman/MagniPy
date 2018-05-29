@@ -22,9 +22,10 @@ def gravlens_to_kwargs(model_string, deflector=None):
 
         shear,shear_theta = cart_to_polar(shear, shear_theta)
 
-
+        gamma = 3-float(model_string[10])
+        
         return {'theta_E':R_ein,'q':q,'phi_G':phi_G,'shear':shear,
-                'shear_theta':shear_theta,'center_x':x,'center_y':y}
+                'shear_theta':shear_theta,'center_x':x,'center_y':y,'gamma':gamma}
 
     elif model_string[0]=='ptmass':
 

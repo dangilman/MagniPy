@@ -19,6 +19,8 @@ def model_translate_tolenstronomy(args,name):
         newargs['center_x'] = args['center_x']
         newargs['center_y'] = args['center_y']
         newargs['theta_E'] = args['theta_E']
+        newargs['gamma'] = args['gamma']
+
         return newargs
 
     elif name=='SERSIC_NFW':

@@ -222,6 +222,7 @@ class Magnipy:
         lensdata = []
 
         for i, name in enumerate(outputfile):
+
             xvals, yvals, mag_gravlens, tvals, macrovals, srcvals = read_dat_file(fname=name)
 
             lensdata.append(Data(x=xvals, y=yvals, m=mag_gravlens, t=tvals, source=srcvals))

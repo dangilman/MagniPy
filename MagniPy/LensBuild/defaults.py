@@ -29,7 +29,7 @@ from MagniPy.MassModels.SIE import SIE
 import numpy as np
 
 default_startkwargs_random = {'R_ein':np.absolute(np.random.normal(1,0.1)),'ellip':np.absolute(np.random.normal(0.3,0.05)),'ellip_theta':np.random.uniform(-90,90),
-               'x':0,'y':0,'shear':np.random.uniform(0.03,0.06),'shear_theta':np.random.uniform(-90,90)}
+               'x':0,'y':0,'shear':np.random.uniform(0.03,0.06),'shear_theta':np.random.uniform(-90,90),'gamma':2}
 def get_default_SIE_random(z,varyflags=['1','1','1','1','1','1','1','0','0','0']):
     return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs_random)
 

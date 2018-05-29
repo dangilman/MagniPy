@@ -23,7 +23,7 @@ class GravlensInput:
         self.systems.append(system)
         self.Nsystems += 1
 
-    def write_all(self,data,zlens=float,zsrc=float,srcx=None,srcy=None,opt_routine=None):
+    def write_all(self,data,zlens=float,zsrc=float,srcx=None,srcy=None,opt_routine=None,shr_coords=1):
 
         extra_commands = {}
 
@@ -76,7 +76,7 @@ class GravlensInput:
                                     ranges += '-.025,.025\n'
 
                                 elif i == 3:
-
+                                    
                                     ranges += '-.1,.1\n'
 
                                 elif i == 4:

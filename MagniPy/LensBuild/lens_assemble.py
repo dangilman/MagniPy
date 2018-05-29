@@ -162,7 +162,7 @@ class Deflector:
 
         self.shear = newshear
 
-    def update(self, method=None,is_shear=False,**newparams):
+    def update(self,method=None,is_shear=False,**newparams):
 
         assert method in ['lensmodel','lenstronomy']
 
@@ -173,6 +173,7 @@ class Deflector:
 
                 self.shear = s
                 self.shear_theta = spa
+
                 return
 
             if self.other_args['name'] == 'SERSIC_NFW':
@@ -189,8 +190,7 @@ class Deflector:
 
         elif method=='lensmodel':
 
-            self.args.update(newparams)
-            self.lenstronomy_args = model_translate_tolenstronomy(self.args,name=self.other_args['name'])
+            self.lenstronomy_args = model_translate_tolenstronomy(newparams,name=self.other_args['name'])
             self.gravlens_args = model_translate_togravlens(self.lenstronomy_args,self.other_args['name'])
 
             self.shear = newparams['shear']
