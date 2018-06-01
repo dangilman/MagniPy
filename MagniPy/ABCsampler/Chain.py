@@ -14,7 +14,7 @@ class FullChains:
         else:
             self.Nlenses = Nlenses
 
-        self.chain_file_path = chainpath + '/processed_chains/' + chain_name +'/'
+        self.chain_file_path = chainpath + 'processed_chains/' + chain_name +'/'
 
         self.lenses = []
 
@@ -25,16 +25,9 @@ class FullChains:
 
             new_lens = SingleLens(Nparams=len(self.params_varied))
 
-            model = self.import_model(ind, error=error, index=index)
-            observed = self.import_observed(ind, error=error, index=index)
+            new_lens.add_parameters(pnames=self.params_varied,fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/params_0error_1.txt')
+            new_lens.add_statistic(fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/statistic_0error_1.txt')
 
-            keep_inds = np.where(model[:,0] != 1000)
-
-            model = model[keep_inds]
-
-            new_lens.add_parameters(fname=self.chain_file_path+'lens'+str(ind)+'/samples.txt',keep_inds=np.squeeze(keep_inds))
-
-            new_lens.compute_summary_statistic(observed,model)
             self.lenses.append(new_lens)
 
     def get_posteriors(self,tol=None):
@@ -100,7 +93,8 @@ class FullChains:
 
             for posterior in posteriors:
 
-                posterior.change_weights(weight_function)
+                for func in weight_function:
+                    posterior.change_weights(func)
 
             return posteriors
 
@@ -134,16 +128,7 @@ class SingleLens:
 
         self.posterior = PosteriorSamples(new_param_dic,weights=None)
 
-    def add_parameters(self,params=None,fname=None,keep_inds=None):
-
-        with open(fname,'r') as f:
-            names = f.readline().split(' ')
-        pnames = []
-        for name in names:
-            if name =='#' or name =='\n':
-                continue
-            else:
-                pnames.append(name)
+    def add_parameters(self,pnames=None,fname=None):
 
         params = np.loadtxt(fname)
 
@@ -152,8 +137,6 @@ class SingleLens:
         for i,pname in enumerate(pnames):
 
             newparams = params[:,i]
-
-            newparams = newparams[keep_inds]
 
             new_dictionary.update({pname:newparams})
 
@@ -168,9 +151,9 @@ class SingleLens:
         """
         self.weights = weight_function(params)
 
-    def compute_summary_statistic(self,observed=None,model=None):
+    def add_statistic(self,fname):
 
-        self.statistic = quadrature_piecewise(model,observed)
+        self.statistic = np.loadtxt(fname)
 
 class PosteriorSamples:
 

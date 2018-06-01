@@ -8,7 +8,7 @@ class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None,
                  raytrace_with=None,
-                 polar_grid=False, polar_q = 0.2,**kwargs):
+                 polar_grid=False, polar_q = 0.4, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -66,9 +66,10 @@ class RayTrace:
             if self.polar_grid:
                 #ellipse_inds = np.where(np.sqrt(self.x_grid_0 ** 2 + self.y_grid_0 ** 2) <= self.grid_rmax)
                 ellipse_inds = ellipse_coordinates(self.x_grid_0, self.y_grid_0, self.grid_rmax,q=self.polar_q,
-                                                   theta=np.arctan2(ypos[i], xpos[i]) + np.pi * 0.5)
+                                                   theta=np.arctan2(ypos[i], xpos[i])+0.5*np.pi)
                 x_loc.append(xpos[i] + self.x_grid_0[ellipse_inds])
                 y_loc.append(ypos[i] + self.y_grid_0[ellipse_inds])
+
             else:
                 x_loc.append(xpos[i] + self.x_grid_0)
                 y_loc.append(ypos[i] + self.y_grid_0)
@@ -89,7 +90,8 @@ class RayTrace:
 
         else:
 
-            img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
+            img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,
+                                              astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
 
             if self.polar_grid:
                 return np.sum(img)*self.res**2,img

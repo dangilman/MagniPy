@@ -102,6 +102,15 @@ class CosmoExtension(Cosmo):
         """
         return 2*np.pi* self.mass2size_comoving(m, z) ** -1
 
+    def angle_behind_lens(self,angle,z,z_base,Rein_def):
+
+        if z <= z_base:
+            return angle
+
+        R = self._angle_to_physicalradius(angle,z,z_base,Rein_def)
+
+        return R*self.arcsec**-1*self.D_A(0,z)**-1
+
     def _angle_to_physicalradius(self, angle, z, z_base, Rein_def=None):
 
         angle_radian = angle*self.arcsec

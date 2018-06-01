@@ -14,7 +14,7 @@ from halo_truncations import Truncation
 
 class HaloGen:
 
-    def __init__(self,zd=None,zsrc=None,LOS_mass_sheet=False):
+    def __init__(self,zd=None,zsrc=None,LOS_mass_sheet=True):
 
         """
 

@@ -5,7 +5,7 @@ from gravlens_to_kwargs import *
 class GravlensInput:
 
     def __init__(self,filename='',zlens=float,zsrc=float,pos_sigma=None,flux_sigma=None,tdelay_sigma=None,
-                 identifier='',dataindex=1,paths=classmethod,cosmology=None):
+                 identifier='',dataindex=1,paths=classmethod,cosmology=None,shr_coords=None):
 
         self.filename = filename
         self.outfile_path = paths.gravlens_input_path_dump
@@ -17,6 +17,7 @@ class GravlensInput:
         self.cosmology = cosmology
         self.identifier = identifier
         self.dataindex = dataindex
+        self.shr_coords = shr_coords
 
     def add_lens_system(self,system=classmethod):
 
@@ -76,20 +77,32 @@ class GravlensInput:
                                     ranges += '-.025,.025\n'
 
                                 elif i == 3:
-                                    
-                                    ranges += '-.1,.1\n'
+
+                                    if shr_coords==1:
+                                        ranges += '-.1,.1\n'
+                                    else:
+                                        ranges += '0.05,.4\n'
 
                                 elif i == 4:
 
-                                    ranges += '-.1,.1\n'
+                                    if shr_coords==1:
+                                        ranges += '-.1,.1\n'
+                                    else:
+                                        ranges += '-90,90\n'
 
                                 elif i == 5:
 
-                                    ranges += '-.1,.1\n'
+                                    if shr_coords==1:
+                                        ranges += '-.1,.1\n'
+                                    else:
+                                        ranges += '0.01,0.07\n'
 
                                 elif i == 6:
 
-                                    ranges += '-.1,.1\n'
+                                    if shr_coords==1:
+                                        ranges += '-.1,.1\n'
+                                    else:
+                                        ranges += '-90,90\n'
 
                         extra_commands['randomize'] += [ranges]
 
@@ -132,7 +145,7 @@ class GravlensInput:
 
     def _add_header(self,zlens, zsrc, opt_routine):
 
-        self.header = Header(zlens=zlens,zsrc=zsrc,omega_M=self.cosmology.cosmo.Om0,hval=self.cosmology.h)
+        self.header = Header(zlens=zlens,zsrc=zsrc,omega_M=self.cosmology.cosmo.Om0,hval=self.cosmology.h,shr_coords=self.shr_coords)
         self.header.opt_routine(opt_routine)
 
     def _write_header(self):
@@ -201,7 +214,7 @@ class FullModel:
 
 class SingleModel:
 
-    def __init__(self, lensmodel=classmethod, tovary=False, units='lensmodel', vary_type='optimize'):
+    def __init__(self, lensmodel=classmethod, tovary=False, units='lensmodel',shr_coords=None):
 
         self.name = lensmodel.profname
 
@@ -210,6 +223,8 @@ class SingleModel:
         self.tovary = lensmodel.tovary
 
         self.units = units
+
+        self.shr_coords = shr_coords
 
     def _get_tovary(self, vary_type='optimize'):
 
@@ -227,7 +242,7 @@ class SingleModel:
 
     def _get_model(self,multiplane=False):
 
-        lensparams = kwargs_to_gravlens(self.deflector)
+        lensparams = kwargs_to_gravlens(self.deflector,self.shr_coords)
 
         if multiplane:
             lensparams += str(self.deflector.redshift)
@@ -236,14 +251,14 @@ class SingleModel:
 
 class Header:
 
-    def __init__(self, zlens=float, zsrc=float, omega_M=None, hval=None):
+    def __init__(self, zlens=float, zsrc=float, omega_M=None, hval=None,shr_coords=None):
 
         inputstring = ''
 
         inputstring += 'set zlens = ' + str(zlens) + '\nset zsrc = ' + str(zsrc) + '\n'
 
         inputstring += 'set omega = '+str(omega_M)+'\nset lambda = '+str(1-omega_M)+'\nset hval = '+str(hval)+\
-                       '\nset shrcoords=1\nset omitcore=.001\nset checkparity=0\nset clumpmode = 0\n'
+                       '\nset shrcoords='+str(shr_coords)+'\nset omitcore=.001\nset checkparity=0\nset clumpmode = 0\n'
 
         self.inputstring = inputstring+'\n\n'
 

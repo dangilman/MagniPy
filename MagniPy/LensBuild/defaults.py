@@ -47,13 +47,13 @@ default_file_identifier = 'run'
 def default_gridrmax(srcsize):
 
     if srcsize <= 0.0006:
-        return 0.05
+        return 0.06
     elif srcsize <= 0.0012:
-        return 0.12
+        return 0.13
     elif srcsize <= 0.0016:
-        return 0.15
+        return 0.16
     else:
-        return 0.17
+        return 0.18
 
 def default_res(srcsize):
 
@@ -61,4 +61,4 @@ def default_res(srcsize):
 
 def default_Rein_deflection(cone_angle_size):
 
-    return max(cone_angle_size-0.1,0)
+    return max(cone_angle_size,0)

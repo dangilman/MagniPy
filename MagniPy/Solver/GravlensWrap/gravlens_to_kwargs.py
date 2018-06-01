@@ -2,14 +2,18 @@ from MagniPy.util import *
 from kwargs_translate import lenstronomy_to_gravlens
 from MagniPy.Solver.LenstronomyWrap.kwargs_translate import *
 
-def gravlens_to_kwargs(model_string, deflector=None):
+def gravlens_to_kwargs(model_string, shr_coords):
 
     if model_string[0]=='alpha':
 
         x,y = float(model_string[2]),float(model_string[3])
         e1 = float(model_string[4])
         e2 = float(model_string[5])
-        ellip,ellip_theta = cart_to_polar(e1, e2)
+
+        if shr_coords==1:
+            ellip,ellip_theta = cart_to_polar(e1, e2)
+        else:
+            ellip,ellip_theta = e1,e2
 
         q = 1-ellip
 
@@ -20,10 +24,11 @@ def gravlens_to_kwargs(model_string, deflector=None):
         shear = float(model_string[6])
         shear_theta = float(model_string[7])
 
-        shear,shear_theta = cart_to_polar(shear, shear_theta)
+        if shr_coords==1:
+            shear,shear_theta = cart_to_polar(shear, shear_theta)
 
         gamma = 3-float(model_string[10])
-        
+
         return {'theta_E':R_ein,'q':q,'phi_G':phi_G,'shear':shear,
                 'shear_theta':shear_theta,'center_x':x,'center_y':y,'gamma':gamma}
 
@@ -35,7 +40,7 @@ def gravlens_to_kwargs(model_string, deflector=None):
 
         return {'name':name,'R_ein':R_ein,'x':x,'y':y}
 
-def kwargs_to_gravlens(deflector=None):
+def kwargs_to_gravlens(deflector=None,shr_coords=None):
 
     args = deflector.gravlens_args
 
@@ -50,12 +55,20 @@ def kwargs_to_gravlens(deflector=None):
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
 
-        p4,p5 = polar_to_cart(args['ellip'],args['ellip_theta'])
+        if shr_coords == 1:
+            p4,p5 = polar_to_cart(args['ellip'],args['ellip_theta'])
+        else:
+            p4,p5 = args['ellip'],args['ellip_theta']
 
         p4,p5 = str(p4),str(p5)
 
         if deflector.has_shear:
-            s,spa = polar_to_cart(deflector.shear,deflector.shear_theta)
+
+            if shr_coords == 1:
+                s, spa = polar_to_cart(deflector.shear, deflector.shear_theta)
+            else:
+                s, spa = deflector.shear, deflector.shear_theta
+
             p6 = str(s)
             p7 = str(spa)
 
@@ -109,12 +122,19 @@ def kwargs_to_gravlens(deflector=None):
         p1 = str(args['k_eff'])
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
-        p4, p5 = polar_to_cart(args['ellip'], args['ellip_theta'])
+
+        if shr_coords==1:
+            p4, p5 = polar_to_cart(args['ellip'], args['ellip_theta'])
+        else:
+            p4,p5 = args['ellip'],args['ellip_theta']
         p4 = str(args[p4])
         p5 = str(args[p5])
 
         if deflector.has_shear:
-            s,spa = polar_to_cart(deflector.shear,deflector.shear_theta)
+            if shr_coords == 1:
+                s,spa = polar_to_cart(deflector.shear,deflector.shear_theta)
+            else:
+                s, spa = deflector.shear, deflector.shear_theta
             p6 = str(s)
             p7 = str(spa)
 

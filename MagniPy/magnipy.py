@@ -120,9 +120,9 @@ class Magnipy:
 
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
-    def optimize_4imgs_lenstronomy(self,lens_systems,data2fit=None,method=str,sigmas=None,ray_trace=True,grid_rmax=None,res=None,
-                                   source_shape='GAUSSIAN',source_size=None,print_mag=False,raytrace_with=None,polar_grid=True,
-                                   solver_type=None,N_iter_max=None):
+    def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None, method=str, sigmas=None, ray_trace=True, grid_rmax=None, res=None,
+                                    source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, polar_grid=True,
+                                    solver_type=None, N_iter_max=None):
 
         data,opt_sys = [],[]
 
@@ -143,10 +143,11 @@ class Magnipy:
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-            #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc)
+            x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc,
+                                                             arrival_time_sort=False)
 
-            x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
-                                                                        arrival_time_sort=False,num_iter_max=N_iter_max)
+            #x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
+            #                                                            arrival_time_sort=False,num_iter_max=N_iter_max)
 
             if print_mag:
                 print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
@@ -182,9 +183,9 @@ class Magnipy:
 
         return data,opt_sys
 
-    def optimize_4imgs_lensmodel(self, lens_systems=None, data2fit=[], method=str, sigmas=None, identifier='', opt_routine=None,
-                       ray_trace=True, return_positions=False, grid_rmax=int, res=0.0005, source_shape='GAUSSIAN',
-                       source_size=float, print_mag=False, raytrace_with=None, polar_grid=False, solver_type=None):
+    def _optimize_4imgs_lensmodel(self, lens_systems=None, data2fit=[], method=str, sigmas=None, identifier='', opt_routine=None,
+                                  ray_trace=True, return_positions=False, grid_rmax=int, res=0.0005, source_shape='GAUSSIAN',
+                                  source_size=float, print_mag=False, raytrace_with=None, polar_grid=False, solver_type=None, shr_coords=1):
 
 
         if sigmas is None:
@@ -204,17 +205,17 @@ class Magnipy:
 
         solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc,
                                pos_sigma=sigmas[0], flux_sigma=sigmas[1], tdelay_sigma=sigmas[2],
-                               identifier=identifier, paths=self.paths, cosmology=self.cosmo)
+                               identifier=identifier, paths=self.paths, cosmology=self.cosmo,shr_coords=shr_coords)
 
         for system in lens_systems:
 
             full = FullModel(multiplane=system.multiplane)
             for i, model in enumerate(system.lens_components):
-                full.populate(SingleModel(lensmodel=model, units=system.units))
+                full.populate(SingleModel(lensmodel=model, units=system.units,shr_coords=shr_coords))
 
             solver.add_lens_system(full)
 
-        outputfile = solver.write_all(data=d2fit, zlens=self.zmain, zsrc=self.zsrc, opt_routine=opt_routine)
+        outputfile = solver.write_all(data=d2fit, zlens=self.zmain, zsrc=self.zsrc, opt_routine=opt_routine,shr_coords=shr_coords)
 
         call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
                        path_2_lensmodel=self.paths.path_2_lensmodel)
@@ -227,7 +228,7 @@ class Magnipy:
 
             lensdata.append(Data(x=xvals, y=yvals, m=mag_gravlens, t=tvals, source=srcvals))
 
-            newmacromodel = gravlens_to_kwargs(macrovals, deflector=lens_systems[i].lens_components[0])
+            newmacromodel = gravlens_to_kwargs(macrovals,shr_coords=shr_coords)
 
             optimized_systems.append(
                 self.update_system(lens_system=lens_systems[i], component_index=0, newkwargs=newmacromodel,
@@ -263,9 +264,9 @@ class Magnipy:
 
         return lensdata, optimized_systems
 
-    def solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
-                    res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,
-                    raytrace_with='',polar_grid=True,arrival_time=True):
+    def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
+                     res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,
+                     raytrace_with='', polar_grid=True, arrival_time=True, shr_coords=1):
 
         if method == 'lensmodel':
 
@@ -275,15 +276,15 @@ class Magnipy:
 
             solver = GravlensInput(filename=identifier, zlens=self.zmain, zsrc=self.zsrc, identifier=identifier,
                                    paths=self.paths,
-                                   cosmology=self.cosmo)
+                                   cosmology=self.cosmo,shr_coords=shr_coords)
 
             for i, system in enumerate(lens_systems):
                 full = FullModel(multiplane=system.multiplane)
                 for model in system.lens_components:
-                    full.populate(SingleModel(lensmodel=model))
+                    full.populate(SingleModel(lensmodel=model,shr_coords=shr_coords))
                 solver.add_lens_system(full)
 
-            outputfile = solver.write_all(data=None, zlens=self.zmain, zsrc=self.zsrc, srcx=srcx, srcy=srcy)
+            outputfile = solver.write_all(data=None, zlens=self.zmain, zsrc=self.zsrc, srcx=srcx, srcy=srcy,shr_coords=shr_coords)
 
             call_lensmodel(inputfile=solver.outfile_path + solver.filename + '.txt',
                            path_2_lensmodel=self.paths.path_2_lensmodel)
@@ -335,10 +336,11 @@ class Magnipy:
 
                 LEQ = LensEquationSolver(lensModel)
 
-                #x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params)
+                x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params,
+                                                      arrival_time_sort=False)
 
-                x_image,y_image = LEQ.image_position_from_source(sourcePos_x=srcx,sourcePos_y=srcy,
-                                                                 kwargs_lens=lensmodel_params,arrival_time_sort=False)
+                #x_image,y_image = LEQ.image_position_from_source(sourcePos_x=srcx,sourcePos_y=srcy,
+                #                                                 kwargs_lens=lensmodel_params,arrival_time_sort=False)
 
 
 

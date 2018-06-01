@@ -144,6 +144,13 @@ class Deflector:
 
             self.Shear = Shear()
 
+    def update_lenstronomy_args(self,newargs):
+
+        for key,item in newargs.iteritems():
+            self.lenstronomy_args[key] = item
+
+        self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])
+
     def set_varyflags(self,flags):
 
         self.varyflags = flags

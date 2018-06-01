@@ -377,28 +377,26 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             for LOS halos; keep if it's rescaled position is near an image
             """
 
-            #scale = np.ones_like(x_filter)*np.array(cosmology.D_co(0, deflector.redshift) * cosmology.D_d ** -1)
             scale = np.ones_like(x_filter)
+            scale_mindis = 1
 
         elif zmain < deflector.redshift:
 
             """
             for halos behind the main lens
             """
-            D_12 = cosmology.D_A(zmain,deflector.redshift)
-            D_os = cosmology.D_A(0,cosmology.zsrc)
-            D_1s = cosmology.D_A(zmain,cosmology.zsrc)
-            D_o2 = cosmology.D_A(0,deflector.redshift)
 
-            beta = D_12*D_os*(D_o2*D_1s)**-1
+            beta = cosmology.beta(deflector.redshift,zmain,cosmology.zsrc)
 
             scale = np.ones_like(x_filter)*(1 - beta)
+            scale_mindis = (1-beta*0.5)
 
         else:
             """
             for lens plane halos
             """
             scale = np.ones_like(x_filter)
+            scale_mindis = 1
 
         x, y = deflector.lenstronomy_args['center_x'], deflector.lenstronomy_args['center_y']
 
@@ -406,7 +404,7 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
 
             dr = ((x - x_filter[i]*scale[i]) ** 2 + (y - y_filter[i]*scale[i]) ** 2) ** .5
 
-            if dr <= mindis or deflector.other_args['mass'] >= masscut_low:
+            if dr <= mindis*scale_mindis or deflector.other_args['mass'] >= masscut_low:
                 keep_index.append(index)
 
                 break

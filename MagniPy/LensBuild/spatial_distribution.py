@@ -51,9 +51,7 @@ class TwoDCoords:
 
             assert self.cosmology is not None
 
-            beta = self.cosmology.beta(z,self.cosmology.zd,self.cosmology.zsrc)
-
-            theta_new = theta*(1 - beta)
+            theta_new = self.cosmology.angle_behind_lens(theta,z,z_base=zmain,Rein_def=theta)
 
             angle = np.random.uniform(0, 2 * np.pi, Npoints)
             r = np.random.uniform(0, theta_new ** 2, Npoints)
