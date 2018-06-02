@@ -143,11 +143,11 @@ class Magnipy:
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-            x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc,
-                                                             arrival_time_sort=False)
+            #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc,
+            #                                                 arrival_time_sort=False)
 
-            #x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
-            #                                                            arrival_time_sort=False,num_iter_max=N_iter_max)
+            x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
+                                                                        arrival_time_sort=False,num_iter_max=N_iter_max)
 
             if print_mag:
                 print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))

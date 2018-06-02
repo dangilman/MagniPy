@@ -3,7 +3,31 @@ from lensdata import Data
 import subprocess
 import shutil
 import scipy.ndimage.filters as sfilt
+import itertools
 
+
+def sort_image_index(ximg,yimg,xref,yref):
+
+    assert len(ximg) == 4
+    assert len(xref) == len(ximg)
+
+    x_self = np.array(list(itertools.permutations(ximg)))
+    y_self = np.array(list(itertools.permutations(yimg)))
+
+    indexes = [0, 1, 2, 3]
+    index_iterations = list(itertools.permutations(indexes))
+    delta_r = []
+
+    for i in range(0, int(len(x_self))):
+        dr = 0
+        for j in range(0, int(len(x_self[0]))):
+            dr += (x_self[i][j] - xref[j]) ** 2 + (y_self[i][j] - yref[j]) ** 2
+
+        delta_r.append(dr ** .5)
+
+    min_indexes = np.array(index_iterations[np.argmin(delta_r)])
+
+    return min_indexes
 
 def coordinates_inbox(box_dx,box_dy,centered_x,centered_y):
 

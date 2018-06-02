@@ -407,5 +407,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/singleplane_run/',2)
+#runABC(os.getenv('HOME')+'/data/singleplane_run_withlenstronomy/',2)
 
