@@ -134,17 +134,17 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
             np.savetxt(perturbed_path+ 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic[ordered_inds])
             np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds])
 
-            ordered_parameters = parameters[ordered_inds]
+            #ordered_parameters = parameters[ordered_inds]
 
-            if tol<1:
-                return_params = ordered_parameters[0:int(tol*len(summary_statistic))]
-            else:
-                return_params = ordered_parameters[0:int(tol)]
+            #if tol<1:
+            #    return_params = ordered_parameters[0:int(tol*len(summary_statistic))]
+            #else:
+            #    return_params = ordered_parameters[0:int(tol)]
 
-            create_directory(chainpath + 'processed_chains/' + chain_name + '/lens'+str(which_lens)+'_final/')
+            #create_directory(chainpath + 'processed_chains/' + chain_name + '/lens'+str(which_lens)+'_final/')
 
-            np.savetxt(chainpath + 'processed_chains/' + chain_name + '/lens'+str(which_lens)+'_final/parameters.txt',
-                       X=return_params,header=header)
+            #np.savetxt(chainpath + 'processed_chains/' + chain_name + '/lens'+str(which_lens)+'_final/parameters.txt',
+            #           X=return_params,header=header)
 
             if error == 0:
                 break
