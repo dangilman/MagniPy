@@ -25,8 +25,9 @@ class FullChains:
 
             new_lens = SingleLens(Nparams=len(self.params_varied))
 
-            new_lens.add_parameters(pnames=self.params_varied,fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/params_0error_1.txt')
-            new_lens.add_statistic(fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/statistic_0error_1.txt')
+            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/fluxratios/statistic_0error_1.txt')
+            new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
+                                    fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/params_0error_1.txt')
 
             self.lenses.append(new_lens)
 
@@ -128,9 +129,11 @@ class SingleLens:
 
         self.posterior = PosteriorSamples(new_param_dic,weights=None)
 
-    def add_parameters(self,pnames=None,fname=None):
+    def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 
         params = np.loadtxt(fname)
+
+        params = params[finite_inds]
 
         new_dictionary = {}
 
@@ -153,7 +156,13 @@ class SingleLens:
 
     def add_statistic(self,fname):
 
-        self.statistic = np.loadtxt(fname)
+        statistic = np.loadtxt(fname)
+
+        finite = np.where(np.isfinite(statistic))
+
+        self.statistic = statistic[finite]
+
+        return finite
 
 class PosteriorSamples:
 

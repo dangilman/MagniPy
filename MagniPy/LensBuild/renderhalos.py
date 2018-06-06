@@ -185,35 +185,37 @@ class HaloGen:
 
             else:
 
-                assert 'Rs_kpc' in model_kwargs
-                Rs_kpc = model_kwargs['Rs_kpc']
-                assert 'r200_kpc' in model_kwargs
-                r200_kpc = model_kwargs['r200_kpc']
+                if 'Rs_kpc' in model_kwargs:
+                    assert 'r200_kpc' in model_kwargs
+                    Rs_kpc = model_kwargs['Rs_kpc']
+                    r200_kpc = model_kwargs['r200_kpc']
+                else:
+                    _, Rs_kpc, r200_kpc = self.cosmology.NFW(default_halo_mass, None, self.cosmology.zd)
 
             spatialkwargs['Rs'] = Rs_kpc* self.cosmology.kpc_per_asec(
                     self.cosmology.zd) ** -1
             spatialkwargs['r200_asec'] = r200_kpc * self.cosmology.kpc_per_asec(
                 self.cosmology.zd) ** -1
 
-            if 'tidal_core' in model_kwargs:
-                spatialkwargs['tidal_core'] = model_kwargs['tidal_core']
-                if 'r_core' in model_kwargs:
-                    if isinstance(model_kwargs['r_core'],str):
-                        if model_kwargs['r_core'] == 'Rs':
-                            spatialkwargs['r_core_asec'] = spatialkwargs['Rs']
-                        else:
-                            assert model_kwargs['r_core'][-2:] == 'Rs'
-                            scale = float(model_kwargs['r_core'][:-2])
-                            spatialkwargs['r_core_asec'] = scale*spatialkwargs['Rs']
+            if 'r_core' in model_kwargs:
 
+                spatialkwargs['tidal_core'] = True
+
+                if isinstance(model_kwargs['r_core'],str):
+                    if model_kwargs['r_core'] == 'Rs':
+                        spatialkwargs['r_core_asec'] = spatialkwargs['Rs']
                     else:
-                        assert isinstance(model_kwargs['r_core'],float) or \
-                               isinstance(model_kwargs['r_core'],int)
-                        spatialkwargs['r_core_asec'] = model_kwargs['r_core']*\
-                                                   self.cosmology.kpc_per_asec(self.cosmology.zd)
+                        assert model_kwargs['r_core'][-2:] == 'Rs'
+                        scale = float(model_kwargs['r_core'][:-2])
+                        spatialkwargs['r_core_asec'] = scale*spatialkwargs['Rs']
 
                 else:
-                    raise AssertionError('if tidal_core is True, must specify core radius')
+                    assert isinstance(model_kwargs['r_core'],float) or \
+                           isinstance(model_kwargs['r_core'],int)
+                    spatialkwargs['r_core_asec'] = model_kwargs['r_core']*\
+                                               self.cosmology.kpc_per_asec(self.cosmology.zd)
+
+
             else:
                 spatialkwargs['tidal_core'] = False
                 spatialkwargs['r_core_asec'] = None

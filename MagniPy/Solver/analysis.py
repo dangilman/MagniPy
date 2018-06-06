@@ -8,6 +8,42 @@ from MagniPy.LensBuild.defaults import *
 
 class Analysis(Magnipy):
 
+    def subhalo_cumulative_effect(self,lens_system_halos=None,multiplane=None):
+
+        fxx_full,fxy_full,fyx_full,fyy_full = self.get_hessian(lens_system=lens_system_halos,x=0,y=0,multiplane=multiplane)
+
+        return fxx_full,fxy_full,fyx_full,fyy_full
+
+    def get_hessian(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
+
+        if lens_system is None:
+            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
+
+        if isinstance(x,int) or isinstance(y,int):
+
+            f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x,y,kwargs=lensmodel_params)
+
+            return f_xx, f_xy,f_yx,f_yy
+        else:
+            f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x.ravel(), y.ravel(), kwargs=lensmodel_params)
+
+            return f_xx.reshape(len(x), len(y)), f_xy.reshape(len(x), len(y)), \
+                   f_yx.reshape(len(x), len(y)), f_yy.reshape(len(x), len(y))
+
+    def get_shear(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
+
+        f_xx, f_xy, f_yx, f_yy = self.get_hessian(lens_system,main,halos,x,y,multiplane)
+
+        g1 = 0.5*(f_xx - f_yy)
+        g2 = -0.5*f_xy
+        g3 = -0.5*f_yx
+
+        return g1,g2,g3
+
     def critical_cruves_caustics(self,lens_system=None,main=None,halos=None,multiplane=None,compute_window=1.5,
                                  scale=0.5,max_order=10,method=None,grid_scale=0.005):
 
@@ -44,19 +80,16 @@ class Analysis(Magnipy):
 
         return xnew,ynew
 
-    def get_deflections(self,lens_list=None,x=None,y=None,multiplane=False,lens_system=None):
+    def get_deflections(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
         if lens_system is None:
-            if len(lens_list)==1:
-                lens_system = self.build_system(lens_list[0],multiplane=multiplane)
-            else:
-                lens_system = self.build_system(lens_list[0],additional_halos=lens_list[1:],multiplane=multiplane)
+            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
-        lenstronomy_instance = self.lenstronomy_build()
+        lenstronomy = self.lenstronomy_build()
 
-        lensmodel,lensmodel_params = lenstronomy_instance.get_lensmodel()
+        lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        dx,dy = lensmodel.alpha(x.ravel(), y.ravel(), lensmodel_params)
+        dx,dy = lensmodel.alpha(x.ravel(), y.ravel(),lensmodel_params)
 
         return dx.reshape(len(x),len(y)),dy.reshape(len(x),len(y))
 

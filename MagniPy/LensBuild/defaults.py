@@ -17,6 +17,8 @@ concentration_power = 0.17
 
 default_sigma8 = 0.82
 
+default_halo_mass = 10**13
+
 default_halo_mass_function = 'reed07'
 
 kappa_Rein_default = 0.5

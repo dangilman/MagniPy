@@ -62,6 +62,13 @@ class LenstronomyWrap:
         return LensModel(lens_model_list=lens_list,z_source=self.zsrc,redshift_list=redshift_list,cosmo=self.cosmo,
                          multi_plane=lens_system.multiplane),lens_params
 
+    def get_lensmodel_extension(self,lens_system):
+
+        lens_list, lens_params, redshift_list = self.assemble(lens_system)
+
+        return LensModelExtensions(lens_model_list=lens_list, z_source=self.zsrc, redshift_list=redshift_list, cosmo=self.cosmo,
+                         multi_plane=lens_system.multiplane), lens_params
+
     def get_lens(self,deflector):
 
         model_list = []

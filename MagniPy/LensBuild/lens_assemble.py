@@ -19,6 +19,7 @@ class LensSystem:
         self.multiplane = multiplane
 
     def main_lens(self, deflector_main):
+
         self.lens_components += [deflector_main]
         self.main = deflector_main
         self.zmain = self.main.redshift

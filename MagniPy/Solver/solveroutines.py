@@ -10,8 +10,62 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
+    def optimize_4imgs_lenstronomy(self,macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
+                      grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
+                      polar_grid=True,run_mode = 'src_plane_chi2',solver_type='PROFILE_SHEAR',n_particles=300,
+                      n_iterations=100,tol_source=0.0001,tol_centroid=0.01,tol_mag=None,centroid_0=[0,0]):
+
+        if raytrace_with is None:
+            raytrace_with = raytrace_with_default
+
+        if grid_rmax is None:
+            grid_rmax = default_gridrmax(srcsize=source_size)
+
+        if source_shape is None:
+            source_shape = default_source_shape
+
+        if source_size is None:
+            source_size = default_source_size
+
+        if res is None:
+            res = default_res(source_size)
+
+        if method is None:
+            method = default_solve_method
+
+        lens_systems= []
+
+        ################################################################################
+
+        # If macromodel is a list same length as realizations, build the systems and fit each one
+
+        if isinstance(macromodel,list):
+
+            assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
+
+            for macro,real in zip(macromodel,realizations):
+                lens_systems.append(self.build_system(main=macro,additional_halos=real,multiplane=multiplane))
+        else:
+            if realizations is not None:
+                for real in realizations:
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,
+                                                          multiplane=multiplane))
+            else:
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
+
+
+        optimized_data, model = self._optimize_4imgs_lenstronomy(self, lens_systems, data2fit=datatofit, tol_source=tol_source,
+                                  tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
+                                  n_iterations=n_iterations, run_mode=run_mode,grid_rmax=grid_rmax, res=res,
+                                 source_size=source_size,raytrace_with=raytrace_with,
+                                 source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type)
+
+        return optimized_data,model
+
+
+
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
-                            ray_trace=None, identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
+                            ray_trace=True, identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
                             source_shape='GAUSSIAN', source_size=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={},raytrace_with=None,polar_grid=True,shr_coords=1):
 
@@ -216,10 +270,10 @@ class SolveRoutines(Magnipy):
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
         if method == 'lenstronomy':
-            optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, grid_rmax=grid_rmax,
-                                                                     res=res, source_shape=source_shape, source_size=source_size, polar_grid=polar_grid,
-                                                                     raytrace_with=raytrace_with, solver_type=solver_type,
-                                                                     print_mag=print_mag, N_iter_max=N_iter_max)
+            optimized_data, model = self._solve_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, grid_rmax=grid_rmax,
+                                                                  res=res, source_shape=source_shape, source_size=source_size, polar_grid=polar_grid,
+                                                                  raytrace_with=raytrace_with, solver_type=solver_type,
+                                                                  print_mag=print_mag, N_iter_max=N_iter_max)
 
         else:
             optimized_data, model = self._optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit,
