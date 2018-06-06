@@ -1,4 +1,5 @@
 import os
+import shutil
 
 homedir = os.getenv('HOME')+'/'
 
@@ -25,6 +26,11 @@ elif homedir == '/Users/mcsedarous/':
     IO_directory = prefix
     path_2_lensmodel = homedir + 'Desktop/research_Treu/'
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
+
+if os.path.exists(path_2_lensmodel+'lensmodel'):
+    pass
+else:
+    shutil.copy2(lensmodel_location+'lensmodel',path_2_lensmodel)
 
 kapmappath = gravlens_input_path+'gravlens_maps/'
 
