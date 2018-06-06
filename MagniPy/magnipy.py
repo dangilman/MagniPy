@@ -11,7 +11,7 @@ from MagniPy.Solver.RayTrace import raytrace
 from MagniPy.lensdata import Data
 import os
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
-from MagniPy.PSO.QuadPSO import QuadSampler
+#from MagniPy.PSO.QuadPSO import QuadSampler
 from lenstronomy.LensModel.lens_model import LensModel
 
 from MagniPy.util import filter_by_position
