@@ -288,7 +288,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     fit_shear = macromodel.shear
 
     astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x)**2 + (opt_data[0].y - datatofit.y)**2))
-    assert astrometric_error_fit < 0.01
 
     #macromodel = macromodel_start
     macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
@@ -305,6 +304,8 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                 newmac.update_lenstronomy_args({'gamma':commands['SIE_gamma']})
             if 'SIE_shear' in commands:
 
+                assert astrometric_error_fit < 0.01
+
                 newmac.set_shear(np.absolute(fit_shear+commands['SIE_shear']))
 
             macromodels.append(newmac)
@@ -319,11 +320,13 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
 
-    if len(run_commands)<1000 or chainkeys['solve_method']=='lenstronomy':
-        Nsplit = len(run_commands)
-    else: Nsplit = 1000
+    #if len(run_commands)<=2500 or chainkeys['solve_method']=='lenstronomy':
+    #    Nsplit = len(run_commands)
+    #else: Nsplit = 1000
 
-    assert len(run_commands)%Nsplit == 0
+    Nsplit = len(run_commands)
+
+    #assert len(run_commands)%Nsplit == 0
 
     print 'solving realizations... '
     i = 0
