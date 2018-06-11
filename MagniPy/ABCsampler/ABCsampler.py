@@ -285,6 +285,11 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                                                  source_size=chain_keys['lens']['source_size'])
 
     macromodel = mod[0].lens_components[0]
+    fit_shear = macromodel.shear
+
+    astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x)**2 + (opt_data[0].y - datatofit.y)**2))
+    assert astrometric_error_fit < 0.01
+
     #macromodel = macromodel_start
     macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
 
@@ -299,13 +304,18 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
             if 'SIE_gamma' in commands:
                 newmac.update_lenstronomy_args({'gamma':commands['SIE_gamma']})
             if 'SIE_shear' in commands:
-                newmac.set_shear(commands['SIE_shear'])
+
+                newmac.set_shear(np.absolute(fit_shear+commands['SIE_shear']))
 
             macromodels.append(newmac)
 
     else:
 
         macromodels = [macromodel]*len(run_commands)
+
+    if 'SIE_shear' in param_names_tovary:
+
+        samples[:,int(param_names_tovary.index('SIE_shear'))] += fit_shear
 
     print 'done.'
 
@@ -345,8 +355,12 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
         for i in range(0,int(len(run_commands))):
             print 'computing '+str(i+1)+' of '+str(len(run_commands))
 
+            data_copy = deepcopy(datatofit)
+            #data_copy.x += np.random.normal(0,0.003,4)
+            #data_copy.y += np.random.normal(0,0.003,4)
+
             new, _ = solver.fit(macromodel=macromodels[i],
-                                    realizations=[realizations[i]], datatofit=datatofit,
+                                    realizations=[realizations[i]], datatofit=data_copy,
                                     multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
                                     sigmas=chainkeys['sigmas'],
                                     identifier=run_commands[i]['chain_ID'], grid_rmax=None,
@@ -407,5 +421,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/singleplane_run_withlenstronomy/',2)
+#runABC(os.getenv('HOME')+'/data/sersicNFW/',1)
 

@@ -53,7 +53,6 @@ class SolveRoutines(Magnipy):
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
-
         optimized_data, model = self._optimize_4imgs_lenstronomy(self, lens_systems, data2fit=datatofit, tol_source=tol_source,
                                   tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
                                   n_iterations=n_iterations, run_mode=run_mode,grid_rmax=grid_rmax, res=res,

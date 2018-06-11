@@ -1,10 +1,9 @@
 from MagniPy.util import polar_to_cart
-from param_default import ParamDefaultRanges
 import numpy as np
 
 class Params(object):
 
-    def __init__(self,zlist, lens_list, arg_list,init_limits=None,optimizer_routine='optimize_SIE_SHEAR',fixed_params=None):
+    def __init__(self,zlist, lens_list, arg_list,params_init=None,optimizer_routine='optimize_SIE_SHEAR',fixed_params=None):
 
         self.N_to_vary = self.get_vary_length(optimizer_routine)
 
@@ -16,12 +15,18 @@ class Params(object):
 
         self.zlist_fixed = zlist[self.N_to_vary:]
         self.lenslist_fixed = lens_list[self.N_to_vary:]
-
         self.args_fixed = arg_list[self.N_to_vary:]
 
-        self.tovary_lower_limit,self.tovary_upper_limit = self.get_bounds(init_limits)
+        self.Pbounds = ParamRanges()
 
-        self.Pbounds = ParamDefaultRanges()
+        if params_init is None:
+            self.tovary_lower_limit,self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,
+                                                                                      self.args_tovary,None)
+        else:
+
+            self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,
+                                                                                   self.args_tovary,
+                                                                                   params_init[0:self.N_to_vary])
 
     def argstovary_values(self):
 
@@ -83,26 +88,6 @@ class Params(object):
 
         return tovary_low,tovary_high
 
-    def _pbounds(self,pname):
-
-        low_e12 = -0.01
-        hi_e12 = 0.01
-
-        if pname == 'SPEMD':
-
-            low_Rein = 0.7
-            hi_Rein = 1.4
-
-            low_center = -0.01
-            hi_center = 0.01
-
-            return [low_Rein,low_center,low_center,low_e12,low_e12],\
-                   [hi_Rein,hi_center,hi_center,hi_e12,hi_e12]
-
-        elif pname == 'SHEAR':
-
-            return [low_e12,low_e12],[hi_e12,hi_e12]
-
     def get_vary_length(self,routine):
 
         if routine in ['optimize_SIE_SHEAR','optimize_plaw_shear']:
@@ -118,6 +103,80 @@ class Params(object):
         elif routine == 'optimize_plaw_shear':
 
             return {'gamma':fixed_params['gamma']}
+
+class ParamRanges(object):
+
+    def get_ranges(self,lens_names,lens_args,args_init):
+
+        ranges_low,ranges_high = [],[]
+
+        for idx,lens in enumerate(lens_names):
+
+            if args_init is None:
+
+                _ranges_low,_ranges_high = self._get_ranges(lens)
+
+            else:
+
+                _ranges_low, _ranges_high = self._get_ranges_init(lens,args_init[idx])
+
+            ranges_low += _ranges_low
+            ranges_high += _ranges_high
+
+        return ranges_low,ranges_high
+
+    def _get_ranges(self,lens_name):
+
+        low_e12 = -0.01
+        hi_e12 = 0.01
+
+        if lens_name == 'SPEMD':
+
+            low_Rein = 0.7
+            hi_Rein = 1.4
+
+            low_center = -0.01
+            hi_center = 0.01
+
+            return [low_Rein,low_center,low_center,low_e12,low_e12],\
+                   [hi_Rein,hi_center,hi_center,hi_e12,hi_e12]
+
+        elif lens_name == 'SHEAR':
+
+            return [low_e12,low_e12],[hi_e12,hi_e12]
+
+    def _get_ranges_init(self,lens_name,args_init):
+
+        ranges_low,ranges_high = [],[]
+
+        if lens_name == 'SPEMD':
+
+            for pname,guess in args_init.iteritems():
+
+                if pname == 'theta_E':
+                    width = 0.01
+                    ranges_low += [guess-width]
+                    ranges_high += [guess+width]
+
+                if pname in ['e1','e2']:
+                    width = 0.001
+                    ranges_low += [guess - width]
+                    ranges_high += [guess + width]
+
+                if pname in ['center_x','center_y']:
+                    width = 0.001
+                    ranges_low += [guess-width]
+                    ranges_high += [guess+width]
+
+        elif lens_name == 'SHEAR':
+
+            width = 0.005
+
+            for pname, guess in args_init.iteritems():
+                ranges_low += [guess - width]
+                ranges_high += [guess + width]
+
+        return ranges_low,ranges_high
 
 
 

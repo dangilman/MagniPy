@@ -27,11 +27,11 @@ class SersicNFW:
         subparams['center_x'] = x
         subparams['center_y'] = y
 
-        subparams['r_eff'] = reff_thetaE_ratio*R_ein
+        subparams['R_sersic'] = reff_thetaE_ratio*R_ein
         subparams['n_sersic'] = n_sersic
 
-        k_eff,ks_nfw = self.normalizations(Rein=R_ein,re=subparams['r_eff'],Rs=Rs,
-                                           n=n_sersic,R0=self.R0_fac*subparams['r_eff'],f=self.f)
+        k_eff,ks_nfw = self.normalizations(Rein=R_ein,re=subparams['R_sersic'],Rs=Rs,
+                                           n=n_sersic,R0=self.R0_fac*subparams['R_sersic'],f=self.f)
 
         subparams['k_eff'] = k_eff
 

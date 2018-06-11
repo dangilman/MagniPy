@@ -348,7 +348,9 @@ class HaloGen:
             A0 = modelkwargs['A0_perasec']*np.pi*spatialkwargs['rmax2d']**2
 
         elif 'M_halo' in modelkwargs and 'c' in modelkwargs and 'fsub_halo' in modelkwargs:
+
             raise Exception('not yet implemented')
+
             if 'r_core_asec' in spatialkwargs:
                 r_core_asec = spatialkwargs['rmin_asec']
             else:
@@ -366,6 +368,9 @@ class HaloGen:
 
         else:
             raise Exception('either fsub or A0_perasec or (M_halo, c) must be specified for plaw_main')
+
+        if A0<0:
+            A0 = 0
 
         modelkwargs['normalization'] = A0
 

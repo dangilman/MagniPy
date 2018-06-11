@@ -27,7 +27,7 @@ from MagniPy.util import cart_to_polar
 class QuadPSOLike(object):
 
     def __init__(self, zlist, lens_list, arg_list, z_source, x_pos, y_pos, tol_source, magnification_target, tol_mag, centroid_0,
-                 tol_centroid,k=None,multiplane=False):
+                 tol_centroid, x_tol=None, y_tol = None, chi_mode=1,k=None,multiplane=False,params_init=None):
 
         self.lensModel = LensModelExtensions(lens_model_list=lens_list,z_source=z_source,redshift_list=zlist,multi_plane=multiplane)
 
@@ -37,22 +37,57 @@ class QuadPSOLike(object):
                                                                                 magnification_target,tol_mag,centroid_0,tol_centroid
         self.k = k
 
-        self.Params = Params(zlist, lens_list, arg_list)
+        self.Params = Params(zlist, lens_list, arg_list, params_init)
 
         self.lower_limit = self.Params.tovary_lower_limit
 
         self.upper_limit = self.Params.tovary_upper_limit
 
-    #def _img_to_source(self,):
+        self.chi_mode = chi_mode # source plane
+
+        self.x_tol = x_tol
+        self.y_tol = y_tol
+
+    def _set_chi_mode(self,mode):
+
+        if mode == 'src_plane_chi2':
+
+            self.chi_mode = 1
+
+        else:
+
+            self.chi_mode = 2
+
+    def _get_images(self, lens_args):
+
+        lens_args_fixed = self.Params.argsfixed_todictionary()
+
+        if hasattr(self, 'x_image') and hasattr(self,'y_image'):
+            return self.x_image,self.y_image
+
+        if len(lens_args_fixed) > 0:
+            newargs = lens_args + lens_args_fixed
+        else:
+            newargs = lens_args
+
+        self.x_image, self.y_image = self.extension.image_position_from_source(sourcePos_x=self.srcx,
+                                                                               sourcePos_y=self.srcy, kwargs_lens=newargs)
+
+        indexes = sort_image_index(self.x_image,self.y_image,self._x_pos,self._y_pos)
+        self.x_image = self.x_image[indexes]
+        self.y_image = self.y_image[indexes]
+
+        return self.x_image[indexes],self.y_image[indexes]
 
     def _source_position_penalty(self,values_to_vary,lens_args_fixed, x_pos, y_pos, tol=10**-10):
 
         lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
 
         if len(lens_args_fixed)>0:
-            newargs = lens_args_tovary + [lens_args_fixed]
+            newargs = lens_args_tovary+lens_args_fixed
         else:
             newargs = lens_args_tovary
+
 
         betax,betay = self.lensModel.ray_shooting(x_pos,y_pos,newargs,k=self.k)
 
@@ -79,26 +114,65 @@ class QuadPSOLike(object):
 
         return dr * tol ** -2
 
+    def _img_position_penalty(self,values_to_vary,lens_args_fixed,x_pos,y_pos,xtol,ytol):
+
+        lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
+
+        if len(lens_args_fixed)>0:
+            newargs = lens_args_tovary+lens_args_fixed
+        else:
+            newargs = lens_args_tovary
+
+        betax, betay = self.lensModel.ray_shooting(x_pos, y_pos, newargs, k=self.k)
+
+        self.srcx, self.srcy = np.mean(betax), np.mean(betay)
+
+        ximg,yimg = self.extension.image_position_from_source(sourcePos_x=self.srcx,
+                                                                               sourcePos_y=self.srcy, kwargs_lens=newargs)
+
+        nimg = len(self._x_pos)
+
+        if len(ximg) != nimg:
+            return 1e+11
+
+        sort_inds = sort_image_index(ximg,yimg,self._x_pos,self._y_pos)
+        self.x_image,self.y_image = ximg[sort_inds],yimg[sort_inds]
+
+        dx,dy = [],[]
+        for i in range(0,nimg):
+            dx.append((self.x_image[i] - self._x_pos[i])**2*xtol[i]**-2)
+            dy.append((self.y_image[i] - self._y_pos[i]) ** 2*xtol[i]**-2)
+
+        return 0.5*np.sum(np.array(dx)+np.array(dy))
+
     def _magnification_penalty(self,values_to_vary,lens_args_fixed,x_pos, y_pos, magnification_target, tol=0.1):
 
         lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
 
-        if len(lens_args_fixed) > 0:
-            newargs = lens_args_tovary + [lens_args_fixed]
+        if len(lens_args_fixed)>0:
+            newargs = lens_args_tovary+lens_args_fixed
         else:
             newargs = lens_args_tovary
 
-        magnifications = self.lensModel.magnification_finite(x_pos, y_pos, newargs,
-                                                                         polar_grid=True,aspect_ratio=0.2,window_size=0.08,
-                                                                         grid_number=80)
+        #magnifications = self.lensModel.magnification_finite(x_pos, y_pos, newargs,
+        #                                                                 polar_grid=True,aspect_ratio=0.2,window_size=0.08,
+        #                                                                 grid_number=80)
 
-        magnification_target = np.array(magnification_target)*np.max(magnification_target)**-1
+        magnifications = self.lensModel.magnification(x_pos,y_pos,newargs)
+
+        magnification_target = np.array(magnification_target)
 
         magnifications = (magnifications)*np.max(magnifications)**-1
 
         self.magnifications = magnifications
 
-        dM = (magnifications - np.array(magnification_target))*tol**-1
+        dM = []
+
+        for i,target in enumerate(magnification_target):
+            mag_tol = tol*target
+            dM.append((magnifications[i] - target)*mag_tol**-1)
+
+        dM = np.array(dM)
 
         return np.sum(dM**2)
 
@@ -133,7 +207,14 @@ class QuadPSOLike(object):
 
     def __call__(self,lens_values_tovary):
 
-        penalty = self._source_position_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),self._x_pos,self._y_pos,self.tol_source)
+        if self.chi_mode == 1:
+
+            penalty = self._source_position_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),self._x_pos,self._y_pos,self.tol_source)
+
+        else:
+
+            penalty = self._img_position_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),self._x_pos,
+                                                 self._y_pos,self.x_tol,self.y_tol)
 
         if self.tol_mag is not None:
             penalty += self._magnification_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),
@@ -150,7 +231,7 @@ class QuadSampler(object):
     """
 
     def __init__(self, zlist, lens_list, arg_list, z_source,x_pos,y_pos,tol_source,magnification_target,
-                 tol_mag=None,tol_centroid=None,centroid_0=None):
+                 tol_mag=None,tol_centroid=None,centroid_0=None,x_tol=None,y_tol=None,params_init=None):
         """
         initialise the classes of the chain and for parameter options
         """
@@ -159,68 +240,28 @@ class QuadSampler(object):
         assert len(magnification_target) == len(x_pos)
 
         self.chain = QuadPSOLike(zlist, lens_list, arg_list, z_source, x_pos,y_pos,tol_source,magnification_target,tol_mag,
-                                 k=None,centroid_0=centroid_0,tol_centroid=tol_centroid)
+                                 k=None,centroid_0=centroid_0,tol_centroid=tol_centroid,x_tol=x_tol,y_tol=y_tol,params_init=params_init)
 
-    def pso(self, n_particles, n_iterations,run_mode='src_plane_chi2',sigma_posx=[0.003]*4,sigma_posy=[0.003]*4,
-            N_iter_max=4):
+    def pso(self, n_particles, n_iterations,run_mode='src_plane_chi2',):
 
         assert run_mode in ['img_plane_chi2','src_plane_chi2']
 
-        if run_mode == 'img_plane_chi2':
+        optimized_args = self._pso(n_particles,n_iterations,chi_mode=run_mode)
 
-            optimized_args = self.fit_image_plane(n_particles, n_iterations,sigma_posx=sigma_posx,sigma_posy=sigma_posy,
-                                 N_iter_max=N_iter_max)
+        ximg,yimg = self.chain._get_images(optimized_args)
 
-            return optimized_args, [self.chain.srcx, self.chain.srcy], {'x_image':self.chain.x_image,'y_image':self.chain.y_image}
+        return optimized_args,[self.chain.srcx, self.chain.srcy], {'x_image':ximg,'y_image':yimg}
 
-        elif run_mode == 'src_plane_chi2':
 
-            optimized_args = self._pso(n_particles, n_iterations)
+    def _pso(self, n_particles, n_iterations, lowerLimit=None, upperLimit=None, threadCount=1,mpi=False,
+             chi_mode='src_plane_chi2'):
 
-            return optimized_args,[self.chain.srcx,self.chain.srcy],None
-
-    def fit_image_plane(self,n_particles, n_iterations,sigma_posx=[0.003]*4,sigma_posy=[0.003]*4,
-            N_iter_max=5,n_iterations_secondary=50):
-
-        N_iter = 0
-
-        optimized_args = self._pso(n_particles, n_iterations)
-
-        d_of_f = 7
-
-        while True:
-
-            x_image, y_image, mags, src = self.chain.compute_img_plane(optimized_args)
-
-            self.chain.tol_source *= 0.1
-
-            dx2,dy2 = [],[]
-
-            for i,xi in enumerate(x_image):
-                dx2.append(((xi - self.chain._x_pos[i])*sigma_posx[i]**-1)**2)
-            for i,yi in enumerate(y_image):
-                dy2.append(((yi - self.chain._y_pos[i])*sigma_posy[i]**-1)**2)
-
-            img_chi2 = d_of_f**-1*np.sum(np.array(dx2) + np.array(dy2))**0.5
-
-            print img_chi2
-
-            if img_chi2 <= 2:
-                break
-            elif N_iter > N_iter_max:
-                break
-            else:
-                N_iter += 1
-
-                optimized_args = self._pso(n_particles,n_iterations_secondary,re_init=True)
-
-        return optimized_args,x_image,y_image,np.array(mags)*np.max(mags)**-1,[self.chain.srcx,self.chain.srcy]
-
-    def _pso(self, n_particles, n_iterations, lowerLimit=None, upperLimit=None, threadCount=1,re_init=False,mpi=False,
-             print_key='default'):
         """
         returns the best fit for the lense model on catalogue basis with particle swarm optimizer
         """
+
+        self.chain._set_chi_mode(chi_mode)
+
         if lowerLimit is None or upperLimit is None:
             lowerLimit, upperLimit = self.chain.lower_limit, self.chain.upper_limit
             print("PSO initialises its particles with default values")
@@ -233,21 +274,13 @@ class QuadSampler(object):
             if pso.isMaster():
                 print('MPI option chosen')
 
-        elif re_init is True:
-
-            pso = self.PSO
-
-        else:
-
-            pso = ParticleSwarmOptimizer(self.chain, lowerLimit, upperLimit, n_particles, threads=threadCount)
-            self.PSO = pso
+        pso = ParticleSwarmOptimizer(self.chain, lowerLimit, upperLimit, n_particles, threads=threadCount)
 
         X2_list = []
         vel_list = []
         pos_list = []
         time_start = time.time()
-        if pso.isMaster():
-            print('Computing the %s ...' % print_key)
+
         num_iter = 0
         for swarm in pso.sample(n_iterations):
             X2_list.append(pso.gbest.fitness * 2)
@@ -263,39 +296,3 @@ class QuadSampler(object):
             result = MpiUtil.mpiBCast(pso.gbest.position)
 
         return self.chain.Params.argstovary_todictionary(result)
-
-if False:
-    from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
-    from MagniPy.LensBuild.defaults import *
-    from MagniPy.Solver.solveroutines import SolveRoutines
-    from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
-
-    lens_params = {'R_ein':1.04,'x':0.001,'y':0.008,'ellip':0.3,'ellip_theta':0.01,'shear':0.07,'shear_theta':34,'gamma':2}
-    start = Deflector(subclass=SIE(),redshift=0.5,**lens_params)
-    real = Realization(0.5,1.5)
-    halos = real.halo_constructor('NFW','plaw_main',{'fsub':0.00,'M_halo':10**13,'r_core':'0.5Rs','tidal_core':True},Nrealizations=1)
-
-    solver = SolveRoutines(0.5,1.5)
-
-    data = solver.solve_lens_equation(macromodel=start,realizations=halos,multiplane=False,srcx=0.03,srcy=0.01,ray_trace=True)
-
-    lens_sys = solver.build_system(start,multiplane=False)
-    redshift_list,lens_list,arg_list = lens_sys.lenstronomy_lists()
-
-    lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=False,
-                                    redshift_list=redshift_list, z_source=1.5)
-
-    optimizer = QuadSampler(zlist=redshift_list,lens_list=lens_list,arg_list=arg_list,z_source=1.5,x_pos=data[0].x,y_pos=data[0].y,
-                            tol_source=0.0001,magnification_target=data[0].m,tol_mag=None,tol_centroid=0.02,centroid_0=[0,0])
-
-    optimized_args,ximg,yimg,mags,src = optimizer.pso(350,200,run_mode='src_plane_chi2')
-
-    for arg in optimized_args[0].keys():
-        print arg,optimized_args[0][arg] - start.lenstronomy_args[arg]
-    shear,shear_theta = cart_to_polar(optimized_args[1]['e1'],optimized_args[1]['e2'])
-    print shear,shear-start.shear
-    print shear_theta,shear_theta-start.shear_theta
-
-    print ximg,data[0].x
-    print yimg,data[0].y
-    print mags,data[0].m

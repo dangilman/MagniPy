@@ -145,6 +145,9 @@ class Deflector:
 
             self.Shear = Shear()
 
+        else:
+            self.shear_args = {'e1':1e-10,'e2':1e-10}
+
     def update_lenstronomy_args(self,newargs):
 
         for key,item in newargs.iteritems():
@@ -169,6 +172,8 @@ class Deflector:
     def set_shear(self,newshear):
 
         self.shear = newshear
+        e1,e2 = polar_to_cart(self.shear,self.shear_theta)
+        self.shear_args = {'e1':e1,'e2':e2}
 
     def update(self,method=None,is_shear=False,**newparams):
 
@@ -179,8 +184,9 @@ class Deflector:
             if is_shear:
                 s, spa = cart_to_polar(newparams['e1'], newparams['e2'])
 
-                self.shear = s
                 self.shear_theta = spa
+
+                self.set_shear(s)
 
                 return
 
@@ -203,6 +209,8 @@ class Deflector:
 
             self.shear = newparams['shear']
             self.shear_theta = newparams['shear_theta']
+
+            self.set_shear(self.shear)
 
     def translate_model(self,to='lenstronomy'):
 

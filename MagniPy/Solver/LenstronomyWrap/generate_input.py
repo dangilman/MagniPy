@@ -76,9 +76,9 @@ class LenstronomyWrap:
         arg_list = []
 
         if deflector.profname == 'SERSIC_NFW':
-            model_list.append('SERSIC')
+            model_list.append('SERSIC_ELLIPSE')
             z_list.append(deflector.redshift)
-            sersic_arg_names = ['k_eff', 'n_sersic', 'r_eff', 'center_x', 'center_y', 'e1', 'e2']
+            sersic_arg_names = ['k_eff', 'n_sersic', 'R_sersic', 'center_x', 'center_y', 'e1', 'e2']
             sersic_args = {}
             for name in sersic_arg_names:
                 sersic_args.update({name: deflector.lenstronomy_args[name]})

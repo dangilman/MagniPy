@@ -8,11 +8,16 @@ from MagniPy.LensBuild.defaults import *
 
 class Analysis(Magnipy):
 
-    def subhalo_cumulative_effect(self,lens_system_halos=None,multiplane=None):
+    def sersicNFW_effective_slope(self,params):
 
-        fxx_full,fxy_full,fyx_full,fyy_full = self.get_hessian(lens_system=lens_system_halos,x=0,y=0,multiplane=multiplane)
+        from MagniPy.MassModels.SersicNFW import SersicNFW
+        s = SersicNFW(f=params['f'], R0_fac=0.5)
+        x = np.linspace(params['theta_E'] * 0.7, params['theta_E'] * 1.3, 200)
+        kappa = s.kappa(x, 0, theta_E=params['theta_E'], Rs=params['Rs'], reff_thetaE_ratio=params['ratio'],
+                        n_sersic=params['n_sersic'], q=1, separate=False)
+        # plt.plot(np.log10(x),np.log10((nfw_kappa+sersic_kappa)),color=cmap(np.absolute(1-mean*r**-1)))
 
-        return fxx_full,fxy_full,fyx_full,fyy_full
+        return np.polyfit(np.log10(kappa), np.log10(x), 1)[0]
 
     def get_hessian(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
@@ -62,6 +67,7 @@ class Analysis(Magnipy):
                                                        start_scale=scale,max_order=max_order)
             return xcrit, ycrit
         else:
+           
             ra_crit_list, dec_crit_list, ra_caustic_list, dec_caustic_list = \
                 extension.critical_curve_caustics(lensmodel_params,compute_window=5,grid_scale=grid_scale)
 

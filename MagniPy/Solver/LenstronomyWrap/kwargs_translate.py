@@ -30,7 +30,7 @@ def model_translate_tolenstronomy(args,name):
         del newargs['q']
         newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],
                              'center_x':newargs['center_x'],'center_y':newargs['center_y'],
-                             'r_eff':newargs['r_eff'],'n_sersic':newargs['n_sersic'],'k_eff':newargs['k_eff']}
+                             'R_sersic':newargs['R_sersic'],'n_sersic':newargs['n_sersic'],'k_eff':newargs['k_eff']}
         newargs['NFW'] = {'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
                              'theta_Rs': newargs['theta_Rs'], 'Rs': newargs['Rs']}
         return newargs
