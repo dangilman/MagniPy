@@ -320,11 +320,9 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     print 'done.'
 
-    #if len(run_commands)<=2500 or chainkeys['solve_method']=='lenstronomy':
-    #    Nsplit = len(run_commands)
-    #else: Nsplit = 1000
-
-    Nsplit = len(run_commands)
+    if len(run_commands)<=500 or chainkeys['solve_method']=='lenstronomy':
+        Nsplit = len(run_commands)
+    else: Nsplit = 500
 
     #assert len(run_commands)%Nsplit == 0
 
@@ -344,15 +342,18 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
 
     if chainkeys['solve_method'] == 'lensmodel':
 
-        new,_ = solver.fit(macromodel=macromodels,realizations=realizations,datatofit=datatofit,
-                                    multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
-                                    sigmas=chainkeys['sigmas'],
-                                    identifier=run_commands[i]['chain_ID'], grid_rmax=None,
-                                    res=run_commands[i]['grid_res'],polar_grid=True,
-                                    source_size=run_commands[i]['source_size'], print_mag=False,
-                                    raytrace_with=run_commands[i]['raytrace_with'])
-        chaindata += new
-        N_computed += len(new)
+        for i in range(0,int(len(run_commands)*Nsplit**-1)):
+
+
+            new,_ = solver.fit(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],realizations=realizations[i*Nsplit:(i+1)*Nsplit],
+                               datatofit=datatofit, multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'],
+                               ray_trace=True,sigmas=chainkeys['sigmas'],
+                                        identifier=run_commands[i]['chain_ID'], grid_rmax=None,
+                                        res=run_commands[i]['grid_res'],polar_grid=True,
+                                        source_size=run_commands[i]['source_size'], print_mag=False,
+                                        raytrace_with=run_commands[i]['raytrace_with'])
+            chaindata += new
+            N_computed += len(new)
 
     else:
         for i in range(0,int(len(run_commands))):
