@@ -6,10 +6,12 @@ homedir = os.getenv('HOME')+'/'
 if homedir == '/u/home/g/gilmanda/':
     prefix = '/u/flashscratch/g/gilmanda/'
 
-    try:
-        IO_directory = os.getenv('TMPDIR') + '/'
-    except:
-        IO_directory = os.getenv('NEWSCRATCH')+ '/'
+    #try:
+    #    IO_directory = os.getenv('TMPDIR') + '/'
+    #except:
+    #    IO_directory = os.getenv('NEWSCRATCH')+ '/'
+
+    IO_directory = os.getenv('NEWSCRATCH')+ '/'
 
     lensmodel_location = homedir+'/Code/lensmodel_folder/'
     path_2_lensmodel = IO_directory
