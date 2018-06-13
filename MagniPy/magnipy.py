@@ -415,6 +415,8 @@ class Magnipy:
 
 
                     arrival_times -= np.min(arrival_times)
+                else:
+                    arrival_times = [0,0,0,0]
 
                 data.append(Data(x=x_image,y=y_image,m=fluxes,t=arrival_times,source=[srcx,srcy]))
 
