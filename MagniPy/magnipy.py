@@ -318,7 +318,7 @@ class Magnipy:
 
     def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax=.1,
                      res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size=float, print_mag=False,
-                     raytrace_with='', polar_grid=True, arrival_time=True, shr_coords=1):
+                     raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1):
 
         if method == 'lensmodel':
 
