@@ -425,5 +425,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/sersicNFW/',1)
+#runABC(os.getenv('HOME')+'/data/sersicNFW/',11)
 
