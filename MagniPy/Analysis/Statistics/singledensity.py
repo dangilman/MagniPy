@@ -2,7 +2,7 @@ from MagniPy.Analysis.KDE.kde import *
 
 class SingleDensity:
 
-    def __init__(self,pnames=None,samples=None,pranges=None,kde_class ='mine',
+    def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
                  steps=50,scale=5,reweight=True,kernel_function='Sigmoid',bandwidth_scale=1):
 
         self.reweight = reweight
@@ -15,7 +15,11 @@ class SingleDensity:
         self.bandwidth_scale = bandwidth_scale
 
         self.full_ranges = pranges
-        self.expanded_dims = self._expand_dims()
+
+        if kde_train_ranges is None:
+            self.kde_train_ranges = pranges
+        else:
+            self.kde_train_ranges = kde_train_ranges
 
         self.posteriorsamples = {x: samples.samples[x] for x in pnames}
 
@@ -47,12 +51,6 @@ class SingleDensity:
         else:
             raise Exception('not yet implemented')
 
-    def _expand_dims(self):
-        expanded_dims = {}
-        for pname in self.full_samples.pnames:
-            expanded_dims.update({pname:np.linspace(self.full_ranges[pname][0],self.full_ranges[pname][1],self.steps)})
-        return expanded_dims
-
     def __call__(self, **kwargs):
 
         if self.dimension==1:
@@ -65,7 +63,8 @@ class SingleDensity:
 
         elif self.dimension==2:
 
-            kde,xx,yy = self.kde(self.data,self.X,self.Y,pranges=[self.pranges[self.param_names[0]],self.pranges[self.param_names[1]]],
+            kde,xx,yy = self.kde(self.data,self.X,self.Y,
+                                 pranges_training=[self.kde_train_ranges[self.param_names[0]],self.kde_train_ranges[self.param_names[1]]],
                                  prior_weights=self.prior_weights)
 
             density = np.histogram2d(xx,yy, bins=len(self.X),normed=True, weights=kde.ravel())[0]

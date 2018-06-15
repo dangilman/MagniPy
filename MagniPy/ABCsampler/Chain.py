@@ -3,7 +3,7 @@ from ChainOps import *
 
 class FullChains:
 
-    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0):
+    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
@@ -30,6 +30,11 @@ class FullChains:
                                     fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/params_0error_1.txt')
 
             self.lenses.append(new_lens)
+
+        if trimmed_ranges is None:
+            self.pranges_trimmed = self.pranges
+        else:
+            self.pranges_trimmed = trimmed_ranges
 
     def get_posteriors(self,tol=None):
 

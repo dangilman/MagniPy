@@ -27,7 +27,7 @@ from MagniPy.util import cart_to_polar
 class QuadPSOLike(object):
 
     def __init__(self, zlist, lens_list, arg_list, z_source, x_pos, y_pos, tol_source, magnification_target, tol_mag, centroid_0,
-                 tol_centroid, x_tol=None, y_tol = None, chi_mode=1,k=None,multiplane=False,params_init=None):
+                 tol_centroid, x_tol=None, y_tol = None, chi_mode=1,k=None,multiplane=False,system_init=None):
 
         self.lensModel = LensModelExtensions(lens_model_list=lens_list,z_source=z_source,redshift_list=zlist,multi_plane=multiplane)
 
@@ -37,7 +37,7 @@ class QuadPSOLike(object):
                                                                                 magnification_target,tol_mag,centroid_0,tol_centroid
         self.k = k
 
-        self.Params = Params(zlist, lens_list, arg_list, params_init)
+        self.Params = Params(zlist, lens_list, arg_list, system_init)
 
         self.lower_limit = self.Params.tovary_lower_limit
 
@@ -79,7 +79,7 @@ class QuadPSOLike(object):
 
         return self.x_image[indexes],self.y_image[indexes]
 
-    def _source_position_penalty(self,values_to_vary,lens_args_fixed, x_pos, y_pos, tol=10**-10):
+    def _source_position_penalty(self,values_to_vary,lens_args_fixed, x_pos, y_pos):
 
         lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
 
@@ -93,26 +93,30 @@ class QuadPSOLike(object):
 
         self.srcx,self.srcy = np.mean(betax),np.mean(betay)
 
-        dx1 = (betax[0] - betax[1])
-        dx2 = (betax[0] - betax[2])
-        dx3 = (betax[0] - betax[3])
-        dx4 = (betax[1] - betax[2])
-        dx5 = (betax[1] - betax[3])
-        dx6 = (betax[2] - betax[3])
+        std1,std2 = np.std(betax),np.std(betay)
 
-        dy1 = (betay[0] - betay[1])
-        dy2 = (betay[0] - betay[2])
-        dy3 = (betay[0] - betay[3])
-        dy4 = (betay[1] - betay[2])
-        dy5 = (betay[1] - betay[3])
-        dy6 = (betay[2] - betay[3])
+        return (std1+std2)*self.tol_source**-1
 
-        dx_2 = dx1**2 + dx2 **2 +dx3 **2 + dx4**2 + dx5**2 + dx6**2
-        dy_2 = dy1**2 + dy2 **2 +dy3 **2 + dy4**2 + dy5**2 + dy6**2
+        #dx1 = (betax[0] - betax[1])
+        #dx2 = (betax[0] - betax[2])
+        #dx3 = (betax[0] - betax[3])
+        #dx4 = (betax[1] - betax[2])
+        #dx5 = (betax[1] - betax[3])
+        #dx6 = (betax[2] - betax[3])
 
-        dr = dx_2 + dy_2
+        #dy1 = (betay[0] - betay[1])
+        #dy2 = (betay[0] - betay[2])
+        #dy3 = (betay[0] - betay[3])
+        #dy4 = (betay[1] - betay[2])
+        #dy5 = (betay[1] - betay[3])
+        #dy6 = (betay[2] - betay[3])
 
-        return dr * tol ** -2
+        #dx_2 = dx1**2 + dx2 **2 +dx3 **2 + dx4**2 + dx5**2 + dx6**2
+        #dy_2 = dy1**2 + dy2 **2 +dy3 **2 + dy4**2 + dy5**2 + dy6**2
+
+        #dr = dx_2 + dy_2
+
+        #return dr * tol ** -2
 
     def _img_position_penalty(self,values_to_vary,lens_args_fixed,x_pos,y_pos,xtol,ytol):
 
@@ -159,6 +163,8 @@ class QuadPSOLike(object):
         #                                                                 grid_number=80)
 
         magnifications = self.lensModel.magnification(x_pos,y_pos,newargs)
+
+        #magnifications = self.lensModel.magnification_finite(x_pos,y_pos,newargs,source_sigma=0.0001,polar_grid=True,window_size=0.05)
 
         magnification_target = np.array(magnification_target)
 
@@ -209,7 +215,7 @@ class QuadPSOLike(object):
 
         if self.chi_mode == 1:
 
-            penalty = self._source_position_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),self._x_pos,self._y_pos,self.tol_source)
+            penalty = self._source_position_penalty(lens_values_tovary,self.Params.argsfixed_todictionary(),self._x_pos,self._y_pos)
 
         else:
 
@@ -231,7 +237,7 @@ class QuadSampler(object):
     """
 
     def __init__(self, zlist, lens_list, arg_list, z_source,x_pos,y_pos,tol_source,magnification_target,
-                 tol_mag=None,tol_centroid=None,centroid_0=None,x_tol=None,y_tol=None,params_init=None):
+                 tol_mag=None,tol_centroid=None,centroid_0=None,x_tol=None,y_tol=None,system_init=None):
         """
         initialise the classes of the chain and for parameter options
         """
@@ -240,7 +246,7 @@ class QuadSampler(object):
         assert len(magnification_target) == len(x_pos)
 
         self.chain = QuadPSOLike(zlist, lens_list, arg_list, z_source, x_pos,y_pos,tol_source,magnification_target,tol_mag,
-                                 k=None,centroid_0=centroid_0,tol_centroid=tol_centroid,x_tol=x_tol,y_tol=y_tol,params_init=params_init)
+                                 k=None,centroid_0=centroid_0,tol_centroid=tol_centroid,x_tol=x_tol,y_tol=y_tol,system_init=system_init)
 
     def pso(self, n_particles, n_iterations,run_mode='src_plane_chi2',):
 

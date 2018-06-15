@@ -32,9 +32,9 @@ class ParamSample:
             elif pname in self.recognized_param_precision.keys():
                 decimals = self.recognized_param_precision[pname]
 
-            if pargs['prior_type'] == 'initialized_resample':
+            if pargs['prior_type'] == 'initialized':
                 self.priors.append(
-                    ProbabilityDistribution(distribution_type=pargs['prior_type'], args=pargs, decimals=decimals))
+                    ProbabilityDistribution(distribution_type=pargs['prior_type'], args=pargs, decimals=decimals,macromodel=kwargs['macromodel']))
             else:
                 self.priors.append(ProbabilityDistribution(distribution_type=pargs['prior_type'],args=pargs,decimals=decimals))
 

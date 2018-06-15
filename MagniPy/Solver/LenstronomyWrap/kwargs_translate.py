@@ -7,7 +7,8 @@ def model_translate_tolenstronomy(args,name):
 
     # convert gravlens arguments to lenstronomy arguments
 
-    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','CONVERGENCE','SERSIC_NFW']:
+    if name not in ['SPEMD','TNFW','NFW','PJaffe','POINT_MASS','EXTERNAL_SHEAR','CONVERGENCE','SERSIC_NFW','SERSIC_NFW_DISK']:
+
         raise Exception(name + ' not recognized.')
 
     newargs = {}
@@ -28,12 +29,40 @@ def model_translate_tolenstronomy(args,name):
         newargs['e1'], newargs['e2'] = phi_q2_ellipticity(args['phi_G'], args['q'])
         del newargs['phi_G']
         del newargs['q']
-        newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],
-                             'center_x':newargs['center_x'],'center_y':newargs['center_y'],
+
+        _newargs = {}
+
+        _newargs['SERSIC'] = {'e1':newargs['e1'],'e2':newargs['e2'],
+                            'center_x':newargs['center_x'],'center_y':newargs['center_y'],
                              'R_sersic':newargs['R_sersic'],'n_sersic':newargs['n_sersic'],'k_eff':newargs['k_eff']}
-        newargs['NFW'] = {'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
+        _newargs['NFW'] = {'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
                              'theta_Rs': newargs['theta_Rs'], 'Rs': newargs['Rs']}
-        return newargs
+        return _newargs
+
+    elif name=='SERSIC_NFW_DISK':
+
+        newargs = deepcopy(args)
+        newargs['e1'], newargs['e2'] = phi_q2_ellipticity(args['phi_G'], args['q'])
+        newargs['e1_disk'], newargs['e2_disk'] = phi_q2_ellipticity(args['phi_G'], args['q_disk'])
+        del newargs['phi_G']
+        del newargs['q']
+
+        _newargs = {}
+
+        _newargs['SERSIC'] = {'e1': newargs['e1'], 'e2': newargs['e2'],
+                             'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
+                             'R_sersic': newargs['R_sersic'], 'n_sersic': newargs['n_sersic'],
+                             'k_eff': newargs['k_eff']}
+        _newargs['NFW'] = {'center_x': newargs['center_x'], 'center_y': newargs['center_y'],
+                          'theta_Rs': newargs['theta_Rs'], 'Rs': newargs['Rs']}
+
+
+        _newargs['SERSIC_DISK'] = {'e1':newargs['e1_disk'],'e2':newargs['e2_disk'],
+                             'center_x':newargs['center_x'],'center_y':newargs['center_y'],
+                             'R_sersic':newargs['R_disk'],'n_sersic':newargs['n_sersic_disk'],'k_eff':newargs['k_eff_disk']}
+
+
+        return _newargs
 
     elif name == 'EXTERNAL_SHEAR':
 

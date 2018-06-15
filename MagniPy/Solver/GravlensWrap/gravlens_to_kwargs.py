@@ -32,6 +32,34 @@ def gravlens_to_kwargs(model_string, shr_coords):
         return {'theta_E':R_ein,'q':q,'phi_G':phi_G,'shear':shear,
                 'shear_theta':shear_theta,'center_x':x,'center_y':y,'gamma':gamma}
 
+    elif model_string[0]=='sersic':
+
+        x,y = float(model_string[2]),float(model_string[3])
+        e1 = float(model_string[4])
+        e2 = float(model_string[5])
+
+        if shr_coords==1:
+            ellip,ellip_theta = cart_to_polar(e1, e2)
+        else:
+            ellip,ellip_theta = e1,e2
+
+        q = 1-ellip
+
+        phi_G = ellip_theta*np.pi*180**-1 + 0.5*np.pi
+
+        shear = float(model_string[6])
+        shear_theta = float(model_string[7])
+
+        if shr_coords==1:
+            shear,shear_theta = cart_to_polar(shear, shear_theta)
+
+        n = float(model_string[10])
+
+        reff = float(model_string[8])
+
+        return {'theta_E':R_ein,'q':q,'phi_G':phi_G,'shear':shear,
+                'shear_theta':shear_theta,'center_x':x,'center_y':y,'gamma':gamma}
+
     elif model_string[0]=='ptmass':
 
         name = 'ptmass'
@@ -40,13 +68,13 @@ def gravlens_to_kwargs(model_string, shr_coords):
 
         return {'name':name,'R_ein':R_ein,'x':x,'y':y}
 
-def kwargs_to_gravlens(deflector=None,shr_coords=None):
+def kwargs_to_gravlens(deflector=None,deflector_name=None,shr_coords=None):
 
     args = deflector.gravlens_args
 
     p1, p2, p3, p4, p5, p6, p7, p8, p9, p10 = '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'
 
-    if deflector.profname=='SPEMD' or deflector.profname=='SIE':
+    if deflector_name=='SPEMD' or deflector_name=='SIE':
 
         p0 = 'alpha'
 
@@ -77,7 +105,7 @@ def kwargs_to_gravlens(deflector=None,shr_coords=None):
         else:
             p10 = str(3-args['gamma'])
 
-    elif deflector.profname == 'NFW':
+    elif deflector_name == 'NFW':
 
         p0 = 'nfw'
         p1 = args['theta_Rs']*(4*args['Rs']*(1+np.log(0.5)))**-1
@@ -86,7 +114,7 @@ def kwargs_to_gravlens(deflector=None,shr_coords=None):
         p8 = args['Rs']
 
 
-    elif deflector.profname == 'TNFW':
+    elif deflector_name == 'TNFW':
 
         p0 = 'tnfw3'
         p1 = args['theta_Rs']*(4*args['Rs']*(1+np.log(0.5)))**-1
@@ -96,14 +124,14 @@ def kwargs_to_gravlens(deflector=None,shr_coords=None):
         p9 = args['r_trunc']*args['Rs']**-1
         p10 = '1'
 
-    elif deflector.profname =='POINT_MASS':
+    elif deflector_name =='POINT_MASS':
 
         p0 = 'ptmass'
         p1 = str(args['theta_E'])
         p2 = str(args['center_x'])
         p3 = str(args['center_y'])
 
-    elif deflector.profname =='PJaffe':
+    elif deflector_name =='PJaffe':
 
         p0 = 'pjaffe'
         p1 = str(args['b'])
@@ -111,12 +139,12 @@ def kwargs_to_gravlens(deflector=None,shr_coords=None):
         p3 = str(args['center_y'])
         p8 = str(args['rt'])
 
-    elif deflector.profname == 'CONVERGENCE':
+    elif deflector_name == 'CONVERGENCE':
 
         p0 = 'convrg'
         p1 = str(args['kappa_ext'])
 
-    elif deflector.profname == 'SERSIC':
+    elif deflector_name == 'SERSIC':
 
         p0 = 'sersic'
         p1 = str(args['k_eff'])
@@ -140,6 +168,25 @@ def kwargs_to_gravlens(deflector=None,shr_coords=None):
 
         p8 = str(args['r_eff'])
         p10 = str(args['n_sersic'])
+
+    elif deflector_name == 'Sersic_disk':
+
+        p0 = 'expdisk'
+        p1 = str(args['k_eff_disk'])
+        p2 = str(args['center_x'])
+        p3 = str(args['center_y'])
+
+        if shr_coords==1:
+            p4, p5 = polar_to_cart(args['ellip'], args['ellip_theta'])
+        else:
+            p4,p5 = args['ellip'],args['ellip_theta']
+
+        p4 = str(args[p4])
+        p5 = str(args[p5])
+
+        p8 = str(args['R_disk'])
+        p10 = str(args['n_sersic_disk'])
+
 
     else:
         raise Exception('profile '+str(deflector.profname)+' not recognized.')

@@ -194,12 +194,13 @@ class FullModel:
 
         for model in self.single_models:
 
-            return_string += self.front_space+model._get_model(multiplane=self.multiplane)+'\n'
+            model_string = model._get_model(multiplane=self.multiplane)
 
-            vary_string += model._get_tovary()+ '\n'
+            for mod in model_string:
 
-            if model.tovary:
-                tovary_any = True
+                return_string += self.front_space + mod +'\n'
+
+                vary_string += model._get_tovary() +'\n'
 
         return_string += vary_string
 
@@ -242,12 +243,28 @@ class SingleModel:
 
     def _get_model(self,multiplane=False):
 
-        lensparams = kwargs_to_gravlens(self.deflector,self.shr_coords)
 
-        if multiplane:
-            lensparams += str(self.deflector.redshift)
+        if self.deflector.profname == 'SERSIC_NFW_DISK':
+            lensparams = []
+            lensparams += [kwargs_to_gravlens(self.deflector, 'Sersic', self.shr_coords)]
+            if multiplane:
+                lensparams += str(self.deflector.redshift)
+            lensparams += [kwargs_to_gravlens(self.deflector, 'Sersic_disk', self.shr_coords)]
+            if multiplane:
+                lensparams += str(self.deflector.redshift)
+            lensparams += [kwargs_to_gravlens(self.deflector, 'NFW', self.shr_coords)]
+            if multiplane:
+                lensparams += str(self.deflector.redshift)
+
+        else:
+
+            lensparams = [kwargs_to_gravlens(self.deflector,self.deflector.profname,self.shr_coords)]
+
+            if multiplane:
+                lensparams += str(self.deflector.redshift)
 
         return lensparams
+
 
 class Header:
 

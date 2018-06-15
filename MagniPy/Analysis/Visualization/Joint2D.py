@@ -19,7 +19,10 @@ class Joint2D:
     cmap = 'gist_heat_r'
 
     #default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
-    default_contour_colors = (colors.cnames['skyblue'], colors.cnames['blue'], 'k')
+    default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),
+                                (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
+                              (colors.cnames['coral'], 'r', 'k'),
+                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
     truth_color = 'r'
     tick_font = 12
 
@@ -28,7 +31,7 @@ class Joint2D:
         if not isinstance(densities,list):
             densities = [densities]
 
-        self.densities = densities
+        self.simulation_densities = densities
 
         if fig is None:
             fig = plt.figure(1)
@@ -40,7 +43,7 @@ class Joint2D:
 
     def make_plot(self, xtick_labels=None, xticks=None, param_names = None,
                   param_ranges=None,ytick_labels=None, yticks=None,filled_contours=True, contour_colors=None, contour_alpha=0.6,
-                  tick_label_font=12,levels=[.05, .22], **kwargs):
+                  tick_label_font=12, **kwargs):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -51,27 +54,29 @@ class Joint2D:
         extent = [param_ranges[param_names[0]][0],param_ranges[param_names[0]][1],param_ranges[param_names[1]][0],
                   param_ranges[param_names[1]][1]]
 
-        final_density = np.ones_like(self.densities[0])
+        for idx,densities in enumerate(self.simulation_densities):
 
-        for density in self.densities:
-            density = self._norm_density(density)
-            final_density *= density
+            final_density = np.ones_like(densities[0])
 
-        final_density = self._norm_density(final_density)
+            for single_density in densities:
 
-        if filled_contours:
+                final_density *= self._norm_density(single_density)
 
-            x,y = np.linspace(extent[0],extent[1],density.shape[0]),np.linspace(extent[2],extent[3],density.shape[0])
-            self.contours(x,y,final_density,contour_colors=contour_colors,contour_alpha=contour_alpha, extent=extent,aspect=aspect,
-                          levels=levels)
+            final_density = self._norm_density(final_density)
 
-            self.ax.imshow(final_density, extent=extent,
-                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
+            if filled_contours:
 
-        else:
+                x,y = np.linspace(extent[0],extent[1],final_density.shape[0]),np.linspace(extent[2],extent[3],final_density.shape[0])
+                self.contours(x,y,final_density,contour_colors=contour_colors[idx],contour_alpha=contour_alpha, extent=extent,aspect=aspect)
 
-            self.ax.imshow(final_density, extent=extent,
-                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(final_density))
+                self.ax.imshow(final_density, extent=extent,
+                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
+
+            else:
+
+                self.ax.imshow(final_density, extent=extent,
+                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(final_density))
+
 
         if 'truths' in kwargs:
 
@@ -87,7 +92,7 @@ class Joint2D:
             if inside2:
                 self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
             if inside1 and inside2:
-                self.ax.scatter(truth1,truth2,color=self.truth_color)
+                self.ax.scatter(truth1,truth2,color=self.truth_color,s=25)
 
         self.ax.set_xlabel(param_names[0])
         self.ax.set_ylabel(param_names[1])
@@ -107,7 +112,6 @@ class Joint2D:
         self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=param_names[0])))
         self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=param_names[1])))
 
-        self.density = density
         self.param_names = param_names
         self.param_ranges = param_ranges
 
@@ -117,10 +121,10 @@ class Joint2D:
 
         return density*(np.sum(density)*density.shape[0]**2)**-1
 
-    def contours(self, x,y,grid, levels = [.05,.22], linewidths=3.5, filled_contours=True,contour_colors='',
+    def contours(self, x,y,grid, linewidths=4, filled_contours=True,contour_colors='',
                  contour_alpha=1,extent=None,aspect=None):
 
-        levels.append(1)
+        levels = [0.05,0.22,1]
         levels = np.array(levels)*np.max(grid)
         X, Y = np.meshgrid(x, y)
 
@@ -136,14 +140,14 @@ class Joint2D:
             plt.contour(X, Y, grid, extent=extent, colors=contour_colors,
                                   levels=np.array(levels) * np.max(grid), linewidths=linewidths)
 
-    def _get_1d(self,pname):
+    def _get_1d(self,pname,density):
 
         if self.param_names[0] == pname:
             axis = 1
         else:
             axis = 0
 
-        return np.sum(self.density,axis=axis)
+        return np.sum(density,axis=axis)
 
     def marginalize(self, param_name, rebin=25):
 

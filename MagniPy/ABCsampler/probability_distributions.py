@@ -16,7 +16,7 @@ class ProbabilityDistribution:
             self.mean,self.sigma = args['mean'],args['sigma']
             self.positive_definite = args['positive_definite']
 
-        elif distribution_type=='initialized_resample_Gaussian_shear':
+        elif distribution_type=='initialized':
             self.draw = self.Gaussian
             self.mean,self.sigma = kwargs['macromodel'].shear,args['sigma']
             self.positive_definite = True

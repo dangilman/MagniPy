@@ -5,15 +5,14 @@ from scipy.special import gammainc,gamma
 
 class SersicNFW:
 
-    def __init__(self,f=1./3,R0_fac=0.5):
+    def __init__(self,R0_fac=0.5):
 
         self.sersic = Sersic()
         self.nfw = NFW()
         self.R0_fac = R0_fac
-        self.f = f
 
     def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
-               y = None, Rs=None, n_sersic=None,reff_thetaE_ratio=0.7,**kwargs):
+               y = None, Rs=None, n_sersic=None,reff_thetaE_ratio=None,f=None,**kwargs):
 
         subparams = {}
         otherkwargs = {}
@@ -31,7 +30,7 @@ class SersicNFW:
         subparams['n_sersic'] = n_sersic
 
         k_eff,ks_nfw = self.normalizations(Rein=R_ein,re=subparams['R_sersic'],Rs=Rs,
-                                           n=n_sersic,R0=self.R0_fac*subparams['R_sersic'],f=self.f)
+                                           n=n_sersic,R0=self.R0_fac*subparams['R_sersic'],f=f)
 
         subparams['k_eff'] = k_eff
 
@@ -39,11 +38,11 @@ class SersicNFW:
 
         return subparams,otherkwargs
 
-    def kappa(self,x,y,theta_E=None,Rs=None,reff_thetaE_ratio=1,n_sersic=None,q=None,separate=False):
+    def kappa(self,x,y,theta_E=None,Rs=None,reff_thetaE_ratio=1,n_sersic=None,q=None,f=None,separate=False):
 
         r_eff = reff_thetaE_ratio*theta_E
 
-        sersnorm,nfwnorm = self.normalizations(Rein=theta_E,re=r_eff,Rs=Rs,R0=self.R0_fac*r_eff,n=n_sersic,f=self.f)
+        sersnorm,nfwnorm = self.normalizations(Rein=theta_E,re=r_eff,Rs=Rs,R0=self.R0_fac*r_eff,n=n_sersic,f=f)
 
         nfw_kappa = self.nfw.kappa(x,y,theta_Rs=4*nfwnorm*Rs*(np.log(0.5)+1),Rs=Rs)
         sersic_kappa = self.sersic.kappa(x, y, n_sersic, r_eff, sersnorm, q, center_x=0, center_y=0)

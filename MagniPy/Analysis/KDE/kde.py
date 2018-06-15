@@ -44,7 +44,7 @@ class KDE_scipy:
 
 class KernelDensity:
 
-    def __init__(self,reweight,scale,bandwidth_scale=1,kernel='Gaussian'):
+    def __init__(self,reweight=False,scale=1,bandwidth_scale=1,kernel='Gaussian'):
 
         self.reweight = reweight
         self.scale = scale
@@ -62,9 +62,9 @@ class KernelDensity:
         else:
             raise Exception('Kernel function not recognized.')
 
-    def kernel(self, xsamples, ysamples,dx,dy, pranges, prior_weights):
+    def _kernel(self, xsamples, ysamples, pranges=None, prior_weights=None):
 
-        h = self.scotts_factor(n=len(xsamples))*self.bandwidth_scale
+        h = self._scotts_factor(n=len(xsamples)) * self.bandwidth_scale
 
         functions = []
 
@@ -74,6 +74,9 @@ class KernelDensity:
         hy = h*data_cov[1][1]**0.5
 
         covmat = [[hx ** -2, 0], [0, hy ** -2]]
+
+        if prior_weights is None:
+            prior_weights = np.ones(len(xsamples))
 
         for i in range(0, len(xsamples)):
             xi, yi = xsamples[i], ysamples[i]
@@ -87,11 +90,11 @@ class KernelDensity:
 
         return functions
 
-    def scotts_factor(self, n, d=2):
+    def _scotts_factor(self, n, d=2):
 
         return n ** (-1. / (d + 4))
 
-    def __call__(self, data, xpoints, ypoints, pranges, prior_weights):
+    def __call__(self, data, xpoints, ypoints, pranges_training, prior_weights=None):
 
         assert len(xpoints) == len(ypoints)
 
@@ -100,8 +103,7 @@ class KernelDensity:
 
         self.boundary = Boundary(scale=self.scale)
 
-        functions = self.kernel(data[:,0],data[:,1],np.absolute(xpoints[1]-xpoints[0]),
-                                np.absolute(ypoints[1]-ypoints[0]),pranges,prior_weights)
+        functions = self._kernel(data[:, 0], data[:, 1], pranges_training, prior_weights)
 
         xy = zip(xx,yy)
 

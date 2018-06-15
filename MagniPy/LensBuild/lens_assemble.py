@@ -75,6 +75,26 @@ class LensSystem:
                 lens_list.append('NFW')
                 arg_list.append(component.lenstronomy_args['NFW'])
 
+            elif component.profname == 'SERSIC_NFW_DISK':
+
+                lens_list.append('SERSIC_ELLIPSE')
+                zlist.append(component.redshift)
+                arg_list.append(component.lenstronomy_args['SERSIC'])
+
+                if component.has_shear:
+                    lens_list.append('SHEAR')
+                    zlist.append(component.redshift)
+                    shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
+                    arg_list.append({'e1': shear_e1, 'e2': shear_e2})
+
+                lens_list.append('SERSIC_ELLIPSE')
+                zlist.append(component.redshift)
+                arg_list.append(component.lenstronomy_args['SERSIC_DISK'])
+
+                zlist.append(component.redshift)
+                lens_list.append('NFW')
+                arg_list.append(component.lenstronomy_args['NFW'])
+
             else:
 
                 zlist.append(component.redshift)
@@ -87,6 +107,7 @@ class LensSystem:
                     arg_list.append({'e1': shear_e1, 'e2': shear_e2})
                     zlist.append(component.redshift)
                     lens_list.append('SHEAR')
+
 
         return zlist,lens_list,arg_list
 
@@ -195,6 +216,16 @@ class Deflector:
                 if 'theta_Rs' in newparams.keys():
                     self.lenstronomy_args['NFW'].update(newparams)
                 else:
+                    self.lenstronomy_args['SERSIC'].update(newparams)
+
+            elif self.other_args['name'] == 'SERSIC_NFW_DISK':
+
+                if 'theta_Rs' in newparams.keys():
+
+                    self.lenstronomy_args['NFW'].update(newparams)
+
+                elif 'n_sersic' in newparams.keys():
+
                     self.lenstronomy_args['SERSIC'].update(newparams)
 
             else:

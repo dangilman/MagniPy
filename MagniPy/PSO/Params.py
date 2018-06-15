@@ -3,7 +3,7 @@ import numpy as np
 
 class Params(object):
 
-    def __init__(self,zlist, lens_list, arg_list,params_init=None,optimizer_routine='optimize_SIE_SHEAR',fixed_params=None):
+    def __init__(self,zlist, lens_list, arg_list,system_init=None,optimizer_routine='optimize_SIE_SHEAR',fixed_params=None):
 
         self.N_to_vary = self.get_vary_length(optimizer_routine)
 
@@ -19,14 +19,12 @@ class Params(object):
 
         self.Pbounds = ParamRanges()
 
-        if params_init is None:
-            self.tovary_lower_limit,self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,
-                                                                                      self.args_tovary,None)
+        if system_init is None:
+
+            self.tovary_lower_limit,self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,None)
         else:
 
-            self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,
-                                                                                   self.args_tovary,
-                                                                                   params_init[0:self.N_to_vary])
+            self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,system_init)
 
     def argstovary_values(self):
 
@@ -106,7 +104,7 @@ class Params(object):
 
 class ParamRanges(object):
 
-    def get_ranges(self,lens_names,lens_args,args_init):
+    def get_ranges(self,lens_names,args_init):
 
         ranges_low,ranges_high = [],[]
 
@@ -117,8 +115,13 @@ class ParamRanges(object):
                 _ranges_low,_ranges_high = self._get_ranges(lens)
 
             else:
-
-                _ranges_low, _ranges_high = self._get_ranges_init(lens,args_init[idx])
+                _ranges_low,_ranges_high = [],[]
+                if lens == 'SPEMD':
+                    _ranges_low_, _ranges_high_ = self._get_ranges_init(lens,args_init.lens_components[0].lenstronomy_args)
+                elif lens == 'SHEAR':
+                    _ranges_low_,_ranges_high_ = self._get_ranges_init(lens,args_init.lens_components[0].shear_args)
+                _ranges_low += _ranges_low_
+                _ranges_high += _ranges_high_
 
             ranges_low += _ranges_low
             ranges_high += _ranges_high
@@ -159,12 +162,12 @@ class ParamRanges(object):
                     ranges_high += [guess+width]
 
                 if pname in ['e1','e2']:
-                    width = 0.001
+                    width = 0.01
                     ranges_low += [guess - width]
                     ranges_high += [guess + width]
 
                 if pname in ['center_x','center_y']:
-                    width = 0.001
+                    width = 0.005
                     ranges_low += [guess-width]
                     ranges_high += [guess+width]
 

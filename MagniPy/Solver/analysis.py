@@ -11,10 +11,10 @@ class Analysis(Magnipy):
     def sersicNFW_effective_slope(self,params):
 
         from MagniPy.MassModels.SersicNFW import SersicNFW
-        s = SersicNFW(f=params['f'], R0_fac=0.5)
+        s = SersicNFW(R0_fac=0.5)
         x = np.linspace(params['theta_E'] * 0.7, params['theta_E'] * 1.3, 200)
         kappa = s.kappa(x, 0, theta_E=params['theta_E'], Rs=params['Rs'], reff_thetaE_ratio=params['ratio'],
-                        n_sersic=params['n_sersic'], q=1, separate=False)
+                        n_sersic=params['n_sersic'], q=1, separate=False,f=params['f'])
         # plt.plot(np.log10(x),np.log10((nfw_kappa+sersic_kappa)),color=cmap(np.absolute(1-mean*r**-1)))
 
         return np.polyfit(np.log10(kappa), np.log10(x), 1)[0]

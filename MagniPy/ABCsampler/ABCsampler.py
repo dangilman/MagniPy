@@ -178,9 +178,9 @@ def get_inputfile_path(chain_ID,core_index):
 
     return chain_ID + 'paramdictionary_' + str(f_index) + '.txt'
 
-def runABC(chain_ID='',core_index=int,Nsplit=1000):
+def _initialize(chain_ID,core_index):
 
-    inputfile_path = get_inputfile_path(chain_ID,core_index)
+    inputfile_path = get_inputfile_path(chain_ID, core_index)
 
     all_keys = read_paraminput(inputfile_path)
 
@@ -197,11 +197,10 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     else:
         create_directory(output_path)
 
-    output_path = chainpath + chain_keys['sampler']['output_folder']+'chain'+str(core_index)+'/'
+    output_path = chainpath + chain_keys['sampler']['output_folder'] + 'chain' + str(core_index) + '/'
 
-    if os.path.exists(output_path+'fluxes.txt') and os.path.exists(output_path+'parameters.txt') and \
-            os.path.exists(output_path+'lensdata.txt') and os.path.exists(output_path+'astrometric_errors.txt'):
-
+    if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt') and \
+            os.path.exists(output_path + 'lensdata.txt') and os.path.exists(output_path + 'astrometric_errors.txt'):
         return
 
     if os.path.exists(output_path):
@@ -209,26 +208,45 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     else:
         create_directory(output_path)
 
-    if os.path.exists(path_2_lensmodel+'lensmodel'):
+    if os.path.exists(path_2_lensmodel + 'lensmodel'):
         pass
     else:
-        shutil.copy2(lensmodel_location+'lensmodel',path_2_lensmodel)
+        shutil.copy2(lensmodel_location + 'lensmodel', path_2_lensmodel)
+
+    return chain_keys,chain_keys_to_vary,output_path
+
+def runABC(chain_ID='',core_index=int):
+
+    chain_keys,chain_keys_to_vary,output_path = _initialize(chain_ID,core_index)
 
     # Initialize data, macormodel
-
     datatofit = Data(x=chain_keys['data']['x_to_fit'], y=chain_keys['data']['y_to_fit'], m=chain_keys['data']['flux_to_fit'],
                      t=chain_keys['data']['t_to_fit'], source=chain_keys['data']['source'])
 
     macromodel_default_start = default_startkwargs
 
     print 'intializing macromodels... '
-
     macromodel_default_start['shear'] = chain_keys['lens']['SIE_shear_start']
-
     macromodel_start = get_default_SIE(z=chain_keys['lens']['zlens'])
+    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
+                           temp_folder=chain_keys['sampler']['scratch_file'], clean_up=True)
+
+    opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
+                                             multiplane=False,
+                                             method='lensmodel', ray_trace=False,
+                                             sigmas=chain_keys['modeling']['sigmas'],
+                                             identifier=chain_keys['sampler']['chain_ID'],
+                                             grid_rmax=chain_keys['modeling']['grid_rmax'],
+                                             res=chain_keys['modeling']['grid_res'],
+                                             source_size=chain_keys['lens']['source_size'])
+    macromodel = mod[0].lens_components[0]
+
+    astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x) ** 2 + (opt_data[0].y - datatofit.y) ** 2))
+
+    macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
 
     # Get parameters to vary
-    prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'])
+    prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'],macromodel=macromodel)
     samples = prior.sample(scale_by='Nsamples')
 
     param_names_tovary = prior.param_names
@@ -240,7 +258,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
                     chain_keys, chain_keys_to_vary, param_names_tovary)
 
     chainkeys = {}
-
     for group,items in chain_keys.iteritems():
         for pname,value in items.iteritems():
             if pname not in param_names_tovary:
@@ -274,24 +291,6 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
     print 'done.'
     print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
 
-    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
-                           temp_folder=chain_keys['sampler']['scratch_file'],clean_up=True)
-
-    opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
-                                                 multiplane=False,
-                                                 method='lensmodel', ray_trace=False, sigmas=chain_keys['modeling']['sigmas'],
-                                                 identifier=chain_keys['sampler']['chain_ID'],
-                                                 grid_rmax=chain_keys['modeling']['grid_rmax'], res=chain_keys['modeling']['grid_res'],
-                                                 source_size=chain_keys['lens']['source_size'])
-
-    macromodel = mod[0].lens_components[0]
-    fit_shear = macromodel.shear
-
-    astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x)**2 + (opt_data[0].y - datatofit.y)**2))
-
-    #macromodel = macromodel_start
-    macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
-
     macromodels = []
 
     if 'SIE_gamma' or 'SIE_shear' in param_names_tovary:
@@ -303,20 +302,13 @@ def runABC(chain_ID='',core_index=int,Nsplit=1000):
             if 'SIE_gamma' in commands:
                 newmac.update_lenstronomy_args({'gamma':commands['SIE_gamma']})
             if 'SIE_shear' in commands:
-
-                assert astrometric_error_fit < 0.01
-
-                newmac.set_shear(np.absolute(fit_shear+commands['SIE_shear']))
+                newmac.set_shear(np.absolute(commands['SIE_shear']))
 
             macromodels.append(newmac)
 
     else:
 
         macromodels = [macromodel]*len(run_commands)
-
-    if 'SIE_shear' in param_names_tovary:
-
-        samples[:,int(param_names_tovary.index('SIE_shear'))] += fit_shear
 
     print 'done.'
 
@@ -425,5 +417,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['sampler']['chain_description'])
 
-#runABC(os.getenv('HOME')+'/data/sersicNFW/',11)
+#for i in range(1,11):
+#    runABC(os.getenv('HOME')+'/data/sersic_NFW_withdisk/',i)
 

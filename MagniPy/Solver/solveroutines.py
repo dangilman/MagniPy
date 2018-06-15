@@ -13,7 +13,7 @@ class SolveRoutines(Magnipy):
     def optimize_4imgs_lenstronomy(self,macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
                       polar_grid=True,run_mode = 'src_plane_chi2',solver_type='PROFILE_SHEAR',n_particles=300,
-                      n_iterations=100,tol_source=0.0001,tol_centroid=0.01,tol_mag=None,centroid_0=[0,0]):
+                      n_iterations=100,tol_source=0.000001,tol_centroid=0.01,tol_mag=None,centroid_0=[0,0]):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -53,7 +53,13 @@ class SolveRoutines(Magnipy):
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
-        optimized_data, model = self._optimize_4imgs_lenstronomy(self, lens_systems, data2fit=datatofit, tol_source=tol_source,
+        _fit_data, fit_systems = self._solve_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, grid_rmax=grid_rmax,
+                                                                  res=res, source_shape=source_shape, source_size=source_size, polar_grid=polar_grid,
+                                                                  raytrace_with=raytrace_with, solver_type=solver_type,
+                                                                  print_mag=False, N_iter_max=100)
+        print 'with fit only:',np.sum(0.5*(_fit_data[0].m-datatofit.m)**2)*0.2**-1
+
+        optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems=fit_systems, data2fit=datatofit, tol_source=tol_source,
                                   tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
                                   n_iterations=n_iterations, run_mode=run_mode,grid_rmax=grid_rmax, res=res,
                                  source_size=source_size,raytrace_with=raytrace_with,
@@ -331,6 +337,32 @@ class SolveRoutines(Magnipy):
                                          source_shape=source_shape,source_size=source_size,cosmology=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
 
         return fluxes*max(fluxes)**-1
+
+if False:
+    from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
+    from MagniPy.LensBuild.defaults import *
+    from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+    from MagniPy.util import cart_to_polar
+
+    lens_params = {'R_ein':1.04,'x':0.001,'y':0.00,'ellip':0.3,'ellip_theta':10,'shear':0.045,'shear_theta':34,'gamma':2}
+    lens_params_opt = {'R_ein':0.9,'x':0.00,'y':0.00,'ellip':0.1,'ellip_theta':60,'shear':0.045,'shear_theta':70,'gamma':2}
+    start = Deflector(subclass=SIE(),redshift=0.5,tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],
+                      **lens_params)
+    start_opt = Deflector(subclass=SIE(),redshift=0.5,tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],
+                      **lens_params_opt)
+
+    real = Realization(0.5,1.5)
+
+    halos = real.halo_constructor('TNFW','plaw_main',{'fsub':0.01},Nrealizations=1)
+    solver = SolveRoutines(0.5,1.5)
+
+    dtofit = solver.solve_lens_equation(macromodel=start,realizations=None,multiplane=False,srcx=0.03,srcy=-0.04)
+
+    opt,mod = solver.optimize_4imgs_lenstronomy(datatofit=dtofit[0],realizations=halos,macromodel=start_opt,
+                                                multiplane=False,tol_source=1e-8,tol_mag=0.01,n_particles=100,n_iterations=20)
+
+
+
 
 
 
