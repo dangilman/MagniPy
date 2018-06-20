@@ -101,7 +101,9 @@ class Magnipy:
             if name == 'SPEMD':
 
                 if lens_list[i+1] == 'SHEAR':
+
                     shear_mag,shear_pa = cart_to_polar(arg_list[i+1]['e1'],arg_list[i+1]['e2'])
+
                     main = build.Deflector(subclass=SIE(),redshift=z,lens_params=args,shear=shear_mag,shear_theta=shear_pa,name=name)
                 else:
                     main = build.Deflector(subclass=SIE(), redshift=z, lens_params=args, shear=shear_mag,
@@ -117,7 +119,6 @@ class Magnipy:
             elif name == 'TNFW':
                 halo = build.Deflector(subclass=TNFW(z, zsrc), redshift=z, lens_params=args,name=name)
                 halos.append(halo)
-
 
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 

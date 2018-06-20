@@ -31,8 +31,8 @@ def sort_image_index(ximg,yimg,xref,yref):
 
 def coordinates_inbox(box_dx,box_dy,centered_x,centered_y):
 
-    return np.logical_and(np.logical_and(-0.5*box_dx < centered_x, centered_x <=  0.5*box_dx),
-                          np.logical_and(-0.5*box_dy < centered_y, centered_y <=  0.5*box_dy))
+    return np.logical_and(np.logical_and(-0.5*box_dx < centered_x, centered_x <  0.5*box_dx),
+                          np.logical_and(-0.5*box_dy < centered_y, centered_y <  0.5*box_dy))
 
 def confidence_interval(percentile,data):
 
@@ -442,6 +442,7 @@ def copy_directory(dirname,location):
 
     shutil.copy(dirname,location)
 
+
 def create_directory(dirname=''):
 
     proc = subprocess.Popen(['mkdir', dirname])
@@ -508,7 +509,39 @@ def ellipse_coordinates(coordinatesx,coordinatesy,rmax,q=0.08,theta=None):
     #return x[ellipse],y[ellipse]
     return ellipse
 
+def phi_q2_ellipticity(phi, q):
+    """
 
+    :param phi:
+    :param q:
+    :return:
+    """
+    e1 = (1.-q)/(1.+q)*np.cos(2*phi)
+    e2 = (1.-q)/(1.+q)*np.sin(2*phi)
+    return e1, e2
+
+
+def ellipticity2phi_q(e1, e2):
+    """
+    :param e1:
+    :param e2:
+    :return:
+    """
+    phi = np.arctan2(e2, e1)/2
+    c = np.sqrt(e1**2+e2**2)
+    if c > 0.999:
+        c = 0.999
+    q = (1-c)/(1+c)
+    return phi, q
+
+def find_closest_xy(ximg,yimg,xref,yref):
+
+    dx = np.array(ximg) - xref
+    dy = np.array(yimg) - yref
+
+    dr = np.sqrt(dx**2+dy**2)
+
+    return np.argsort(dr)
 
 
 

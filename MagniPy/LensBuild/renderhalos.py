@@ -283,10 +283,16 @@ class HaloGen:
 
         mass_function_type = []
         spatial_distribution_type = []
-        modelkwargs = {}
+        modelkwargs = deepcopy(model_kwargs)
 
-        Nz, zvals = LOS_delta(model_kwargs['M'], model_kwargs['matter_fraction'], zmin=model_kwargs['zmin'],
-                             zmax=model_kwargs['zmax'],
+        if 'zmin' not in modelkwargs:
+            modelkwargs['zmin'] = 0
+
+        if 'zmax' not in modelkwargs:
+            modelkwargs['zmax'] = self.cosmology.zsrc
+
+        Nz, zvals = LOS_delta(modelkwargs['M'], modelkwargs['matter_fraction'], zmin=modelkwargs['zmin'],
+                             zmax=modelkwargs['zmax'],
                              zmain=self.cosmology.zd, zsrc=self.cosmology.zsrc,cone_base=cone_base)
 
         modelkwargs['logmass'] = np.log10(model_kwargs['M'])

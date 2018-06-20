@@ -25,9 +25,12 @@ class FullChains:
 
             new_lens = SingleLens(Nparams=len(self.params_varied))
 
-            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/fluxratios/statistic_0error_1.txt')
+            fname = 'statistic_'+str(error)+'error_'+str(index)+'.txt'
+            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/fluxratios/'+fname)
+
+            fname = 'params_' + str(error) + 'error_' + str(index) + '.txt'
             new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
-                                    fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/params_0error_1.txt')
+                                    fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/'+fname)
 
             self.lenses.append(new_lens)
 

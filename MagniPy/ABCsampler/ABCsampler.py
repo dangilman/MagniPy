@@ -256,6 +256,7 @@ def runABC(chain_ID='',core_index=int):
 
     write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
+    copy_directory(chain_ID+'/R_index_config.txt',chainpath+chain_keys['sampler']['output_folder'])
 
     chainkeys = {}
     for group,items in chain_keys.iteritems():
@@ -416,7 +417,3 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write('\n# info\n')
 
         f.write(keys['sampler']['chain_description'])
-
-#for i in range(1,11):
-#    runABC(os.getenv('HOME')+'/data/sersic_NFW_withdisk/',i)
-

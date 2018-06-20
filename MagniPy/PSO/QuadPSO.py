@@ -88,7 +88,6 @@ class QuadPSOLike(object):
         else:
             newargs = lens_args_tovary
 
-
         betax,betay = self.lensModel.ray_shooting(x_pos,y_pos,newargs,k=self.k)
 
         self.srcx,self.srcy = np.mean(betax),np.mean(betay)
