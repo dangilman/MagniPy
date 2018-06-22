@@ -543,6 +543,14 @@ def find_closest_xy(ximg,yimg,xref,yref):
 
     return np.argsort(dr)
 
+def chi_square_img(data1x,data1y,data2x,data2y,sigma):
+
+    return np.sum(((data1x - data2x)*sigma**-1)**2 + ((data1y - data2y)*sigma**-1)**2)
+
+def chi_square(d1,d2,sigma):
+
+    return np.sum(((d1 - d2)*sigma**-1)**2)
+
 
 
 

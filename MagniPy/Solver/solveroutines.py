@@ -1,5 +1,5 @@
 from MagniPy.magnipy import Magnipy
-from RayTrace.raytrace import RayTrace
+import numpy as np
 from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_gridrmax,default_res,\
     default_source_shape,default_source_size,default_solve_method,default_file_identifier
 import copy
@@ -10,10 +10,30 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def optimize_4imgs_lenstronomy(self,macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
+    def initialzed_over_param_range(self,macromodels=[], datatofit=None, multiplane=None,sigmas=None,
+                              identifier=None, grid_rmax=None, res=None,
+                              source_shape='GAUSSIAN', source_size=None,param_name=None):
+
+        macromodel_list = []
+
+        param_values = []
+
+        assert param_name in ['gamma']
+
+        for macromodel in macromodels:
+
+            _, macro = self.macromodel_initialize(macromodel,datatofit,multiplane,method='lensmodel',sigmas=sigmas,identifier=identifier,
+                                       grid_rmax=grid_rmax,res=res,source_shape=source_shape,source_size=source_size)
+
+            macromodel_list.append(macro)
+            param_values.append(macromodel.lenstronomy_args['gamma'])
+
+        return param_values,macromodel_list
+
+    def optimize_4imgs_lenstronomy(self,macromodel=None,datatofit=None, realizations=None, multiplane = None, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
-                      polar_grid=True,run_mode = 'src_plane_chi2',solver_type='PROFILE_SHEAR',n_particles=300,
-                      n_iterations=100,tol_source=0.000001,tol_centroid=0.01,tol_mag=None,centroid_0=[0,0]):
+                      polar_grid=True,initialize = True,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=100,
+                      n_iterations=100,tol_source=0.0005,tol_centroid=None,tol_mag=None,centroid_0=[0,0]):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -30,14 +50,35 @@ class SolveRoutines(Magnipy):
         if res is None:
             res = default_res(source_size)
 
-        if method is None:
-            method = default_solve_method
+        if identifier is None:
+            identifier = default_file_identifier
 
         lens_systems= []
 
         ################################################################################
 
         # If macromodel is a list same length as realizations, build the systems and fit each one
+
+        if initialize and init_macromodel is None:
+
+            if isinstance(macromodel,list):
+                for mac in macromodel:
+                    _, opt_macro = self.macromodel_initialize(mac, datatofit, multiplane, method='lensmodel', sigmas=sigmas,
+                              identifier=identifier, grid_rmax=grid_rmax, res=res,
+                              source_shape=source_shape, source_size=source_size, print_mag=False,
+                              solver_type='PROFILE_SHEAR',shr_coords=1)
+                    init_macromodel.append(opt_macro)
+            else:
+                _, init_macromodel = self.macromodel_initialize(macromodel, datatofit, multiplane, method='lensmodel', sigmas=sigmas,
+                              identifier=identifier, grid_rmax=grid_rmax, res=res,
+                              source_shape=source_shape, source_size=source_size, print_mag=False,
+                              solver_type='PROFILE_SHEAR',shr_coords=1)
+
+            macromodel = init_macromodel
+
+        elif init_macromodel is not None:
+
+            macromodel = init_macromodel
 
         if isinstance(macromodel,list):
 
@@ -53,16 +94,11 @@ class SolveRoutines(Magnipy):
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
-        _fit_data, fit_systems = self._solve_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, grid_rmax=grid_rmax,
-                                                                  res=res, source_shape=source_shape, source_size=source_size, polar_grid=polar_grid,
-                                                                  raytrace_with=raytrace_with, solver_type=solver_type,
-                                                                  print_mag=False, N_iter_max=100)
-        print 'with fit only:',np.sum(0.5*(_fit_data[0].m-datatofit.m)**2)*0.2**-1
 
-        optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems=fit_systems, data2fit=datatofit, tol_source=tol_source,
+        optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, tol_source=tol_source,
                                   tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
-                                  n_iterations=n_iterations, run_mode=run_mode,grid_rmax=grid_rmax, res=res,
-                                 source_size=source_size,raytrace_with=raytrace_with,
+                                  n_iterations=n_iterations,grid_rmax=grid_rmax, res=res,
+                                 source_size=source_size,raytrace_with=raytrace_with,initialized=initialize,
                                  source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type)
 
         return optimized_data,model
@@ -157,10 +193,10 @@ class SolveRoutines(Magnipy):
 
         if method == 'lensmodel':
             _,macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel), datatofit=datatofit,
-                                                           multiplane=multiplane, method='lensmodel', ray_trace=ray_trace, sigmas=sigmas,
-                                                           identifier=identifier, srcx=srcx, srcy=srcy, grid_rmax=grid_rmax, res=res,
+                                                           multiplane=multiplane, method='lensmodel', sigmas=sigmas,
+                                                           identifier=identifier,grid_rmax=grid_rmax, res=res,
                                                            source_shape=source_shape, source_size=source_size, print_mag=print_mag,
-                                                           filter_by_position=filter_by_position, filter_kwargs=filter_kwargs,shr_coords=shr_coords)
+                                                           shr_coords=shr_coords)
             optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit,
                                                  realizations=realizations, multiplane=multiplane,
                                                  ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx,
@@ -185,10 +221,10 @@ class SolveRoutines(Magnipy):
 
         return optimized_data,newsystem
 
-    def macromodel_initialize(self, macromodel, datatofit, multiplane, method=None, ray_trace=None, sigmas=None,
-                              identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
-                              source_shape='GAUSSIAN', source_size=None, print_mag=False, filter_by_position=False,
-                              filter_kwargs={},solver_type=None,shr_coords=1):
+    def macromodel_initialize(self, macromodel, datatofit, multiplane, method=None, sigmas=None,
+                              identifier=None, grid_rmax=None, res=None,
+                              source_shape='GAUSSIAN', source_size=None, print_mag=False,
+                              solver_type=None,shr_coords=1):
 
         # fits just a single macromodel profile to the data
 
@@ -337,36 +373,6 @@ class SolveRoutines(Magnipy):
                                          source_shape=source_shape,source_size=source_size,cosmology=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
 
         return fluxes*max(fluxes)**-1
-
-if False:
-    from MagniPy.Analysis.PresetOperations.halo_constructor import Realization
-    from MagniPy.LensBuild.defaults import *
-    from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
-    from MagniPy.util import cart_to_polar
-
-    lens_params = {'R_ein':1.04,'x':0.001,'y':0.00,'ellip':0.3,'ellip_theta':10,'shear':0.045,'shear_theta':34,'gamma':2}
-    lens_params_opt = {'R_ein':0.9,'x':0.00,'y':0.00,'ellip':0.1,'ellip_theta':60,'shear':0.045,'shear_theta':70,'gamma':2}
-    start = Deflector(subclass=SIE(),redshift=0.5,tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],
-                      **lens_params)
-    start_opt = Deflector(subclass=SIE(),redshift=0.5,tovary=True,varyflags=['1','1','1','1','1','1','1','0','0','0'],
-                      **lens_params_opt)
-
-    real = Realization(0.5,1.5)
-
-    halos = real.halo_constructor('TNFW','plaw_main',{'fsub':0.01},Nrealizations=1)
-    solver = SolveRoutines(0.5,1.5)
-
-    dtofit = solver.solve_lens_equation(macromodel=start,realizations=None,multiplane=False,srcx=0.03,srcy=-0.04)
-
-    opt,mod = solver.optimize_4imgs_lenstronomy(datatofit=dtofit[0],realizations=halos,macromodel=start_opt,
-                                                multiplane=False,tol_source=1e-8,tol_mag=0.01,n_particles=100,n_iterations=20)
-
-
-
-
-
-
-
 
 
 

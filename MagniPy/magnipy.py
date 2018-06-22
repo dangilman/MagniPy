@@ -123,7 +123,7 @@ class Magnipy:
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
-                                    centroid_0=None,n_particles=400,n_iterations=100,run_mode='src_plane_chi2',
+                                    centroid_0=None,n_particles=50,n_iterations=400,initialized=False,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR'):
 
@@ -133,15 +133,15 @@ class Magnipy:
 
             redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
 
-            sampler = QuadSampler(zlist=redshift_list,lens_list=lens_list,arg_list=lensmodel_params,z_source=self.zsrc,x_pos=data2fit.x,
-                                  y_pos=data2fit.y,tol_source=tol_source,magnification_target=data2fit.m,tol_mag=tol_mag,
-                                  tol_centroid=tol_centroid,centroid_0=centroid_0,
-                                  system_init=system)
+            sampler = QuadSampler(zlist=redshift_list,lens_list=lens_list,arg_list=lensmodel_params,z_source=self.zsrc,
+                                  x_pos=data2fit.x,y_pos=data2fit.y,tol_source=tol_source,magnification_target=data2fit.m,
+                                  tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,initialized=initialized,
+                                  astropy_instance=self.cosmo.cosmo,
+                                  optimizer_routine='optimize_SIE_shear',z_main=self.zmain,multiplane=system.multiplane)
 
-            kwargs_lens, source, kwargs = sampler.pso(n_particles, n_iterations, run_mode=run_mode)
+            kwargs_lens, source, [x_opt,y_opt] = sampler.pso(n_particles, n_iterations)
+
             xsrc,ysrc=source[0],source[1]
-
-            x_opt, y_opt = sampler.chain.extension.image_position_from_source(xsrc,ysrc,kwargs_lens,arrival_time_sort=False)
 
             lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
                                        redshift_list=redshift_list, z_source=self.zsrc)
@@ -150,11 +150,6 @@ class Magnipy:
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,
                                       raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid)
-
-            print np.sum(0.5 * (np.array(fluxes)*np.max(fluxes)**-1 - data2fit.m) ** 2)*0.2**-1
-            print x_opt - data2fit.x
-            print y_opt - data2fit.y
-            exit(1)
 
             if lens_systems[i].lens_components[0].other_args['name'] == 'SERSIC_NFW':
 
@@ -168,6 +163,7 @@ class Magnipy:
                                                        is_shear=True)
 
             else:
+
                 optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
                                                    newkwargs=kwargs_lens[0], method='lenstronomy')
                 if solver_type == 'PROFILE_SHEAR':

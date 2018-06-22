@@ -1,5 +1,5 @@
 from MagniPy.util import *
-from halo_constructor import Realization
+from halo_constructor import Constructor
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
@@ -44,7 +44,7 @@ def cross_section_compute(massprofile='', halo_model='', model_args={},
     start_macromodel = get_default_SIE(zlens)
     start_macromodel.redshift = zlens
 
-    halo_generator = Realization(zlens=zlens,zsrc=zsrc)
+    halo_generator = Constructor(zlens=zlens, zsrc=zsrc)
 
     solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=identifier)
 
@@ -66,8 +66,8 @@ def cross_section_compute(massprofile='', halo_model='', model_args={},
 
     while n<Ntotal:
 
-        halos_init = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
-                                                filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
+        halos_init = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
+                                           filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
         print 'solving... '
         data_control, system = solver.two_step_optimize(macromodel=start_macromodel, datatofit=data[n],
                                                       realizations=halos_init,

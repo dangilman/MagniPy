@@ -1,15 +1,15 @@
 from MagniPy.LensBuild.renderhalos import *
 import numpy as np
 
-class Realization:
+class Constructor(object):
 
     def __init__(self,zlens,zsrc,LOS_mass_sheet=True):
 
         self.halo_generator = HaloGen(zd=zlens,zsrc=zsrc,LOS_mass_sheet=LOS_mass_sheet)
 
-    def halo_constructor(self,massprofile='', model_name='', model_args={},
-                       Nrealizations=int, filter_halo_positions=False,spatial_model=None,
-                       **filter_kwargs):
+    def render(self, massprofile='', model_name='', model_args={},
+               Nrealizations=int, filter_halo_positions=False, spatial_model=None,
+               **filter_kwargs):
 
         if not isinstance(model_name,list):
             model_name = [model_name]

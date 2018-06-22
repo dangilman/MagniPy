@@ -28,7 +28,7 @@ class Analysis(Magnipy):
 
         lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        if isinstance(x,int) or isinstance(y,int):
+        if isinstance(x,int) or isinstance(x,list) or isinstance(x,np.ndarray):
 
             f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x,y,kwargs=lensmodel_params)
 
@@ -89,15 +89,20 @@ class Analysis(Magnipy):
     def get_deflections(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
         if lens_system is None:
+
             lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
         lenstronomy = self.lenstronomy_build()
 
         lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        dx,dy = lensmodel.alpha(x.ravel(), y.ravel(),lensmodel_params)
+        if x.ndim >1:
+            dx,dy = lensmodel.alpha(x.ravel(), y.ravel(),lensmodel_params)
+            return dx.reshape(len(x), len(y)), dy.reshape(len(x), len(y))
+        else:
+            dx, dy = lensmodel.alpha(x, y, lensmodel_params)
 
-        return dx.reshape(len(x),len(y)),dy.reshape(len(x),len(y))
+            return dx,dy
 
     def get_kappa(self,lens_list=None,x=None,y=None,multiplane=False,method='lenstronomy',lens_system=None):
 

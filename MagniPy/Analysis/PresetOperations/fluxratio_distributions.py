@@ -1,6 +1,6 @@
 import numpy as np
 from MagniPy.util import *
-from halo_constructor import Realization
+from halo_constructor import Constructor
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
@@ -105,7 +105,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     if sigmas is None:
         sigmas = default_sigmas
 
-    halo_generator = Realization(zlens=zlens,zsrc=zsrc)
+    halo_generator = Constructor(zlens=zlens, zsrc=zsrc)
 
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
@@ -139,8 +139,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         while n<Ntotal:
 
-            halos = halo_generator.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=model_args,Nrealizations=1,
-                                                    filter_halo_positions=filter_halo_positions,**filter_kwargs_list[n])
+            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
+                                          filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
 
             model_data, system = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
                                                      multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
@@ -165,9 +165,9 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     elif method=='lensmodel':
 
         print 'building realizations... '
-        halos = halo_generator.halo_constructor(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                                Nrealizations=Ntotal,
-                                                filter_halo_positions=filter_halo_positions, **filter_kwargs_list[0])
+        halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
+                                      Nrealizations=Ntotal,
+                                      filter_halo_positions=filter_halo_positions, **filter_kwargs_list[0])
 
         print 'solving realizations... '
 

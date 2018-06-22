@@ -253,4 +253,3 @@ class ParticleMasses:
     def wave_alpha(self,m_kev,omega_WDM=0.25,h=0.7):
 
         return 0.049*(m_kev)**-1.11*(omega_WDM*4)**0.11*(h*0.7**-1)**1.22*h
-

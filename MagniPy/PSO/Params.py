@@ -1,30 +1,31 @@
-from MagniPy.util import polar_to_cart
+from MagniPy.util import polar_to_cart,cart_to_polar
 import numpy as np
 
 class Params(object):
 
-    def __init__(self,zlist, lens_list, arg_list,system_init=None,optimizer_routine='optimize_SIE_SHEAR',fixed_params=None):
+    def __init__(self,zlist=None, lens_list=None, arg_list=None,
+                 optimizer_routine='optimize_SIE_SHEAR',fixed_params=None, initialized=True):
 
-        self.N_to_vary = self.get_vary_length(optimizer_routine)
+        self.Nprofiles_to_vary = self.get_vary_length(optimizer_routine)
 
         self.model_fixed = self.get_model_fixed(optimizer_routine, fixed_params)
 
-        self.zlist_tovary = zlist[0:self.N_to_vary]
-        self.lenslist_tovary = lens_list[0:self.N_to_vary]
-        self.args_tovary = arg_list[0:self.N_to_vary]
+        self.zlist_tovary = zlist[0:self.Nprofiles_to_vary]
+        self.lenslist_tovary = lens_list[0:self.Nprofiles_to_vary]
+        self.args_tovary = arg_list[0:self.Nprofiles_to_vary]
 
-        self.zlist_fixed = zlist[self.N_to_vary:]
-        self.lenslist_fixed = lens_list[self.N_to_vary:]
-        self.args_fixed = arg_list[self.N_to_vary:]
+        self.zlist_fixed = zlist[self.Nprofiles_to_vary:]
+        self.lenslist_fixed = lens_list[self.Nprofiles_to_vary:]
+        self.args_fixed = arg_list[self.Nprofiles_to_vary:]
 
         self.Pbounds = ParamRanges()
 
-        if system_init is None:
+        if initialized is False:
 
             self.tovary_lower_limit,self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,None)
         else:
 
-            self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,system_init)
+            self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,self.args_tovary)
 
     def argstovary_values(self):
 
@@ -49,7 +50,7 @@ class Params(object):
         args_list = []
         count = 0
 
-        for n in range(0,self.N_to_vary):
+        for n in range(0, int(self.Nprofiles_to_vary)):
 
             args = {}
 
@@ -88,13 +89,13 @@ class Params(object):
 
     def get_vary_length(self,routine):
 
-        if routine in ['optimize_SIE_SHEAR','optimize_plaw_shear']:
+        if routine in ['optimize_SIE_shear','optimize_plaw_shear']:
 
             return 2
 
     def get_model_fixed(self,routine,fixed_params):
 
-        if routine == 'optimize_SIE_SHEAR':
+        if routine == 'optimize_SIE_shear':
 
             return {'gamma':2}
 
@@ -117,9 +118,9 @@ class ParamRanges(object):
             else:
                 _ranges_low,_ranges_high = [],[]
                 if lens == 'SPEMD':
-                    _ranges_low_, _ranges_high_ = self._get_ranges_init(lens,args_init.lens_components[0].lenstronomy_args)
+                    _ranges_low_, _ranges_high_ = self._get_ranges_initialized(lens, args_init[0])
                 elif lens == 'SHEAR':
-                    _ranges_low_,_ranges_high_ = self._get_ranges_init(lens,args_init.lens_components[0].shear_args)
+                    _ranges_low_,_ranges_high_ = self._get_ranges_initialized(lens, args_init[1])
                 _ranges_low += _ranges_low_
                 _ranges_high += _ranges_high_
 
@@ -148,7 +149,7 @@ class ParamRanges(object):
 
             return [low_e12,low_e12],[hi_e12,hi_e12]
 
-    def _get_ranges_init(self,lens_name,args_init):
+    def _get_ranges_initialized(self, lens_name, args_init):
 
         ranges_low,ranges_high = [],[]
 
@@ -171,15 +172,24 @@ class ParamRanges(object):
                     ranges_low += [guess-width]
                     ranges_high += [guess+width]
 
+            return ranges_low,ranges_high
+
         elif lens_name == 'SHEAR':
 
-            width = 0.005
+            width_shear,width_shear_theta = 0.01,30
+            shear,shear_theta = cart_to_polar(args_init['e1'],args_init['e2'])
 
-            for pname, guess in args_init.iteritems():
-                ranges_low += [guess - width]
-                ranges_high += [guess + width]
+            shear_low = max(1e-5,shear-width_shear)
+            shear_theta_low = shear_theta-width_shear_theta
 
-        return ranges_low,ranges_high
+            shear_high = shear+width_shear
+            shear_theta_high = shear_theta+width_shear_theta
+
+            e1_low,e2_low = polar_to_cart(shear_low,shear_theta_low)
+            e1_high, e2_high = cart_to_polar(shear_high, shear_theta_high)
+
+
+            return [e1_low,e2_low],[e1_high,e2_high]
 
 
 
