@@ -57,6 +57,10 @@ class QuadSampler(object):
 
         optimized_args = self._pso(n_particles,n_iterations)
 
+        optimized_args = self.optimizer.Params.argstovary_todictionary(optimized_args)
+
+        optimized_args += self.optimizer.Params.argsfixed_todictionary()
+
         ximg,yimg = self.optimizer._get_images()
 
         return optimized_args,[self.optimizer.srcx, self.optimizer.srcy], [ximg,yimg]
@@ -76,19 +80,26 @@ class QuadSampler(object):
 
         pso = ParticleSwarmOptimizer(self.optimizer, lowerLimit, upperLimit, n_particles, threads=threadCount)
 
-        X2_list = []
-        vel_list = []
-        pos_list = []
+        swarms, gBests = pso.optimize(maxIter=n_iterations)
 
-        num_iter = 0
-        for swarm in pso.sample(n_iterations):
-            X2_list.append(pso.gbest.fitness * 2)
-            vel_list.append(pso.gbest.velocity)
-            pos_list.append(pso.gbest.position)
-            num_iter += 1
-            if num_iter % 50 == 0:
-                print(num_iter)
+        likelihoods = [particle.fitness for particle in gBests]
+        ind = np.argmax(likelihoods)
 
-        result = pso.gbest.position
+        return gBests[ind].position
+        #likelihoods = np.array(likelihoods)
+        #print np.argmax(likelihoods)
+        #ind = np.argmax(likelihoods)
+        #print gBests[ind].position
 
-        return self.optimizer.lens_args_latest
+        #exit(1)
+        #for swarm in pso.sample(n_iterations):
+        #    X2_list.append(pso.gbest.fitness * 2)
+        #    vel_list.append(pso.gbest.velocity)
+        #    pos_list.append(pso.gbest.position)
+        #    num_iter += 1
+        #    if num_iter % 50 == 0:
+        #        print(num_iter)
+
+        #result = pso.gbest.position
+
+        #return self.optimizer.lens_args_latest
