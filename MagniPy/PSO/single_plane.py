@@ -43,14 +43,12 @@ class SinglePlaneOptimizer(object):
 
     def _get_images(self):
 
-        srcx,srcy = self.lensModel.ray_shooting(self._x_pos,self._y_pos,self.all_lensmodel_args,None)
+        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.all_lensmodel_args, None)
 
-        self.srcx,self.srcy = np.mean(srcx),np.mean(srcy)
-        x_image, y_image = self.solver.image_position_from_source(self.srcx,self.srcy, self.lens_args_latest)
+        self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
+        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
 
-        inds = sort_image_index(x_image, y_image, self._x_pos, self._y_pos)
-
-        return x_image[inds], y_image[inds]
+        return x_image, y_image
 
     def _source_position_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos):
 
