@@ -4,7 +4,7 @@ import time
 import numpy as np
 from cosmoHammer import ParticleSwarmOptimizer
 from Params import Params
-from lenstronomy.LensModel.lens_model import LensModel
+from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from single_plane import SinglePlaneOptimizer
 from multi_plane import MultiPlaneOptimizer
 
@@ -13,7 +13,7 @@ class QuadSampler(object):
     class which executes the different sampling  methods
     """
 
-    def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-9, magnification_target=None,
+    def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-16, magnification_target=None,
                  tol_mag=0.1, tol_centroid=None, centroid_0=None, initialized=False, astropy_instance=None, optimizer_routine=str,
                  z_main=None, multiplane=None):
         """
@@ -31,7 +31,8 @@ class QuadSampler(object):
             assert z_main is not None
             assert astropy_instance is not None
 
-        lensModel = LensModel(lens_model_list=lens_list,redshift_list=zlist,z_source=z_source,cosmo=astropy_instance,multi_plane=multiplane)
+        lensModel = LensModelExtensions(lens_model_list=lens_list,redshift_list=zlist,z_source=z_source,
+                                        cosmo=astropy_instance,multi_plane=multiplane)
 
         self.Params = Params(zlist=lensModel.redshift_list, lens_list=lensModel.lens_model_list, arg_list=arg_list,
                              optimizer_routine=optimizer_routine, initialized=initialized)
@@ -46,7 +47,7 @@ class QuadSampler(object):
                                                   k_start=self.Params.Nprofiles_to_vary, arg_list=arg_list)
 
         else:
-
+            assert z_main is not None
             self.optimizer = MultiPlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
                                                  magnification_target, tol_mag, centroid_0, tol_centroid,
                                                  k_start=self.Params.Nprofiles_to_vary, arg_list=arg_list, z_main=z_main)

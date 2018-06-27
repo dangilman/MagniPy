@@ -23,6 +23,8 @@ class SinglePlaneOptimizer(object):
         self._x_pos = x_pos
         self._y_pos = y_pos
 
+        self.all_lensmodel_args = arg_list
+
         if k_start > 0 and len(arg_list)>k_start:
 
             self.k_sub = np.arange(k_start, len(arg_list))
@@ -41,8 +43,10 @@ class SinglePlaneOptimizer(object):
 
     def _get_images(self):
 
+        srcx,srcy = self.lensModel.ray_shooting(self._x_pos,self._y_pos,self.all_lensmodel_args,None)
 
-        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
+        self.srcx,self.srcy = np.mean(srcx),np.mean(srcy)
+        x_image, y_image = self.solver.image_position_from_source(self.srcx,self.srcy, self.lens_args_latest)
 
         inds = sort_image_index(x_image, y_image, self._x_pos, self._y_pos)
 
@@ -57,9 +61,14 @@ class SinglePlaneOptimizer(object):
 
         betax, betay = self.lensModel.ray_shooting(x_pos-self.alpha_x_sub, y_pos-self.alpha_y_sub, newargs, k=self.k)
 
-        self.srcx, self.srcy = np.mean(betax), np.mean(betay)
+        dx = ((betax[0] - betax[1])**2 + (betax[0] - betax[2])**2 + (betax[0] - betax[3])**2 + (betax[1] - betax[2])**2 +
+        (betax[1] - betax[3]) ** 2 + (betax[2] - betax[3])**2)
+        dy = ((betay[0] - betay[1])**2 + (betay[0] - betay[2])**2 + (betay[0] - betay[3])**2 + (betay[1] - betay[2])**2 +
+        (betay[1] - betay[3]) ** 2 + (betay[2] - betay[3])**2)
 
-        return (np.std(betax)**2 + np.std(betay)**2) * self.tol_source ** -2
+        return 0.5*(dx+dy)*self.tol_source**-2
+
+        #return (np.std(betax)**2 + np.std(betay)**2) * self.tol_source ** -2
 
     def _magnification_penalty_long(self,  lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target, tol=0.1):
 
@@ -83,6 +92,13 @@ class SinglePlaneOptimizer(object):
 
         return 0.5*np.sum(dM ** 2)
 
+    def _jacobian(self, x_pos, y_pos,args,k, fxx=None, fyy = None, fxy = None):
+
+        if fxx is None:
+            fxx,fyy,fxy,_ = self.lensModel.hessian(x_pos,y_pos,args,k)
+
+        return np.array([[1-fxx, -fxy],[-fxy, 1-fyy]])
+
     def _magnification_penalty(self,  lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target, tol=0.1):
 
         newargs = lens_args_tovary + lens_args_fixed
@@ -94,6 +110,8 @@ class SinglePlaneOptimizer(object):
         det_J = (1-fxx)*(1-fyy) - fxy**2
 
         magnifications = np.absolute(det_J**-1)
+
+        magnifications *= max(magnifications)**-1
 
         dM = []
 
@@ -110,7 +128,7 @@ class SinglePlaneOptimizer(object):
         d_centroid = ((values_dic[0]['center_x'] - self.centroid_0[0]) * tol_centroid ** -1) ** 2 + \
                      ((values_dic[0]['center_y'] - self.centroid_0[1]) * tol_centroid ** -1) ** 2
 
-        return d_centroid
+        return 0.5*d_centroid
 
     def __call__(self, lens_values_tovary):
 
@@ -119,14 +137,14 @@ class SinglePlaneOptimizer(object):
 
         self.lens_args_latest = lens_args_tovary+params_fixed_dictionary
 
-        penalty = self._source_position_penalty(lens_args_tovary, params_fixed_dictionary,
+        if self.tol_source is not None:
+            penalty = self._source_position_penalty(lens_args_tovary, params_fixed_dictionary,
                                                     self._x_pos, self._y_pos)
 
         if self.tol_mag is not None:
             penalty += self._magnification_penalty(lens_args_tovary,params_fixed_dictionary,
                                                    self._x_pos, self._y_pos, self.magnification_target, self.tol_mag)
         if self.tol_centroid is not None:
-            penalty += self._centroid_penalty(self.Params.argstovary_todictionary(lens_args_tovary),
-                                              self.tol_centroid)
+            penalty += self._centroid_penalty(lens_args_tovary,self.tol_centroid)
 
         return -penalty, None

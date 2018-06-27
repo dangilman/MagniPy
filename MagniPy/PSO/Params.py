@@ -1,4 +1,4 @@
-from MagniPy.util import polar_to_cart,cart_to_polar
+from MagniPy.util import *
 import numpy as np
 
 class Params(object):
@@ -158,17 +158,19 @@ class ParamRanges(object):
             for pname,guess in args_init.iteritems():
 
                 if pname == 'theta_E':
-                    width = 0.01
+                    width = 0.005
                     ranges_low += [guess-width]
                     ranges_high += [guess+width]
 
                 if pname in ['e1','e2']:
-                    width = 0.01
+
+                    width = 0.015
+
                     ranges_low += [guess - width]
                     ranges_high += [guess + width]
 
                 if pname in ['center_x','center_y']:
-                    width = 0.005
+                    width = 0.0025
                     ranges_low += [guess-width]
                     ranges_high += [guess+width]
 

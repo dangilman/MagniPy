@@ -33,7 +33,7 @@ class SolveRoutines(Magnipy):
     def optimize_4imgs_lenstronomy(self,macromodel=None,datatofit=None, realizations=None, multiplane = None, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
                       polar_grid=True,initialize = True,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=100,
-                      n_iterations=100,tol_source=0.0005,tol_centroid=None,tol_mag=None,centroid_0=[0,0]):
+                      n_iterations=100,tol_source=1e-16,tol_centroid=0.04,tol_mag=None,centroid_0=[0,0]):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -53,32 +53,27 @@ class SolveRoutines(Magnipy):
         if identifier is None:
             identifier = default_file_identifier
 
-        lens_systems= []
+        if initialize:
 
-        ################################################################################
+            if init_macromodel is None:
 
-        # If macromodel is a list same length as realizations, build the systems and fit each one
+                if isinstance(macromodel,list):
+                    _, opt_macro = self.macromodel_initialize(macromodel[0], datatofit, False, method='lensmodel', sigmas=sigmas,
+                                  identifier=identifier, grid_rmax=grid_rmax, res=res,
+                                  source_shape=source_shape, source_size=source_size, print_mag=False,
+                                  solver_type='PROFILE_SHEAR',shr_coords=1)
 
-        if initialize and init_macromodel is None:
 
-            if isinstance(macromodel,list):
-                for mac in macromodel:
-                    _, opt_macro = self.macromodel_initialize(mac, datatofit, multiplane, method='lensmodel', sigmas=sigmas,
-                              identifier=identifier, grid_rmax=grid_rmax, res=res,
-                              source_shape=source_shape, source_size=source_size, print_mag=False,
-                              solver_type='PROFILE_SHEAR',shr_coords=1)
-                    init_macromodel.append(opt_macro)
-            else:
-                _, init_macromodel = self.macromodel_initialize(macromodel, datatofit, multiplane, method='lensmodel', sigmas=sigmas,
-                              identifier=identifier, grid_rmax=grid_rmax, res=res,
-                              source_shape=source_shape, source_size=source_size, print_mag=False,
-                              solver_type='PROFILE_SHEAR',shr_coords=1)
+                else:
+                    _, opt_macro = self.macromodel_initialize(macromodel, datatofit, False, method='lensmodel', sigmas=sigmas,
+                                  identifier=identifier, grid_rmax=grid_rmax, res=res,
+                                  source_shape=source_shape, source_size=source_size, print_mag=False,
+                                  solver_type='PROFILE_SHEAR',shr_coords=1)
 
-            macromodel = init_macromodel
 
-        elif init_macromodel is not None:
+        lens_systems = []
 
-            macromodel = init_macromodel
+        macromodel = opt_macro
 
         if isinstance(macromodel,list):
 

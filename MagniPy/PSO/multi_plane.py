@@ -1,16 +1,17 @@
 from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
 from MagniPy.util import sort_image_index
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 class MultiPlaneOptimizer(object):
 
-    def __init__(self, lensmodel, x_pos, y_pos, tol_source, params,\
+    def __init__(self, lensmodel, x_pos, y_pos, tol_source, params, \
                  magnification_target, tol_mag, centroid_0, tol_centroid, k_start=0, arg_list=[], z_main=None):
 
         self.Params = params
         self.lensModel = lensmodel
         self.solver = LensEquationSolver(self.lensModel)
-        k_start = k_start
 
         self.tol_source = tol_source
 
@@ -20,67 +21,82 @@ class MultiPlaneOptimizer(object):
         self.centroid_0 = centroid_0
         self.tol_centroid = tol_centroid
 
-        if k_start > 0 and len(arg_list) > 2:
+        self._x_pos = x_pos
+        self._y_pos = y_pos
 
-            self.k = np.where(self.lensModel.redshift_list>z_main)
-            k_front = np.where(self.lensModel.redshift_list<=z_main)
+        self.all_lensmodel_args = arg_list
 
-            self.alpha_x_sub, self.alpha_y_sub = self.lensModel.alpha(x_pos, y_pos, arg_list, k=k_front)
+        if k_start > 0 and len(arg_list) > k_start:
 
-            self._x_pos = x_pos - self.alpha_x_sub
-            self._y_pos = y_pos - self.alpha_y_sub
+            self.k = [0,1]
+
+
+            self.k_sub_front = [i for i in range(0,len(self.lensModel.lens_model_list)) if
+                                (self.lensModel.redshift_list[i]<=z_main) and (i not in self.k)]
+            self.k_sub_back = [i for i in range(0, len(self.lensModel.lens_model_list)) if
+                                self.lensModel.redshift_list[i] > z_main]
+
+            print self.k_sub_front
+
+            if len(self.k_sub_back)>0:
+                raise Exception('background halos not yet implemented')
+
+            self.alpha_x_sub_front, self.alpha_y_sub_front = self.lensModel.alpha(x_pos, y_pos, arg_list, k=self.k_sub_front)
+            print self.alpha_x_sub_front,self.alpha_y_sub_front
+            print x_pos,y_pos
+            exit(1)
+            if tol_mag is not None:
+                self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_front, _ = self.lensModel.hessian(x_pos, y_pos, arg_list,
+                                                                                     k=self.k_sub_front)
 
         else:
 
-            self.k = None
-            self._x_pos, self._y_pos = x_pos, y_pos
-            self.alpha_x_sub, self.alpha_y_sub = 0, 0
+            self.k, self.k_sub_font,self.k_sub_back = None, None, None
+            self.alpha_x_sub_front, self.alpha_y_sub_front = 0, 0
+            self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_font = 0, 0, 0
 
     def _get_images(self):
 
+        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.all_lensmodel_args, None)
+
+        self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
         x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
 
-        inds = sort_image_index(x_image, y_image, self.x_pos + self.alpha_x_sub, self.y_pos + self.alpha_y_sub)
+        inds = sort_image_index(x_image, y_image, self._x_pos, self._y_pos)
 
         return x_image[inds], y_image[inds]
 
-    def _source_position_penalty(self, values_to_vary, lens_args_fixed, x_pos, y_pos):
-
-        lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
+    def _source_position_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos):
 
         if len(lens_args_fixed) > 0:
             newargs = lens_args_tovary + lens_args_fixed
         else:
             newargs = lens_args_tovary
 
-        betax, betay = self.lensModel.ray_shooting(x_pos, y_pos, newargs, k=self.k)
+        betax, betay = self.lensModel.ray_shooting(x_pos - self.alpha_x_sub_front, y_pos - self.alpha_y_sub_front, newargs,
+                                                   k=self.k)
 
-        self.srcx, self.srcy = np.mean(betax), np.mean(betay)
+        dx = ((betax[0] - betax[1]) ** 2 + (betax[0] - betax[2]) ** 2 + (betax[0] - betax[3]) ** 2 + (
+                    betax[1] - betax[2]) ** 2 +
+              (betax[1] - betax[3]) ** 2 + (betax[2] - betax[3]) ** 2)
+        dy = ((betay[0] - betay[1]) ** 2 + (betay[0] - betay[2]) ** 2 + (betay[0] - betay[3]) ** 2 + (
+                    betay[1] - betay[2]) ** 2 +
+              (betay[1] - betay[3]) ** 2 + (betay[2] - betay[3]) ** 2)
 
-        std1, std2 = np.std(betax), np.std(betay)
+        return 0.5 * (dx + dy) * self.tol_source ** -2
 
-        return np.sqrt(std1 ** 2 + std2 ** 2) * self.tol_source ** -1
+        # return (np.std(betax)**2 + np.std(betay)**2) * self.tol_source ** -2
 
-    def _magnification_penalty(self, values_to_vary, lens_args_fixed, x_pos, y_pos, magnification_target, tol=0.1):
+    def _magnification_penalty_long(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target,
+                                    tol=0.1):
 
-        lens_args_tovary = self.Params.argstovary_todictionary(values_to_vary)
+        newargs = lens_args_tovary + lens_args_fixed
 
-        if len(lens_args_fixed) > 0:
-            newargs = lens_args_tovary + lens_args_fixed
-        else:
-            newargs = lens_args_tovary
+        # if self.arg_list_sub is not None:
 
-        # magnifications = self.lensModel.magnification_finite(x_pos, y_pos, newargs,
-        #                                                                 polar_grid=True,aspect_ratio=0.2,window_size=0.08,
-        #                                                                 grid_number=80)
+        #    newargs += self.arg_list_sub
 
-        magnifications = self.lensModel.magnification(x_pos, y_pos, newargs)
-
-        # magnifications = self.lensModel.magnification_finite(x_pos,y_pos,newargs,source_sigma=0.0001,polar_grid=True,window_size=0.05)
-
-        magnification_target = np.array(magnification_target)
-
-        magnifications = (magnifications) * np.max(magnifications) ** -1
+        magnifications = np.absolute(self.lensModel.magnification(x_pos, y_pos, newargs))
 
         self.magnifications = magnifications
 
@@ -92,37 +108,61 @@ class MultiPlaneOptimizer(object):
 
         dM = np.array(dM)
 
-        return np.sum(dM ** 2)
+        return 0.5 * np.sum(dM ** 2)
 
-    def _get_magnifications(self, kwargslens, x_pos, y_pos):
+    def _jacobian(self, x_pos, y_pos, args, k, fxx=None, fyy=None, fxy=None):
 
-        if hasattr(self, 'magnifications'):
+        if fxx is None:
+            fxx, fyy, fxy, _ = self.lensModel.hessian(x_pos, y_pos, args, k)
 
-            return self.magnifications
+        return np.array([[1 - fxx, -fxy], [-fxy, 1 - fyy]])
 
-        else:
-            self.magnifications = self.lensModel.magnification_finite(x_pos=x_pos, y_pos=y_pos, kwargs_lens=kwargslens,
-                                                                      polar_grid=True, aspect_ratio=0.2,
-                                                                      window_size=0.08, grid_number=80)
-            return self.magnifications * np.max(self.magnifications) ** -1
+    def _magnification_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target, tol):
+
+        newargs = lens_args_tovary + lens_args_fixed
+
+        fxx_macro, fyy_macro, fxy_macro, _ = self.lensModel.hessian(x_pos, y_pos, newargs, k=self.k)
+
+        fxx, fyy, fxy = fxx_macro + self.sub_fxx_front, fyy_macro + self.sub_fyy_front, fxy_macro + self.sub_fyy_front
+
+        det_J = (1 - fxx) * (1 - fyy) - fxy ** 2
+
+        magnifications = np.absolute(det_J ** -1)
+
+        magnifications *= max(magnifications) ** -1
+
+        dM = []
+
+        for i, target in enumerate(magnification_target):
+            mag_tol = tol * target
+            dM.append((magnifications[i] - target) * mag_tol ** -1)
+
+        dM = np.array(dM)
+
+        return 0.5 * np.sum(dM ** 2)
 
     def _centroid_penalty(self, values_dic, tol_centroid):
 
         d_centroid = ((values_dic[0]['center_x'] - self.centroid_0[0]) * tol_centroid ** -1) ** 2 + \
                      ((values_dic[0]['center_y'] - self.centroid_0[1]) * tol_centroid ** -1) ** 2
 
-        return d_centroid
+        return 0.5 * d_centroid
 
     def __call__(self, lens_values_tovary):
 
-        penalty = self._source_position_penalty(lens_values_tovary, self.Params.argsfixed_todictionary(),
-                                                self._x_pos, self._y_pos)
+        params_fixed_dictionary = self.Params.argsfixed_todictionary()
+        lens_args_tovary = self.Params.argstovary_todictionary(lens_values_tovary)
+
+        self.lens_args_latest = lens_args_tovary + params_fixed_dictionary
+
+        if self.tol_source is not None:
+            penalty = self._source_position_penalty(lens_args_tovary, params_fixed_dictionary,
+                                                    self._x_pos, self._y_pos)
 
         if self.tol_mag is not None:
-            penalty += self._magnification_penalty(lens_values_tovary, self.Params.argsfixed_todictionary(),
+            penalty += self._magnification_penalty(lens_args_tovary, params_fixed_dictionary,
                                                    self._x_pos, self._y_pos, self.magnification_target, self.tol_mag)
         if self.tol_centroid is not None:
-            penalty += self._centroid_penalty(self.Params.argstovary_todictionary(lens_values_tovary),
-                                              self.tol_centroid)
+            penalty += self._centroid_penalty(lens_args_tovary, self.tol_centroid)
 
         return -penalty, None
