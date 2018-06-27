@@ -138,11 +138,13 @@ class Magnipy:
 
             kwargs_lens, source, [x_opt,y_opt] = sampler.pso(n_particles, n_iterations)
             xsrc, ysrc = source[0], source[1]
+            
+            lensModel = sampler.optimizer.lensModel
 
             if len(x_opt) != 4 or len(y_opt) != 4:
 
-                solver = Solver4Point(lensModel=sampler.optimizer.lensModel, solver_type=solver_type)
-                lensEquationSolver = LensEquationSolver(lensModel=sampler.optimizer.lensModel)
+                solver = Solver4Point(lensModel=lensModel, solver_type=solver_type)
+                lensEquationSolver = LensEquationSolver(lensModel)
 
                 kwargs_lens, precision = solver.constraint_lensmodel(x_pos=data2fit.x, y_pos=data2fit.y,
                                                                      kwargs_list=kwargs_lens)
@@ -154,9 +156,6 @@ class Magnipy:
                                                                              kwargs_lens=kwargs_lens,
                                                                              arrival_time_sort=False,
                                                                              num_iter_max=100)
-
-            lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
-                                       redshift_list=redshift_list, z_source=self.zsrc)
 
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
