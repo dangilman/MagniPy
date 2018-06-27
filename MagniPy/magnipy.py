@@ -137,8 +137,23 @@ class Magnipy:
                                   optimizer_routine='optimize_SIE_shear',z_main=self.zmain,multiplane=system.multiplane)
 
             kwargs_lens, source, [x_opt,y_opt] = sampler.pso(n_particles, n_iterations)
+            xsrc, ysrc = source[0], source[1]
 
-            xsrc,ysrc=source[0],source[1]
+            if len(x_opt) != 4 or len(y_opt) != 4:
+
+                solver = Solver4Point(lensModel=sampler.optimizer.lensModel, solver_type=solver_type)
+                lensEquationSolver = LensEquationSolver(lensModel=sampler.optimizer.lensModel)
+
+                kwargs_lens, precision = solver.constraint_lensmodel(x_pos=data2fit.x, y_pos=data2fit.y,
+                                                                     kwargs_list=kwargs_lens)
+                xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
+                xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
+
+
+                x_opt, y_opt = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc, sourcePos_y=ysrc,
+                                                                             kwargs_lens=kwargs_lens,
+                                                                             arrival_time_sort=False,
+                                                                             num_iter_max=100)
 
             lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
                                        redshift_list=redshift_list, z_source=self.zsrc)
