@@ -6,9 +6,10 @@ from cosmoHammer import ParticleSwarmOptimizer
 from Params import Params
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from single_plane import SinglePlaneOptimizer
+from scipy.optimize import minimize
 from multi_plane import MultiPlaneOptimizer
 
-class QuadSampler(object):
+class Optimizer(object):
     """
     class which executes the different sampling  methods
     """
@@ -53,17 +54,23 @@ class QuadSampler(object):
                                                  k_start=self.Params.Nprofiles_to_vary, arg_list=arg_list, z_main=z_main)
 
 
-    def pso(self, n_particles, n_iterations):
+    def optimize(self,n_particles=None,n_iterations=None,method='PS'):
 
-        optimized_args = self._pso(n_particles,n_iterations)
+        optimized_args = self._pso(n_particles, n_iterations)
+
+        if method == 'optimize':
+            print 'optimizing... '
+            opt = minimize(self.optimizer,x0=optimized_args,args=(1),tol=1e-16)
+
+            optimized_args = opt['x']
 
         optimized_args = self.optimizer.Params.argstovary_todictionary(optimized_args)
 
         optimized_args += self.optimizer.Params.argsfixed_todictionary()
 
-        ximg,yimg = self.optimizer._get_images()
+        ximg, yimg = self.optimizer._get_images()
 
-        return optimized_args,[self.optimizer.srcx, self.optimizer.srcy], [ximg,yimg]
+        return optimized_args, [self.optimizer.srcx, self.optimizer.srcy], [ximg, yimg]
 
     def _pso(self, n_particles, n_iterations, lowerLimit=None, upperLimit=None, threadCount=1):
 

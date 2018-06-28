@@ -11,7 +11,7 @@ from MagniPy.Solver.RayTrace import raytrace
 from MagniPy.lensdata import Data
 import os
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
-from MagniPy.PSO.QuadPSO import QuadSampler
+from MagniPy.PSO.optimizer import Optimizer
 
 class Magnipy:
     """
@@ -121,7 +121,7 @@ class Magnipy:
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
                                     centroid_0=None,n_particles=50,n_iterations=400,initialized=False,
-                                    grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
+                                    grid_rmax=None, res=None,source_shape='GAUSSIAN', method='optimize',source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR'):
 
         data, opt_sys = [], []
@@ -130,18 +130,19 @@ class Magnipy:
 
             redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
 
-            sampler = QuadSampler(zlist=redshift_list,lens_list=lens_list,arg_list=lensmodel_params,z_source=self.zsrc,
-                                  x_pos=data2fit.x,y_pos=data2fit.y,tol_source=tol_source,magnification_target=data2fit.m,
-                                  tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,initialized=initialized,
-                                  astropy_instance=self.cosmo.cosmo,
-                                  optimizer_routine='optimize_SIE_shear',z_main=self.zmain,multiplane=system.multiplane)
+            sampler = Optimizer(zlist=redshift_list, lens_list=lens_list, arg_list=lensmodel_params, z_source=self.zsrc,
+                                x_pos=data2fit.x, y_pos=data2fit.y, tol_source=tol_source, magnification_target=data2fit.m,
+                                tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0, initialized=initialized,
+                                astropy_instance=self.cosmo.cosmo,
+                                optimizer_routine='optimize_SIE_shear', z_main=self.zmain, multiplane=system.multiplane)
 
-            kwargs_lens, source, [x_opt,y_opt] = sampler.pso(n_particles, n_iterations)
+            kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations, method=method)
             xsrc, ysrc = source[0], source[1]
-            
+
             lensModel = sampler.optimizer.lensModel
 
-            if len(x_opt) != 4 or len(y_opt) != 4:
+            print chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True)
+            if chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.5:
 
                 solver = Solver4Point(lensModel=lensModel, solver_type=solver_type)
                 lensEquationSolver = LensEquationSolver(lensModel)
@@ -156,6 +157,8 @@ class Magnipy:
                                                                              kwargs_lens=kwargs_lens,
                                                                              arrival_time_sort=False,
                                                                              num_iter_max=100)
+
+
 
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,

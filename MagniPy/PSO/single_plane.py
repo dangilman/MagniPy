@@ -128,7 +128,7 @@ class SinglePlaneOptimizer(object):
 
         return 0.5*d_centroid
 
-    def __call__(self, lens_values_tovary):
+    def __call__(self, lens_values_tovary,sign_swith=-1):
 
         params_fixed_dictionary = self.Params.argsfixed_todictionary()
         lens_args_tovary = self.Params.argstovary_todictionary(lens_values_tovary)
@@ -145,4 +145,7 @@ class SinglePlaneOptimizer(object):
         if self.tol_centroid is not None:
             penalty += self._centroid_penalty(lens_args_tovary,self.tol_centroid)
 
-        return -penalty, None
+        if sign_swith == -1:
+            return sign_swith*penalty, None
+        else:
+            return sign_swith*penalty
