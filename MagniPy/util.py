@@ -551,7 +551,7 @@ def chi_square_img(data1x,data1y,data2x,data2y,sigma,reorder=False):
     if reorder:
         inds = sort_image_index(data1x,data1y,data2x,data2y)
         data1x = data1x[inds]
-        data2x = data2x[inds]
+        data1y = data1y[inds]
 
     return np.sum(((data1x - data2x)*sigma**-1)**2 + ((data1y - data2y)*sigma**-1)**2)
 
