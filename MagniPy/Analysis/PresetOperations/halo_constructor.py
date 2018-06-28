@@ -49,7 +49,7 @@ class Constructor(object):
             if filter_halo_positions:
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
                                                   massprofile=prof, model_kwargs=mod_args, Nrealizations=Nrealizations,
-                                                      filter_halo_positions=filter_halo_positions, **filter_kwargs))
+                                                      filter_halo_positions=True, **filter_kwargs))
             else:
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
                                                  massprofile=prof, model_kwargs=mod_args, Nrealizations=Nrealizations))

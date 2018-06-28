@@ -5,6 +5,7 @@ import numpy as np
 from cosmoHammer import ParticleSwarmOptimizer
 from Params import Params
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+from lenstronomy.LensModel.lens_model import LensModel
 from single_plane import SinglePlaneOptimizer
 from scipy.optimize import minimize
 from multi_plane import MultiPlaneOptimizer
@@ -14,9 +15,9 @@ class Optimizer(object):
     class which executes the different sampling  methods
     """
 
-    def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-16, magnification_target=None,
+    def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-16,magnification_target=None,
                  tol_mag=0.1, tol_centroid=None, centroid_0=None, initialized=False, astropy_instance=None, optimizer_routine=str,
-                 z_main=None, multiplane=None):
+                 z_main=None, multiplane=None,lenstronomy_wrap = None, interp_range = 3, interp_resolution = 1e-3):
         """
         initialise the classes for parameter options and solvers
         """
@@ -49,9 +50,28 @@ class Optimizer(object):
 
         else:
             assert z_main is not None
-            self.optimizer = MultiPlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
-                                                 magnification_target, tol_mag, centroid_0, tol_centroid,
-                                                 k_start=self.Params.Nprofiles_to_vary, arg_list=arg_list, z_main=z_main)
+            assert z_source > z_main
+
+            exclude_k = np.arange(0,self.Params.Nprofiles_to_vary)
+
+            lensmodel_main,main_args = lenstronomy_wrap.split_lensmodel(lensModel,arg_list,z_main,z_main,keep_k = exclude_k, multiplane=True)
+
+            lensmodel_front,front_args = lenstronomy_wrap.split_lensmodel(lensModel,arg_list,0,z_main,exclude_k=exclude_k,
+                                                                                           multiplane=True)
+
+            x_values = y_values = np.linspace(-interp_range, interp_range,
+                                              int(2 * interp_range * interp_resolution ** -1))
+
+            print 'computing background deflections... '
+
+            lensing_components_back, lensModel_interpolated_back = lenstronomy_wrap.interpolate_LOS(x_values, y_values,
+                                                                                           lensModel,arg_list,z_main, z_source,
+                                                                                           exclude_k=exclude_k)
+            print 'done.'
+
+            self.optimizer = MultiPlaneOptimizer(lensModel,arg_list,lensmodel_main,main_args,lensmodel_front,front_args,lensing_components_back,
+                                                 lensModel_interpolated_back,x_pos, y_pos, tol_source, self.Params,
+                                                 magnification_target, tol_mag,centroid_0, tol_centroid, z_main, z_source)
 
 
     def optimize(self,n_particles=None,n_iterations=None,method='PS'):
@@ -60,7 +80,7 @@ class Optimizer(object):
 
         if method == 'optimize':
             print 'optimizing... '
-            opt = minimize(self.optimizer,x0=optimized_args,args=(1),tol=1e-16)
+            opt = minimize(self.optimizer,x0=optimized_args,args=(1),tol=1e-25)
 
             optimized_args = opt['x']
 

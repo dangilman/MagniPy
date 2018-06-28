@@ -3,7 +3,7 @@ import numpy as np
 from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_gridrmax,default_res,\
     default_source_shape,default_source_size,default_solve_method,default_file_identifier
 import copy
-from MagniPy.Solver.LenstronomyWrap.generate_input import LenstronomyWrap
+from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
 
 class SolveRoutines(Magnipy):
     """
@@ -33,7 +33,7 @@ class SolveRoutines(Magnipy):
     def optimize_4imgs_lenstronomy(self,macromodel=None,datatofit=None, realizations=None, multiplane = None, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
                       polar_grid=True,initialize = True,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=25,
-                      n_iterations=600,tol_source=1e-16,tol_centroid=0.04,tol_mag=None,centroid_0=[0,0],method='PS'):
+                      n_iterations=600,tol_source=1e-16,tol_centroid=0.04,tol_mag=None,centroid_0=[0,0],method='PS',refit=True):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -94,7 +94,7 @@ class SolveRoutines(Magnipy):
                                   tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
                                   n_iterations=n_iterations,grid_rmax=grid_rmax, res=res,
                                  source_size=source_size,raytrace_with=raytrace_with,initialized=initialize,
-                                 source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type,method=method)
+                                 source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type,method=method,refit=refit)
 
         return optimized_data,model
 

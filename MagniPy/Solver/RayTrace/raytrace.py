@@ -2,7 +2,7 @@ import numpy as np
 from source_models import *
 from MagniPy.util import *
 import matplotlib.pyplot as plt
-from MagniPy.Solver.LenstronomyWrap import generate_input,MultiLensWrap
+from MagniPy.Solver.LenstronomyWrap import lenstronomy_wrap,MultiLensWrap
 
 class RayTrace:
 

@@ -6,12 +6,23 @@ import matplotlib.pyplot as plt
 
 class MultiPlaneOptimizer(object):
 
-    def __init__(self, lensmodel, x_pos, y_pos, tol_source, params, \
-                 magnification_target, tol_mag, centroid_0, tol_centroid, k_start=0, arg_list=[], z_main=None):
+    def __init__(self,lensmodel_full,all_args,lensmodel_main,main_args,lensmodel_front,front_args,lensing_components_back,
+                 lensModel_interpolated_back,x_pos, y_pos, tol_source, params, \
+                 magnification_target, tol_mag, centroid_0, tol_centroid, z_main, z_src):
 
         self.Params = params
-        self.lensModel = lensmodel
-        self.solver = LensEquationSolver(self.lensModel)
+
+        self.lensmodel = lensmodel_full
+        self.all_lensmodel_args = all_args
+
+        self.lensModel_main = lensmodel_main
+        self.main_args = main_args
+
+        self.lensModel_front = lensmodel_front
+        self.front_args = front_args
+
+        self.lensModel_back = lensModel_interpolated_back
+        self.back_args = lensing_components_back
 
         self.tol_source = tol_source
 
@@ -24,55 +35,39 @@ class MultiPlaneOptimizer(object):
         self._x_pos = x_pos
         self._y_pos = y_pos
 
-        self.all_lensmodel_args = arg_list
+        self.z_main = z_main
+        self.zsrc = z_src
 
-        if k_start > 0 and len(arg_list) > k_start:
-
-            self.k = [0,1]
-
-
-            self.k_sub_front = [i for i in range(0,len(self.lensModel.lens_model_list)) if
-                                (self.lensModel.redshift_list[i]<=z_main) and (i not in self.k)]
-            self.k_sub_back = [i for i in range(0, len(self.lensModel.lens_model_list)) if
-                                self.lensModel.redshift_list[i] > z_main]
-
-            print self.k_sub_front
-
-            if len(self.k_sub_back)>0:
-                raise Exception('background halos not yet implemented')
-
-            self.alpha_x_sub_front, self.alpha_y_sub_front = self.lensModel.alpha(x_pos, y_pos, arg_list, k=self.k_sub_front)
-            print self.alpha_x_sub_front,self.alpha_y_sub_front
-            print x_pos,y_pos
-            exit(1)
-            if tol_mag is not None:
-                self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_front, _ = self.lensModel.hessian(x_pos, y_pos, arg_list,
-                                                                                     k=self.k_sub_front)
-
+        if len(front_args) > 0:
+            self.alpha_x_sub_front, self.alpha_y_sub_front = self.lensModel_front.alpha(self._x_pos,self._y_pos,front_args)
         else:
+            self.alpha_y_sub_front,self.alpha_y_sub_front = 0,0
 
-            self.k, self.k_sub_font,self.k_sub_back = None, None, None
-            self.alpha_x_sub_front, self.alpha_y_sub_front = 0, 0
-            self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_font = 0, 0, 0
+    def _shoot_through_lensmodel(self,x_pos,y_pos,tovary_args):
 
-    def _get_images(self):
+        x_out,y_out,alpha_x_out,alpha_y_out = self.lensModel_main.lens_model.ray_shooting_partial(0, 0, x_pos, y_pos,
+                           0, self.z_main, tovary_args)
 
-        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.all_lensmodel_args, None)
+        alpha_x_out += self.alpha_x_sub_front
+        alpha_y_out += self.alpha_y_sub_front
 
-        self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
-        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
+        if self.lensModel_back is None:
+            if not hasattr(self,'D_T_lens_source'):
+                self.D_T_lens_source = self.lensmodel.lens_model._cosmo_bkg.T_xy(self.z_main, self.zsrc)
+            x_out,y_out = x_out - alpha_x_out*self.D_T_lens_source,y_out-alpha_y_out*self.D_T_lens_source
+        else:
+            x_out, y_out, alpha_x_out, alpha_y_out = self.lensModel_back.lens_model.ray_shooting_partial(x=x_out, y=y_out, alpha_x=alpha_x_out,
+                                    alpha_y=alpha_y_out,z_start=self.z_main,z_stop=self.zsrc,
+                                    kwargs_lens=self.back_args)
 
-        return x_image, y_image
+        beta_x, beta_y = self.lensModel_back._co_moving2angle_source(x_out, y_out)
+
+        return beta_x,beta_y
+
 
     def _source_position_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos):
 
-        if len(lens_args_fixed) > 0:
-            newargs = lens_args_tovary + lens_args_fixed
-        else:
-            newargs = lens_args_tovary
-
-        betax, betay = self.lensModel.ray_shooting(x_pos - self.alpha_x_sub_front, y_pos - self.alpha_y_sub_front, newargs,
-                                                   k=self.k)
+        betax, betay = self._shoot_through_lensmodel(x_pos,y_pos,lens_args_tovary)
 
         dx = ((betax[0] - betax[1]) ** 2 + (betax[0] - betax[2]) ** 2 + (betax[0] - betax[3]) ** 2 + (
                     betax[1] - betax[2]) ** 2 +
@@ -85,28 +80,16 @@ class MultiPlaneOptimizer(object):
 
         # return (np.std(betax)**2 + np.std(betay)**2) * self.tol_source ** -2
 
-    def _magnification_penalty_long(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target,
-                                    tol=0.1):
+    def _get_images(self):
 
-        newargs = lens_args_tovary + lens_args_fixed
+        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.lens_args_latest, None)
 
-        # if self.arg_list_sub is not None:
+        solver = LensEquationSolver(self.lensmodel)
+        self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
+        x_image, y_image = solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
 
-        #    newargs += self.arg_list_sub
+        return x_image, y_image
 
-        magnifications = np.absolute(self.lensModel.magnification(x_pos, y_pos, newargs))
-
-        self.magnifications = magnifications
-
-        dM = []
-
-        for i, target in enumerate(magnification_target):
-            mag_tol = tol * target
-            dM.append((magnifications[i] - target) * mag_tol ** -1)
-
-        dM = np.array(dM)
-
-        return 0.5 * np.sum(dM ** 2)
 
     def _jacobian(self, x_pos, y_pos, args, k, fxx=None, fyy=None, fxy=None):
 

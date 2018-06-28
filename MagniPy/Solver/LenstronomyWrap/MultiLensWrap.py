@@ -1,4 +1,4 @@
-from MagniPy.Solver.LenstronomyWrap.generate_input import LenstronomyWrap
+from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from lenstronomy.Util.util import array2image,image2array
 import matplotlib.pyplot as plt
