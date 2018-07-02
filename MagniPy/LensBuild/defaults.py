@@ -48,7 +48,7 @@ default_sigmas = [sigma_pos,sigma_flux,sigma_time]
 
 default_solve_method = 'lenstronomy'
 raytrace_with_default = 'lenstronomy'
-default_file_identifier = 'run'
+default_file_identifier = 'run_'+str(np.random.random_integers(1,10**6))
 
 def default_gridrmax(srcsize):
 

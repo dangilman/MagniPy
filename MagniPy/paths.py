@@ -23,12 +23,6 @@ elif homedir == '/Users/danielgi/':
     path_2_lensmodel = homedir + '/Code/'
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
-elif homedir == '/Users/mcsedarous/':
-    prefix = homedir
-    IO_directory = prefix
-    path_2_lensmodel = homedir + 'Desktop/research_Treu/'
-    gravlens_input_path = IO_directory + 'data/gravlens_input/'
-
 if os.path.exists(path_2_lensmodel+'lensmodel'):
     pass
 else:

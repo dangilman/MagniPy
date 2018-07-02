@@ -80,92 +80,87 @@ class LenstronomyWrap:
 
         return np.absolute(magnification)
 
-    def interpolate_lensmodel(self,lens_model_list,x_values,y_values,redshift_list=None,kwargs_lens=None,multiplane=False,
-                              z_source=None):
+    def interpolate_lensmodel(self,x_values,y_values,lensModel,kwargs_lens,multi_plane,z_model=None,z_source=None):
 
         xx,yy = np.meshgrid(x_values,y_values)
         xx,yy = xx.ravel(),yy.ravel()
 
-        if len(lens_model_list)>0:
-            if multiplane is False:
+        if len(lensModel.lens_model_list)>0 and multi_plane is True:
 
-                lenmodel_init = LensModel(lens_model_list)
+            lensmodel_interpolated = LensModel(['INTERPOL'],multi_plane=multi_plane,z_source=z_source,cosmo=self.astropy_instance,
+                                               redshift_list=[z_model])
 
-                lensmodel_interpolated = LensModel(['INTERPOL'])
+            f_x, f_y = lensModel.alpha(xx, yy, kwargs_lens)
+            f_xx, f_yy, f_xy, f_yx = lensModel.hessian(xx, yy, kwargs_lens)
+            args = [{'f_x': f_x, 'f_y': f_y, 'f_xx': f_xx, 'f_yy': f_yy, 'f_xy': f_xy, 'f_yx': f_yx}]
 
-                f_x, f_y = lenmodel_init.alpha(xx, yy, kwargs_lens)
-                deflection_angles = [{'f_x': f_x, 'f_y': f_y}]
+        elif len(lensModel.lens_model_list)>0 and multi_plane is False:
 
+            raise Exception('single plane interpolation not implmeneted.')
+
+        else:
+
+            raise Exception('length of lens_model_list must be > 0.')
+
+        return lensmodel_interpolated,args
+
+    def multi_plane_partition(self,lensModel_full,kwargs_lens_full,z_main,z_source,macro_inds=[0,1]):
+        """
+        Splits a full LOS lens model into
+        1) front-of-macromodel+main lens plane subhalos
+        2) macromodel
+        3) behind lens halos
+        :param lensModel:
+        :param kwargs_lens:
+        :param z_start:
+        :param z_end:
+        :param exclude_k:
+        :param keep_k:
+        :return:
+        """
+
+        lens_list = lensModel_full.lens_model_list
+        z_list = lensModel_full.redshift_list
+
+        macromodel_kwargs,macromodel_lens_list,macromodel_redshift = [], [], []
+        front_kwargs, front_lens_list, front_redshift = [], [], []
+        back_kwargs, back_lens_list, back_redshift = [], [], []
+
+        for index in range(0,len(kwargs_lens_full)):
+            if index in macro_inds:
+                macromodel_kwargs.append(kwargs_lens_full[index])
+                macromodel_lens_list.append(lens_list[index])
+                macromodel_redshift.append(z_main)
             else:
+                if z_list[index]<=z_main:
+                    front_kwargs.append(kwargs_lens_full[index])
+                    front_lens_list.append(lens_list[index])
+                    front_redshift.append(z_list[index])
+                else:
+                    front_kwargs.append(kwargs_lens_full[index])
+                    front_lens_list.append(lens_list[index])
+                    front_redshift.append(z_list[index])
 
-                lenmodel_init = LensModel(lens_model_list,redshift_list=redshift_list,z_source=z_source,
-                                          cosmo=self.astropy_instance,multi_plane=True)
+        macromodel_lensmodel = LensModel(lens_model_list=macromodel_lens_list,redshift_list=macromodel_redshift,
+                                         z_source=z_source,multi_plane=True,cosmo=self.astropy_instance)
 
-                lensmodel_interpolated = LensModel(['INTERPOL'])
+        front_lensmodel = LensModel(lens_model_list=front_lens_list, redshift_list=front_redshift,
+                                         z_source=z_source, multi_plane=True, cosmo=self.astropy_instance)
+        back_lensmodel = LensModel(lens_model_list=back_lens_list, redshift_list=back_redshift,
+                                   z_source=z_source,cosmo=self.astropy_instance,multi_plane=True)
 
-                f_x, f_y = lenmodel_init.alpha(xx, yy, kwargs_lens)
-                deflection_angles = [{'f_x': f_x, 'f_y': f_y}]
+        return [macromodel_lensmodel,macromodel_kwargs],[front_lensmodel,front_kwargs],[back_lensmodel,back_kwargs]
 
-        else:
+    def behind_main_plane(self,lensModel,z_main):
 
-            lensmodel_interpolated = None
+        assert lensModel.multi_plane is True
 
-            deflection_angles = None
+        for idx in lensModel.lens_model._sorted_redshift_index:
 
-        return deflection_angles,lensmodel_interpolated
+            if lensModel.redshift_list[idx]>z_main:
+                return lensModel.redshift_list[idx]
 
-    def interpolate_LOS(self,x_values,y_values,lensModel,kwargs_lens,z_start,z_end,exclude_k=None):
-
-        lists = self._multi_plane_partition(lensModel,kwargs_lens,z_start,z_end,exclude_k)
-
-        lensing,lensModel_interpolated = self.interpolate_lensmodel(lists['lens_model_list'],x_values,y_values,
-                                        redshift_list=lists['redshift_list'],kwargs_lens=lists['kwargs_lens'],
-                                          multiplane=True,z_source=self.zsrc)
-
-        return lensing,lensModel_interpolated
-
-    def split_lensmodel(self,lensModel,kwargs_lens,z_start,z_end,exclude_k=None,keep_k=None,multiplane=None):
-
-        lists = self._multi_plane_partition(lensModel,kwargs_lens,z_start,z_end,exclude_k,keep_k)
-
-        return LensModelExtensions(lists['lens_model_list'],z_source=self.zsrc,redshift_list=lists['redshift_list'],
-                                   cosmo=self.astropy_instance,multi_plane=multiplane),lists['kwargs_lens']
-
-    def _multi_plane_partition(self,lensModel,kwargs_lens,z_start,z_end,exclude_k=None,keep_k=None):
-
-        zlist = lensModel.redshift_list
-        lens_list = lensModel.lens_model_list
-
-        zlist = np.array(zlist)
-
-        redshifts, lenses, lens_kwargs = [], [], []
-
-        if exclude_k is None and keep_k is None:
-
-            for i in range(0, len(lens_list)):
-                if zlist[i] > z_start and zlist[i] <= z_end:
-                    redshifts.append(zlist[i])
-                    lenses.append(lens_list[i])
-                    lens_kwargs.append(kwargs_lens[i])
-
-        else:
-
-            for i in range(0, len(lens_list)):
-
-                if keep_k is not None and i in keep_k:
-
-                    redshifts.append(zlist[i])
-                    lenses.append(lens_list[i])
-                    lens_kwargs.append(kwargs_lens[i])
-
-                elif zlist[i] > z_start and zlist[i] <= z_end:
-
-                    if i not in exclude_k:
-                        redshifts.append(zlist[i])
-                        lenses.append(lens_list[i])
-                        lens_kwargs.append(kwargs_lens[i])
-
-        return {'redshift_list': redshifts, 'lens_model_list': lenses, 'kwargs_lens': lens_kwargs}
+        raise Exception('no halos behind main lens plane')
 
 
 

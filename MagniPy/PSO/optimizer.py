@@ -6,8 +6,9 @@ from cosmoHammer import ParticleSwarmOptimizer
 from Params import Params
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from lenstronomy.LensModel.lens_model import LensModel
-from single_plane import SinglePlaneOptimizer
+from single_plane import SinglePlaneOptimizer,SinglePlaneOptimizer_SHEAR
 from scipy.optimize import minimize
+from scipy.linalg import lstsq
 from multi_plane import MultiPlaneOptimizer
 
 class Optimizer(object):
@@ -24,10 +25,11 @@ class Optimizer(object):
         assert len(x_pos) == 4
         assert len(y_pos) == 4
         assert len(magnification_target) == len(x_pos)
-        assert optimizer_routine in ['optimize_SIE_shear','optimize_plaw_shear']
+        assert optimizer_routine in ['optimize_SIE_shear','optimize_plaw_shear','optimize_SHEAR']
         assert tol_source is not None
         assert len(zlist) == len(lens_list) == len(arg_list)
 
+        assert multiplane is False
         if multiplane is True:
             assert z_source is not None
             assert z_main is not None
@@ -44,33 +46,36 @@ class Optimizer(object):
 
         if multiplane is False:
 
-            self.optimizer = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
+            if optimizer_routine == 'optimize_SHEAR':
+                self.optimizer = SinglePlaneOptimizer_SHEAR(lensModel, x_pos, y_pos, tol_source, self.Params, \
+                                                  magnification_target, tol_mag, centroid_0, tol_centroid, arg_list=arg_list)
+
+            else:
+                self.optimizer = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
                                                   magnification_target, tol_mag, centroid_0, tol_centroid,
-                                                  k_start=self.Params.Nprofiles_to_vary, arg_list=arg_list)
+                                                  k_start=self.Params.vary_inds[1], arg_list=arg_list)
+                self.optimizer_2 = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
+                                                  magnification_target, tol_mag, centroid_0, tol_centroid,
+                                                  k_start=self.Params.vary_inds[1], arg_list=arg_list,return_sign=1)
+
+
 
         else:
+
             assert z_main is not None
             assert z_source > z_main
 
-            exclude_k = np.arange(0,self.Params.Nprofiles_to_vary)
+            [lensmodel_main,main_args],[lensmodel_front,front_args],[back,back_args] = lenstronomy_wrap.multi_plane_partition(lensModel,arg_list,z_main,z_source,macro_inds=[0,1])
 
-            lensmodel_main,main_args = lenstronomy_wrap.split_lensmodel(lensModel,arg_list,z_main,z_main,keep_k = exclude_k, multiplane=True)
+            x_values = y_values = np.linspace(-interp_range,interp_range,2*interp_range*interp_resolution**-1)
 
-            lensmodel_front,front_args = lenstronomy_wrap.split_lensmodel(lensModel,arg_list,0,z_main,exclude_k=exclude_k,
-                                                                                           multiplane=True)
+            z_background = lenstronomy_wrap.behind_main_plane(lensModel,z_main)
 
-            x_values = y_values = np.linspace(-interp_range, interp_range,
-                                              int(2 * interp_range * interp_resolution ** -1))
+            back_interpolated,back_args_interpolated = lenstronomy_wrap.interpolate_lensmodel(x_values,y_values,
+                                              lensModel,arg_list,multi_plane=multiplane,z_model=z_background,z_source=z_source)
 
-            print 'computing background deflections... '
-
-            lensing_components_back, lensModel_interpolated_back = lenstronomy_wrap.interpolate_LOS(x_values, y_values,
-                                                                                           lensModel,arg_list,z_main, z_source,
-                                                                                           exclude_k=exclude_k)
-            print 'done.'
-
-            self.optimizer = MultiPlaneOptimizer(lensModel,arg_list,lensmodel_main,main_args,lensmodel_front,front_args,lensing_components_back,
-                                                 lensModel_interpolated_back,x_pos, y_pos, tol_source, self.Params,
+            self.optimizer = MultiPlaneOptimizer(lensModel,arg_list,lensmodel_main,main_args,lensmodel_front,front_args,back_interpolated,
+                                                 back_args_interpolated, x_pos, y_pos, tol_source, self.Params,
                                                  magnification_target, tol_mag,centroid_0, tol_centroid, z_main, z_source)
 
 
@@ -79,8 +84,8 @@ class Optimizer(object):
         optimized_args = self._pso(n_particles, n_iterations)
 
         if method == 'optimize':
-            print 'optimizing... '
-            opt = minimize(self.optimizer,x0=optimized_args,args=(1),tol=1e-25)
+
+            opt = minimize(self.optimizer_2,x0=optimized_args,tol=1e-20)
 
             optimized_args = opt['x']
 
@@ -92,7 +97,8 @@ class Optimizer(object):
 
         return optimized_args, [self.optimizer.srcx, self.optimizer.srcy], [ximg, yimg]
 
-    def _pso(self, n_particles, n_iterations, lowerLimit=None, upperLimit=None, threadCount=1):
+    def _pso(self, n_particles, n_iterations, lowerLimit=None, upperLimit=None, threadCount=1,social_influence = 0.9,
+             personal_influence=1.3):
 
         """
         returns the best fit for the lense model on catalogue basis with particle swarm optimizer
@@ -107,7 +113,7 @@ class Optimizer(object):
 
         pso = ParticleSwarmOptimizer(self.optimizer, lowerLimit, upperLimit, n_particles, threads=threadCount)
 
-        swarms, gBests = pso.optimize(maxIter=n_iterations)
+        swarms, gBests = pso.optimize(maxIter=n_iterations,c1=social_influence,c2=personal_influence)
 
         likelihoods = [particle.fitness for particle in gBests]
         ind = np.argmax(likelihoods)

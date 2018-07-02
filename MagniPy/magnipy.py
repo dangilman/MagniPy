@@ -122,7 +122,7 @@ class Magnipy:
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
                                     centroid_0=None,n_particles=50,n_iterations=400,initialized=False,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', method='optimize',source_size=None,raytrace_with='lenstronomy',
-                                    polar_grid=True,solver_type='PROFILE_SHEAR',refit=True):
+                                    polar_grid=True,solver_type='PROFILE_SHEAR',refit=True,optimizer_routine=str):
 
         data, opt_sys = [], []
 
@@ -137,24 +137,23 @@ class Magnipy:
             sampler = Optimizer(zlist=redshift_list, lens_list=lens_list, arg_list=lensmodel_params, lenstronomy_wrap = lenstronomyWrap,
                                 z_source=self.zsrc,x_pos=data2fit.x, y_pos=data2fit.y, tol_source=tol_source,
                                 magnification_target=data2fit.m,tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
-                                initialized=initialized,astropy_instance=self.cosmo.cosmo,optimizer_routine='optimize_SIE_shear',
+                                initialized=initialized,astropy_instance=self.cosmo.cosmo,optimizer_routine=optimizer_routine,
                                 z_main=self.zmain, multiplane=system.multiplane)
 
             kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations, method=method)
+
             xsrc, ysrc = source[0], source[1]
 
             lensModel = sampler.optimizer.lensModel
 
-            print chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True)
-            print chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.1 and refit
-            if chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.1 and refit:
+            if len(x_opt) == len(data2fit.x) and chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.1 and refit:
 
-                kwargs_lens = lenstronomyWrap.fit_lensmodel(x_opt,y_opt,lensModel,solver_type,lensmodel_params)
-
+                kwargs_lens = lenstronomyWrap.fit_lensmodel(x_opt,y_opt,lensModel,solver_type,kwargs_lens)
+                print kwargs_lens[1]
                 xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
                 xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-                x_opt, y_opt = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,lensmodel_params)
+                x_opt, y_opt = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,kwargs_lens)
 
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,

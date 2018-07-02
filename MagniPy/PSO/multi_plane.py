@@ -12,7 +12,7 @@ class MultiPlaneOptimizer(object):
 
         self.Params = params
 
-        self.lensmodel = lensmodel_full
+        self.lensModel = lensmodel_full
         self.all_lensmodel_args = all_args
 
         self.lensModel_main = lensmodel_main
@@ -40,30 +40,15 @@ class MultiPlaneOptimizer(object):
 
         if len(front_args) > 0:
             self.alpha_x_sub_front, self.alpha_y_sub_front = self.lensModel_front.alpha(self._x_pos,self._y_pos,front_args)
+            self.sub_fxx_front,self.sub_fyy_front,self.sub_fxy_front,self.sub_fyx_front = \
+                self.lensModel_front.hessian(self._x_pos,self._y_pos,front_args)
         else:
             self.alpha_y_sub_front,self.alpha_y_sub_front = 0,0
+            self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_front, self.sub_fyx_front = 0, 0, 0, 0
 
     def _shoot_through_lensmodel(self,x_pos,y_pos,tovary_args):
 
-        x_out,y_out,alpha_x_out,alpha_y_out = self.lensModel_main.lens_model.ray_shooting_partial(0, 0, x_pos, y_pos,
-                           0, self.z_main, tovary_args)
-
-        alpha_x_out += self.alpha_x_sub_front
-        alpha_y_out += self.alpha_y_sub_front
-
-        if self.lensModel_back is None:
-            if not hasattr(self,'D_T_lens_source'):
-                self.D_T_lens_source = self.lensmodel.lens_model._cosmo_bkg.T_xy(self.z_main, self.zsrc)
-            x_out,y_out = x_out - alpha_x_out*self.D_T_lens_source,y_out-alpha_y_out*self.D_T_lens_source
-        else:
-            x_out, y_out, alpha_x_out, alpha_y_out = self.lensModel_back.lens_model.ray_shooting_partial(x=x_out, y=y_out, alpha_x=alpha_x_out,
-                                    alpha_y=alpha_y_out,z_start=self.z_main,z_stop=self.zsrc,
-                                    kwargs_lens=self.back_args)
-
-        beta_x, beta_y = self.lensModel_back._co_moving2angle_source(x_out, y_out)
-
-        return beta_x,beta_y
-
+        pass
 
     def _source_position_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos):
 
@@ -82,11 +67,11 @@ class MultiPlaneOptimizer(object):
 
     def _get_images(self):
 
-        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.lens_args_latest, None)
+        srcx, srcy = self.lensModel.lens_model.ray_shooting(self._x_pos, self._y_pos, self.all_lensmodel_args, None)
 
-        solver = LensEquationSolver(self.lensmodel)
+        solver = LensEquationSolver(self.lensModel)
         self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
-        x_image, y_image = solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
+        x_image, y_image = solver.image_position_from_source(self.srcx, self.srcy, self.all_lensmodel_args)
 
         return x_image, y_image
 
@@ -100,27 +85,7 @@ class MultiPlaneOptimizer(object):
 
     def _magnification_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target, tol):
 
-        newargs = lens_args_tovary + lens_args_fixed
-
-        fxx_macro, fyy_macro, fxy_macro, _ = self.lensModel.hessian(x_pos, y_pos, newargs, k=self.k)
-
-        fxx, fyy, fxy = fxx_macro + self.sub_fxx_front, fyy_macro + self.sub_fyy_front, fxy_macro + self.sub_fyy_front
-
-        det_J = (1 - fxx) * (1 - fyy) - fxy ** 2
-
-        magnifications = np.absolute(det_J ** -1)
-
-        magnifications *= max(magnifications) ** -1
-
-        dM = []
-
-        for i, target in enumerate(magnification_target):
-            mag_tol = tol * target
-            dM.append((magnifications[i] - target) * mag_tol ** -1)
-
-        dM = np.array(dM)
-
-        return 0.5 * np.sum(dM ** 2)
+        pass
 
     def _centroid_penalty(self, values_dic, tol_centroid):
 
@@ -129,12 +94,12 @@ class MultiPlaneOptimizer(object):
 
         return 0.5 * d_centroid
 
-    def __call__(self, lens_values_tovary):
+    def __call__(self, lens_values_tovary,sign_swith=-1):
 
         params_fixed_dictionary = self.Params.argsfixed_todictionary()
         lens_args_tovary = self.Params.argstovary_todictionary(lens_values_tovary)
 
-        self.lens_args_latest = lens_args_tovary + params_fixed_dictionary
+        self.all_lensmodel_args[0:self.Params.Nprofiles_to_vary] = lens_args_tovary
 
         if self.tol_source is not None:
             penalty = self._source_position_penalty(lens_args_tovary, params_fixed_dictionary,
@@ -146,4 +111,7 @@ class MultiPlaneOptimizer(object):
         if self.tol_centroid is not None:
             penalty += self._centroid_penalty(lens_args_tovary, self.tol_centroid)
 
-        return -penalty, None
+        if sign_swith == -1:
+            return sign_swith*penalty, None
+        else:
+            return sign_swith*penalty
