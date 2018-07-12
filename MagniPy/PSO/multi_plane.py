@@ -6,12 +6,11 @@ import matplotlib.pyplot as plt
 
 class MultiPlaneOptimizer(object):
 
-    def __init__(self,lensmodel_full,all_args,lensmodel_main,main_args,lensmodel_front,front_args,lensing_components_back,
-                 lensModel_interpolated_back,x_pos, y_pos, tol_source, params, \
-                 magnification_target, tol_mag, centroid_0, tol_centroid, z_main, z_src):
+    def __init__(self,lensmodel_full,all_args,lensmodel_main,main_args,lensmodel_front,front_args,lensmodel_back,
+                 back_args,x_pos, y_pos, tol_source, Params, magnification_target,
+                 tol_mag, centroid_0, tol_centroid, z_main, z_src,comoving_distances,comoving_distances_ij,reduced_to_phys_factors):
 
-        self.Params = params
-
+        self.Params = Params
         self.lensModel = lensmodel_full
         self.all_lensmodel_args = all_args
 
@@ -21,8 +20,8 @@ class MultiPlaneOptimizer(object):
         self.lensModel_front = lensmodel_front
         self.front_args = front_args
 
-        self.lensModel_back = lensModel_interpolated_back
-        self.back_args = lensing_components_back
+        self.lensModel_back = lensmodel_back
+        self.back_args = back_args
 
         self.tol_source = tol_source
 
@@ -46,11 +45,57 @@ class MultiPlaneOptimizer(object):
             self.alpha_y_sub_front,self.alpha_y_sub_front = 0,0
             self.sub_fxx_front, self.sub_fyy_front, self.sub_fxy_front, self.sub_fyx_front = 0, 0, 0, 0
 
-    def _shoot_through_lensmodel(self,x_pos,y_pos,tovary_args):
+        self.comoving_distances = comoving_distances
+        self.comoving_ij = comoving_distances_ij
+        self.reduced_to_phys_factors = reduced_to_phys_factors
 
-        pass
+    def _shoot_through_lensmodel(self,x_pos,y_pos,args_main):
 
-    def _source_position_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos):
+        """
+        three lens models; shoot through them a-la multi-plane
+        :param x_pos: observed sky position (arcsec)
+        :param y_pos: observed sky position (arcsec)
+        :param tovary_args:
+        :return:
+        """
+        x,y = np.zeros_like(x_pos),np.zeros_like(y_pos)
+        alpha_x,alpha_y = x_pos,y_pos
+
+        delta_T = self.comoving_distances_ij[0]
+        x = x + alpha_x*delta_T
+        y = y + alpha_y*delta_T
+        alpha_x, alpha_y = self._add_deflection(x,y,alpha_x,alpha_y,self.lensModel_main,
+                                                      args_main,0,xdef=self.alpha_x_sub_front,
+                                                      ydef=self.alpha_y_sub_front)
+
+        delta_T = self.comoving_distances_ij[1]
+        x = x + alpha_x * delta_T
+        y = y + alpha_y * delta_T
+        alpha_x, alpha_y = self._add_deflection(x, y, alpha_x, alpha_y,self.lensModel_main, args_main, 1)
+
+        delta_T = self.comoving_ij[2]
+        x = x + alpha_x*delta_T
+        y = y + alpha_y*delta_T
+        beta_x,beta_y = x*self.comoving_distances[2]**-1,y*self.comoving_distances[2]**-1
+
+        return beta_x,beta_y
+
+
+    def _add_deflection(self,x,y,alpha_x,alpha_y,model,kwargs_lens,i,xdef=0,ydef=0):
+
+        theta_x = x*self.comoving_distances[i]**-1
+        theta_y = y*self.comoving_distances[i]**-1
+
+        alphax_red_macro,alphay_red_macro = model.alpha(theta_x,theta_y,kwargs_lens)
+        alphax_red = xdef + alphax_red_macro
+        alphay_red = ydef + alphay_red_macro
+
+        alpha_x_phys = alphax_red * self.reduced_to_phys_factors[i]
+        alpha_y_phys = alphay_red * self.reduced_to_phys_factors[i]
+
+        return alpha_x - alpha_x_phys, alpha_y - alpha_y_phys
+
+    def _source_position_penalty(self, lens_args_tovary, x_pos, y_pos):
 
         betax, betay = self._shoot_through_lensmodel(x_pos,y_pos,lens_args_tovary)
 
@@ -75,14 +120,6 @@ class MultiPlaneOptimizer(object):
 
         return x_image, y_image
 
-
-    def _jacobian(self, x_pos, y_pos, args, k, fxx=None, fyy=None, fxy=None):
-
-        if fxx is None:
-            fxx, fyy, fxy, _ = self.lensModel.hessian(x_pos, y_pos, args, k)
-
-        return np.array([[1 - fxx, -fxy], [-fxy, 1 - fyy]])
-
     def _magnification_penalty(self, lens_args_tovary, lens_args_fixed, x_pos, y_pos, magnification_target, tol):
 
         pass
@@ -100,7 +137,7 @@ class MultiPlaneOptimizer(object):
         lens_args_tovary = self.Params.argstovary_todictionary(lens_values_tovary)
 
         self.all_lensmodel_args[0:self.Params.Nprofiles_to_vary] = lens_args_tovary
-
+        print lens_args_tovary
         if self.tol_source is not None:
             penalty = self._source_position_penalty(lens_args_tovary, params_fixed_dictionary,
                                                     self._x_pos, self._y_pos)

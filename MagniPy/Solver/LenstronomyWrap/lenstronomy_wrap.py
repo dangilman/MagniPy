@@ -83,6 +83,7 @@ class LenstronomyWrap:
     def interpolate_lensmodel(self,x_values,y_values,lensModel,kwargs_lens,multi_plane,z_model=None,z_source=None):
 
         xx,yy = np.meshgrid(x_values,y_values)
+        L = int(np.shape(xx)[0])
         xx,yy = xx.ravel(),yy.ravel()
 
         if len(lensModel.lens_model_list)>0 and multi_plane is True:
@@ -92,7 +93,9 @@ class LenstronomyWrap:
 
             f_x, f_y = lensModel.alpha(xx, yy, kwargs_lens)
             f_xx, f_yy, f_xy, f_yx = lensModel.hessian(xx, yy, kwargs_lens)
-            args = [{'f_x': f_x, 'f_y': f_y, 'f_xx': f_xx, 'f_yy': f_yy, 'f_xy': f_xy, 'f_yx': f_yx}]
+            args = [{'f_x': f_x.reshape(L,L), 'f_y': f_y.reshape(L,L), 'f_xx': f_xx.reshape(L,L), 'f_yy': f_yy.reshape(L,L),
+                     'f_xy': f_xy.reshape(L,L), 'f_yx': f_yx.reshape(L,L),
+                     'grid_interp_x':x_values,'grid_interp_y':y_values}]
 
         elif len(lensModel.lens_model_list)>0 and multi_plane is False:
 
@@ -127,6 +130,7 @@ class LenstronomyWrap:
         back_kwargs, back_lens_list, back_redshift = [], [], []
 
         for index in range(0,len(kwargs_lens_full)):
+
             if index in macro_inds:
                 macromodel_kwargs.append(kwargs_lens_full[index])
                 macromodel_lens_list.append(lens_list[index])
@@ -137,16 +141,24 @@ class LenstronomyWrap:
                     front_lens_list.append(lens_list[index])
                     front_redshift.append(z_list[index])
                 else:
-                    front_kwargs.append(kwargs_lens_full[index])
-                    front_lens_list.append(lens_list[index])
-                    front_redshift.append(z_list[index])
+                    back_kwargs.append(kwargs_lens_full[index])
+                    back_lens_list.append(lens_list[index])
+                    back_redshift.append(z_list[index])
 
         macromodel_lensmodel = LensModel(lens_model_list=macromodel_lens_list,redshift_list=macromodel_redshift,
                                          z_source=z_source,multi_plane=True,cosmo=self.astropy_instance)
-
-        front_lensmodel = LensModel(lens_model_list=front_lens_list, redshift_list=front_redshift,
+        if len(front_lens_list) == 0:
+            front_lensmodel = LensModel(lens_model_list=['NONE'], redshift_list=[z_main],
+                                        z_source=z_source, multi_plane=True, cosmo=self.astropy_instance)
+        else:
+            front_lensmodel = LensModel(lens_model_list=front_lens_list, redshift_list=front_redshift,
                                          z_source=z_source, multi_plane=True, cosmo=self.astropy_instance)
-        back_lensmodel = LensModel(lens_model_list=back_lens_list, redshift_list=back_redshift,
+
+        if len(back_lens_list) == 0:
+            back_lensmodel = LensModel(lens_model_list=['NONE'],redshift_list=[z_main],z_source=z_source,
+                                       cosmo=self.astropy_instance,multi_plane=True)
+        else:
+            back_lensmodel = LensModel(lens_model_list=back_lens_list, redshift_list=back_redshift,
                                    z_source=z_source,cosmo=self.astropy_instance,multi_plane=True)
 
         return [macromodel_lensmodel,macromodel_kwargs],[front_lensmodel,front_kwargs],[back_lensmodel,back_kwargs]
@@ -162,5 +174,35 @@ class LenstronomyWrap:
 
         raise Exception('no halos behind main lens plane')
 
+    def composite_multiplane_model(self,x_interp,y_interp,lensModel_full,kwargs_lens_full,z_main,z_source):
 
+        comvoing_distances_ij,comvoing_distances, reduced_to_phys_factors = [],[], []
 
+        T_zlens = lensModel_full.lens_model._cosmo_bkg.T_xy(0, z_main)
+        comvoing_distances.append(T_zlens)
+        comvoing_distances_ij.append(T_zlens)
+        reduced_to_phys_factors.append(lensModel_full.lens_model._cosmo_bkg.D_xy(0, z_source) / lensModel_full.lens_model._cosmo_bkg.D_xy(z_main, z_source))
+
+        [macromodel_lensmodel, macromodel_kwargs], [front_lensmodel, front_kwargs],\
+        [back_lensmodel,back_kwargs] = self.multi_plane_partition(lensModel_full, kwargs_lens_full, z_main, z_source)
+
+        back_z = self.behind_main_plane(lensModel_full, z_main)
+
+        T_back_z = lensModel_full.lens_model._cosmo_bkg.T_xy(0,back_z)
+        T_main_back = lensModel_full.lens_model._cosmo_bkg.T_xy(z_main,back_z)
+        comvoing_distances.append(T_back_z)
+        comvoing_distances_ij.append(T_main_back)
+        reduced_to_phys_factors.append(lensModel_full.lens_model._cosmo_bkg.D_xy(0,
+                            z_source) / lensModel_full.lens_model._cosmo_bkg.D_xy(back_z, z_source))
+
+        lensmodel_interpolated, lensmodel_interp_args = self.interpolate_lensmodel(x_interp, y_interp,
+                                                                                      back_lensmodel, back_kwargs,
+                                                                                      True, z_model=back_z,
+                                                                                      z_source=z_source)
+        T_back_source = lensModel_full.lens_model._cosmo_bkg.T_xy(back_z,z_source)
+        T_source = lensModel_full.lens_model._cosmo_bkg.T_xy(0,z_source)
+        comvoing_distances.append(T_source)
+        comvoing_distances_ij.append(T_back_source)
+
+        return [macromodel_lensmodel, macromodel_kwargs], [front_lensmodel, front_kwargs],\
+        [lensmodel_interpolated,lensmodel_interp_args],comvoing_distances,comvoing_distances_ij,reduced_to_phys_factors

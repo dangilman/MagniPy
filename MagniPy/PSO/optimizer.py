@@ -18,7 +18,7 @@ class Optimizer(object):
 
     def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-16,magnification_target=None,
                  tol_mag=0.1, tol_centroid=None, centroid_0=None, initialized=False, astropy_instance=None, optimizer_routine=str,
-                 z_main=None, multiplane=None,lenstronomy_wrap = None, interp_range = 3, interp_resolution = 1e-3):
+                 z_main=None, multiplane=None,lenstronomy_wrap = None, interp_range = 3, interp_resolution = 4e-2):
         """
         initialise the classes for parameter options and solvers
         """
@@ -29,7 +29,6 @@ class Optimizer(object):
         assert tol_source is not None
         assert len(zlist) == len(lens_list) == len(arg_list)
 
-        assert multiplane is False
         if multiplane is True:
             assert z_source is not None
             assert z_main is not None
@@ -49,7 +48,6 @@ class Optimizer(object):
             if optimizer_routine == 'optimize_SHEAR':
                 self.optimizer = SinglePlaneOptimizer_SHEAR(lensModel, x_pos, y_pos, tol_source, self.Params, \
                                                   magnification_target, tol_mag, centroid_0, tol_centroid, arg_list=arg_list)
-
             else:
                 self.optimizer = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
                                                   magnification_target, tol_mag, centroid_0, tol_centroid,
@@ -58,25 +56,17 @@ class Optimizer(object):
                                                   magnification_target, tol_mag, centroid_0, tol_centroid,
                                                   k_start=self.Params.vary_inds[1], arg_list=arg_list,return_sign=1)
 
-
-
         else:
 
-            assert z_main is not None
-            assert z_source > z_main
+            x_interp = y_interp = np.linspace(-interp_range,interp_range,2*interp_range*interp_resolution**-1)
 
-            [lensmodel_main,main_args],[lensmodel_front,front_args],[back,back_args] = lenstronomy_wrap.multi_plane_partition(lensModel,arg_list,z_main,z_source,macro_inds=[0,1])
-
-            x_values = y_values = np.linspace(-interp_range,interp_range,2*interp_range*interp_resolution**-1)
-
-            z_background = lenstronomy_wrap.behind_main_plane(lensModel,z_main)
-
-            back_interpolated,back_args_interpolated = lenstronomy_wrap.interpolate_lensmodel(x_values,y_values,
-                                              lensModel,arg_list,multi_plane=multiplane,z_model=z_background,z_source=z_source)
+            [lensmodel_main, main_args], [lensmodel_front, front_args], \
+            [back_interpolated, back_args_interpolated],comoving_distances,comoving_distances_ij,reduced_to_phys_factors = lenstronomy_wrap.composite_multiplane_model(x_interp,y_interp,
+                                                   lensModel,arg_list,z_main,z_source)
 
             self.optimizer = MultiPlaneOptimizer(lensModel,arg_list,lensmodel_main,main_args,lensmodel_front,front_args,back_interpolated,
-                                                 back_args_interpolated, x_pos, y_pos, tol_source, self.Params,
-                                                 magnification_target, tol_mag,centroid_0, tol_centroid, z_main, z_source)
+                 back_args_interpolated,x_pos, y_pos, tol_source, self.Params, magnification_target,
+                 tol_mag, centroid_0, tol_centroid, z_main, z_source,comoving_distances,comoving_distances_ij,reduced_to_phys_factors)
 
 
     def optimize(self,n_particles=None,n_iterations=None,method='PS'):
