@@ -235,7 +235,7 @@ class RayTrace:
         else:
             return np.array(magnification)
 
-    def sort_redshift_indexes(self, redshift_list):
+    def _sort_redshift_indexes(self, redshift_list):
         """
 
         :param redshift_list: list of redshifts
@@ -314,7 +314,7 @@ class RayTrace:
 
     def _multi_plane_shoot(self, lens_system, x_obs, y_obs):
 
-        sorted_indexes = self.sort_redshift_indexes(lens_system.redshift_list)
+        sorted_indexes = self._sort_redshift_indexes(lens_system.redshift_list)
 
         x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
 
@@ -347,7 +347,7 @@ class RayTrace:
 
     def _multi_plane_shoot_write(self, lens_system, x_obs, y_obs,file):
 
-        sorted_indexes = self.sort_redshift_indexes(lens_system.redshift_list)
+        sorted_indexes = self._sort_redshift_indexes(lens_system.redshift_list)
 
         x,y = np.zeros_like(x_obs),np.zeros_like(y_obs)
 
@@ -401,6 +401,8 @@ class RayTrace:
         print 'src pos (true): ',str(self.xsrc) + ' ' + str(self.ysrc)
 
         return betax,betay
+
+
 
 
 

@@ -32,9 +32,9 @@ class SolveRoutines(Magnipy):
 
     def optimize_4imgs_lenstronomy(self,macromodel=None,datatofit=None,realizations=None, multiplane = None, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
-                      polar_grid=True,initialize = True,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=100,
-                      n_iterations=1000,tol_source=1e-10,tol_centroid=0.04,tol_mag=None,centroid_0=[0,0],method='PS',refit=False,
-                                   optimizer_routine='optimize_SIE_shear'):
+                      polar_grid=True,initialize = False,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=40,
+                      n_iterations=1000,tol_source=1e-5,tol_centroid=0.05,tol_mag=0.2,centroid_0=[0,0],method='PS',refit=False,
+                                   optimizer_routine='optimize_SIE_shear',interpolate=False):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -95,7 +95,7 @@ class SolveRoutines(Magnipy):
                                   n_iterations=n_iterations,grid_rmax=grid_rmax, res=res,
                                  source_size=source_size,raytrace_with=raytrace_with,initialized=initialize,
                                  source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type,method=method,refit=refit,
-                                 optimizer_routine=optimizer_routine)
+                                 optimizer_routine=optimizer_routine,interpolate=interpolate)
 
         return optimized_data,model
 

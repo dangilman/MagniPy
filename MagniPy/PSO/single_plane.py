@@ -4,92 +4,6 @@ from MagniPy.util import sort_image_index
 import numpy as np
 import matplotlib.pyplot as plt
 
-class SinglePlaneOptimizer_SHEAR(object):
-
-    def __init__(self, lensmodel, x_pos, y_pos, tol_source, params, \
-                 magnification_target, tol_mag, centroid_0, tol_centroid, arg_list=[]):
-
-        self.lensModel = lensmodel
-        self.tol_source = tol_source
-        self.magnification_target = magnification_target
-        self.tol_mag = tol_mag
-        self.arg_list = arg_list
-
-        self.x_pos,self.y_pos = x_pos,y_pos
-
-        if len(arg_list) > 2:
-            self.k = [0,1]
-            self.k_sub = np.arrange(2,len(arg_list))
-            self.alpha_x_sub,self.alpha_y_sub = self.lensModel.ray_shooting(x_pos, y_pos, self.arg_list, k=self.k_sub)
-            self.sub_fxx, self.sub_fyy, self.sub_fxy, _ = self.lensModel.hessian(x_pos, y_pos, arg_list, k=self.k_sub)
-        else:
-            self.k_sub = []
-            self.k = [0,1]
-            self.alpha_x_sub, self.alpha_y_sub = 0,0
-            self.sub_fxx, self.sub_fyy, self.sub_fxy = 0,0,0
-
-        self._x_pos, self._y_pos = x_pos - self.alpha_x_sub, y_pos - self.alpha_y_sub
-        self.solver = Solver4Point(self.lensModel,solver_type='PROFILE_SHEAR')
-
-    def replace_shear(self,args, shear_e1_e2):
-
-        args[1] = {'e1':shear_e1_e2[0],'e2':shear_e1_e2[1]}
-        self.arg_list = args
-        return args
-
-    def source_position_penaly(self):
-
-        betax,betay = self.lensModel.ray_shooting(self._x_pos,self._y_pos,self.arg_list)
-
-        betax += self.alpha_x_sub
-        betay += self.alpha_y_sub
-
-        dx = ((betax[0] - betax[1]) ** 2 + (betax[0] - betax[2]) ** 2 + (betax[0] - betax[3]) ** 2 + (
-                    betax[1] - betax[2]) ** 2 +
-              (betax[1] - betax[3]) ** 2 + (betax[2] - betax[3]) ** 2)
-        dy = ((betay[0] - betay[1]) ** 2 + (betay[0] - betay[2]) ** 2 + (betay[0] - betay[3]) ** 2 + (
-                    betay[1] - betay[2]) ** 2 +
-              (betay[1] - betay[3]) ** 2 + (betay[2] - betay[3]) ** 2)
-
-        return 0.5 * (dx + dy) * self.tol_source ** -2
-
-    def _magnification_penalty(self):
-
-        fxx_macro,fyy_macro,fxy_macro,_ = self.lensModel.hessian(self.x_pos,self.y_pos,self.arg_list,k=self.k)
-
-        fxx,fyy,fxy = fxx_macro+self.sub_fxx,fyy_macro+self.sub_fyy,fxy_macro+self.sub_fyy
-
-        det_J = (1-fxx)*(1-fyy) - fxy**2
-
-        magnifications = np.absolute(det_J**-1)
-
-        magnifications *= max(magnifications)**-1
-
-        dM = []
-
-        for i, target in enumerate(self.magnification_target):
-            mag_tol = self.tol_mag * target
-            dM.append((magnifications[i] - target) * mag_tol ** -1)
-
-        dM = np.array(dM)
-
-        return 0.5*np.sum(dM ** 2)
-
-    def __call__(self, shear_e1_e2):
-
-        self.replace_shear(self.arg_list, shear_e1_e2)
-        newkwargs,_ = self.solver.constraint_lensmodel(self._x_pos,self._y_pos, self.arg_list)
-        self.arg_list = newkwargs
-
-        if self.tol_mag is not None:
-
-            penalty = self._magnification_penalty()
-
-        return -penalty,None
-
-
-
-
 class SinglePlaneOptimizer(object):
 
     def __init__(self, lensmodel, x_pos, y_pos, tol_source, params, \
@@ -132,12 +46,12 @@ class SinglePlaneOptimizer(object):
             self.alpha_x_sub, self.alpha_y_sub = 0, 0
             self.sub_fxx, self.sub_fyy, self.sub_fxy = 0,0,0
 
-    def _get_images(self):
+    def _get_images(self,args):
 
-        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, self.lens_args_latest, None)
+        srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, args, None)
 
         self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
-        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy, self.lens_args_latest)
+        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy,args,precision_limit=10**-11)
 
         return x_image, y_image
 

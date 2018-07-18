@@ -12,6 +12,7 @@ class Params(object):
         self.model_fixed = self.get_model_fixed(optimizer_routine, fixed_params)
 
         self.Ntovary = Ntovary
+
         if Ntovary == 2:
 
             self.zlist_tovary = zlist[self.vary_inds[0]:self.vary_inds[1]]

@@ -120,7 +120,7 @@ class Magnipy:
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
-                                    centroid_0=None,n_particles=50,n_iterations=400,initialized=False,
+                                    centroid_0=None,n_particles=50,n_iterations=400,initialized=False,interpolate=False,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', method='optimize',source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR',refit=True,optimizer_routine=str):
 
@@ -134,11 +134,11 @@ class Magnipy:
 
             redshift_list, lens_list, lensmodel_params = lists['redshift_list'],lists['lens_model_list'],lists['kwargs_lens']
 
-            sampler = Optimizer(zlist=redshift_list, lens_list=lens_list, arg_list=lensmodel_params, lenstronomy_wrap = lenstronomyWrap,
+            sampler = Optimizer(zlist=redshift_list, lens_list=lens_list, arg_list=lensmodel_params,
                                 z_source=self.zsrc,x_pos=data2fit.x, y_pos=data2fit.y, tol_source=tol_source,
                                 magnification_target=data2fit.m,tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
                                 initialized=initialized,astropy_instance=self.cosmo.cosmo,optimizer_routine=optimizer_routine,
-                                z_main=self.zmain, multiplane=system.multiplane)
+                                z_main=self.zmain, multiplane=system.multiplane, interpolate=interpolate)
 
             kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations, method=method)
 
@@ -148,8 +148,9 @@ class Magnipy:
 
             if len(x_opt) == len(data2fit.x) and chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.1 and refit:
 
+                print 'refitting... '
                 kwargs_lens = lenstronomyWrap.fit_lensmodel(x_opt,y_opt,lensModel,solver_type,kwargs_lens)
-                print kwargs_lens[1]
+
                 xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
                 xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
@@ -194,6 +195,8 @@ class Magnipy:
 
         data,opt_sys = [],[]
 
+        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+
         for i,system in enumerate(lens_systems):
 
             redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
@@ -201,12 +204,7 @@ class Magnipy:
             lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
                                        redshift_list=redshift_list, z_source=self.zsrc)
 
-            solver = Solver4Point(lensModel=lensModel, solver_type=solver_type)
-
-            kwargs_lens, precision = solver.constraint_lensmodel(x_pos=data2fit.x, y_pos=data2fit.y,
-                                                                                  kwargs_list=lensmodel_params)
-
-            lensEquationSolver = LensEquationSolver(lensModel=lensModel)
+            kwargs_lens, precision = lenstronomyWrap.fit_lensmodel(data2fit.x,data2fit.y,lensModel,solver_type,lensmodel_params)
 
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
@@ -214,8 +212,7 @@ class Magnipy:
             #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc,
             #                                                 arrival_time_sort=False)
 
-            x_img,y_img = lensEquationSolver.image_position_from_source(sourcePos_x=xsrc,sourcePos_y=ysrc,kwargs_lens=kwargs_lens,
-                                                                        arrival_time_sort=False,num_iter_max=N_iter_max)
+            x_img,y_img = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,solver_type,kwargs_lens)
 
             if print_mag:
                 print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
@@ -395,6 +392,8 @@ class Magnipy:
 
             data = []
 
+            lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+
             for i, system in enumerate(lens_systems):
 
                 redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
@@ -402,15 +401,7 @@ class Magnipy:
                 lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
                                                 redshift_list=redshift_list, z_source=self.zsrc)
 
-                LEQ = LensEquationSolver(lensModel)
-
-                #x_image,y_image = LEQ.findBrightImage(sourcePos_x=srcx,sourcePos_y=srcy,kwargs_lens=lensmodel_params,
-                #                                      arrival_time_sort=False)
-
-                x_image,y_image = LEQ.image_position_from_source(sourcePos_x=srcx,sourcePos_y=srcy,
-                                                                 kwargs_lens=lensmodel_params,arrival_time_sort=False)
-
-
+                x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,lensmodel_params)
 
                 fluxes = None
                 if ray_trace:

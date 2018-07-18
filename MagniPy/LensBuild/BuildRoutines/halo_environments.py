@@ -17,7 +17,11 @@ def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=
 
     if zmin == 0:
         zmin = 1e-3
+
     zstep = 0.02
+
+    assert zstep > 0.001 # so that the delta_z in multiplane PSO works
+
     zvals = np.linspace(zmin,zmax,int(np.ceil((zmax-zmin)*zstep**-1)+1))
 
     HMF = HaloMassFunction(sigma_8=default_sigma8, zd=zmain, zsrc=zsrc,
