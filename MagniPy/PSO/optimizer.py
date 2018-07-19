@@ -10,6 +10,7 @@ from single_plane import SinglePlaneOptimizer
 from scipy.optimize import fmin
 from scipy.linalg import lstsq
 from multi_plane import MultiPlaneOptimizer
+from scipy.optimize import minimize
 
 class Optimizer(object):
     """
@@ -18,7 +19,7 @@ class Optimizer(object):
 
     def __init__(self, zlist=[], lens_list=[], arg_list=[], z_source=None, x_pos=None, y_pos=None, tol_source=1e-3,magnification_target=None,
                  tol_mag=0.1, tol_centroid=None, centroid_0=None, initialized=False, astropy_instance=None, optimizer_routine=str,
-                 z_main=None, multiplane=None,interp_range = None, interp_resolution = 4e-2, interpolate=False):
+                 z_main=None, multiplane=None,interpolate=False):
         """
         initialise the classes for parameter options and solvers
         """
@@ -50,7 +51,12 @@ class Optimizer(object):
 
             self.optimizer = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
                                                   magnification_target, tol_mag, centroid_0, tol_centroid,
-                                                  k_start=self.Params.vary_inds[1], arg_list=arg_list,return_sign=1)
+                                                  k_start=self.Params.vary_inds[1], arg_list=arg_list,mag_penalty=True)
+
+            self.optimizer_amoeba = SinglePlaneOptimizer(lensModel, x_pos, y_pos, tol_source, self.Params, \
+                                                  magnification_target, tol_mag, centroid_0, tol_centroid,
+                                                  k_start=self.Params.vary_inds[1], arg_list=arg_list,return_sign=1,mag_penalty=True,return_mode='amoeba')
+
 
         else:
 
@@ -58,36 +64,26 @@ class Optimizer(object):
                                                         magnification_target,
                                                         tol_mag, centroid_0, tol_centroid, z_main, z_source,
                                                         astropy_instance, interpolated=interpolate)
+            self.optimizer_amoeba = MultiPlaneOptimizer(lensModel, arg_list, x_pos, y_pos, tol_source, self.Params,
+                                                 magnification_target,
+                                                 tol_mag, centroid_0, tol_centroid, z_main, z_source,
+                                                 astropy_instance, interpolated=interpolate,return_mode='amoeba',mag_penalty=True)
 
-    def optimize(self,n_particles=None,n_iterations=None,method='PS'):
+    def optimize(self,n_particles=None,n_iterations=None):
 
-        if self.multiplane:
+        self.optimizer._init_particles(n_particles,n_iterations)
+        optimized_args = self._pso(n_particles,n_iterations,self.optimizer)
 
-            self.optimizer._init_particles(n_particles,n_iterations)
-            optimized_args = self._pso(n_particles,n_iterations,self.optimizer)
+        print 'starting amoeba... '
+        self.optimizer_amoeba._init_particles(n_particles, n_iterations)
+        optimized_args = minimize(self.optimizer_amoeba,x0=optimized_args,method='Nelder-Mead',tol=1e-9)
 
-            optimized_args = self.Params.argstovary_todictionary(optimized_args)
-            optimized_args = optimized_args + self.Params.argsfixed_todictionary()
-            #optimized_args = self.optimizer.get_best_solution()
+        optimized_args = self.Params.argstovary_todictionary(optimized_args['x'])
+        optimized_args = optimized_args + self.Params.argsfixed_todictionary()
 
-            ximg,yimg = self.optimizer._get_images(optimized_args)
+        ximg,yimg = self.optimizer_amoeba._get_images(optimized_args)
 
-        else:
-
-            optimized_args = self._pso(int(n_particles), int(n_iterations), self.optimizer)
-
-            #if method == 'optimize':
-
-            #    opt = fmin(self.optimizer_2,x0=optimized_args,xtol=0.000001,ftol=0.0000001,disp=True)
-            #    optimized_args = opt
-
-            optimized_args = self.optimizer.Params.argstovary_todictionary(optimized_args)
-
-            optimized_args += self.optimizer.Params.argsfixed_todictionary()
-
-            ximg, yimg = self.optimizer._get_images(optimized_args)
-
-        return optimized_args, [self.optimizer.srcx, self.optimizer.srcy], [ximg, yimg]
+        return optimized_args, [self.optimizer_amoeba.srcx, self.optimizer_amoeba.srcy], [ximg, yimg]
 
     def _pso(self, n_particles, n_iterations, optimizer_routine, lowerLimit=None, upperLimit=None, threadCount=1,social_influence = 0.9,
              personal_influence=1.3):

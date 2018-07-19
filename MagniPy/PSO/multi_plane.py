@@ -9,7 +9,8 @@ from split_multiplane import SplitMultiplane
 class MultiPlaneOptimizer(object):
 
     def __init__(self, lensmodel_full, all_args, x_pos, y_pos, tol_source, Params, magnification_target,
-                 tol_mag, centroid_0, tol_centroid, z_main, z_src, astropy_instance, interpolated):
+                 tol_mag, centroid_0, tol_centroid, z_main, z_src, astropy_instance, interpolated,return_mode = 'PSO',
+                 mag_penalty=False):
 
         self.Params = Params
         self.lensModel = lensmodel_full
@@ -21,12 +22,12 @@ class MultiPlaneOptimizer(object):
         self.magnification_target = magnification_target
         self.tol_mag = tol_mag
 
-        self._compute_mags = False
+        self._compute_mags = mag_penalty
 
         self.centroid_0 = centroid_0
         self.tol_centroid = tol_centroid
 
-        self._counter = 0
+        self._counter = 1
 
         self._x_pos,self._y_pos = x_pos,y_pos
         self.mag_penalty,self.src_penalty,self.parameters = [],[], []
@@ -35,6 +36,7 @@ class MultiPlaneOptimizer(object):
                                                     z_source=z_src,z_macro=z_main,astropy_instance=astropy_instance)
 
         self._converged = False
+        self._return_mode = return_mode
 
     def get_best_solution(self):
 
@@ -117,14 +119,15 @@ class MultiPlaneOptimizer(object):
 
     def _compute_mags_criterion(self):
 
-        if len(self.src_penalty) < self._n_particles:
+        if self._compute_mags:
+            return True
+
+        if self._counter > self._n_particles and np.mean(self.src_penalty[-self._n_particles:]) < 1:
+            return True
+        else:
             return False
 
-        mean = np.mean(self.src_penalty[-self._n_particles:])
-
-        return mean < 1
-
-    def __call__(self, lens_values_tovary, sign_swith=-1,src_penalty=None,mag_penalty=None,centroid_penalty=None):
+    def __call__(self, lens_values_tovary, src_penalty=None,mag_penalty=None,centroid_penalty=None):
 
         self._counter += 1
 
@@ -152,6 +155,7 @@ class MultiPlaneOptimizer(object):
                 penalty += pen
 
         if self._counter % 500 == 0:
+
             print 'source penalty: ', src_penalty
             if self.mag_penalty is not None:
                 print 'mag penalty: ', mag_penalty
@@ -160,4 +164,7 @@ class MultiPlaneOptimizer(object):
 
         self._log(src_penalty,mag_penalty)
 
-        return -1 * penalty, None
+        if self._return_mode == 'PSO':
+            return -1 * penalty, None
+        else:
+            return penalty

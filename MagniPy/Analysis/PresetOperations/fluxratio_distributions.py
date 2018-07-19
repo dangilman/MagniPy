@@ -69,19 +69,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
                                     start_shear=0.05,mindis=0.5,log_masscut_low=7):
 
-    configs = ['cross','cusp','fold']
-    data = []
-
-    if data2fit is None:
-        for i in range(0,Ntotal):
-            config = random.choice(configs)
-
-            data.append(create_data(identifier='dset',config=config,zlens=zlens,zsrc=zsrc,substructure_model_args={'fsub':0,'M_halo':10**13},massprofile=massprofile,
-                             halo_model='plaw_main',multiplane=False,ray_trace=True,astrometric_perturbation=0,
-                                    shear_prior=[start_shear,1e-9]))
-
-    else:
-        data = [Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)]*Ntotal
+    data = [Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)]*Ntotal
 
     filter_kwargs_list = []
     if filter_halo_positions:
@@ -131,36 +119,39 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     # initialize macromodel
     start_macromodel.shear = start_shear
 
-    fit_fluxes = None
+    fit_fluxes = []
+    shears, shear_pa, xcen, ycen = [], [], [], []
     n = 0
 
     if method=='lenstronomy':
-        print 'solving realizations... '
 
-        while n<Ntotal:
+        while len(fit_fluxes)<Ntotal:
 
+            print 'rendering halos... '
             halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
                                           filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
 
+            print 'optimizing... '
             model_data, system = solver.two_step_optimize(macromodel=start_macromodel,datatofit=data[n],realizations=halos,
                                                      multiplane=multiplane,method=method,ray_trace=True,sigmas=sigmas,
                                                      identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                     source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
-            if model_data[0].nimg!=data[n].nimg:
-                continue
+            for dset in model_data:
 
-            astro_error = np.sqrt(np.sum((data[n].x - model_data[0].x) ** 2 + (data[n].y - model_data[0].y) ** 2))
+                if dset.nimg != data[0].nimg:
+                    continue
 
-            if astro_error<1e-5:
+                astro_error = chi_square_img(data[0].x,data[0].y,dset.x,dset.y,0.003,reorder=True)
 
-                if fit_fluxes is None:
-                    fit_fluxes = model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)
-                else:
-                    fit_fluxes = np.vstack((fit_fluxes, model_data[0].flux_anomaly(data[n], index=0, sum_in_quad=True)))
+                if astro_error > 9:
+                    continue
 
-                n += 1
-                print n
+                fit_fluxes.append(dset[0].flux_anomaly(data[0], sum_in_quad=True, index=0))
+                shears.append(dset[0].lens_components[0].shear)
+                xcen.append(dset[0].lens_components[0].lenstronomy_args['center_x'])
+                ycen.append(dset[0].lens_components[0].lenstronomy_args['center_y'])
+                shear_pa.append(dset[0].lens_components[0].shear_theta)
 
     elif method=='lensmodel':
 
@@ -182,21 +173,33 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         for dset in model_data:
 
-            astro_error = np.sqrt(np.sum((data[0].x - dset.x) ** 2 + (data[0].y - dset.y) ** 2))
-
-            if astro_error > 0.003*2:
+            if dset.nimg != data[0].nimg:
                 continue
 
-            if fit_fluxes is None:
-                fit_fluxes = dset.flux_anomaly(data[0], index=0, sum_in_quad=True)
-            else:
-                fit_fluxes = np.vstack((fit_fluxes, dset.flux_anomaly(data[0], index=0, sum_in_quad=True)))
+            astro_error = chi_square_img(data[0].x, data[0].y, dset.x, dset.y, 0.003, reorder=True)
+
+            if astro_error > 9:
+                continue
+
+            fit_fluxes.append(dset[0].flux_anomaly(data[0], sum_in_quad=True,index=0))
+            shears.append(dset[0].lens_components[0].shear)
+            xcen.append(dset[0].lens_components[0].lenstronomy_args['center_x'])
+            ycen.append(dset[0].lens_components[0].lenstronomy_args['center_y'])
+            shear_pa.append(dset[0].lens_components[0].shear_theta)
 
 
 
     if write_to_file:
 
-        write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=fit_fluxes,mode='append')
+        write_fluxes(filename=outfilepath+outfilename+'.txt',fluxes=np.array(fit_fluxes),mode='append')
+        with open(fluxratio_data_path + identifier+ '_shears.txt', 'a') as f:
+            np.savetxt(f, X=np.array(shears))
+        with open(fluxratio_data_path + identifier+ '_shear_pa_LOS.txt', 'a') as f:
+            np.savetxt(f, X=np.array(shear_pa))
+        with open(fluxratio_data_path + identifier+ '_xcenter_LOS.txt', 'a') as f:
+            np.savetxt(f, X=np.array(xcen))
+        with open(fluxratio_data_path + identifier+ '_ycenter_LOS.txt', 'a') as f:
+            np.savetxt(f, X=np.array(ycen))
 
     else:
 

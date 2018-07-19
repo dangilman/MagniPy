@@ -49,6 +49,7 @@ class Params(object):
 
             self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,self.args_tovary,optimizer_routine)
 
+        self.scale = self.Pbounds.get_scale(optimizer_routine)
 
     def argsfixed_values(self):
 
@@ -132,6 +133,16 @@ class Params(object):
 
 class ParamRanges(object):
 
+    def get_scale(self,routine):
+
+        if routine == 'optimize_SIE_shear':
+
+            return [0.01,0.01,0.01,0.01,0.01,0.01,0.01]
+
+        else:
+
+            raise Exception('routine not recognized.')
+
     def get_ranges(self,lens_names,args_init,routine):
 
         ranges_low,ranges_high = [],[]
@@ -176,8 +187,11 @@ class ParamRanges(object):
 
     def _get_ranges(self,lens_name):
 
-        low_e12 = -0.01
-        hi_e12 = 0.01
+        low_e12 = -0.1
+        hi_e12 = 0.1
+
+        low_shear_e12 = 0.05
+        high_shear_e12 = 0.05
 
         if lens_name == 'SPEMD':
 
@@ -192,7 +206,7 @@ class ParamRanges(object):
 
         elif lens_name == 'SHEAR':
 
-            return [low_e12,low_e12],[hi_e12,hi_e12]
+            return [low_shear_e12,low_shear_e12],[high_shear_e12,high_shear_e12]
 
     def _get_ranges_initialized(self, lens_name, args_init):
 

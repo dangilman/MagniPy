@@ -140,7 +140,7 @@ class Magnipy:
                                 initialized=initialized,astropy_instance=self.cosmo.cosmo,optimizer_routine=optimizer_routine,
                                 z_main=self.zmain, multiplane=system.multiplane, interpolate=interpolate)
 
-            kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations, method=method)
+            kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations)
 
             xsrc, ysrc = source[0], source[1]
 
