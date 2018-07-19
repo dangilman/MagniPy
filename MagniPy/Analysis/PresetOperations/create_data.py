@@ -1,5 +1,5 @@
 import numpy as np
-from halo_constructor import Realization
+from halo_constructor import Constructor
 from MagniPy.LensBuild.lens_assemble import Deflector
 from MagniPy.MassModels.SIE import SIE
 from MagniPy.Solver.solveroutines import SolveRoutines
@@ -12,7 +12,7 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
                 subhalo_realizations=None,astrometric_perturbation=0.003,LOS_mass_sheet=True,return_system=True):
 
 
-    realizations = Realization(zlens,zsrc)
+    realizations = Constructor(zlens, zsrc)
     solver = SolveRoutines(zlens,zsrc)
 
     if config == 'cusp':
@@ -42,8 +42,8 @@ def create_data(config=None,b_prior=[1,0.2],ellip_prior=[.2,.05],shear_prior=[0.
         start_SIE = Deflector(subclass=SIE(),redshift=zlens,R_ein=R_ein,ellip=ellip,ellip_theta = epa, x=0,
                    y = 0, gamma=gamma,shear=shear,shear_theta=shear_pa)
 
-        halos = realizations.halo_constructor(massprofile=massprofile,model_name=halo_model,model_args=substructure_model_args,
-                                              filter_halo_positions=False,Nrealizations=1)
+        halos = realizations.render(massprofile=massprofile, model_name=halo_model, model_args=substructure_model_args,
+                                    filter_halo_positions=False, Nrealizations=1)
 
         data_init = solver.solve_lens_equation(macromodel=start_SIE,realizations=None,multiplane=multiplane,method=method,ray_trace=False,
                                                srcx=srcx,srcy=srcy,grid_rmax=0.12,res=0.001,source_size=source_size)
