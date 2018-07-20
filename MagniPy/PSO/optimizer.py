@@ -79,6 +79,7 @@ class Optimizer(object):
         optimized_args = minimize(self.optimizer_amoeba,x0=optimized_args,method='Nelder-Mead',tol=1e-9)
 
         optimized_args = self.Params.argstovary_todictionary(optimized_args['x'])
+
         optimized_args = optimized_args + self.Params.argsfixed_todictionary()
 
         ximg,yimg = self.optimizer_amoeba._get_images(optimized_args)

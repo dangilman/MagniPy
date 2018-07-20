@@ -146,16 +146,6 @@ class Magnipy:
 
             lensModel = sampler.optimizer.lensModel
 
-            if len(x_opt) == len(data2fit.x) and chi_square_img(x_opt,y_opt,data2fit.x,data2fit.y,0.003,reorder=True) > 0.1 and refit:
-
-                print 'refitting... '
-                kwargs_lens = lenstronomyWrap.fit_lensmodel(x_opt,y_opt,lensModel,solver_type,kwargs_lens)
-
-                xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
-                xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
-
-                x_opt, y_opt = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,kwargs_lens)
-
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,
