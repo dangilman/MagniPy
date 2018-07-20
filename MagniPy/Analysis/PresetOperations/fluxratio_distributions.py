@@ -142,7 +142,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                 if dset.nimg != data[0].nimg:
                     continue
 
-                astro_error = chi_square_img(data[0].x,data[0].y,dset.x,dset.y,0.003,reorder=True)
+                astro_error = chi_square_img(data[0].x,data[0].y,dset.x,dset.y,0.003,reorder=False)
                 print astro_error
                 if astro_error > 9:
                     continue
