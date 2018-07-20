@@ -33,7 +33,7 @@ class SolveRoutines(Magnipy):
     def optimize_4imgs_lenstronomy(self,lens_systems=None,macromodel=None,datatofit=None,realizations=None, multiplane = None, sigmas=None,
                       grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
                       polar_grid=True,initialize = False,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=50,
-                      n_iterations=200,tol_source=1e-3,tol_centroid=0.05,tol_mag=0.2,centroid_0=[0,0],method='PS',refit=False,
+                      n_iterations=250,tol_source=1e-3,tol_centroid=0.05,tol_mag=0.2,centroid_0=[0,0],method='PS',refit=False,
                                    optimizer_routine='optimize_SIE_shear',interpolate=False):
 
         if raytrace_with is None:
