@@ -137,21 +137,21 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                                      identifier=identifier,grid_rmax=grid_rmax,res=res,source_shape='GAUSSIAN',
                                                     source_size=source_size,raytrace_with=raytrace_with,print_mag=False)
 
-            for dset in model_data:
+            for sys,dset in zip(system,model_data):
 
                 if dset.nimg != data[0].nimg:
                     continue
 
                 astro_error = chi_square_img(data[0].x,data[0].y,dset.x,dset.y,0.003,reorder=True)
-
+                print astro_error
                 if astro_error > 9:
                     continue
 
-                fit_fluxes.append(dset[0].flux_anomaly(data[0], sum_in_quad=True, index=0))
-                shears.append(dset[0].lens_components[0].shear)
-                xcen.append(dset[0].lens_components[0].lenstronomy_args['center_x'])
-                ycen.append(dset[0].lens_components[0].lenstronomy_args['center_y'])
-                shear_pa.append(dset[0].lens_components[0].shear_theta)
+                fit_fluxes.append(dset.flux_anomaly(data[0], sum_in_quad=True, index=0))
+                shears.append(sys.lens_components[0].shear)
+                xcen.append(sys.lens_components[0].lenstronomy_args['center_x'])
+                ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
+                shear_pa.append(sys.lens_components[0].shear_theta)
 
     elif method=='lensmodel':
 
