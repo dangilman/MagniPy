@@ -1,14 +1,11 @@
-from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
-from lenstronomy.LensModel.Solver.solver4point import Solver4Point
-from MagniPy.util import sort_image_index
 import numpy as np
-import matplotlib.pyplot as plt
+from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
 
 class SinglePlaneOptimizer(object):
 
     def __init__(self, lensmodel, x_pos, y_pos, tol_source, params, \
-                 magnification_target, tol_mag, centroid_0, tol_centroid, k_start=0, arg_list=[],return_sign=-1,
-                 mag_penalty=False,return_mode='PSO'):
+                 magnification_target, tol_mag, centroid_0, tol_centroid, k_start=0, arg_list=[],
+                 return_mode='PSO',verbose=False,mag_penalty=False):
 
         self.Params = params
         self.lensModel = lensmodel
@@ -18,36 +15,39 @@ class SinglePlaneOptimizer(object):
 
         self.magnification_target = magnification_target
         self.tol_mag = tol_mag
+        self._compute_mags = mag_penalty
 
         self.centroid_0 = centroid_0
         self.tol_centroid = tol_centroid
 
         self._x_pos = x_pos
         self._y_pos = y_pos
+        self.mag_penalty, self.src_penalty, self.parameters = [], [], []
+
+        self.verbose=verbose
 
         self.all_lensmodel_args = arg_list
 
         self._return_mode = return_mode
 
-        self._compute_mags = mag_penalty
-
-        self.mag_penalty, self.src_penalty, self.parameters = [], [], []
-
         self._counter = 1
 
+        # compute the foreground deflections and second derivatives from subhalos
         if k_start > 0 and len(arg_list)>k_start:
 
-            self.k_sub = np.arange(k_start, len(arg_list))
-            self.k = np.arange(0,k_start)
+            self._k_sub = np.arange(k_start, len(arg_list))
+            self._k_macro = np.arange(0, k_start)
 
-            self.alpha_x_sub, self.alpha_y_sub = self.lensModel.alpha(x_pos, y_pos, arg_list, k=self.k_sub)
+            # subhalo deflections
+            self.alpha_x_sub, self.alpha_y_sub = self.lensModel.alpha(x_pos,y_pos,arg_list,self._k_sub)
 
+            # subhalo hessian components
             if tol_mag is not None:
-                self.sub_fxx, self.sub_fyy, self.sub_fxy, _ = self.lensModel.hessian(x_pos,y_pos,arg_list, k = self.k_sub)
+                self.sub_fxx, self.sub_fxy, _, self.sub_fyy = self.lensModel.hessian(x_pos,y_pos,arg_list,self._k_sub)
 
         else:
 
-            self.k,self.k_sub = None,None
+            self._k_macro, self._k_sub = None, None
             self.alpha_x_sub, self.alpha_y_sub = 0, 0
             self.sub_fxx, self.sub_fyy, self.sub_fxy = 0,0,0
 
@@ -61,14 +61,16 @@ class SinglePlaneOptimizer(object):
 
         srcx, srcy = self.lensModel.ray_shooting(self._x_pos, self._y_pos, args, None)
 
-        self.srcx, self.srcy = np.mean(srcx), np.mean(srcy)
-        x_image, y_image = self.solver.image_position_from_source(self.srcx, self.srcy,args,precision_limit=10**-11)
+        self.source_x, self.source_y = np.mean(srcx), np.mean(srcy)
+        x_image, y_image = self.solver.image_position_from_source(self.source_x, self.source_y,args,precision_limit=10**-10)
 
         return x_image, y_image
 
     def _source_position_penalty(self, lens_args):
 
-        betax, betay = self.lensModel.ray_shooting(self._x_pos - self.alpha_x_sub, self._y_pos - self.alpha_y_sub, lens_args, k=self.k)
+        # compute the source position associated with only the macromodel
+        betax, betay = self.lensModel.ray_shooting(self._x_pos, self._y_pos, lens_args, k=self._k_macro)
+        # add the subhalo deflections; can't do this in multi-plane
         betax,betay = betax + self.alpha_x_sub, betay + self.alpha_y_sub
 
         dx = ((betax[0] - betax[1]) ** 2 + (betax[0] - betax[2]) ** 2 + (betax[0] - betax[3]) ** 2 + (
@@ -80,30 +82,19 @@ class SinglePlaneOptimizer(object):
 
         return 0.5*(dx+dy)*self.tol_source**-2
 
-    def _jacobian(self, x_pos, y_pos,args,k, fxx=None, fyy = None, fxy = None):
-
-        if fxx is None:
-            fxx,fyy,fxy,_ = self.lensModel.hessian(x_pos,y_pos,args,k)
-
-        return np.array([[1-fxx, -fxy],[-fxy, 1-fyy]])
-
     def _magnification_penalty(self,  args, magnification_target, tol=0.1):
 
-        fxx_macro,fyy_macro,fxy_macro,_ = self.lensModel.hessian(self._x_pos,self._y_pos,args,k=self.k)
+        fxx_macro,fxy_macro,_,fyy_macro = self.lensModel.hessian(self._x_pos, self._y_pos, args, k=self._k_macro)
 
-        fxx,fyy,fxy = fxx_macro+self.sub_fxx,fyy_macro+self.sub_fyy,fxy_macro+self.sub_fyy
+        fxx = fxx_macro + self.sub_fxx
+        fyy = fyy_macro + self.sub_fyy
+        fxy = fxy_macro + self.sub_fxy
 
         det_J = (1-fxx)*(1-fyy) - fxy**2
 
         magnifications = np.absolute(det_J**-1)
 
-        #fxx, fyy, fxy,_ = self.lensModel.hessian(self._x_pos,self._y_pos,args)
-        #det_J = (1 - fxx) * (1 - fyy) - fxy ** 2
-        #magnifications = np.absolute(det_J ** -1)
-
         magnifications *= max(magnifications)**-1
-
-
 
         dM = []
 
@@ -169,7 +160,7 @@ class SinglePlaneOptimizer(object):
             if pen is not None:
                 penalty += pen
 
-        if self._counter % 500 == 0:
+        if self._counter % 500 == 0 and self.verbose:
 
             print 'source penalty: ', src_penalty
             if self.mag_penalty is not None:

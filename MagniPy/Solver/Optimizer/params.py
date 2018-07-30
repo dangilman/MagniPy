@@ -1,46 +1,19 @@
-from MagniPy.util import *
+from lenstronomy.Util.param_util import cart2polar,polar2cart
 import numpy as np
-from copy import copy
 
 class Params(object):
 
+    known_routines = ['optimize_SIE_shear']
+
     def __init__(self,zlist=None, lens_list=None, arg_list=None,
-                 optimizer_routine='optimize_SIE_SHEAR',fixed_params=None, initialized=True):
+                 optimizer_routine='optimize_SIE_shear',fixed_params=None, initialized=True):
 
-        Ntovary,self.vary_inds = self.get_vary_length(optimizer_routine)
+        self.zlist_to_vary, self.lenslist_tovary, self.args_tovary,self.zlist_fixed,\
+        self.lenslist_fixed,self.args_fixed, self.Ntovary, self.k_start = self._get_args(optimizer_routine,zlist,lens_list,arg_list)
 
-        self.model_fixed = self.get_model_fixed(optimizer_routine, fixed_params)
+        self.model_fixed = self._get_model_fixed_params(optimizer_routine, fixed_params)
 
-        self.Ntovary = Ntovary
-
-        if Ntovary == 2:
-
-            self.zlist_tovary = zlist[self.vary_inds[0]:self.vary_inds[1]]
-            self.lenslist_tovary = lens_list[self.vary_inds[0]:self.vary_inds[1]]
-            self.args_tovary = arg_list[self.vary_inds[0]:self.vary_inds[1]]
-
-            self.zlist_fixed = zlist[self.vary_inds[1]:]
-            self.lenslist_fixed = lens_list[self.vary_inds[1]:]
-            self.args_fixed = arg_list[self.vary_inds[1]:]
-
-        elif Ntovary == 1:
-
-            self.zlist_tovary = [zlist[self.vary_inds]]
-            self.lenslist_tovary = [lens_list[self.vary_inds]]
-            self.args_tovary = [arg_list[self.vary_inds]]
-
-            _z = copy(zlist)
-            _l = copy(lens_list)
-            _l2 = copy(arg_list)
-            del _z[self.vary_inds]
-            del _l[self.vary_inds]
-            del _l2[self.vary_inds]
-
-            self.zlist_fixed = [_z]
-            self.lenslist_fixed = [_l]
-            self.args_fixed = [_l2]
-
-        self.Pbounds = ParamRanges()
+        self.Pbounds = ParamRanges(self.known_routines)
 
         if initialized is False:
 
@@ -49,7 +22,23 @@ class Params(object):
 
             self.tovary_lower_limit, self.tovary_upper_limit = self.Pbounds.get_ranges(self.lenslist_tovary,self.args_tovary,optimizer_routine)
 
-        self.scale = self.Pbounds.get_scale(optimizer_routine)
+    def _get_args(self,routine,zlist,lens_list,arg_list):
+
+        assert routine in self.known_routines
+
+        if routine == 'optimize_SIE_shear':
+
+            zlist_tovary = zlist[0:2]
+            lenslist_tovary = lens_list[0:2]
+            args_tovary = arg_list[0:2]
+
+            zlist_fixed = zlist[2:]
+            lenslist_fixed = lens_list[2:]
+            args_fixed = arg_list[2:]
+            Ntovary = 2
+            k_start = 2
+
+        return zlist_tovary,lenslist_tovary,args_tovary,zlist_fixed,lenslist_fixed,args_fixed,Ntovary,k_start
 
     def argsfixed_values(self):
 
@@ -80,7 +69,7 @@ class Params(object):
 
         return self.args_fixed
 
-    def get_model_fixed(self, routine, fixed_params):
+    def _get_model_fixed_params(self, routine, fixed_params):
 
         if routine == 'optimize_SIE_shear':
 
@@ -133,23 +122,20 @@ class Params(object):
 
 class ParamRanges(object):
 
-    def get_scale(self,routine):
+    def __init__(self,known_routines):
 
-        if routine == 'optimize_SIE_shear':
-
-            return [0.01,0.01,0.01,0.01,0.01,0.01,0.01]
-
-        else:
-
-            raise Exception('routine not recognized.')
+        self.known_routines = known_routines
 
     def get_ranges(self,lens_names,args_init,routine):
 
         ranges_low,ranges_high = [],[]
 
+        assert routine in self.known_routines
+
         for idx,lens in enumerate(lens_names):
 
-            if routine in ['optimize_SIE_shear','optimize_plaw_shear']:
+            if routine == 'optimize_SIE_shear':
+
                 if args_init is None:
 
                     _ranges_low,_ranges_high = self._get_ranges(lens)
@@ -160,23 +146,6 @@ class ParamRanges(object):
                         _ranges_low_, _ranges_high_ = self._get_ranges_initialized(lens, args_init[0])
                     elif lens == 'SHEAR':
                         _ranges_low_,_ranges_high_ = self._get_ranges_initialized(lens, args_init[1])
-                    _ranges_low += _ranges_low_
-                    _ranges_high += _ranges_high_
-
-                ranges_low += _ranges_low
-                ranges_high += _ranges_high
-
-            elif routine in ['optimize_SHEAR']:
-
-                if args_init is None:
-
-                    _ranges_low,_ranges_high = self._get_ranges(lens)
-
-                else:
-                    _ranges_low, _ranges_high = [], []
-                    assert lens == 'SHEAR'
-
-                    _ranges_low_, _ranges_high_ = self._get_ranges_initialized(lens, args_init[0])
                     _ranges_low += _ranges_low_
                     _ranges_high += _ranges_high_
 
@@ -238,7 +207,7 @@ class ParamRanges(object):
         elif lens_name == 'SHEAR':
 
             width_shear,width_shear_theta = 0.025,30
-            shear,shear_theta = cart_to_polar(args_init['e1'],args_init['e2'])
+            shear,shear_theta = cart2polar(args_init['e1'],args_init['e2'])
 
             shear_low = max(1e-5,shear-width_shear)
             shear_theta_low = shear_theta-width_shear_theta
@@ -246,8 +215,8 @@ class ParamRanges(object):
             shear_high = shear+width_shear
             shear_theta_high = shear_theta+width_shear_theta
 
-            e1_low,e2_low = polar_to_cart(shear_low,shear_theta_low)
-            e1_high, e2_high = cart_to_polar(shear_high, shear_theta_high)
+            e1_low,e2_low = polar2cart(shear_low,shear_theta_low,[0,0])
+            e1_high, e2_high = cart2polar(shear_high, shear_theta_high)
 
 
             return [e1_low,e2_low],[e1_high,e2_high]

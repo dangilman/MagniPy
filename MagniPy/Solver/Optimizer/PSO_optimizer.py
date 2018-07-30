@@ -1,39 +1,15 @@
-'''
-Created on Sep 30, 2013
-
-@author: J. Akeret
-'''
 from __future__ import print_function, division, absolute_import, unicode_literals
 from copy import copy
-from math import floor
-import math
-import multiprocessing
 import numpy
 
+"""
+This class is adapted from the CosmoHammer Particle Swarm Optimizer routine.
+"""
+
 class ParticleSwarmOptimizer(object):
+
     '''
-    Optimizer using a swarm of particles
-
-    :param func:
-        A function that takes a vector in the parameter space as input and
-        returns the natural logarithm of the posterior probability for that
-        position.
-
-    :param low: array of the lower bound of the parameter space
-    :param high: array of the upper bound of the parameter space
-    :param particleCount: the number of particles to use.
-    :param threads: (optional)
-        The number of threads to use for parallelization. If ``threads == 1``,
-        then the ``multiprocessing`` module is not used but if
-        ``threads > 1``, then a ``Pool`` object is created and calls to
-        ``lnpostfn`` are run in parallel.
-
-    :param pool: (optional)
-        An alternative method of using the parallelized algorithm. If
-        provided, the value of ``threads`` is ignored and the
-        object provided by ``pool`` is used for all parallelization. It
-        can be any object with a ``map`` method that follows the same
-        calling sequence as the built-in ``map`` function.
+    Optimizer using a swarm of particles; adapted from CosmoHammer Particle Swarm Optimizer (different convergence criteria)
 
     '''
 
@@ -50,9 +26,6 @@ class ParticleSwarmOptimizer(object):
         self.pool = pool
         self.verbose = verbose
 
-        if self.threads > 1 and self.pool is None:
-            self.pool = multiprocessing.Pool(self.threads)
-
         self.paramCount = len(self.low)
 
         self.swarm = self._initSwarm()
@@ -65,16 +38,15 @@ class ParticleSwarmOptimizer(object):
 
         return swarm
 
-    def sample(self, maxIter=1000, c1=1.193, c2=1.193, p=0.7, m=10**-3, n=10**-2):
+    def sample(self, maxIter=1000, c1=1.193, c2=1.193, lookback = 0.25, standard_dev = 0.01):
         """
         Launches the PSO. Yields the complete swarm per iteration
 
         :param maxIter: maximum iterations
         :param c1: cognitive weight
         :param c2: social weight
-        :param p: stop criterion, percentage of particles to use
-        :param m: stop criterion, difference between mean fitness and global best
-        :param n: stop criterion, difference between norm of the particle vector and norm of the global best
+        :param lookback: percentange of particles to use when determining convergence
+        :param standard_dev: standard deviation of the last lookback particles for convergence
         """
         self._get_fitness(self.swarm)
         i = 0
@@ -85,8 +57,6 @@ class ParticleSwarmOptimizer(object):
                 if ((self.gbest.fitness)<particle.fitness):
 
                     self.gbest = particle.copy()
-                    #if(self.isMaster()):
-                        #print("new global best found %i %s"%(i, self.gbest.__str__()))
 
                 if (particle.fitness > particle.pbest.fitness):
                     particle.updatePBest()
@@ -96,13 +66,7 @@ class ParticleSwarmOptimizer(object):
                     print("max iteration reached! stoping")
                 return
 
-            #if(self._converged(i, p=p,m=m, n=n)):
-            #    if(self.isMaster()) and self.verbose:
-            #        print("converged after %s iterations!"%i)
-            #        print("best fit found: ", self.gbest.fitness, self.gbest.position)
-            #    return
-
-            if self._converged_likelihood(maxIter*0.25,self.particleCount,0.01):
+            if self._converged_likelihood(maxIter*lookback,self.particleCount,standard_dev):
                 return
 
             for particle in self.swarm:
@@ -125,7 +89,7 @@ class ParticleSwarmOptimizer(object):
             i+=1
             self.i = i
 
-    def optimize(self, maxIter=1000, c1=1.193, c2=1.193, p=0.5, m=10**-3, n=10**-2):
+    def optimize(self, maxIter=1000, c1=1.193, c2=1.193, lookback=0.25, standard_dev=0.01):
         """
         Runs the complete optimiziation.
 
@@ -141,7 +105,7 @@ class ParticleSwarmOptimizer(object):
 
         swarms = []
         gBests = []
-        for swarm in self.sample(maxIter,c1,c2,p,m,n):
+        for swarm in self.sample(maxIter,c1,c2,lookback,standard_dev):
             swarms.append(swarm)
             gBests.append(self.gbest.copy())
 
@@ -164,62 +128,26 @@ class ParticleSwarmOptimizer(object):
         for i, particle in enumerate(swarm):
             particle.fitness = lnprob[i]
 
-    def _converged(self, it, p, m, n):
-        fit = self._convergedFit(it=it, p=p, m=m)
-        if fit:
-            space = self._convergedSpace(it=it, p=p, m=n)
-            return space
-        else:
-            return False
-
-    def _mean_fit(self,p):
-
-        bestSort = numpy.sort([particle.pbest.fitness for particle in self.swarm])[::-1]
-        meanFit = numpy.mean(bestSort[1:int(math.floor(self.particleCount * p))])
-
-        return meanFit
-
     def _converged_likelihood(self,min_i,look_back,standard_dev):
 
+        """
+
+        :param min_i: minimum number of iterations for convergence
+        :param look_back: how many particles included in the convergence criterion
+        :param standard_dev: the critical standard deviation of log-likelihood for convergence
+        :return:
+        """
+
+        # don't return unless a certain number of iterations have happened
         if self.i < min_i:
             return False
 
+        # compute the likelihood for the particles
         likelihood = [particle.fitness for particle in self.swarm]
 
+        # compute the standard deviation of the last number (look_back) of particles
+
         return numpy.std(likelihood[-look_back:]) < standard_dev
-
-    def _convergedFit(self, it, p, m):
-        bestSort = numpy.sort([particle.pbest.fitness for particle in self.swarm])[::-1]
-        meanFit = numpy.mean(bestSort[1:int(math.floor(self.particleCount*p))])
-#        print( "best %f, meanFit %f, ration %f"%( self.gbest[0], meanFit, abs((self.gbest[0]-meanFit))))
-        return abs(self.gbest.fitness-meanFit) < m
-
-    def _convergedSpace(self, it, p, m):
-        sortedSwarm = [particle for particle in self.swarm]
-        sortedSwarm.sort(key=lambda part: -part.fitness)
-        bestOfBest = sortedSwarm[0:int(floor(self.particleCount*p))]
-
-        diffs = []
-        for particle in bestOfBest:
-            diffs.append(self.gbest.position-particle.position)
-
-        maxNorm = max(list(map(numpy.linalg.norm, diffs)))
-        return (abs(maxNorm)<m)
-
-    def _convergedSpace2(self, p):
-        #Andres N. Ruiz et al.
-        sortedSwarm = [particle for particle in self.swarm]
-        sortedSwarm.sort(key=lambda part: -part.fitness)
-        bestOfBest = sortedSwarm[0:int(floor(self.particleCount*p))]
-
-        positions = [particle.position for particle in bestOfBest]
-        means = numpy.mean(positions, axis=0)
-        delta = numpy.mean((means-self.gbest.position)/self.gbest.position)
-        return numpy.log10(delta) < -3.0
-
-
-    def isMaster(self):
-        return True
 
 class Particle(object):
     """
