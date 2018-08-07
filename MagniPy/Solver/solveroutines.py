@@ -30,17 +30,13 @@ class SolveRoutines(Magnipy):
 
         return param_values,macromodel_list
 
-    def optimize_4imgs_lenstronomy(self,lens_systems=None,macromodel=None,datatofit=None,realizations=None, multiplane = None, sigmas=None,
-                      grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with=None,
-                      polar_grid=True,initialize = False,init_macromodel=None,identifier=None,solver_type='PROFILE_SHEAR',n_particles=50,
-                      n_iterations=50,tol_source=5e-4,tol_centroid=0.05,tol_mag=0.2,centroid_0=[0,0],method='PS',refit=False,
-                                   optimizer_routine='optimize_SIE_shear',interpolate=False):
+    def optimize_4imgs_lenstronomy(self,lens_systems=None,datatofit=None,macromodel=None,realizations=None,multiplane=None,grid_rmax=None,source_shape='GAUSSIAN',
+                                   source_size=None, grid_res = None,tol_source=1e-5,tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0,0],
+                                   n_particles = 50, n_iterations = 200, interpolate=False,polar_grid = True,
+                                   optimize_routine = 'optimize_SIE_shear',verbose=False,re_optimize=False,
+                                   particle_swarm = True, solver_type = 'PROFILE_SHEAR',restart=1):
 
-        if raytrace_with is None:
-            raytrace_with = raytrace_with_default
-
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(srcsize=source_size)
+        raytrace_with = raytrace_with_default
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -48,32 +44,13 @@ class SolveRoutines(Magnipy):
         if source_size is None:
             source_size = default_source_size
 
-        if res is None:
-            res = default_res(source_size)
+        if grid_rmax is None:
+            grid_rmax = default_gridrmax(srcsize=source_size)
 
-        if identifier is None:
-            identifier = default_file_identifier
+        if grid_res is None:
+            grid_res = default_res(source_size)
 
         if lens_systems is None:
-
-            if initialize:
-
-                if init_macromodel is None:
-
-                    if isinstance(macromodel,list):
-                        _, init_macromodel = self.macromodel_initialize(macromodel[0], datatofit, False, method='lensmodel', sigmas=sigmas,
-                                      identifier=identifier, grid_rmax=grid_rmax, res=res,
-                                      source_shape=source_shape, source_size=source_size, print_mag=False,
-                                      solver_type='PROFILE_SHEAR',shr_coords=1)
-
-
-                    else:
-                        _, init_macromodel = self.macromodel_initialize(macromodel, datatofit, False, method='lensmodel', sigmas=sigmas,
-                                      identifier=identifier, grid_rmax=grid_rmax, res=res,
-                                      source_shape=source_shape, source_size=source_size, print_mag=False,
-                                      solver_type='PROFILE_SHEAR',shr_coords=1)
-
-                macromodel = init_macromodel
 
             lens_systems = []
 
@@ -92,12 +69,13 @@ class SolveRoutines(Magnipy):
                     lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
 
-        optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems=lens_systems, data2fit=datatofit, tol_source=tol_source,
-                                  tol_mag=tol_mag, tol_centroid=tol_centroid,centroid_0=centroid_0, n_particles=n_particles,
-                                  n_iterations=n_iterations,grid_rmax=grid_rmax, res=res,
-                                 source_size=source_size,raytrace_with=raytrace_with,initialized=initialize,
-                                 source_shape=source_shape,polar_grid=polar_grid, solver_type=solver_type,method=method,refit=refit,
-                                 optimizer_routine=optimizer_routine,interpolate=interpolate)
+        optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems,data2fit=datatofit,tol_source=tol_source,
+                                                                 tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,
+                                                                 n_particles=n_particles,n_iterations=n_iterations,interpolate=interpolate,
+                                                                 grid_rmax=grid_rmax,res=grid_res,source_shape=source_shape,source_size=source_size,
+                                                                 raytrace_with=raytrace_with,polar_grid=polar_grid,solver_type=solver_type,
+                                                                 optimizer_routine=optimize_routine,verbose=verbose,re_optimize=re_optimize,
+                                                                 particle_swarm=particle_swarm,restart=restart)
 
         return optimized_data,model
 

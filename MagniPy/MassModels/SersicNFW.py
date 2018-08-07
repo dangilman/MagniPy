@@ -1,6 +1,6 @@
 import numpy as np
-from Sersic import Sersic
-from NFW import NFW
+from MagniPy.MassModels.Sersic import Sersic
+from MagniPy.MassModels.NFW import NFW
 from scipy.special import gammainc,gamma
 
 class SersicNFW:

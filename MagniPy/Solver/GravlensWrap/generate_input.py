@@ -1,6 +1,6 @@
 import numpy as np
 from MagniPy.util import *
-from gravlens_to_kwargs import *
+from MagniPy.Solver.GravlensWrap.gravlens_to_kwargs import *
 
 class GravlensInput:
 

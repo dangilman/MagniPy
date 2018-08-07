@@ -89,7 +89,7 @@ class Data:
             try:
                 m = np.array(self.m)*ref**-1
             except:
-                print 'reference data has zero flux'
+                print('reference data has zero flux')
                 m = np.ones_like(self.m)*np.nan
 
             m = np.delete(m,index)
@@ -105,7 +105,7 @@ class Data:
             try:
                 fluxes = np.array(fluxes)*ref**-1
             except:
-                print 'reference data has zero flux'
+                print('reference data has zero flux')
                 fluxes = np.ones_like(fluxes)*np.nan
 
             return np.delete(fluxes, index)

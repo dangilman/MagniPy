@@ -11,7 +11,6 @@ from MagniPy.Solver.RayTrace import raytrace
 from MagniPy.lensdata import Data
 import os
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
-from MagniPy.PSO.optimizer import Optimizer
 
 class Magnipy:
     """
@@ -49,9 +48,17 @@ class Magnipy:
             for component in system.lens_components:
                 component.print_args()
 
-    def update_system(self, lens_system, component_index, newkwargs, method, is_shear=False):
+    def update_system(self, lens_system, newkwargs, method, solver_type):
 
-        lens_system.lens_components[component_index].update(method=method, is_shear=is_shear, **newkwargs)
+        if lens_system.lens_components[0].other_args['name'] == 'SERSIC_NFW':
+            raise Exception('not yet implemented')
+        else:
+
+            lens_system.lens_components[0].update(method=method, is_shear=False, **newkwargs[0])
+
+            if solver_type == 'PROFILE_SHEAR':
+
+                lens_system.lens_components[0].update(method=method, is_shear=True, **newkwargs[1])
 
         return lens_system
 
@@ -120,9 +127,10 @@ class Magnipy:
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
-                                    centroid_0=None,n_particles=50,n_iterations=400,initialized=False,interpolate=False,
-                                    grid_rmax=None, res=None,source_shape='GAUSSIAN', method='optimize',source_size=None,raytrace_with='lenstronomy',
-                                    polar_grid=True,solver_type='PROFILE_SHEAR',refit=True,optimizer_routine=str):
+                                    centroid_0=None,n_particles=50,n_iterations=400,interpolate=False,
+                                    grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
+                                    polar_grid=True,solver_type='PROFILE_SHEAR',optimizer_routine=str,verbose=bool,re_optimize=False,
+                                    particle_swarm = True, restart = 1):
 
         data, opt_sys = [], []
 
@@ -130,47 +138,17 @@ class Magnipy:
 
         for i, system in enumerate(lens_systems):
 
-            lists = lenstronomyWrap.assemble(system)
-
-            redshift_list, lens_list, lensmodel_params = lists['redshift_list'],lists['lens_model_list'],lists['kwargs_lens']
-
-            sampler = Optimizer(zlist=redshift_list, lens_list=lens_list, arg_list=lensmodel_params,
-                                z_source=self.zsrc,x_pos=data2fit.x, y_pos=data2fit.y, tol_source=tol_source,
-                                magnification_target=data2fit.m,tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
-                                initialized=initialized,astropy_instance=self.cosmo.cosmo,optimizer_routine=optimizer_routine,
-                                z_main=self.zmain, multiplane=system.multiplane, interpolate=interpolate)
-
-            kwargs_lens, source, [x_opt,y_opt] = sampler.optimize(n_particles, n_iterations)
-
-            xsrc, ysrc = source[0], source[1]
-
-            lensModel = sampler.optimizer.lensModel
+            kwargs_lens, [xsrc,ysrc], [x_opt,y_opt],lensModel = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
+                            data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
+                            interpolate,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm)
 
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,
                                       raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid)
 
-            if lens_systems[i].lens_components[0].other_args['name'] == 'SERSIC_NFW':
+            optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy',solver_type=solver_type)
 
-                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                               newkwargs=kwargs_lens[0], method='lenstronomy')
-                optimized_sys = self.update_system(lens_system=lens_systems[i],component_index=1,
-                                                   newkwargs=kwargs_lens[1],method='lenstronomy')
-                if solver_type == 'PROFILE_SHEAR':
-                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                       newkwargs=kwargs_lens[2], method='lenstronomy',
-                                                       is_shear=True)
-
-            else:
-
-                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                   newkwargs=kwargs_lens[0], method='lenstronomy')
-                if solver_type == 'PROFILE_SHEAR':
-
-                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                       newkwargs=kwargs_lens[1], method='lenstronomy',
-                                                       is_shear=True)
 
             new_data = Data(x_opt,y_opt,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
@@ -199,37 +177,17 @@ class Magnipy:
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-            #x_img,y_img = lensEquationSolver.findBrightImage(kwargs_lens=kwargs_lens,sourcePos_x=xsrc,sourcePos_y=ysrc,
-            #                                                 arrival_time_sort=False)
-
             x_img,y_img = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,solver_type,kwargs_lens)
 
             if print_mag:
-                print 'computing mag # '+str(i+1)+' of '+str(len(lens_systems))
+                print('computing mag # '+str(i+1)+' of '+str(len(lens_systems)))
 
             fluxes = self.do_raytrace(x_img,y_img,lensmodel=lensModel,xsrc=xsrc,ysrc=ysrc,multiplane=system.multiplane,grid_rmax=grid_rmax,
                                           res=res,source_shape=source_shape,source_size=source_size,
                                           raytrace_with=raytrace_with,lens_model_params=kwargs_lens,polar_grid=polar_grid)
 
-            if lens_systems[i].lens_components[0].other_args['name'] == 'SERSIC_NFW':
-
-                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                               newkwargs=kwargs_lens[0], method='lenstronomy')
-                optimized_sys = self.update_system(lens_system=lens_systems[i],component_index=1,
-                                                   newkwargs=kwargs_lens[1],method='lenstronomy')
-                if solver_type == 'PROFILE_SHEAR':
-                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                       newkwargs=kwargs_lens[2], method='lenstronomy',
-                                                       is_shear=True)
-
-            else:
-                optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                   newkwargs=kwargs_lens[0], method='lenstronomy')
-                if solver_type == 'PROFILE_SHEAR':
-
-                    optimized_sys = self.update_system(lens_system=lens_systems[i], component_index=0,
-                                                       newkwargs=kwargs_lens[1], method='lenstronomy',
-                                                       is_shear=True)
+            optimized_sys = self.update_system(lens_system=system, newkwargs=kwargs_lens, method='lenstronomy',
+                                               solver_type=solver_type)
 
             new_data = Data(x_img,y_img,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
@@ -285,16 +243,17 @@ class Magnipy:
 
             newmacromodel = gravlens_to_kwargs(macrovals,shr_coords=shr_coords)
 
-            optimized_systems.append(
-                self.update_system(lens_system=lens_systems[i], component_index=0, newkwargs=newmacromodel,
-                                   method='lensmodel'))
+            optimized_sys = self.update_system(lens_system=lens_systems[i], newkwargs=newmacromodel, method='lenstronomy',
+                                               solver_type=solver_type)
+
+            optimized_systems.append(optimized_sys)
 
         if ray_trace:
 
             for i, name in enumerate(outputfile):
 
                 if print_mag:
-                    print 'computing mag #: ', i + 1
+                    print('computing mag #: ', i + 1)
 
                 if raytrace_with == 'lenstronomy':
                     redshift_list, lens_list, lensmodel_params = optimized_systems[i].lenstronomy_lists()
@@ -356,7 +315,7 @@ class Magnipy:
                 if ray_trace:
 
                     if print_mag:
-                        print 'computing mag #: ', i + 1
+                        print('computing mag #: ', i + 1)
 
                     redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
                     lensModel = LensModelExtensions(lens_model_list=lens_list, multi_plane=system.multiplane,
@@ -369,9 +328,6 @@ class Magnipy:
                                               lens_model_params=lensmodel_params)
 
                     data[i].set_mag(fluxes)
-
-            # if ray_trace:
-            #    print 'time to ray trace (min): ', np.round((time.time() - t0) * 60 ** -1, 1)
 
             if self.clean_up:
                 delete_dir(self.paths.gravlens_input_path_dump)

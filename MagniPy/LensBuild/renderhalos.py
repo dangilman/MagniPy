@@ -1,16 +1,15 @@
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
-from spatial_distribution import *
-from massfunctions import *
+from MagniPy.LensBuild.spatial_distribution import *
+from MagniPy.LensBuild.massfunctions import *
 from MagniPy.MassModels import TNFW
 from MagniPy.MassModels import NFW
 from MagniPy.MassModels import PJaffe
 from MagniPy.MassModels import PointMass
 from MagniPy.MassModels import uniformsheet
-from BuildRoutines.halo_environments import *
+from MagniPy.LensBuild.BuildRoutines.halo_environments import *
 from MagniPy.util import filter_by_position
-from MagniPy.LensBuild.BuildRoutines import PBHgen
 from copy import deepcopy
-from halo_truncations import Truncation
+from MagniPy.LensBuild.halo_truncations import Truncation
 
 class HaloGen:
 

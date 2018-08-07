@@ -1,3 +1,8 @@
+from MagniPy.LensBuild.lens_assemble import Deflector
+from MagniPy.MassModels.SIE import SIE
+import numpy as np
+from astropy.cosmology import WMAP9 as default_cosmology
+
 powerlaw_defaults = {'log_ML':6,'log_MH':10,'plaw_index':-1.9,'turnover_index':1.3,'subhalo_log_mL_low':-0.5}
 
 spatial_defaults = {'Rmax_z_kpc':250,'theta_max':3,'nfw_core_kpc':6.1*25} # theta_max in arcseconds; radius in image plane
@@ -22,14 +27,6 @@ default_halo_mass = 10**13
 default_halo_mass_function = 'reed07'
 
 kappa_Rein_default = 0.5
-
-from astropy.cosmology import WMAP9
-default_cosmology = WMAP9
-
-from MagniPy.LensBuild.lens_assemble import Deflector
-from MagniPy.MassModels.SIE import SIE
-import numpy as np
-
 
 def get_default_SIE_random(z,varyflags=['1','1','1','1','1','1','1','0','0','0']):
     default_startkwargs_random = {'R_ein': np.absolute(np.random.normal(1, 0.1)),
@@ -62,7 +59,7 @@ def default_gridrmax(srcsize):
     else:
         return 0.18
 
-def default_res(srcsize):
+def default_res(size):
 
     return 0.001
 

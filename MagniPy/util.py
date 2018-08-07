@@ -1,5 +1,5 @@
 import numpy as np
-from lensdata import Data
+from MagniPy.lensdata import Data
 import subprocess
 import shutil
 import scipy.ndimage.filters as sfilt
@@ -8,7 +8,6 @@ import itertools
 
 def sort_image_index(ximg,yimg,xref,yref):
 
-    assert len(ximg) == 4
     assert len(xref) == len(ximg)
 
     x_self = np.array(list(itertools.permutations(ximg)))

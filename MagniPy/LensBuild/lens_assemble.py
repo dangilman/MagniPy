@@ -183,12 +183,12 @@ class Deflector:
     def print_args(self):
 
         for item in self.args:
-            print item+': '+str(self.args[item])
+            print(item+': '+str(self.args[item]))
         for item in self.other_args:
-            print item+': '+str(self.other_args[item])
+            print(item+': '+str(self.other_args[item]))
         if self.has_shear:
-            print 'shear: ',self.shear
-            print 'shear PA: ',self.shear_theta
+            print('shear: ',self.shear)
+            print('shear PA: ',self.shear_theta)
 
     def set_shear(self,newshear):
 

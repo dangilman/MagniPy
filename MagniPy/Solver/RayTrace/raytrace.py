@@ -1,5 +1,5 @@
 import numpy as np
-from source_models import *
+from MagniPy.Solver.RayTrace.source_models import *
 from MagniPy.util import *
 import matplotlib.pyplot as plt
 from MagniPy.Solver.LenstronomyWrap import lenstronomy_wrap,MultiLensWrap
@@ -33,9 +33,7 @@ class RayTrace:
         self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
                                                    np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
 
-        #print 'polar_grid is False'
-        #polar_grid = False
-        #self.polar_grid = False
+
         if polar_grid:
             self.polar_q = polar_q
             self.x_grid_0 = self.x_grid_0.ravel()
@@ -118,7 +116,7 @@ class RayTrace:
     def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False):
 
         if print_mag:
-            print 'computing mag...'
+            print('computing mag...')
 
         x_loc = xx
         y_loc = yy
@@ -142,7 +140,7 @@ class RayTrace:
             ydef += yplus
 
             if print_mag and count==0:
-                print count+1
+                print(count+1)
 
         if to_img_plane:
 
@@ -158,7 +156,7 @@ class RayTrace:
         magnification = []
 
         if print_mag:
-            print 'computing mag...'
+            print('computing mag...')
 
         for i in range(0,len(xpos)):
 
@@ -184,7 +182,7 @@ class RayTrace:
                 ydef += yplus
 
                 if print_mag and i==0:
-                    print count+1
+                    print(count+1)
 
             x_source = x_loc - xdef
             y_source = y_loc - ydef
@@ -398,7 +396,7 @@ class RayTrace:
 
         with open(file,'a') as f:
             f.write('src pos: '+str(betax)+ ' ' + str(betay)+'\n')
-        print 'src pos (true): ',str(self.xsrc) + ' ' + str(self.ysrc)
+        print('src pos (true): ',str(self.xsrc) + ' ' + str(self.ysrc))
 
         return betax,betay
 

@@ -1,5 +1,4 @@
-from cosmology import Cosmo
-from cosmology import ParticleMasses
+from MagniPy.LensBuild.Cosmology.cosmology import Cosmo,ParticleMasses
 from scipy.integrate import quad
 from MagniPy.LensBuild.defaults import *
 from scipy.special import hyp2f1

@@ -1,5 +1,5 @@
 from MagniPy.util import *
-from kwargs_translate import lenstronomy_to_gravlens
+from MagniPy.Solver.GravlensWrap.kwargs_translate import lenstronomy_to_gravlens
 from MagniPy.Solver.LenstronomyWrap.kwargs_translate import *
 
 def gravlens_to_kwargs(model_string, shr_coords):

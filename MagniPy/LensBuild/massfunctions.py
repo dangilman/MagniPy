@@ -1,7 +1,7 @@
 import numpy as np
 from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.MassModels.NFW import NFW
-from spatial_distribution import NFW_3D
+from MagniPy.LensBuild.spatial_distribution import NFW_3D
 from scipy.integrate import quad
 import matplotlib.pyplot as plt
 
@@ -272,7 +272,5 @@ def normalize_M200(fsub,M200,c,rmax2d,R200,mH,mL,rmin,plaw_index):
     fsub_volume = 1.5*_r**2*(1-xmin)
 
     fsub_effective = fsub_volume*fsub
-
-    print np.log10(fsub_effective*0.5*M200*f_xmin)
 
     return prefactor*0.5*fsub_effective*_r*_m**2*c**2*f_xmin*(2+plaw_index)**-1*(1-beta**(2+plaw_index))

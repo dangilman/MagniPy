@@ -54,6 +54,7 @@ class Constructor(object):
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
                                                  massprofile=prof, model_kwargs=mod_args, Nrealizations=Nrealizations))
 
+        
         realizations = []
         for i in range(0,Nrealizations):
             all_components = []
@@ -61,13 +62,7 @@ class Constructor(object):
                 all_components += component[i]
             realizations.append(all_components)
         return realizations
-
-
-    def filter_position(self,halos,x_filter=None,y_filter=None,mindis=None,log_masscut_low=None):
-
-        return filter_by_position(halos,x_filter=x_filter,y_filter=y_filter,mindis=mindis,log_masscut_low=log_masscut_low,
-                           zmain=self.halo_generator.cosmology.zd,cosmology=self.halo_generator.cosmology)
-
+        
 def get_masses(halos):
 
     mass = []

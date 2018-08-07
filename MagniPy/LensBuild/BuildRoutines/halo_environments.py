@@ -1,6 +1,6 @@
 from MagniPy.LensBuild.defaults import *
 from MagniPy.LensBuild.Cosmology.halo_mass_function import *
-from PBHgen import *
+from MagniPy.LensBuild.BuildRoutines.PBHgen import *
 
 def mainlens_plaw(fsub,plaw_index,cosmo,kappa_Rein=0.5, log_mL = None, log_mH = None):
 

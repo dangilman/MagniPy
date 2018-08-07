@@ -231,14 +231,11 @@ def runABC(chain_ID='',core_index=int):
     solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
                            temp_folder=chain_keys['sampler']['scratch_file'], clean_up=True)
 
-    opt_data, mod = solver.two_step_optimize(macromodel_start, datatofit=datatofit, realizations=None,
-                                             multiplane=False,
-                                             method='lensmodel', ray_trace=False,
-                                             sigmas=chain_keys['modeling']['sigmas'],
-                                             identifier=chain_keys['sampler']['chain_ID'],
-                                             grid_rmax=chain_keys['modeling']['grid_rmax'],
-                                             res=chain_keys['modeling']['grid_res'],
-                                             source_size=chain_keys['lens']['source_size'])
+    opt_data, mod = solver.optimize_4imgs_lenstronomy(macromodel = macromodel_start, datatofit= datatofit,realizations=None,multiplane=False,
+                                                      grid_rmax=chain_keys['modeling']['grid_rmax'],
+                                                      source_size=chain_keys['lens']['source_size'],grid_res=chain_keys['modeling']['grid_res'],
+                                                      verbose=False)
+
     macromodel = mod[0].lens_components[0]
 
     astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x) ** 2 + (opt_data[0].y - datatofit.y) ** 2))
@@ -317,10 +314,8 @@ def runABC(chain_ID='',core_index=int):
         Nsplit = len(run_commands)
     else: Nsplit = 500
 
-    #assert len(run_commands)%Nsplit == 0
-
     print 'solving realizations... '
-    i = 0
+
     N_computed = 0
 
     if os.path.exists(output_path + 'lensdata.txt'):
@@ -330,43 +325,25 @@ def runABC(chain_ID='',core_index=int):
 
     chaindata = []
 
-    solver = SolveRoutines(zlens=chainkeys['zlens'], zsrc=chainkeys['zsrc'],
-                           temp_folder=run_commands[i]['scratch_file'])
-
     if chainkeys['solve_method'] == 'lensmodel':
 
         for i in range(0,int(len(run_commands)*Nsplit**-1)):
 
 
-            new,_ = solver.fit(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],realizations=realizations[i*Nsplit:(i+1)*Nsplit],
-                               datatofit=datatofit, multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'],
-                               ray_trace=True,sigmas=chainkeys['sigmas'],
-                                        identifier=run_commands[i]['chain_ID'], grid_rmax=None,
-                                        res=run_commands[i]['grid_res'],polar_grid=True,
-                                        source_size=run_commands[i]['source_size'], print_mag=False,
-                                        raytrace_with=run_commands[i]['raytrace_with'])
+            new,_ = solver.optimize_4imgs_lenstronomy(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],
+                               realizations=realizations[i*Nsplit:(i+1)*Nsplit],
+                               datatofit=datatofit, multiplane=chainkeys['multiplane'],
+                                grid_rmax=None,source_size=chain_keys[''])
             chaindata += new
             N_computed += len(new)
 
     else:
-        for i in range(0,int(len(run_commands))):
-            print 'computing '+str(i+1)+' of '+str(len(run_commands))
 
-            data_copy = deepcopy(datatofit)
-            #data_copy.x += np.random.normal(0,0.003,4)
-            #data_copy.y += np.random.normal(0,0.003,4)
+        chaindata, _ = solver.optimize_4imgs_lenstronomy(macromodel = macromodels, realizations=realizations,datatofit= datatofit,
+                                                multiplane=chain_keys['multiplane'],grid_rmax=None,
+                                                  source_size=chain_keys['lens']['source_size'],grid_res=chain_keys['modeling']['grid_res'],
+                                                  verbose=False,particle_swarm=False,re_optimize=True)
 
-            new, _ = solver.fit(macromodel=macromodels[i],
-                                    realizations=[realizations[i]], datatofit=data_copy,
-                                    multiplane=chainkeys['multiplane'], method=chainkeys['solve_method'], ray_trace=True,
-                                    sigmas=chainkeys['sigmas'],
-                                    identifier=run_commands[i]['chain_ID'], grid_rmax=None,
-                                    res=run_commands[i]['grid_res'],polar_grid=True,
-                                    source_size=run_commands[i]['source_size'], print_mag=False,
-                                    raytrace_with=run_commands[i]['raytrace_with'])
-
-            chaindata += new
-            N_computed += len(new)
 
     fluxes,astrometric_errors,parameters = [],[],[]
 
