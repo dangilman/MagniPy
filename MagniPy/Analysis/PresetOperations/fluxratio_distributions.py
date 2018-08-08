@@ -21,6 +21,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
 
+        
     if write_to_file:
         assert outfilepath is not None
         print(outfilepath)
@@ -72,7 +73,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
             halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
+                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions)
 
             if init_macromodel is None:
                 _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
