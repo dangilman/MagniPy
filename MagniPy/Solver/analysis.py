@@ -1,5 +1,5 @@
 from MagniPy.magnipy import Magnipy
-from RayTrace.raytrace import RayTrace
+from MagniPy.Solver.RayTrace.raytrace import RayTrace
 import copy
 import numpy as np
 import matplotlib.pyplot as plt

@@ -32,8 +32,8 @@ class SolveRoutines(Magnipy):
 
     def optimize_4imgs_lenstronomy(self,lens_systems=None,datatofit=None,macromodel=None,realizations=None,multiplane=None,grid_rmax=None,source_shape='GAUSSIAN',
                                    source_size=None, grid_res = None,tol_source=1e-5,tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0,0],
-                                   n_particles = 50, n_iterations = 200, interpolate=False,polar_grid = True,
-                                   optimize_routine = 'optimize_SIE_shear',verbose=False,re_optimize=False,
+                                   n_particles = 50, n_iterations = 250, interpolate=False,polar_grid = True,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,re_optimize=False,
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR',restart=1):
 
         raytrace_with = raytrace_with_default
@@ -89,14 +89,14 @@ class SolveRoutines(Magnipy):
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
 
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(srcsize=source_size)
-
         if source_shape is None:
             source_shape = default_source_shape
 
         if source_size is None:
             source_size = default_source_size
+
+        if grid_rmax is None:
+            grid_rmax = default_gridrmax(srcsize=source_size)
 
         if res is None:
             res = default_res(source_size)

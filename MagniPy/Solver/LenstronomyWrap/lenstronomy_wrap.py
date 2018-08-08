@@ -74,9 +74,10 @@ class LenstronomyWrap:
                               lens_model_list=lensmodel_kwargs['lens_model_list'],kwargs_lens=lensmodel_kwargs['kwargs_lens'],
                               optimizer_routine=optimizer_routine,multiplane=lens_system.multiplane,z_main=z_main,z_source=z_source,
                               tol_source=tol_source,tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,astropy_instance=self.astropy_instance,
-                              interpolate=interpolate,verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm)
+                              interpolate=interpolate,verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm,
+                              pso_convergence_standardDEV=0.01, pso_convergence_mean=3, pso_compute_magnification=10)
 
         optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 
-        return optimized_args, source, images, optimizer.optimizer_amoeba.lensModel
+        return optimized_args, source, images, optimizer.optimizer.lensModel
 

@@ -67,22 +67,24 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         while len(fit_fluxes)<Ntotal:
 
+            Nreal = Ntotal - len(fit_fluxes)
+
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
-            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
-                                          filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
+            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
+                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
 
-            #if init_macromodel is None:
-            #    _,_init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
-            #                       multiplane=multiplane,n_particles = 100, n_iterations = 250,
-            #                       optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=False, particle_swarm=True,
-            #                       restart=3)
-            #    init_macromodel = _init[0].lens_components[0]
+            if init_macromodel is None:
+                _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
+                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+                                         re_optimize=False, particle_swarm=True,restart=3)
+                init_macromodel = init[0].lens_components[0]
 
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 500,
-                                   optimize_routine = 'optimize_SIE_shear',verbose=True,
-                                         re_optimize=False, particle_swarm=True)
+                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=True,
+                                         re_optimize=True, particle_swarm=True)
 
             for sys,dset in zip(system,model_data):
 
@@ -91,6 +93,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
                 print(astro_error)
+                a=input('continue')
                 if astro_error > 9:
                     continue
 
