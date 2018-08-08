@@ -1,7 +1,6 @@
 import numpy as np
 from MagniPy.util import *
 from MagniPy.MassModels.ExternalShear import Shear
-import matplotlib.pyplot as plt
 
 class SIE:
 

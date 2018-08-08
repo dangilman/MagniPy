@@ -3,7 +3,6 @@ from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.MassModels.NFW import NFW
 from MagniPy.LensBuild.spatial_distribution import NFW_3D
 from scipy.integrate import quad
-import matplotlib.pyplot as plt
 
 class Plaw_secondary:
 

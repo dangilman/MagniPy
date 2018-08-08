@@ -2,7 +2,7 @@ import os
 import shutil
 
 homedir = os.getenv('HOME')+'/'
-
+print(homedir)
 if homedir == '/u/home/g/gilmanda/':
     prefix = '/u/flashscratch/g/gilmanda/'
 
@@ -17,7 +17,7 @@ if homedir == '/u/home/g/gilmanda/':
     path_2_lensmodel = IO_directory
     gravlens_input_path = IO_directory + 'gravlens_input/'
 
-elif homedir == '/Users/danielgi/':
+elif homedir == '/Users/danielgilman/':
     prefix = homedir
     IO_directory = prefix
     path_2_lensmodel = homedir + '/Code/'

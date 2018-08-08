@@ -2,7 +2,6 @@ import numpy as np
 from colossus.lss.mass_function import *
 from colossus.lss.bias import haloBiasFromNu,twoHaloTerm
 from MagniPy.LensBuild.defaults import default_Rein_deflection,spatial_defaults,default_sigma8,default_halo_mass_function
-import matplotlib.pyplot as plt
 from MagniPy.LensBuild.Cosmology.extension import CosmoExtension
 
 class HaloMassFunction:

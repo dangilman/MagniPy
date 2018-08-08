@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.special import gamma
-import matplotlib.pyplot as plt
 
 class GAUSSIAN:
 

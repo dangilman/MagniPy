@@ -1,11 +1,10 @@
 import numpy as np
 from MagniPy.util import *
-from halo_constructor import Constructor
+from MagniPy.Analysis.PresetOperations.halo_constructor import Constructor
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
 from MagniPy.lensdata import Data
-from create_data import create_data
 import random
 
 def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
@@ -24,6 +23,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     if write_to_file:
         assert outfilepath is not None
+        print(outfilepath)
         assert os.path.exists(outfilepath)
 
     if start_macromodel is None:
@@ -69,23 +69,18 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
-            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
+            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=5,
                                           filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
 
-
             if init_macromodel is None:
-
-                model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data, macromodel=start_macromodel,
-                                                                       realizations=None,
-                                                                       multiplane=multiplane, n_particles=50,
-                                                                       n_iterations=200,
-                                                                       optimize_routine='optimize_SIE_shear',
-                                                                       verbose=False,restart=5)
-                init_macromodel = system[0].lens_components[0]
-
+                _,_init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
+                                   multiplane=multiplane,n_particles = 100, n_iterations = 250,
+                                   optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=False, particle_swarm=True,
+                                   restart=3)
+                init_macromodel = _init[0].lens_components[0]
 
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=init_macromodel,realizations=halos,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 200,
+                                   multiplane=multiplane,n_particles = 40, n_iterations = 250,
                                    optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=True, particle_swarm=True)
 
             for sys,dset in zip(system,model_data):
@@ -94,7 +89,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                     continue
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
-
+                print(astro_error)
                 if astro_error > 9:
                     continue
 
@@ -103,7 +98,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                 xcen.append(sys.lens_components[0].lenstronomy_args['center_x'])
                 ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
                 shear_pa.append(sys.lens_components[0].shear_theta)
-
+            a=input('continue')
 
     elif method=='lensmodel':
 
