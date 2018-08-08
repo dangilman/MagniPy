@@ -19,7 +19,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     filter_kwargs_list = []
     if filter_halo_positions:
 
-        filter_kwargs_list.append({'x_filter':data.x,'y_filter':data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
+        filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
 
     if write_to_file:
         assert outfilepath is not None
@@ -69,19 +69,20 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
-            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=5,
+            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args, Nrealizations=1,
                                           filter_halo_positions=filter_halo_positions, **filter_kwargs_list[n])
 
-            if init_macromodel is None:
-                _,_init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
-                                   multiplane=multiplane,n_particles = 100, n_iterations = 250,
-                                   optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=False, particle_swarm=True,
-                                   restart=3)
-                init_macromodel = _init[0].lens_components[0]
+            #if init_macromodel is None:
+            #    _,_init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
+            #                       multiplane=multiplane,n_particles = 100, n_iterations = 250,
+            #                       optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=False, particle_swarm=True,
+            #                       restart=3)
+            #    init_macromodel = _init[0].lens_components[0]
 
-            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=init_macromodel,realizations=halos,
-                                   multiplane=multiplane,n_particles = 40, n_iterations = 250,
-                                   optimize_routine = 'optimize_SIE_shear',verbose=True, re_optimize=True, particle_swarm=True)
+            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
+                                   multiplane=multiplane,n_particles = 50, n_iterations = 500,
+                                   optimize_routine = 'optimize_SIE_shear',verbose=True,
+                                         re_optimize=False, particle_swarm=True)
 
             for sys,dset in zip(system,model_data):
 
@@ -98,7 +99,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                 xcen.append(sys.lens_components[0].lenstronomy_args['center_x'])
                 ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
                 shear_pa.append(sys.lens_components[0].shear_theta)
-            
+
 
     elif method=='lensmodel':
 
