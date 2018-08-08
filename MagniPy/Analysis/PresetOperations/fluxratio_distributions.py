@@ -21,7 +21,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
         filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
 
-        
+
     if write_to_file:
         assert outfilepath is not None
         print(outfilepath)
@@ -93,8 +93,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                     continue
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
-                print(astro_error)
-                a=input('continue')
+
                 if astro_error > 9:
                     continue
 
