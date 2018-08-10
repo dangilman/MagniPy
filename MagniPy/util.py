@@ -62,6 +62,7 @@ def read_data(filename='',N=None):
     for line in lines:
 
         line = line.split(' ')
+
         n = int(line[0])
 
         try:
@@ -197,7 +198,9 @@ def read_dat_file(fname):
 
         for line in f:
             row = line.split(" ")
-            row_split = filter(None, row)
+            #print(row,fname)
+            #row_split = filter(None, row)
+            row_split = list(filter(None, row))
             if row_split[0] == 'alpha':
                 macromodel = row_split
 

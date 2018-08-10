@@ -17,9 +17,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
     filter_kwargs_list = []
-    if filter_halo_positions:
-
-        filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
+    filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
 
 
     if write_to_file:
@@ -73,7 +71,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
             halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions)
+                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions,
+                                          filter_kwargs=filter_kwargs_list[0])
 
             if init_macromodel is None:
                 _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
@@ -85,7 +84,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
-                                         re_optimize=True, particle_swarm=True)
+                                         re_optimize=True, particle_swarm=True, restart=2)
 
             for sys,dset in zip(system,model_data):
 

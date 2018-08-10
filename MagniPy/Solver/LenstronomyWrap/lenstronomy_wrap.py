@@ -66,7 +66,8 @@ class LenstronomyWrap:
         return np.absolute(magnification)
 
     def run_optimize(self,lens_system,z_source,x_pos,y_pos,tol_source,magnification_target,tol_mag,tol_centroid,centroid_0,
-                     optimizer_routine,z_main,interpolate,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm):
+                     optimizer_routine,z_main,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,
+                     constrain_params):
 
         lensmodel_kwargs = self.assemble(lens_system)
 
@@ -74,10 +75,11 @@ class LenstronomyWrap:
                               lens_model_list=lensmodel_kwargs['lens_model_list'],kwargs_lens=lensmodel_kwargs['kwargs_lens'],
                               optimizer_routine=optimizer_routine,multiplane=lens_system.multiplane,z_main=z_main,z_source=z_source,
                               tol_source=tol_source,tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,astropy_instance=self.astropy_instance,
-                              interpolate=interpolate,verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm,
-                              pso_convergence_standardDEV=0.01, pso_convergence_mean=1, pso_compute_magnification=6)
+                              verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm,
+                              pso_convergence_standardDEV=0.01,pso_convergence_mean=10, pso_compute_magnification=50,
+                              constrain_params=constrain_params)
 
         optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 
-        return optimized_args, source, images, optimizer.optimizer.lensModel
+        return optimized_args, source, images, optimizer.lensModel
 

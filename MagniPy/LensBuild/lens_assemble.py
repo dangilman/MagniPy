@@ -104,6 +104,7 @@ class LensSystem:
                 if component.has_shear:
 
                     shear_e1, shear_e2 = polar_to_cart(component.shear, component.shear_theta)
+                    #shear_e1,shear_e2 = lens_util.polar2cart(component.shear,component.shear_theta,center=[0,0])
                     arg_list.append({'e1': shear_e1, 'e2': shear_e2})
                     zlist.append(component.redshift)
                     lens_list.append('SHEAR')
@@ -203,6 +204,7 @@ class Deflector:
         if method=='lenstronomy':
 
             if is_shear:
+
                 s, spa = cart_to_polar(newparams['e1'], newparams['e2'])
 
                 self.shear_theta = spa

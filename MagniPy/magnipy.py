@@ -54,13 +54,21 @@ class Magnipy:
             raise Exception('not yet implemented')
         else:
 
-            lens_system.lens_components[0].update(method=method, is_shear=False, **newkwargs[0])
+            if method == 'lenstronomy':
 
-            if solver_type == 'PROFILE_SHEAR':
+                lens_system.lens_components[0].update(method=method, is_shear=False, **newkwargs[0])
 
-                lens_system.lens_components[0].update(method=method, is_shear=True, **newkwargs[1])
+                if solver_type == 'PROFILE_SHEAR':
 
-        return lens_system
+                    lens_system.lens_components[0].update(method=method, is_shear=True, **newkwargs[1])
+
+            elif method == 'lensmodel':
+
+                for val in [True,False]:
+                    lens_system.lens_components[0].update(method=method, is_shear=val, **newkwargs)
+
+            return lens_system
+
 
     def build_system(self, main=None, additional_halos=None, multiplane=None):
 
@@ -127,10 +135,10 @@ class Magnipy:
         return self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None,tol_source=None,tol_mag=None,tol_centroid=None,
-                                    centroid_0=None,n_particles=50,n_iterations=400,interpolate=False,
+                                    centroid_0=None,n_particles=50,n_iterations=400,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR',optimizer_routine=str,verbose=bool,re_optimize=False,
-                                    particle_swarm = True, restart = 1):
+                                    particle_swarm = True, restart = 1,constrain_params=None):
 
         data, opt_sys = [], []
 
@@ -140,7 +148,7 @@ class Magnipy:
 
             kwargs_lens, [xsrc,ysrc], [x_opt,y_opt],lensModel = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
-                            interpolate,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm)
+                            n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params)
 
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
@@ -243,7 +251,7 @@ class Magnipy:
 
             newmacromodel = gravlens_to_kwargs(macrovals,shr_coords=shr_coords)
 
-            optimized_sys = self.update_system(lens_system=lens_systems[i], newkwargs=newmacromodel, method='lenstronomy',
+            optimized_sys = self.update_system(lens_system=lens_systems[i], newkwargs=newmacromodel, method='lensmodel',
                                                solver_type=solver_type)
 
             optimized_systems.append(optimized_sys)

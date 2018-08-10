@@ -127,7 +127,7 @@ class GravlensInput:
         with open(dfilename,'w') as f:
 
             f.write(str(1) + '\n')
-            f.write('0.000000e+00 0.000000e+00 40.000000e-03\n')
+            f.write('0.000000e+00 0.000000e+00 100.000000e-03\n')
             f.write(str(0.0) + ' ' + str(10000) + '\n')
             f.write(str(0.0) + ' ' + str(10000) + '\n')
             f.write(str(0.0) + ' ' + str(10000) + '\n')
