@@ -25,8 +25,8 @@ class ParamSample:
 
         self.param_names = params_to_vary.keys()
 
-        for pname,pargs in params_to_vary.iteritems():
-
+        for pname in params_to_vary.keys():
+            pargs = params_to_vary[pname]
             if 'decimals' in pargs:
                 decimals = pargs['decimals']
             elif pname in self.recognized_param_precision.keys():

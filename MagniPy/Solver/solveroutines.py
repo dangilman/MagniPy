@@ -35,7 +35,7 @@ class SolveRoutines(Magnipy):
                                    n_particles = 50, n_iterations = 250,polar_grid = True,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=False,re_optimize=False,
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR',restart=1,
-                                   constrain_params=None):
+                                   constrain_params=None,shifting_background=False):
 
         raytrace_with = raytrace_with_default
 
@@ -64,7 +64,7 @@ class SolveRoutines(Magnipy):
             else:
                 if realizations is not None:
                     for real in realizations:
-                        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,
+                        lens_systems.append(self.build_system(main=macromodel,additional_halos=real,
                                                               multiplane=multiplane))
                 else:
                     lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
@@ -76,7 +76,8 @@ class SolveRoutines(Magnipy):
                                                                  grid_rmax=grid_rmax,res=grid_res,source_shape=source_shape,source_size=source_size,
                                                                  raytrace_with=raytrace_with,polar_grid=polar_grid,solver_type=solver_type,
                                                                  optimizer_routine=optimize_routine,verbose=verbose,re_optimize=re_optimize,
-                                                                 particle_swarm=particle_swarm,restart=restart,constrain_params=constrain_params)
+                                                                 particle_swarm=particle_swarm,restart=restart,
+                                                                 constrain_params=constrain_params,shifting_background=shifting_background)
 
         return optimized_data,model
 

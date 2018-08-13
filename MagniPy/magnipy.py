@@ -138,7 +138,7 @@ class Magnipy:
                                     centroid_0=None,n_particles=50,n_iterations=400,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR',optimizer_routine=str,verbose=bool,re_optimize=False,
-                                    particle_swarm = True, restart = 1,constrain_params=None):
+                                    particle_swarm = True, restart = 1,constrain_params=None,shifting_background=False):
 
         data, opt_sys = [], []
 
@@ -146,10 +146,18 @@ class Magnipy:
 
         for i, system in enumerate(lens_systems):
 
-            kwargs_lens, [xsrc,ysrc], [x_opt,y_opt],lensModel = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
+            kwargs_lens, [xsrc,ysrc], [x_opt,y_opt],lensModel,optimizer = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
-                            n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params)
+                            n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,shifting_background)
 
+            #if shifting_background:
+            #    fluxes = lensModel.magnification_finite(data2fit.x, data2fit.y, kwargs_lens, source_sigma=0.0006, window_size=0.1,
+            #                 grid_number=150,shape="GAUSSIAN",special_rayshooting_function = optimizer._finite_mag_shooting)
+            #else:
+            #    fluxes = lensModel.magnification_finite(data2fit.x, data2fit.y, kwargs_lens, source_sigma=0.0006, window_size=0.1,
+            #                 grid_number=150,shape="GAUSSIAN")
+            #print(mag_finite)
+            #exit(1)
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,

@@ -1,396 +1,166 @@
-from MagniPy.Analysis.PresetOperations.fluxratio_distributions import *
-from param_sample import ParamSample
 from MagniPy.Analysis.PresetOperations.halo_constructor import Constructor
+from MagniPy.lensdata import Data
+from MagniPy.LensBuild.defaults import *
+from MagniPy.Solver.solveroutines import SolveRoutines
+from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
 import shutil
 from time import time
 
-def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2, SIE_shear=None,
-                   SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
-                   solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None, mass_profile=None, mass_func_type=None,
-                   log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},core_index=int,
-                   chain_description='',chain_truths={},Ncores=int,cores_per_lens=int,main_halo_args={}):
+def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_constructor, solver):
 
-    chain_keys = {}
-    chain_keys['sampler'] = {}
-    chain_keys['lens'] = {}
-    chain_keys['halos'] = {}
-    chain_keys['modeling'] = {}
-    chain_keys['data'] = {}
+    chaindata = []
+    parameters = []
+    start = True
+    N_computed = 0
+    print(N_computed,keys['Nsamples'])
 
-    chain_keys['lens']['zlens'] = zlens
-    chain_keys['lens']['zsrc'] = zsrc
-    chain_keys['lens']['source_size'] = source_size
-    if SIE_gamma is not None:
-        chain_keys['lens']['SIE_gamma'] = SIE_gamma
-    if SIE_shear_start is None:
-        SIE_shear_start = SIE_shear
-    chain_keys['lens']['SIE_shear'] = SIE_shear_start
-    chain_keys['lens']['SIE_shear_start'] = SIE_shear_start
-    chain_keys['lens']['multiplane'] = multiplane
+    while N_computed < keys['Nsamples']:
 
-    for param,value in main_halo_args.iteritems():
-        chain_keys['lens'].update({param:value})
+        samples = prior.sample(scale_by='Nsamples')[0]
 
-    chain_keys['modeling']['mindis'] = mindis
-    chain_keys['modeling']['log_masscut_low'] = log_masscut_low
+        chain_keys_run = copy(keys)
 
-    chain_keys['modeling']['grid_rmax'] = grid_rmax
-    chain_keys['modeling']['grid_res'] = grid_res
-    chain_keys['modeling']['raytrace_with'] = raytrace_with
-    chain_keys['modeling']['solve_method'] = solve_method
-    if lensmodel_varyflags is None:
-        lensmodel_varyflags = ['1', '1', '1', '1', '1', '1', '1', '0', '0', '0']
-    chain_keys['modeling']['varyflags'] = lensmodel_varyflags
+        for i,pname in enumerate(keys_to_vary.keys()):
 
-    chain_keys['data']['x_to_fit'] = data_to_fit.x.tolist()
-    chain_keys['data']['y_to_fit'] = data_to_fit.y.tolist()
-    chain_keys['data']['flux_to_fit'] = data_to_fit.m.tolist()
-    chain_keys['data']['source'] = [data_to_fit.srcx,data_to_fit.srcy]
+            chain_keys_run[pname] = samples[i]
 
-    if sigmas is None:
-        sigmas = default_sigmas
+        macromodel = deepcopy(macromodel_init[0])
 
-    if data_to_fit.t[1]==0 and data_to_fit.t[2] == 0:
-        sigmas[-1] = [100]*4
+        if 'SIE_gamma' in keys_to_vary:
+            macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
-    chain_keys['data']['t_to_fit'] = data_to_fit.t.tolist()
-    chain_keys['modeling']['sigmas'] = sigmas
-    chain_keys['sampler']['chain_ID'] = chain_ID
-    chain_keys['sampler']['output_folder'] = chain_keys['sampler']['chain_ID'] + '/'
+        halo_args = halo_model_args(chain_keys_run)
+        filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis': chain_keys_run['mindis']}
 
-    chain_keys['sampler']['Nsamples'] = Nsamples
-    chain_keys['sampler']['chain_description'] = chain_description
-    chain_keys['sampler']['chain_truths'] = chain_truths
-    chain_keys['sampler']['Ncores'] = Ncores
-    chain_keys['sampler']['cores_per_lens'] = cores_per_lens
+        halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
+                                        model_name=chain_keys_run['mass_func_type'],model_args=halo_args,
+                                        Nrealizations=1, filter_halo_positions=True,**filter_kwargs)
 
-    chain_keys['halos']['mass_profile'] = mass_profile
-    chain_keys['halos']['mass_func_type'] = mass_func_type
-    chain_keys['halos']['log_mL'] = log_mL
-    chain_keys['halos']['log_mH'] = log_mH
+        d2fit = perturb_data(data,chain_keys_run['position_sigma'])
 
-    if fsub is not None:
-        chain_keys['halos']['fsub'] = fsub
-    elif A0 is not None:
-        chain_keys['halos']['A0'] = fsub
+        new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
+                                                   datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
+                                                   grid_rmax=None, source_size=chain_keys_run['source_size'],
+                                                   restart=1,particle_swarm=False,re_optimize=True,verbose=False)
 
-    if logmhm is not None:
-        chain_keys['halos']['logmhm'] = logmhm
+        if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
 
-    chain_keys['halos']['zmin'] = zmin
-    chain_keys['halos']['zmax'] = zmax
+            N_computed += 1
 
-    chain_keys_to_vary = {}
+            samples_array = []
 
-    for groupname,items in chain_keys.iteritems():
+            for pname in keys_to_vary.keys():
+                samples_array.append(chain_keys_run[pname])
 
-        for item_name in items:
-
-            if item_name in params_to_vary.keys():
-
-                chain_keys_to_vary[item_name] = params_to_vary[item_name]
-
-    return {'main_keys':chain_keys,'tovary_keys':chain_keys_to_vary}
-
-def write_param_dictionary(fname='',param_dictionary={}):
-
-    with open(fname,'w') as f:
-        f.write(str(param_dictionary))
-
-def read_paraminput(file):
-    with open(file,'r') as f:
-        vals = f.read()
-
-    return eval(vals)
-
-def build_dictionary_list(paramnames=[],values=[],dictionary_to_duplicate=None,N=int):
-
-    params = []
-
-    for i in range(0,N):
-
-        if dictionary_to_duplicate is not None:
-            new_dictionary = deepcopy(dictionary_to_duplicate)
-        else:
-            new_dictionary = {}
-
-        for index,pname in enumerate(paramnames):
-
-
-            if isinstance(values[index],np.ndarray) or isinstance(values[index],list):
-                new_dictionary.update({pname:values[index][i]})
+            if start:
+                chaindata = new[0].m
+                parameters = np.array(samples_array)
             else:
-                new_dictionary.update({pname:values[index]})
+                chaindata = np.vstack((chaindata,new[0].m))
+                parameters = np.vstack((parameters,np.array(samples_array)))
 
-        params.append(new_dictionary)
+            start = False
 
-    return params
-
-def halo_model_args(mass_func_type='',params={}):
-
-    args = {}
-
-    names = ['log_mL', 'log_mH', 'logmhm']
-
-    for name in names:
-        args.update({name: params[name]})
-
-    if mass_func_type=='plaw_main' or mass_func_type=='composite_plaw':
-
-        if 'A0_perasec2' in params.keys():
-            args.update({'A0_perasec2':params['A0_perasec2']})
-        elif 'fsub' in params.keys():
-            args.update({'fsub':params['fsub']})
-
-        if 'M_halo' in params.keys():
-            args.update({'M_halo':params['M_halo']})
-            args.update({'tidal_core':params['tidal_core']})
-            args.update({'r_core':params['r_core']})
-
-        elif 'Rs' in params.keys():
-            args.update({'Rs': params['Rs']})
-            args.update({'r200_kpc':params['r200_kpc']})
-
-        if 'plaw_order2' in params.keys():
-            args.update({'plaw_order2':True})
-
-        if 'rmax2d_asec' in params.keys():
-            args.update({'rmax2d_asec':params['rmax2d_asec']})
-
-    return args
-
-def get_inputfile_path(chain_ID,core_index):
-
-    info_file = chain_ID + '/paramdictionary_1.txt'
-    temp_keys = read_paraminput(info_file)
-
-    cores_per_lens = temp_keys['main_keys']['sampler']['cores_per_lens']
-    Nlens = temp_keys['main_keys']['sampler']['Ncores'] * temp_keys['main_keys']['sampler']['cores_per_lens'] ** -1
-
-    data_id = []
-
-    for d in range(0, int(Nlens)):
-        data_id += [d + 1] * cores_per_lens
-
-    f_index = data_id[core_index-1]
-
-    return chain_ID + 'paramdictionary_' + str(f_index) + '.txt'
-
-def _initialize(chain_ID,core_index):
-
-    inputfile_path = get_inputfile_path(chain_ID, core_index)
-
-    all_keys = read_paraminput(inputfile_path)
-
-    chain_keys = all_keys['main_keys']
-
-    chain_keys['sampler']['scratch_file'] = chain_keys['sampler']['chain_ID'] + '_' + str(core_index)
-
-    chain_keys_to_vary = all_keys['tovary_keys']
-
-    output_path = chainpath + chain_keys['sampler']['output_folder']
-
-    if os.path.exists(output_path):
-        pass
-    else:
-        create_directory(output_path)
-
-    output_path = chainpath + chain_keys['sampler']['output_folder'] + 'chain' + str(core_index) + '/'
-
-    if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt') and \
-            os.path.exists(output_path + 'lensdata.txt') and os.path.exists(output_path + 'astrometric_errors.txt'):
-        return
-
-    if os.path.exists(output_path):
-        pass
-    else:
-        create_directory(output_path)
-
-    if os.path.exists(path_2_lensmodel + 'lensmodel'):
-        pass
-    else:
-        shutil.copy2(lensmodel_location + 'lensmodel', path_2_lensmodel)
-
-    return chain_keys,chain_keys_to_vary,output_path
+    return chaindata, parameters
 
 def runABC(chain_ID='',core_index=int):
 
-    chain_keys,chain_keys_to_vary,output_path = _initialize(chain_ID,core_index)
+    chain_keys,chain_keys_to_vary,output_path,run = initialize(chain_ID,core_index)
+
+    if run is False:
+        return
 
     # Initialize data, macormodel
-    datatofit = Data(x=chain_keys['data']['x_to_fit'], y=chain_keys['data']['y_to_fit'], m=chain_keys['data']['flux_to_fit'],
-                     t=chain_keys['data']['t_to_fit'], source=chain_keys['data']['source'])
+    datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
+                     t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
-    macromodel_default_start = default_startkwargs
+    solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
+                           temp_folder=chain_keys['scratch_file'], clean_up=True)
+    _macro = get_default_SIE(z=chain_keys['zlens'])
+    print('initializing macromodel... ')
+    macromodel = initialize_macro(solver, datatofit, _macro)
+    print('done')
+    macromodel[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
 
-    print 'intializing macromodels... '
-    macromodel_default_start['shear'] = chain_keys['lens']['SIE_shear_start']
-    macromodel_start = get_default_SIE(z=chain_keys['lens']['zlens'])
-    solver = SolveRoutines(zlens=chain_keys['lens']['zlens'], zsrc=chain_keys['lens']['zsrc'],
-                           temp_folder=chain_keys['sampler']['scratch_file'], clean_up=True)
+    param_names_tovary = chain_keys_to_vary.keys()
+    write_info_file(chainpath + chain_keys['output_folder'] + 'simulation_info.txt',
+                    chain_keys, chain_keys_to_vary, param_names_tovary)
+    copy_directory(chain_ID + '/R_index_config.txt', chainpath + chain_keys['output_folder'])
 
-    opt_data, mod = solver.optimize_4imgs_lenstronomy(macromodel = macromodel_start, datatofit= datatofit,realizations=None,multiplane=False,
-                                                      grid_rmax=chain_keys['modeling']['grid_rmax'],
-                                                      source_size=chain_keys['lens']['source_size'],grid_res=chain_keys['modeling']['grid_res'],
-                                                      verbose=False)
+    prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1, macromodel=macromodel)
 
-    macromodel = mod[0].lens_components[0]
+    constructor = Constructor(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'], LOS_mass_sheet=True)
 
-    astrometric_error_fit = np.sqrt(np.sum((opt_data[0].x - datatofit.x) ** 2 + (opt_data[0].y - datatofit.y) ** 2))
+    if chain_keys['solve_method'] == 'lensmodel':
 
-    macromodel.set_varyflags(chain_keys['modeling']['varyflags'])
+        raise Exception('not yet implemented.')
 
-    # Get parameters to vary
-    prior = ParamSample(params_to_vary=chain_keys_to_vary,Nsamples=chain_keys['sampler']['Nsamples'],macromodel=macromodel)
-    samples = prior.sample(scale_by='Nsamples')
+    else:
 
-    param_names_tovary = prior.param_names
+        fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, macromodel, constructor, solver)
+
     header_string = ''
     for name in param_names_tovary:
         header_string += name + ' '
 
-    write_info_file(chainpath + chain_keys['sampler']['output_folder'] + 'simulation_info.txt',
-                    chain_keys, chain_keys_to_vary, param_names_tovary)
-    copy_directory(chain_ID+'/R_index_config.txt',chainpath+chain_keys['sampler']['output_folder'])
+    write_fluxes(output_path+'fluxes.txt',fluxes=fluxes,summed_in_quad=False)
 
-    chainkeys = {}
-    for group,items in chain_keys.iteritems():
-        for pname,value in items.iteritems():
-            if pname not in param_names_tovary:
-                chainkeys.update({pname:value})
+    write_params(parameters,output_path + 'parameters.txt',header_string)
 
-    run_commands = build_dictionary_list(paramnames=param_names_tovary,values=np.squeeze(np.split(samples,np.shape(samples)[1],axis=1)),
-                                         N=int(np.shape(samples)[0]),dictionary_to_duplicate=chainkeys)
+def write_params(params,fname,header):
 
-    for i in range(0,len(run_commands)):
-        run_commands[i].update({'halo_model_args':halo_model_args(run_commands[i]['mass_func_type'],run_commands[i])})
+    with open(fname, 'a') as f:
 
-    # Draw realizations
-    realizations = []
+        f.write(header+'\n')
 
-    print 'building realizations... '
+        if np.shape(params)[0] == 1:
+                for p in range(0,len(params)):
+                    f.write(str(float(params[p])+' '))
+        else:
 
-    constructor = Constructor(zlens=run_commands[0]['zlens'], zsrc=run_commands[0]['zsrc'], LOS_mass_sheet=True)
+            for r in  range(0,np.shape(params)[0]):
+                row = params[r,:]
+                for p in range(0,len(row)):
+                    f.write(str(float(row[p]))+' ')
+                f.write('\n')
 
-    t0 = time()
-
-    for index,params in enumerate(run_commands):
-
-        realizations += constructor.render(massprofile=params['mass_profile'],
-                                           model_name=params['mass_func_type'],
-                                           model_args=params['halo_model_args'], Nrealizations=1,
-                                           filter_halo_positions=True,
-                                           x_filter=datatofit.x, y_filter=datatofit.x, mindis=params['mindis'],
-                                           log_masscut_low=params['log_masscut_low'])
-
-
-    print 'done.'
-    print 'time to draw realizations (min): ',np.round((time() - t0)*60**-1,1)
-
-    macromodels = []
-
-    if 'SIE_gamma' or 'SIE_shear' in param_names_tovary:
-
-        for commands in run_commands:
-
-            newmac = deepcopy(macromodel)
-
-            if 'SIE_gamma' in commands:
-                newmac.update_lenstronomy_args({'gamma':commands['SIE_gamma']})
-            if 'SIE_shear' in commands:
-                newmac.set_shear(np.absolute(commands['SIE_shear']))
-
-            macromodels.append(newmac)
-
-    else:
-
-        macromodels = [macromodel]*len(run_commands)
-
-    print 'done.'
-
-    if len(run_commands)<=500 or chainkeys['solve_method']=='lenstronomy':
-        Nsplit = len(run_commands)
-    else: Nsplit = 500
-
-    print 'solving realizations... '
-
-    N_computed = 0
-
-    if os.path.exists(output_path + 'lensdata.txt'):
-        pass
-    else:
-        write_data(output_path + 'lensdata.txt', [datatofit])
-
-    chaindata = []
-
-    if chainkeys['solve_method'] == 'lensmodel':
-
-        for i in range(0,int(len(run_commands)*Nsplit**-1)):
-
-
-            new,_ = solver.optimize_4imgs_lenstronomy(macromodel=macromodels[i*Nsplit:(i+1)*Nsplit],
-                               realizations=realizations[i*Nsplit:(i+1)*Nsplit],
-                               datatofit=datatofit, multiplane=chainkeys['multiplane'],
-                                grid_rmax=None,source_size=chain_keys[''])
-            chaindata += new
-            N_computed += len(new)
-
-    else:
-
-        chaindata, _ = solver.optimize_4imgs_lenstronomy(macromodel = macromodels, realizations=realizations,datatofit= datatofit,
-                                                multiplane=chain_keys['multiplane'],grid_rmax=None,
-                                                  source_size=chain_keys['lens']['source_size'],grid_res=chain_keys['modeling']['grid_res'],
-                                                  verbose=False,particle_swarm=False,re_optimize=True)
-
-
-    fluxes,astrometric_errors,parameters = [],[],[]
-
-    for index,dset in enumerate(chaindata):
-
-        if dset.nimg == datatofit.nimg:
-            fluxes.append(dset.m)
-            astrometric_errors.append(np.sqrt(np.sum((dset.x - datatofit.x) ** 2 + (dset.y - datatofit.y) ** 2)))
-            try:
-                parameters.append(samples[index,:])
-            except:
-                parameters.append(samples[index])
-
-    f_handle = file(output_path + 'astrometric_errors.txt', 'a')
-    np.savetxt(f_handle, X=np.array(astrometric_errors), fmt='%.6f')
-    f_handle = file(output_path+'fluxes.txt', 'a')
-    np.savetxt(f_handle, X=np.array(fluxes), fmt='%.6f')
-    f_handle = file(output_path+'parameters.txt', 'a')
-    np.savetxt(f_handle, X=np.array(parameters), fmt='%.6f',header=header_string)
 
 def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
     with open(fpath,'w') as f:
 
-        f.write('Ncores\n'+str(int(keys['sampler']['Ncores']))+'\n\ncore_per_lens\n'+str(int(keys['sampler']['cores_per_lens']))+'\n\n')
+        f.write('Ncores\n'+str(int(keys['Ncores']))+'\n\ncore_per_lens\n'+str(int(keys['cores_per_lens']))+'\n\n')
 
         f.write('# params_varied\n')
 
-        for key,param in keys_to_vary.iteritems():
+        for key in keys_to_vary.keys():
 
             f.write(key+'\n')
         f.write('\n\n')
-        for key,param in keys_to_vary.iteritems():
+        for pname in keys_to_vary.keys():
 
-            f.write(key+':\n')
-            for vary_param,value in param.iteritems():
+            f.write(pname+':\n')
 
-                f.write(vary_param+' '+str(value)+'\n')
+            for key in keys_to_vary[pname].keys():
+
+                f.write(key+' '+str(keys_to_vary[pname][key])+'\n')
             f.write('\n')
 
         f.write('\n')
 
         f.write('# truths\n')
 
-        for key,item in keys['sampler']['chain_truths'].iteritems():
-            f.write(key+' '+str(item)+'\n')
+        for key in keys['chain_truths'].keys():
+            f.write(key+' '+str(keys['chain_truths'][key])+'\n')
 
         f.write('\n# info\n')
 
-        f.write(keys['sampler']['chain_description'])
+        f.write(keys['chain_description'])
+
+runABC(prefix+'data/he0435/',1)
+
+
+
+

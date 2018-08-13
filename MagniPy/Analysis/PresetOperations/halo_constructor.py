@@ -47,6 +47,7 @@ class Constructor(object):
                 spatial_name[i] = spatial_model[i]
 
             if filter_halo_positions:
+
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
                                                   massprofile=prof, model_kwargs=mod_args, Nrealizations=Nrealizations,
                                                       filter_halo_positions=True, **filter_kwargs))
@@ -54,7 +55,7 @@ class Constructor(object):
                 halos.append(self.halo_generator.draw_model(model_name=mod, spatial_name=spatial_name[i],
                                                  massprofile=prof, model_kwargs=mod_args, Nrealizations=Nrealizations))
 
-        
+
         realizations = []
         for i in range(0,Nrealizations):
             all_components = []

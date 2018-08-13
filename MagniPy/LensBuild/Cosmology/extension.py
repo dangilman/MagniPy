@@ -124,7 +124,9 @@ class CosmoExtension(Cosmo):
         if z<=z_base:
             R = angle_radian*self.D_A(0,z)
         else:
+            #print('check this computation... (angle_to_physicalradius)')
             R = angle_radian * self.D_A(0, z) - angle_deflection * self.D_A(z_base, z)
+            #R = angle_radian * self.D_A(0, z_base) - angle_deflection * self.D_A(z_base, z)
 
         if R<0:
             return 0
