@@ -57,7 +57,7 @@ def default_gridrmax(srcsize):
     elif srcsize <= 0.0016:
         return 0.16
     else:
-        return 0.18
+        return 0.2
 
 def default_res(size):
 

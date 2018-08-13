@@ -14,11 +14,11 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
     parameters = []
     start = True
     N_computed = 0
-    print(N_computed,keys['Nsamples'])
 
     while N_computed < keys['Nsamples']:
 
         samples = prior.sample(scale_by='Nsamples')[0]
+        print(samples)
 
         chain_keys_run = copy(keys)
 
@@ -34,34 +34,39 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
         halo_args = halo_model_args(chain_keys_run)
         filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis': chain_keys_run['mindis']}
 
-        halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
-                                        model_name=chain_keys_run['mass_func_type'],model_args=halo_args,
-                                        Nrealizations=1, filter_halo_positions=True,**filter_kwargs)
-
         d2fit = perturb_data(data,chain_keys_run['position_sigma'])
 
-        new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
-                                                   datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                   grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                   restart=1,particle_swarm=False,re_optimize=True,verbose=False)
+        img_fit = False
 
-        if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
+        while img_fit is False:
 
-            N_computed += 1
+            halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
+                                            model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
+                                            Nrealizations=1, filter_halo_positions=True, **filter_kwargs)
 
-            samples_array = []
+            new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
+                                                       datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
+                                                       grid_rmax=None, source_size=chain_keys_run['source_size'],
+                                                       restart=1,particle_swarm=True,re_optimize=True,verbose=False)
 
-            for pname in keys_to_vary.keys():
-                samples_array.append(chain_keys_run[pname])
+            if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
+                img_fit = True
 
-            if start:
-                chaindata = new[0].m
-                parameters = np.array(samples_array)
-            else:
-                chaindata = np.vstack((chaindata,new[0].m))
-                parameters = np.vstack((parameters,np.array(samples_array)))
+        N_computed += 1
 
-            start = False
+        samples_array = []
+
+        for pname in keys_to_vary.keys():
+            samples_array.append(chain_keys_run[pname])
+
+        if start:
+            chaindata = new[0].m
+            parameters = np.array(samples_array)
+        else:
+            chaindata = np.vstack((chaindata,new[0].m))
+            parameters = np.vstack((parameters,np.array(samples_array)))
+
+        start = False
 
     return chaindata, parameters
 
@@ -79,9 +84,9 @@ def runABC(chain_ID='',core_index=int):
     solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
                            temp_folder=chain_keys['scratch_file'], clean_up=True)
     _macro = get_default_SIE(z=chain_keys['zlens'])
-    print('initializing macromodel... ')
+
     macromodel = initialize_macro(solver, datatofit, _macro)
-    print('done')
+
     macromodel[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
 
     param_names_tovary = chain_keys_to_vary.keys()
@@ -159,7 +164,7 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-runABC(prefix+'data/he0435/',1)
+#runABC(prefix+'data/he0435_LOS/',1)
 
 
 

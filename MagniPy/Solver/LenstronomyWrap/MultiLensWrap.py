@@ -6,13 +6,16 @@ import numpy as np
 
 class MultiLensWrapper:
 
-    def magnification(self,xpos,ypos,lensmodel,lens_model_params,source_function,res,n=4):
+    def magnification(self,xpos,ypos,lensmodel,lens_model_params,source_function,res,n=4,ray_shooting_function=None):
 
         flux = []
 
         for i in range(0,n):
 
-            betax,betay = lensmodel.ray_shooting(xpos[i].ravel(),ypos[i].ravel(),lens_model_params)
+            if ray_shooting_function is None:
+                betax,betay = lensmodel.ray_shooting(xpos[i].ravel(),ypos[i].ravel(),lens_model_params)
+            else:
+                betax,betay = ray_shooting_function(xpos[i].ravel(),ypos[i].ravel(),lens_model_params)
 
             image = source_function(betax,betay)
 
