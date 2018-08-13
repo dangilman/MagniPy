@@ -150,12 +150,11 @@ class Magnipy:
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,shifting_background)
 
-            ray_shooting_function = optimizer.ray_shooting_function
+            #ray_shooting_function = optimizer.ray_shooting_function
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,
-                                      raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid,
-                                      ray_shooting_function=ray_shooting_function)
+                                      raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid)
 
             optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy',solver_type=solver_type)
 
@@ -387,7 +386,7 @@ class Magnipy:
 
     def do_raytrace(self, xpos, ypos, lens_system=None,lensmodel=None,xsrc=float, ysrc=float, multiplane=None,
                     grid_rmax=None,res=None, source_shape=None, source_size=None,
-                              raytrace_with=None,polar_grid=None,lens_model_params=None,ray_shooting_function=None):
+                              raytrace_with=None,polar_grid=None,lens_model_params=None):
 
         if raytrace_with == 'lenstronomy':
 
@@ -400,8 +399,7 @@ class Magnipy:
                                                 source_size=source_size, cosmology=self.cosmo, zsrc=self.zsrc,
                                                 raytrace_with=raytrace_with, polar_grid=polar_grid)
 
-            fluxes = ray_shooter.compute_mag(xpos, ypos,lensmodel=lensmodel,lens_model_params=lens_model_params,
-                                             ray_shooting_function=ray_shooting_function)
+            fluxes = ray_shooter.compute_mag(xpos, ypos,lensmodel=lensmodel,lens_model_params=lens_model_params)
 
         else:
 

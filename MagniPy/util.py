@@ -415,7 +415,8 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             beta = cosmology.beta(deflector.redshift,zmain,cosmology.zsrc)
 
             scale = np.ones_like(x_filter)*(1 - beta)
-            scale_mindis = (1-beta*0.5)
+            #scale_mindis = (1-beta*0.5)
+            scale_mindis = 0.5
 
         else:
             """

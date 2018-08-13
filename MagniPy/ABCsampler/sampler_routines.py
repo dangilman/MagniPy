@@ -4,13 +4,14 @@ from MagniPy.util import *
 from MagniPy.LensBuild.defaults import *
 from copy import deepcopy
 
-def perturb_data(data,delta_pos):
+def perturb_data(data,delta_pos,delta_flux):
 
     new_data = deepcopy(data)
 
     for i,sigma in enumerate(delta_pos):
         new_data.x[i] = np.random.normal(data.x[i],sigma)
         new_data.y[i] = np.random.normal(data.y[i],sigma)
+        new_data.m[i] = np.random.normal(data.m[i],max(0.00001,delta_flux[i]*data.m[i]))
 
     return new_data
 
@@ -36,7 +37,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
                    log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},
                    core_index=int,
                    chain_description='', chain_truths={}, Ncores=int, cores_per_lens=int, main_halo_args={},
-                   position_sigma=None):
+                   position_sigma=None, flux_sigma=None):
     chain_keys = {}
 
     chain_keys['zlens'] = zlens
@@ -65,6 +66,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     chain_keys['y_to_fit'] = data_to_fit.y.tolist()
     chain_keys['flux_to_fit'] = data_to_fit.m.tolist()
     chain_keys['position_sigma'] = position_sigma
+    chain_keys['flux_sigma'] = flux_sigma
     chain_keys['source'] = [data_to_fit.srcx, data_to_fit.srcy]
 
     if sigmas is None:
@@ -120,7 +122,6 @@ def read_paraminput(file):
         vals = f.read()
 
     return eval(vals)
-
 
 def build_dictionary_list(paramnames=[], values=[], dictionary_to_duplicate=None, N=int):
     params = []
@@ -219,8 +220,7 @@ def initialize(chain_ID, core_index):
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
 
-    if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt') and \
-            os.path.exists(output_path + 'lensdata.txt') and os.path.exists(output_path + 'astrometric_errors.txt'):
+    if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
         return False, False, False, False
 
     if os.path.exists(output_path):

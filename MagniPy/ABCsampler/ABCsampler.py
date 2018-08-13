@@ -18,7 +18,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
     while N_computed < keys['Nsamples']:
 
         samples = prior.sample(scale_by='Nsamples')[0]
-        print(samples)
 
         chain_keys_run = copy(keys)
 
@@ -34,20 +33,28 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
         halo_args = halo_model_args(chain_keys_run)
         filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis': chain_keys_run['mindis']}
 
-        d2fit = perturb_data(data,chain_keys_run['position_sigma'])
+        d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
 
         img_fit = False
 
         while img_fit is False:
-
+            print('rendering...')
             halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
                                             model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
                                             Nrealizations=1, filter_halo_positions=True, **filter_kwargs)
 
-            new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
+            if chain_keys_run['multiplane']:
+
+                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
                                                        datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                        grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                       restart=1,particle_swarm=True,re_optimize=True,verbose=False)
+                                                       restart=2,n_particles=60,n_iterations=300,
+                                                       particle_swarm=True,re_optimize=True,verbose=True)
+            else:
+                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
+                                                           datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
+                                                           grid_rmax=None, source_size=chain_keys_run['source_size'],
+                                                           restart=1,particle_swarm=False, re_optimize=True, verbose=False)
 
             if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
                 img_fit = True
@@ -74,12 +81,14 @@ def runABC(chain_ID='',core_index=int):
 
     chain_keys,chain_keys_to_vary,output_path,run = initialize(chain_ID,core_index)
 
-    if run is False:
-        return
-
     # Initialize data, macormodel
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
+
+    write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
+
+    if run is False:
+        return
 
     solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
                            temp_folder=chain_keys['scratch_file'], clean_up=True)

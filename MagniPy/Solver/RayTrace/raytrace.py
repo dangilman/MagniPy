@@ -96,7 +96,7 @@ class RayTrace:
             else:
                 return np.sum(img)*self.res**2,array2image(img)
 
-    def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None,ray_shooting_function=None):
+    def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None):
 
         x_loc, y_loc = self._get_grids(xpos, ypos, len(xpos))
         N = len(xpos)
@@ -104,7 +104,7 @@ class RayTrace:
         if self.raytrace_with == 'lenstronomy':
 
             return self.multilenswrap.magnification(x_loc,y_loc,lensmodel,lens_model_params,
-                                                        self.source,self.res,n=N,ray_shooting_function=ray_shooting_function)
+                                                        self.source,self.res,n=N)
 
         else:
             raise Exception('not yet implemented')
