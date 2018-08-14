@@ -27,7 +27,7 @@ def initialize_macro(solver,data,init):
     return model
 
 def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2, SIE_shear=None,
-                   SIE_shear_start=0.04, mindis=0.5, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None,
+                   SIE_shear_start=0.04, mindis_front=0.5,mindis_back=0.4, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None,
                    raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
                    mass_profile=None, mass_func_type=None,
@@ -48,7 +48,8 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     for param in main_halo_args.keys():
         chain_keys.update({param: main_halo_args[param]})
 
-    chain_keys['mindis'] = mindis
+    chain_keys['mindis_front'] = mindis_front
+    chain_keys['mindis_back'] = mindis_back
     chain_keys['log_masscut_low'] = log_masscut_low
 
     chain_keys['grid_rmax'] = grid_rmax
@@ -175,6 +176,15 @@ def halo_model_args(params):
 
         if 'rmax2d_asec' in params.keys():
             args.update({'rmax2d_asec': params['rmax2d_asec']})
+
+        if 'zmin' in params.keys():
+            args.update({'zmin':params['zmin']})
+        else:
+            args.update({'zmin':0})
+        if 'zmax' in params.keys():
+            args.update({'zmax':params['zmax']})
+        else:
+            args.update({'zmax':params['zsrc']})
 
     return args
 

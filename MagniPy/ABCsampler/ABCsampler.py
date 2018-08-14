@@ -31,36 +31,36 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
         halo_args = halo_model_args(chain_keys_run)
-        filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis': chain_keys_run['mindis']}
+        filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis_front': chain_keys_run['mindis_front'],
+                         'mindis_back':chain_keys_run['mindis_back'],'log_masscut_low':chain_keys_run['log_masscut_low']}
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
 
-        img_fit = False
-
-        while img_fit is False:
-            print('rendering...')
+        while True:
 
             halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
                                             model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
                                             Nrealizations=1, filter_halo_positions=True, **filter_kwargs)
-            print('completed '+str(N_computed)+' ')
+
+
             if chain_keys_run['multiplane']:
 
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
                                                        datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                        grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                       restart=1,n_particles=50,n_iterations=250,
-                                                       particle_swarm=True,re_optimize=True,verbose=True)
+                                                       restart=2,n_particles=50,n_iterations=250,
+                                                       particle_swarm=True,re_optimize=True,verbose=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                           restart=1,particle_swarm=False, re_optimize=True, verbose=False)
+                                                           restart=2,particle_swarm=True, re_optimize=True, verbose=False)
 
             if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
-                img_fit = True
+                break
 
         N_computed += 1
+        print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
 
         samples_array = []
 
@@ -81,6 +81,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 def runABC(chain_ID='',core_index=int):
 
     chain_keys,chain_keys_to_vary,output_path,run = initialize(chain_ID,core_index)
+
+    if run is False:
+        return
 
     # Initialize data, macormodel
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
