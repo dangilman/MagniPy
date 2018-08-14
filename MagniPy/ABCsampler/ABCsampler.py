@@ -39,16 +39,17 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
         while img_fit is False:
             print('rendering...')
+
             halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
                                             model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
                                             Nrealizations=1, filter_halo_positions=True, **filter_kwargs)
-
+            print('completed '+str(N_computed)+' ')
             if chain_keys_run['multiplane']:
 
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
                                                        datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                        grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                       restart=2,n_particles=60,n_iterations=300,
+                                                       restart=1,n_particles=50,n_iterations=250,
                                                        particle_swarm=True,re_optimize=True,verbose=True)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,

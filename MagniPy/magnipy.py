@@ -138,7 +138,10 @@ class Magnipy:
                                     centroid_0=None,n_particles=50,n_iterations=400,
                                     grid_rmax=None, res=None,source_shape='GAUSSIAN', source_size=None,raytrace_with='lenstronomy',
                                     polar_grid=True,solver_type='PROFILE_SHEAR',optimizer_routine=str,verbose=bool,re_optimize=False,
-                                    particle_swarm = True, restart = 1,constrain_params=None,shifting_background=False):
+                                    particle_swarm = True, restart = 1,constrain_params=None,shifting_background=False,
+                                    pso_convergence_mean=None,
+                                    pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None
+                                    ):
 
         data, opt_sys = [], []
 
@@ -148,7 +151,9 @@ class Magnipy:
 
             kwargs_lens, [xsrc,ysrc], [x_opt,y_opt],lensModel,optimizer = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
-                            n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,shifting_background)
+                            n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
+                            pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
+                             tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func)
 
             #ray_shooting_function = optimizer.ray_shooting_function
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
