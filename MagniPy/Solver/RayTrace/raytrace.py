@@ -8,7 +8,7 @@ class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax=int, res=0.0005, source_shape='', cosmology=None,
                  raytrace_with=None,
-                 polar_grid=False, polar_q = 0.4, **kwargs):
+                 polar_grid=False, polar_q = 0.5, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
