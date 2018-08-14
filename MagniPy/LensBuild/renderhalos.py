@@ -156,10 +156,15 @@ class HaloGen:
 
             position_filter_kwargs['filter_halo_positions'] = True
 
-            if 'mindis' in filter_kwargs:
-                position_filter_kwargs['mindis'] = filter_kwargs['mindis']
+            if 'mindis_front' in filter_kwargs:
+                position_filter_kwargs['mindis_front'] = filter_kwargs['mindis_front']
             else:
-                position_filter_kwargs['mindis'] = filter_args['mindis']
+                position_filter_kwargs['mindis_front'] = filter_args['mindis_front']
+
+            if 'mindis_back' in filter_kwargs:
+                position_filter_kwargs['mindis_back'] = filter_kwargs['mindis_back']
+            else:
+                position_filter_kwargs['mindis_back'] = filter_args['mindis_back']
 
             if 'log_masscut_low' in filter_kwargs:
                 position_filter_kwargs['log_masscut_low'] = filter_kwargs['log_masscut_low']
@@ -620,8 +625,8 @@ class HaloGen:
 
             if filter_halo_positions:
 
-                subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis=kwargs['mindis'],
-                                                 log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=cosmo_at_plane)
+                subhalos, _ = filter_by_position(subhalos,x_filter=kwargs['x_position'],y_filter=kwargs['y_position'],mindis_front=kwargs['mindis_front'],
+                                                 mindis_back=kwargs['mindis_back'],log_masscut_low=kwargs['log_masscut_low'],zmain=self.cosmology.zd,cosmology=cosmo_at_plane)
 
             if self.LOS_mass_sheet and len(subhalos)>0:
 

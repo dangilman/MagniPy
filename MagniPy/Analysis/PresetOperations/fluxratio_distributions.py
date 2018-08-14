@@ -12,13 +12,11 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
-                                    start_shear=0.05,mindis=0.5,log_masscut_low=7):
+                                    start_shear=0.05,mindis_front=0.5,mindis_back=0.3,log_masscut_low=7):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
-    filter_kwargs_list = []
-    filter_kwargs_list.append({'x_filter': data.x,'y_filter': data.y,'mindis':mindis,'log_masscut_low':log_masscut_low})
-
+    filter_kwargs = {'x_filter': data.x,'y_filter': data.y,'mindis_front':mindis_front,'mindis_back':mindis_back,'log_masscut_low':log_masscut_low}
 
     if write_to_file:
         assert outfilepath is not None
@@ -71,8 +69,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
             halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions,
-                                          filter_kwargs=filter_kwargs_list[0])
+                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions,**filter_kwargs)
 
             if init_macromodel is None:
                 _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
@@ -83,8 +80,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=True,
-                                         re_optimize=True, particle_swarm=True, restart=2)
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+                                         re_optimize=True, particle_swarm=True, restart=2, tol_simplex_func=0.001)
 
             for sys,dset in zip(system,model_data):
 
@@ -92,8 +89,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                     continue
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
-
-                if astro_error > 9:
+                print(astro_error)
+                if astro_error > 4:
                     continue
 
                 fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=True, index=0))

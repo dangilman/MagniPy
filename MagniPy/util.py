@@ -376,7 +376,7 @@ def make_grid(numPix, deltapix, subgrid_res=1, left_lower=False):
     shift = (subgrid_res-1)/(2.*subgrid_res)*deltapix
     return array2image(x_grid - shift), array2image(y_grid - shift)
 
-def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5, log_masscut_low=7,
+def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis_front=0.5, mindis_back=0.3, log_masscut_low=7,
                        zmain=None, cosmology=None):
     """
     :param xsub: sub x coords
@@ -397,16 +397,17 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             keep_index.append(index)
             continue
 
-        if zmain > deflector.redshift:
+        if zmain >= deflector.redshift:
 
             """
             for LOS halos; keep if it's rescaled position is near an image
             """
 
             scale = np.ones_like(x_filter)
-            scale_mindis = 1
+            _mindis = mindis_front
 
-        elif zmain < deflector.redshift:
+        else:
+            #zmain < deflector.redshift:
 
             """
             for halos behind the main lens
@@ -415,15 +416,9 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
             beta = cosmology.beta(deflector.redshift,zmain,cosmology.zsrc)
 
             scale = np.ones_like(x_filter)*(1 - beta)
-            #scale_mindis = (1-beta*0.5)
-            scale_mindis = 0.5
+            _mindis = mindis_back
+            #scale_mindis = 0.5
 
-        else:
-            """
-            for lens plane halos
-            """
-            scale = np.ones_like(x_filter)
-            scale_mindis = 1
 
         x, y = deflector.lenstronomy_args['center_x'], deflector.lenstronomy_args['center_y']
 
@@ -431,7 +426,7 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis=0.5
 
             dr = ((x - x_filter[i]*scale[i]) ** 2 + (y - y_filter[i]*scale[i]) ** 2) ** .5
 
-            if dr <= mindis*scale_mindis or deflector.other_args['mass'] >= masscut_low:
+            if dr <= _mindis or deflector.other_args['mass'] >= masscut_low:
                 keep_index.append(index)
 
                 break

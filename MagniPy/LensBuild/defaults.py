@@ -10,7 +10,7 @@ spatial_defaults['default_cone_base_factor'] = 1
 
 profile_defaults = {'c_turnover':True,'core':1e-6}
 
-filter_args = {'mindis':0.5,'log_masscut_low':7}
+filter_args = {'mindis_front':0.5,'log_masscut_low':7,'mindis_back':0.3}
 
 zstep = 0.02
 
