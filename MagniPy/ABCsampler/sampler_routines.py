@@ -21,7 +21,7 @@ def initialize_macro(solver,data,init):
                                                       grid_rmax=None, source_shape='GAUSSIAN', source_size=0.001,
                                                         tol_source=1e-5, tol_mag=0.1, tol_centroid=0.05,
                                                       centroid_0=[0, 0], n_particles=100, n_iterations=700,
-                                                      polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=True,
+                                                      polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=False,
                                                       re_optimize=False, particle_swarm=True, restart=5)
 
     return model
