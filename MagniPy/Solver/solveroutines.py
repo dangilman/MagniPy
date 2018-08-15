@@ -36,7 +36,8 @@ class SolveRoutines(Magnipy):
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=False,re_optimize=False,
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR',restart=1,
                                    constrain_params=None,shifting_background=False, pso_convergence_mean=10,
-                                   pso_compute_magnification=20, tol_simplex_params=1e-3,tol_simplex_func = 0.01):
+                                   pso_compute_magnification=20, tol_simplex_params=1e-3,tol_simplex_func = 0.01,
+                                   single_background=False):
 
         raytrace_with = raytrace_with_default
 
@@ -81,7 +82,8 @@ class SolveRoutines(Magnipy):
                                                                  constrain_params=constrain_params,
                                                                  shifting_background=shifting_background,pso_convergence_mean=pso_convergence_mean,
                                                                 pso_compute_magnification=pso_compute_magnification,
-                                                                 tol_simplex_params=tol_simplex_params,tol_simplex_func = tol_simplex_func)
+                                                                 tol_simplex_params=tol_simplex_params,tol_simplex_func = tol_simplex_func,
+                                                                 single_background=single_background)
 
         return optimized_data,model
 

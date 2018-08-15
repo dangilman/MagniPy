@@ -140,8 +140,8 @@ class Magnipy:
                                     polar_grid=True,solver_type='PROFILE_SHEAR',optimizer_routine=str,verbose=bool,re_optimize=False,
                                     particle_swarm = True, restart = 1,constrain_params=None,shifting_background=False,
                                     pso_convergence_mean=None,
-                                    pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None
-                                    ):
+                                    pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
+                                    single_background=None):
 
         data, opt_sys = [], []
 
@@ -153,13 +153,14 @@ class Magnipy:
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
                             pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
-                             tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func)
+                             tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,single_background=single_background)
 
-            #ray_shooting_function = optimizer.ray_shooting_function
+            ray_shooting_function = optimizer.ray_shooting_function_magfinite
             fluxes = self.do_raytrace(x_opt, y_opt, lensmodel=lensModel, xsrc=xsrc, ysrc=ysrc,
                                       multiplane=system.multiplane, grid_rmax=grid_rmax,
                                       res=res, source_shape=source_shape, source_size=source_size,
-                                      raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid)
+                                      raytrace_with=raytrace_with, lens_model_params=kwargs_lens, polar_grid=polar_grid,
+                                      ray_shooting_function=ray_shooting_function)
 
             optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy',solver_type=solver_type)
 
@@ -391,7 +392,7 @@ class Magnipy:
 
     def do_raytrace(self, xpos, ypos, lens_system=None,lensmodel=None,xsrc=float, ysrc=float, multiplane=None,
                     grid_rmax=None,res=None, source_shape=None, source_size=None,
-                              raytrace_with=None,polar_grid=None,lens_model_params=None):
+                              raytrace_with=None,polar_grid=None,lens_model_params=None,ray_shooting_function=None):
 
         if raytrace_with == 'lenstronomy':
 
@@ -404,7 +405,8 @@ class Magnipy:
                                                 source_size=source_size, cosmology=self.cosmo, zsrc=self.zsrc,
                                                 raytrace_with=raytrace_with, polar_grid=polar_grid)
 
-            fluxes = ray_shooter.compute_mag(xpos, ypos,lensmodel=lensmodel,lens_model_params=lens_model_params)
+            fluxes = ray_shooter.compute_mag(xpos, ypos,lensmodel=lensmodel,ray_shooting_function=ray_shooting_function,
+                                             lens_model_params=lens_model_params)
 
         else:
 

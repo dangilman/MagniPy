@@ -23,7 +23,6 @@ class LensSystem:
         self.lens_components += [deflector_main]
         self.main = deflector_main
         self.zmain = self.main.redshift
-
         self._redshift_list(deflector_main)
 
     def halos(self, halos):
@@ -109,9 +108,7 @@ class LensSystem:
                     zlist.append(component.redshift)
                     lens_list.append('SHEAR')
 
-
         return zlist,lens_list,arg_list
-
 
 class Deflector:
 
@@ -168,6 +165,7 @@ class Deflector:
             self.Shear = Shear()
 
         else:
+
             self.shear_args = {'e1':1e-10,'e2':1e-10}
 
     def update_lenstronomy_args(self,newargs):

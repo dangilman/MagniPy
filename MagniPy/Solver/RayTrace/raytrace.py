@@ -88,7 +88,7 @@ class RayTrace:
 
         else:
 
-            img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,source_function=self.source,
+            img = self.multilenswrap.rayshoot(xpos,ypos,lens_system,self._ray_shooting_function,source_function=self.source,
                                               astropy=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
 
             if self.polar_grid:
@@ -96,22 +96,18 @@ class RayTrace:
             else:
                 return np.sum(img)*self.res**2,array2image(img)
 
-    def compute_mag(self,xpos,ypos,lensmodel=None,lens_model_params=None,lens_system=None):
+    def compute_mag(self,xpos,ypos,lensmodel=None,ray_shooting_function=None,lens_model_params=None,lens_system=None):
 
         x_loc, y_loc = self._get_grids(xpos, ypos, len(xpos))
         N = len(xpos)
 
         if self.raytrace_with == 'lenstronomy':
 
-            return self.multilenswrap.magnification(x_loc,y_loc,lensmodel,lens_model_params,
+            return self.multilenswrap.magnification(x_loc,y_loc,lensmodel,ray_shooting_function,lens_model_params,
                                                         self.source,self.res,n=N)
 
         else:
             raise Exception('not yet implemented')
-            if self.multiplane:
-                return self._multi_plane_trace(x_loc, y_loc, lens_system, **kwargs)
-            else:
-                return self._single_plane_trace(x_loc,y_loc,lens_system,**kwargs)
 
     def _single_plane_trace_full(self,xx,yy,lens_system,to_img_plane=False,print_mag=False,return_image=False):
 
