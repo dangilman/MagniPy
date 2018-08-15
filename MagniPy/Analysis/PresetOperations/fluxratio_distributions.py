@@ -12,7 +12,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
                                     source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
-                                    start_shear=0.05,mindis_front=0.5,mindis_back=0.3,log_masscut_low=7):
+                                    start_shear=0.05,mindis_front=0.5,mindis_back=0.3,log_masscut_low=7,
+                                    single_background=False):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
@@ -81,7 +82,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-                                         re_optimize=True, particle_swarm=True, restart=2, tol_simplex_func=0.001)
+                                         re_optimize=True, particle_swarm=True, restart=2, tol_simplex_func=0.001,
+                                           single_background=single_background)
 
             for sys,dset in zip(system,model_data):
 
