@@ -1,6 +1,6 @@
 from MagniPy.magnipy import Magnipy
 import numpy as np
-from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_gridrmax,default_res,\
+from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_res,\
     default_source_shape,default_source_size_kpc,default_solve_method,default_file_identifier,get_default_SIE_random
 import copy
 from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
@@ -11,7 +11,7 @@ class SolveRoutines(Magnipy):
     """
 
     def initialzed_over_param_range(self,macromodels=[], datatofit=None, multiplane=None,sigmas=None,
-                              identifier=None, grid_rmax=None, res=None,
+                              identifier=None, res=None,
                               source_shape='GAUSSIAN', source_size=None,param_name=None):
 
         macromodel_list = []
@@ -23,20 +23,20 @@ class SolveRoutines(Magnipy):
         for macromodel in macromodels:
 
             _, macro = self.macromodel_initialize(macromodel,datatofit,multiplane,method='lensmodel',sigmas=sigmas,identifier=identifier,
-                                       grid_rmax=grid_rmax,res=res,source_shape=source_shape,source_size=source_size)
+                                       res=res,source_shape=source_shape,source_size=source_size)
 
             macromodel_list.append(macro)
             param_values.append(macromodel.lenstronomy_args['gamma'])
 
         return param_values,macromodel_list
 
-    def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, grid_rmax_kpc=None, source_shape='GAUSSIAN',
+    def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
                                    n_particles = 50, n_iterations = 250, polar_grid = True,
                                    optimize_routine = 'fixed_powerlaw_shear', verbose=False, re_optimize=False,
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR', restart=1,
                                    constrain_params=None, shifting_background=False, pso_convergence_mean=10,
-                                   pso_compute_magnification=20, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
+                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
                                    single_background=False):
 
         raytrace_with = raytrace_with_default
@@ -46,9 +46,6 @@ class SolveRoutines(Magnipy):
 
         if source_size_kpc is None:
             source_size_kpc = default_source_size_kpc
-
-        if grid_rmax_kpc is None:
-            grid_rmax_kpc = default_gridrmax(source_size_kpc)
 
         if grid_res is None:
             grid_res = default_res(source_size_kpc)
@@ -75,7 +72,7 @@ class SolveRoutines(Magnipy):
         optimized_data, model = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
                                                                  tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
                                                                  n_particles=n_particles, n_iterations=n_iterations,
-                                                                 grid_rmax_kpc=grid_rmax_kpc, res=grid_res, source_shape=source_shape,
+                                                                 res=grid_res, source_shape=source_shape,
                                                                  source_size_kpc=source_size_kpc,
                                                                  raytrace_with=raytrace_with, polar_grid=polar_grid, solver_type=solver_type,
                                                                  optimizer_routine=optimize_routine, verbose=verbose, re_optimize=re_optimize,
@@ -89,7 +86,7 @@ class SolveRoutines(Magnipy):
         return optimized_data,model
 
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
-                            ray_trace=True, identifier=None, srcx=None, srcy=None, grid_rmax_kpc=None, res=None,
+                            ray_trace=True, identifier=None, srcx=None, srcy=None,  res=None,
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=True, shr_coords=1):
 
@@ -101,9 +98,6 @@ class SolveRoutines(Magnipy):
 
         if source_size_kpc is None:
             source_size_kpc = default_source_size_kpc
-
-        if grid_rmax_kpc is None:
-            grid_rmax_kpc = default_gridrmax(srcsize=source_size_kpc)
 
         if res is None:
             res = default_res(source_size_kpc)
@@ -132,7 +126,7 @@ class SolveRoutines(Magnipy):
         assert method in ['lensmodel', 'lenstronomy']
 
         data = self._solve_4imgs(lens_systems=lens_systems, method=method, identifier=identifier, srcx=srcx, srcy=srcy,
-                                 grid_rmax_kpc=grid_rmax_kpc, res=res, source_shape=source_shape, ray_trace=ray_trace,
+                                 res=res, source_shape=source_shape, ray_trace=ray_trace,
                                  raytrace_with=raytrace_with, source_size_kpc=source_size_kpc, polar_grid=polar_grid, shr_coords=shr_coords)
 
         if sort_by_pos is not None:
@@ -141,7 +135,7 @@ class SolveRoutines(Magnipy):
 
 
     def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
-                          identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
+                          identifier=None, srcx=None, srcy=None, res=None,
                           source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
                           filter_by_position=False, polar_grid=True, filter_kwargs={},solver_type='PROFILE_SHEAR',
                           N_iter_max=100,shr_coords=1):
@@ -159,9 +153,6 @@ class SolveRoutines(Magnipy):
         if source_size is None:
             source_size = default_source_size_kpc
 
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(srcsize=source_size)
-
         if source_shape is None:
             source_shape = default_source_shape
 
@@ -177,13 +168,13 @@ class SolveRoutines(Magnipy):
         if method == 'lensmodel':
             _,macromodel_init = self.macromodel_initialize(macromodel=copy.deepcopy(macromodel), datatofit=datatofit,
                                                            multiplane=multiplane, method='lensmodel', sigmas=sigmas,
-                                                           identifier=identifier,grid_rmax=grid_rmax, res=res,
+                                                           identifier=identifier, res=res,
                                                            source_shape=source_shape, source_size=source_size, print_mag=print_mag,
                                                            shr_coords=shr_coords)
             optimized_data, newsystem = self.fit(macromodel=macromodel_init, datatofit=datatofit,
                                                  realizations=realizations, multiplane=multiplane,
                                                  ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx,
-                                                 srcy=srcy, grid_rmax=grid_rmax, res=res,method='lensmodel',
+                                                 srcy=srcy,  res=res,method='lensmodel',
                                                  source_shape=source_shape, source_size=source_size,
                                                  print_mag=print_mag, raytrace_with=raytrace_with,
                                                  filter_by_position=filter_by_position, polar_grid=polar_grid,
@@ -193,7 +184,7 @@ class SolveRoutines(Magnipy):
             optimized_data, newsystem = self.fit(macromodel=macromodel, datatofit=datatofit,
                                                  realizations=realizations, multiplane=multiplane, method=method,
                                                  ray_trace=ray_trace, sigmas=sigmas, identifier=identifier, srcx=srcx,
-                                                 srcy=srcy, grid_rmax=grid_rmax, res=res,
+                                                 srcy=srcy, res=res,
                                                  source_shape=source_shape, source_size=source_size,
                                                  print_mag=print_mag, raytrace_with=raytrace_with,
                                                  filter_by_position=filter_by_position, polar_grid=polar_grid,
@@ -205,7 +196,7 @@ class SolveRoutines(Magnipy):
         return optimized_data,newsystem
 
     def macromodel_initialize(self, macromodel, datatofit, multiplane, method=None, sigmas=None,
-                              identifier=None, grid_rmax=None, res=None,
+                              identifier=None,  res=None,
                               source_shape='GAUSSIAN', source_size=None, print_mag=False,
                               solver_type=None,shr_coords=1):
 
@@ -225,7 +216,7 @@ class SolveRoutines(Magnipy):
         lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=None, multiplane=multiplane))
 
         optimized_data, model = self._optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit, method=method,
-                                                               sigmas=sigmas, identifier=identifier, grid_rmax_kpc=grid_rmax,
+                                                               sigmas=sigmas, identifier=identifier,
                                                                res=res, source_shape=source_shape, ray_trace=False,
                                                                source_size_kpc=source_size, print_mag=print_mag, opt_routine='randomize',
                                                                solver_type=solver_type, shr_coords=shr_coords)
@@ -235,7 +226,7 @@ class SolveRoutines(Magnipy):
         return optimized_data,newmacromodel
 
     def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
-                      identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None,
+                      identifier=None, srcx=None, srcy=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False,
                       polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR',N_iter_max=100,shr_coords=1):
 
@@ -248,9 +239,6 @@ class SolveRoutines(Magnipy):
             basic_or_full = 'full'
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
-
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(srcsize=source_size)
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -296,7 +284,7 @@ class SolveRoutines(Magnipy):
         if method == 'lenstronomy':
 
             optimized_data, model = self.optimize_4imgs_lenstronomy(lens_systems=lens_systems, datatofit=datatofit,
-                                                                    multiplane = multiplane, grid_rmax_kpc=grid_rmax, res=res, source_shape=source_shape,
+                                                                    multiplane = multiplane, res=res, source_shape=source_shape,
                                                                     source_size_kpc=source_size, raytrace_with=raytrace_with, polar_grid=polar_grid, initialize = False,
                                                                     solver_type=solver_type, n_particles=40, n_iterations=200, tol_source=1e-3, tol_centroid=0.05,
                                                                     tol_mag=0.2, centroid_0=[0,0])
@@ -305,7 +293,6 @@ class SolveRoutines(Magnipy):
             optimized_data, model = self._optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit,
                                                                    method=method,
                                                                    sigmas=sigmas, identifier=identifier,
-                                                                   grid_rmax_kpc=grid_rmax,
                                                                    res=res, source_shape=source_shape,
                                                                    ray_trace=ray_trace,
                                                                    source_size_kpc=source_size, print_mag=print_mag,
@@ -315,14 +302,11 @@ class SolveRoutines(Magnipy):
 
         return optimized_data,model
 
-    def _trace(self, lens_system, data=None, multiplane=None, grid_rmax=None, res=None, source_shape=None, source_size=None,
+    def _trace(self, lens_system, data=None, multiplane=None,res=None, source_shape=None, source_size=None,
                raytrace_with=None, srcx=None, srcy=None, build=False, realizations=None):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
-
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(srcsize=source_size)
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -346,7 +330,7 @@ class SolveRoutines(Magnipy):
                 ysrc = srcy
 
             fluxes = self.do_raytrace_lensmodel(lens_system=lens_system,xpos=data.x,ypos=data.y,xsrc=xsrc,ysrc=ysrc,
-                                    multiplane=multiplane,grid_rmax=grid_rmax,res=res,source_shape=source_shape,source_size=source_size,
+                                    multiplane=multiplane,res=res,source_shape=source_shape,source_size=source_size,
                                        cosmology=self.cosmo,zsrc=self.cosmo.zsrc,raytrace_with=raytrace_with)
 
         elif raytrace_with == 'lenstronomy':
@@ -354,7 +338,7 @@ class SolveRoutines(Magnipy):
             lenstronomy_wrap = LenstronomyWrap(multiplane=multiplane,cosmo=self.cosmo,z_source=self.cosmo.zsrc)
             lenstronomy_wrap.assemble(lens_system)
 
-            fluxes = self.do_raytrace_lenstronomy(lenstronomy_wrap,data.x,data.y,multiplane=multiplane,gridsize=grid_rmax,res=res,
+            fluxes = self.do_raytrace_lenstronomy(lenstronomy_wrap,data.x,data.y,multiplane=multiplane,res=res,
                                          source_shape=source_shape,source_size=source_size,cosmology=self.cosmo.cosmo,zsrc=self.cosmo.zsrc)
 
         return fluxes*max(fluxes)**-1

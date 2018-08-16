@@ -1,10 +1,11 @@
 import numpy as np
 from MagniPy.Solver.RayTrace.source_models import *
 from MagniPy.util import *
+#import matplotlib.pyplot as plt
 
 class RayTrace:
 
-    def __init__(self, xsrc=float, ysrc=float, multiplane=False, grid_rmax_arcsec_source=float, res=0.001, source_shape='',
+    def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
                  polar_grid=False, polar_q = 0.5, **kwargs):
 
         """
@@ -16,34 +17,53 @@ class RayTrace:
         """
 
         self.polar_grid = polar_grid
-        self.grid_rmax = grid_rmax_arcsec_source
-        self.res = res
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
 
         self.xsrc,self.ysrc = xsrc,ysrc
 
-        self.x_grid_0, self.y_grid_0 = np.meshgrid(np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1),
-                                                   np.linspace(-self.grid_rmax, self.grid_rmax, 2*self.grid_rmax*res**-1))
+        if source_shape == 'GAUSSIAN':
+            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+        elif source_shape == 'TORUS':
+            self.source = TORUS(x=xsrc,y=ysrc,inner=kwargs['inner_radius'],outer=kwargs['outer'])
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['outer'])
+        elif source_shape == 'GAUSSIAN_TORUS':
+            self.source = GAUSSIAN_TORUS(x=xsrc, y=ysrc, width=kwargs['source_size'],inner=kwargs['inner_radius'],outer=kwargs['outer_radius'])
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+        elif source_shape == 'SERSIC':
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['r_half']*1.5,res)
+            self.source = SERSIC(x=xsrc,y=ysrc,r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
+        elif source_shape == 'GAUSSIAN_SERSIC':
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+            self.source = GAUSSIAN_SERSIC(x=xsrc,y=ysrc,width=kwargs['source_size'],r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
+        else:
+            raise ValueError('other source models not yet implemented')
 
+        self.x_grid_0, self.y_grid_0 = np.meshgrid(
+            np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1),
+            np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1))
 
         if polar_grid:
             self.polar_q = polar_q
             self.x_grid_0 = self.x_grid_0.ravel()
             self.y_grid_0 = self.y_grid_0.ravel()
 
-        if source_shape == 'GAUSSIAN':
-            self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
-        elif source_shape == 'TORUS':
-            self.source = TORUS(x=xsrc,y=ysrc,inner=kwargs['inner_radius'],outer=kwargs['outer'])
-        elif source_shape == 'GAUSSIAN_TORUS':
-            self.source = GAUSSIAN_TORUS(x=xsrc, y=ysrc, width=kwargs['source_size'],inner=kwargs['inner_radius'],outer=kwargs['outer_radius'])
-        elif source_shape == 'SERSIC':
-            self.source = SERSIC(x=xsrc,y=ysrc,r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
-        elif source_shape == 'GAUSSIAN_SERSIC':
-            self.source = GAUSSIAN_SERSIC(x=xsrc,y=ysrc,width=kwargs['source_size'],r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
+    def _grid_rmax(self,size_asec,res):
+
+        if size_asec < 0.001:
+            s = 0.08
+            res *= 0.5
+        elif size_asec < 0.002:
+            s = 0.12
+        elif size_asec < 0.003:
+            s = 0.16
+        elif size_asec < 0.005:
+            s = 0.2
         else:
-            raise ValueError('other source models not yet implemented')
+            s = 0.25
+
+        return s,res
 
     def get_images(self,xpos,ypos,lens_system):
 
@@ -67,8 +87,13 @@ class RayTrace:
 
         for i in range(0,len(xpos)):
 
-            image = self.rayshoot(xpos[i],ypos[i],lensModel,kwargs_lens)
-
+            xvals, yvals = xpos[i]+self.x_grid_0, ypos[i]+self.y_grid_0
+            image = self.rayshoot(xvals,yvals,lensModel,kwargs_lens)
+            #print(image.shape)
+            #n = int(np.sqrt(image.shape[0]))
+            #plt.imshow(image.reshape(n,n))
+            #plt.show()
+            #a=input('continue')
             flux.append(np.sum(image*self.res**2))
 
         return np.array(flux)

@@ -32,9 +32,10 @@ class LenstronomyWrap:
     def get_lensmodel(self,lens_system):
 
         lists = self.assemble(lens_system)
+        lensmodel = LensModel(lens_model_list=lists['lens_model_list'],redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
+                         multi_plane=lens_system.multiplane)
 
-        return LensModelExtensions(lens_model_list=lists['lens_model_list'],redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
-                         multi_plane=lens_system.multiplane),lists['kwargs_lens']
+        return lensmodel,lists['kwargs_lens']
 
     def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params):
 

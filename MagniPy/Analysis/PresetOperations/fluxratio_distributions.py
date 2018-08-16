@@ -8,7 +8,7 @@ from MagniPy.lensdata import Data
 
 def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
-                                    start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
+                                    start_macromodel=None, identifier=None, res=None, sigmas=None,
                                     source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
                                     start_shear=0.05, mindis_front=0.5, mindis_back=0.3, log_masscut_low=7,
@@ -16,7 +16,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
-    filter_kwargs = {'x_filter': data.x,'y_filter': data.y,'mindis_front':mindis_front,'mindis_back':mindis_back,'log_masscut_low':log_masscut_low}
+    filter_kwargs = {'x_filter': data.x,'y_filter': data.y,'mindis_front':mindis_front,'mindis_back':
+        mindis_back,'log_masscut_low':log_masscut_low}
 
     if write_to_file:
         assert outfilepath is not None
@@ -36,8 +37,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
         start_macromodel.redshift = zlens
     if sigmas is None:
         sigmas = default_sigmas
-    if grid_rmax is None:
-        grid_rmax = default_gridrmax(source_size_kpc)
+
     if res is None:
         res = default_res(source_size_kpc)
 
@@ -77,7 +77,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
             #                             re_optimize=False, particle_swarm=True,restart=3)
             #    init_macromodel = init[0].lens_components[0]
-
+            print(len(halos[0]))
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
@@ -112,7 +112,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                                       realizations=halos,
                                                       multiplane=multiplane, method=method, ray_trace=True,
                                                       sigmas=sigmas,
-                                                      identifier=identifier, grid_rmax=grid_rmax, res=res,
+                                                      identifier=identifier, res=res,
                                                       source_shape='GAUSSIAN',
                                                       source_size=source_size_kpc, raytrace_with=raytrace_with,
                                                       print_mag=False)

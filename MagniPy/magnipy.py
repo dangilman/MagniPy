@@ -94,8 +94,7 @@ class Magnipy:
         return newsystem
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None, tol_source=None, tol_mag=None, tol_centroid=None,
-                                    centroid_0=None, n_particles=50, n_iterations=400,
-                                    grid_rmax_kpc=None, res=None, source_shape='GAUSSIAN', source_size_kpc=None, raytrace_with='lenstronomy',
+                                    centroid_0=None, n_particles=50, n_iterations=400,res=None, source_shape='GAUSSIAN', source_size_kpc=None, raytrace_with='lenstronomy',
                                     polar_grid=True, solver_type='PROFILE_SHEAR', optimizer_routine=str, verbose=bool, re_optimize=False,
                                     particle_swarm = True, restart = 1, constrain_params=None, shifting_background=False,
                                     pso_convergence_mean=None,
@@ -116,9 +115,11 @@ class Magnipy:
 
             source_scale = self.cosmo.kpc_per_asec(self.zsrc)
             source_size = source_size_kpc * source_scale ** -1
-            grid_rmax_asec = grid_rmax_kpc * self.cosmo.kpc_per_asec(self.zsrc) ** -1
-            #print(source_scale,source_size,grid_rmax_asec)
-            raytracing = raytrace.RayTrace(xsrc=xsrc,ysrc=ysrc,multiplane=system.multiplane,grid_rmax_arcsec_source=grid_rmax_asec,
+
+            if single_background:
+                source_size *= 0.75
+
+            raytracing = raytrace.RayTrace(xsrc=xsrc,ysrc=ysrc,multiplane=system.multiplane,
                                            res=res,source_shape=source_shape,polar_grid=polar_grid, source_size=source_size)
             fluxes = raytracing.magnification(x_opt,y_opt,lensModel,kwargs_lens)
 
@@ -132,7 +133,7 @@ class Magnipy:
 
         return data,opt_sys
 
-    def _solve_4imgs_lenstronomy(self, lens_systems, data2fit=None, method=str, sigmas=None, ray_trace=True, grid_rmax_kpc=None, res=None,
+    def _solve_4imgs_lenstronomy(self, lens_systems, data2fit=None, method=str, sigmas=None, ray_trace=True, res=None,
                                  source_shape='GAUSSIAN', source_size_kpc=None, print_mag=False, raytrace_with=None, polar_grid=True,
                                  solver_type=None, N_iter_max=None):
 
@@ -156,10 +157,9 @@ class Magnipy:
 
             source_scale = self.cosmo.kpc_per_asec(self.zsrc)
             source_size = source_size_kpc * source_scale ** -1
-            grid_rmax_asec = grid_rmax_kpc * self.cosmo.kpc_per_asec(self.zsrc) ** -1
 
             raytracing = raytrace.RayTrace(xsrc=xsrc, ysrc=ysrc, multiplane=system.multiplane,
-                                           grid_rmax_arcsec_source=grid_rmax_asec, source_size=source_size,
+                                           source_size=source_size,
                                            res=res, source_shape=source_shape, polar_grid=polar_grid)
             fluxes = raytracing.magnification(x_img, y_img, lensModel, kwargs_lens)
 
@@ -174,7 +174,7 @@ class Magnipy:
         return data,opt_sys
 
     def _optimize_4imgs_lensmodel(self, lens_systems=None, data2fit=[], method=str, sigmas=None, identifier='', opt_routine=None,
-                                  ray_trace=True, return_positions=False, grid_rmax_kpc=int, res=0.0005, source_shape='GAUSSIAN',
+                                  ray_trace=True, return_positions=False, res=0.0005, source_shape='GAUSSIAN',
                                   source_size_kpc=float, print_mag=False, raytrace_with=None, polar_grid=False, solver_type=None, shr_coords=1):
 
 
@@ -235,9 +235,9 @@ class Magnipy:
 
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
-                grid_rmax_asec = grid_rmax_kpc * self.cosmo.kpc_per_asec(self.zsrc) ** -1
+
                 raytracing = raytrace.RayTrace(xsrc=lensdata[i].srcx, ysrc=lensdata[i].srcy, multiplane=optimized_systems[i].multiplane,
-                                               grid_rmax_arcsec_source=grid_rmax_asec, source_size=source_size,
+                                               source_size=source_size,
                                                res=res, source_shape=source_shape, polar_grid=polar_grid)
                 lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(optimized_systems[i])
                 fluxes = raytracing.magnification(lensdata[i].x, lensdata[i].y, lensModel, kwargs_lens)
@@ -251,7 +251,7 @@ class Magnipy:
 
         return lensdata, optimized_systems
 
-    def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None, grid_rmax_kpc=None,
+    def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None,
                      res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size_kpc=float, print_mag=False,
                      raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1):
 
@@ -294,10 +294,9 @@ class Magnipy:
 
                     source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                     source_size = source_size_kpc * source_scale ** -1
-                    grid_rmax_asec = grid_rmax_kpc * self.cosmo.kpc_per_asec(self.zsrc) ** -1
+
                     raytracing = raytrace.RayTrace(xsrc=data[i].srcx, ysrc=data[i].srcy,
                                                    multiplane=system.multiplane,source_size=source_size,
-                                                   grid_rmax_arcsec_source=grid_rmax_asec,
                                                    res=res, source_shape=source_shape, polar_grid=polar_grid)
                     lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(system)
                     fluxes = raytracing.magnification(data[i].x, data[i].y, lensModel, kwargs_lens)
@@ -325,13 +324,12 @@ class Magnipy:
 
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
-                grid_rmax_asec = grid_rmax_kpc * self.cosmo.kpc_per_asec(self.zsrc) ** -1
-                raytracing = raytrace.RayTrace(xsrc=data[i].srcx, ysrc=data[i].srcy,
+
+                raytracing = raytrace.RayTrace(xsrc=srcx, ysrc=srcy,
                                                multiplane=system.multiplane, source_size=source_size,
-                                               grid_rmax_arcsec_source=grid_rmax_asec,
                                                res=res, source_shape=source_shape, polar_grid=polar_grid)
 
-                fluxes = raytracing.magnification(data[i].x, data[i].y, lensModel, kwargs_lens)
+                fluxes = raytracing.magnification(x_image,y_image, lensModel, kwargs_lens)
 
                 if arrival_time:
 
