@@ -45,16 +45,16 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
             if chain_keys_run['multiplane']:
 
-                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0],realizations=halos,
-                                                       datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                       grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                       restart=2,n_particles=50,n_iterations=250,
-                                                       particle_swarm=True,re_optimize=True,verbose=False,polar_grid=False)
+                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
+                                                           datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
+                                                           grid_rmax_kpc=None, source_size_kpc=chain_keys_run['source_size'],
+                                                           restart=2, n_particles=50, n_iterations=250,
+                                                           particle_swarm=True, re_optimize=True, verbose=False, polar_grid=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           grid_rmax=None, source_size=chain_keys_run['source_size'],
-                                                           restart=2,particle_swarm=True, re_optimize=True, verbose=False,
+                                                           grid_rmax_kpc=None, source_size_kpc=chain_keys_run['source_size'],
+                                                           restart=2, particle_swarm=True, re_optimize=True, verbose=False,
                                                            polar_grid=False)
 
             if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:

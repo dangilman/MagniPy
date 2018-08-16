@@ -5,14 +5,13 @@ from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
 from MagniPy.lensdata import Data
-import random
 
 def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, grid_rmax=None, res=None, sigmas=None,
-                                    source_size=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
-                                    filter_halo_positions=False, outfilepath=None,ray_trace=True, method='lenstronomy',
-                                    start_shear=0.05,mindis_front=0.5,mindis_back=0.3,log_masscut_low=7,
+                                    source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
+                                    filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
+                                    start_shear=0.05, mindis_front=0.5, mindis_back=0.3, log_masscut_low=7,
                                     single_background=False):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
@@ -38,9 +37,9 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     if sigmas is None:
         sigmas = default_sigmas
     if grid_rmax is None:
-        grid_rmax = default_gridrmax(source_size)
+        grid_rmax = default_gridrmax(source_size_kpc)
     if res is None:
-        res = default_res(source_size)
+        res = default_res(source_size_kpc)
 
     solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=identifier)
 
@@ -70,19 +69,19 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
             halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                          Nrealizations=Nreal,filter_halo_positions=filter_halo_positions,**filter_kwargs)
+                                          Nrealizations=1,filter_halo_positions=filter_halo_positions,**filter_kwargs)
 
-            if init_macromodel is None:
-                _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-                                         re_optimize=False, particle_swarm=True,restart=3)
-                init_macromodel = init[0].lens_components[0]
+            #if init_macromodel is None:
+            #    _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
+            #                       multiplane=multiplane,n_particles = 50, n_iterations = 300,
+            #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+            #                             re_optimize=False, particle_swarm=True,restart=3)
+            #    init_macromodel = init[0].lens_components[0]
 
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-                                         re_optimize=True, particle_swarm=True, restart=2, tol_simplex_func=0.001,
+                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=True,
+                                         re_optimize=False, particle_swarm=True, restart=3,
                                            single_background=single_background)
 
             for sys,dset in zip(system,model_data):
@@ -115,7 +114,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                                                       sigmas=sigmas,
                                                       identifier=identifier, grid_rmax=grid_rmax, res=res,
                                                       source_shape='GAUSSIAN',
-                                                      source_size=source_size, raytrace_with=raytrace_with,
+                                                      source_size=source_size_kpc, raytrace_with=raytrace_with,
                                                       print_mag=False)
 
         for sys, dset in zip(system, model_data):

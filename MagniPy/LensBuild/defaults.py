@@ -15,7 +15,7 @@ filter_args = {'mindis_front':0.5,'log_masscut_low':7,'mindis_back':0.3}
 zstep = 0.02
 
 default_source_shape = 'GAUSSIAN'
-default_source_size = 0.0012*2.355**-1 #FWHM 10pc
+default_source_size_kpc = 0.04 #40 parsec
 
 concentration_turnover = True
 concentration_power = 0.17
@@ -48,16 +48,9 @@ default_solve_method = 'lenstronomy'
 raytrace_with_default = 'lenstronomy'
 default_file_identifier = 'run'
 
-def default_gridrmax(srcsize):
+def default_gridrmax(srcsize_kpc):
 
-    if srcsize <= 0.0006:
-        return 0.06
-    elif srcsize <= 0.0012:
-        return 0.13
-    elif srcsize <= 0.0016:
-        return 0.16
-    else:
-        return 0.2
+    return srcsize_kpc*100
 
 def default_res(size):
 

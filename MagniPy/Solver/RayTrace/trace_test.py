@@ -33,9 +33,9 @@ if True:
     multiplane = True
 
     data = solver.solve_lens_equation(macromodel=truth, multiplane=multiplane, realizations=None,
-                                       method='lensmodel', ray_trace=False,
-                                       source_size=0.0012 * 2.3 ** -1, srcx=srcx, srcy=srcy, identifier=identifier,
-                                       grid_rmax=0.05)
+                                      method='lensmodel', ray_trace=False,
+                                      source_size_kpc=0.0012 * 2.3 ** -1, srcx=srcx, srcy=srcy, identifier=identifier,
+                                      grid_rmax_kpc=0.05)
 
     test_params = True
 
@@ -91,15 +91,15 @@ if True:
 
     solveLEQ = False
     if solveLEQ:
-        data1 = solver.solve_lens_equation(macromodel=truth,multiplane=multiplane,realizations=halos,
-                                          method='lensmodel',ray_trace=True,raytrace_with='lensmodel',
-                                          source_size=0.0012*2.3**-1,srcx=srcx,srcy=srcy,identifier=identifier,grid_rmax=0.05)
+        data1 = solver.solve_lens_equation(macromodel=truth, multiplane=multiplane, realizations=halos,
+                                           method='lensmodel', ray_trace=True, raytrace_with='lensmodel',
+                                           source_size_kpc=0.0012 * 2.3 ** -1, srcx=srcx, srcy=srcy, identifier=identifier, grid_rmax_kpc=0.05)
 
 
-        data2 = solver.solve_lens_equation(macromodel=truth, multiplane=multiplane,realizations=halos,
-                                          method='lensmodel', ray_trace=True, raytrace_with='lenstronomy',
-                                          source_size=0.0012 * 2.3 ** -1, srcx=srcx, srcy=srcy, identifier=identifier,
-                                          grid_rmax=0.05,sort_by_pos=data[0])
+        data2 = solver.solve_lens_equation(macromodel=truth, multiplane=multiplane, realizations=halos,
+                                           method='lensmodel', ray_trace=True, raytrace_with='lenstronomy',
+                                           source_size_kpc=0.0012 * 2.3 ** -1, srcx=srcx, srcy=srcy, identifier=identifier,
+                                           grid_rmax_kpc=0.05, sort_by_pos=data[0])
 
         print data1[0].m
         print data2[0].m

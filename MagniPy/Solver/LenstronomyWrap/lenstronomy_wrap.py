@@ -82,4 +82,4 @@ class LenstronomyWrap:
 
         optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 
-        return optimized_args, source, images, optimizer.lensModel, optimizer
+        return optimized_args, source, images, optimizer.solver.lensModel

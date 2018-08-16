@@ -7,7 +7,7 @@ class Data:
         self.decimals_pos = 5
         self.decimals_mag = 6
         self.decimals_time = 1
-        self.decimals_src = 6
+        self.decimals_src = 8
 
         self.set_pos(x,y)
         if m is not None:
