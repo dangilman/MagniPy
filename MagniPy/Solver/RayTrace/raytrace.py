@@ -1,12 +1,12 @@
 import numpy as np
 from MagniPy.Solver.RayTrace.source_models import *
 from MagniPy.util import *
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
-                 polar_grid=False, polar_q = 0.5, **kwargs):
+                 polar_grid=False, polar_q = 0.5, minimum_image_sep = None, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -24,18 +24,18 @@ class RayTrace:
 
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
         elif source_shape == 'TORUS':
             self.source = TORUS(x=xsrc,y=ysrc,inner=kwargs['inner_radius'],outer=kwargs['outer'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['outer'])
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['outer'],res,minimum_image_sep)
         elif source_shape == 'GAUSSIAN_TORUS':
             self.source = GAUSSIAN_TORUS(x=xsrc, y=ysrc, width=kwargs['source_size'],inner=kwargs['inner_radius'],outer=kwargs['outer_radius'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
         elif source_shape == 'SERSIC':
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['r_half']*1.5,res)
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['r_half']*1.5,res,minimum_image_sep)
             self.source = SERSIC(x=xsrc,y=ysrc,r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
         elif source_shape == 'GAUSSIAN_SERSIC':
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
             self.source = GAUSSIAN_SERSIC(x=xsrc,y=ysrc,width=kwargs['source_size'],r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
         else:
             raise ValueError('other source models not yet implemented')
@@ -49,7 +49,10 @@ class RayTrace:
             self.x_grid_0 = self.x_grid_0.ravel()
             self.y_grid_0 = self.y_grid_0.ravel()
 
-    def _grid_rmax(self,size_asec,res):
+    def _grid_rmax(self,size_asec,res,img_sep):
+
+        if img_sep is None:
+            img_sep = 10000
 
         if size_asec < 0.001:
             s = 0.08
@@ -59,11 +62,15 @@ class RayTrace:
         elif size_asec < 0.003:
             s = 0.16
         elif size_asec < 0.005:
-            s = 0.2
+            s = 0.3
         else:
-            s = 0.25
+            s = 0.35
 
-        return s,res
+        size = min(0.5*img_sep,s)
+        print(0.5*img_sep,s)
+        print(size)
+
+        return size,res
 
     def get_images(self,xpos,ypos,lens_system):
 
@@ -90,9 +97,11 @@ class RayTrace:
             xvals, yvals = xpos[i]+self.x_grid_0, ypos[i]+self.y_grid_0
             image = self.rayshoot(xvals,yvals,lensModel,kwargs_lens)
             #print(image.shape)
-            #n = int(np.sqrt(image.shape[0]))
-            #plt.imshow(image.reshape(n,n))
-            #plt.show()
+            n = int(np.sqrt(image.shape[0]))
+            plt.imshow(image.reshape(n,n))
+            print(np.sum(image*self.res**2))
+            plt.show()
+
             #a=input('continue')
             flux.append(np.sum(image*self.res**2))
 

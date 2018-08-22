@@ -10,34 +10,14 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def initialzed_over_param_range(self,macromodels=[], datatofit=None, multiplane=None,sigmas=None,
-                              identifier=None, res=None,
-                              source_shape='GAUSSIAN', source_size=None,param_name=None):
-
-        macromodel_list = []
-
-        param_values = []
-
-        assert param_name in ['gamma']
-
-        for macromodel in macromodels:
-
-            _, macro = self.macromodel_initialize(macromodel,datatofit,multiplane,method='lensmodel',sigmas=sigmas,identifier=identifier,
-                                       res=res,source_shape=source_shape,source_size=source_size)
-
-            macromodel_list.append(macro)
-            param_values.append(macromodel.lenstronomy_args['gamma'])
-
-        return param_values,macromodel_list
-
     def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
-                                   n_particles = 50, n_iterations = 250, polar_grid = True,
+                                   n_particles = 50, n_iterations = 250, polar_grid = False,
                                    optimize_routine = 'fixed_powerlaw_shear', verbose=False, re_optimize=False,
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR', restart=1,
-                                   constrain_params=None, shifting_background=False, pso_convergence_mean=10,
-                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
-                                   single_background=False):
+                                   constrain_params=None, shifting_background=False, pso_convergence_mean=30,
+                                   pso_compute_magnification=60, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
+                                   simplex_n_iter=200, single_background=False):
 
         raytrace_with = raytrace_with_default
 
@@ -81,7 +61,7 @@ class SolveRoutines(Magnipy):
                                                                  shifting_background=shifting_background, pso_convergence_mean=pso_convergence_mean,
                                                                  pso_compute_magnification=pso_compute_magnification,
                                                                  tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
-                                                                 single_background=single_background)
+                                                                 single_background=single_background,simplex_n_iter=simplex_n_iter)
 
         return optimized_data,model
 
@@ -137,7 +117,7 @@ class SolveRoutines(Magnipy):
     def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
                           identifier=None, srcx=None, srcy=None, res=None,
                           source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None,
-                          filter_by_position=False, polar_grid=True, filter_kwargs={},solver_type='PROFILE_SHEAR',
+                          filter_by_position=False, polar_grid=False, filter_kwargs={},solver_type='PROFILE_SHEAR',
                           N_iter_max=100,shr_coords=1):
 
         # optimizes the macromodel first, then uses it to optimize with additional halos in the lens model
