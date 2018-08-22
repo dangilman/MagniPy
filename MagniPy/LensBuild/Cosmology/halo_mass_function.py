@@ -60,7 +60,7 @@ class HaloMassFunction:
 
         return twoHaloTerm(R,M*self.extension.h,z,mdef=mdef)
 
-    def dN_dM_comoving(self,M,z):
+    def dN_dM_physical(self,M,z):
         """
 
         :param M: m200 in comoving units
@@ -76,7 +76,7 @@ class HaloMassFunction:
 
         return h**3*massFunction(M_h,z,q_out=q_out,model=self.model,**self.modelkwargs)*M_h**-1
 
-    def dN_dM_physical(self, M, z):
+    def dN_dM_comoving(self, M, z):
 
         """
         :param M: m200 in comoving units
@@ -85,7 +85,7 @@ class HaloMassFunction:
         [h^3 N / M_odot / Mpc^3] where Mpc is comoving
         """
 
-        return (1+z)**3*self.dN_dM_comoving(M,z)
+        return (1+z)**-3*self.dN_dM_physical(M,z)
 
     def fit_norm_index(self,M,dNdM,order=1):
 

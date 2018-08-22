@@ -31,7 +31,7 @@ class HaloGen:
         self.LOS_mass_sheet = LOS_mass_sheet
 
     def draw_model(self, model_kwargs=[], model_name='', spatial_name='', massprofile='', Nrealizations=1,
-                   rescale_sigma8=False, filter_halo_positions=False, **filter_kwargs):
+                   filter_halo_positions=False, **filter_kwargs):
 
         """
         Main execution routine for drawing (sub)halo realizations.
@@ -252,7 +252,7 @@ class HaloGen:
                                            model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
                                            Nrealizations=Nrealizations)
 
-            HALOS_LOS = self._return_plaw_LOS(_spatial_ = 'uniform2d',position_filter_kwargs=position_filter_kwargs,
+            HALOS_LOS = self._return_plaw_LOS(_spatial_='uniform2d',position_filter_kwargs=position_filter_kwargs,
                                            model_kwargs=model_kwargs,massprofile=massprofile,spatialkwargs=spatialkwargs,
                                               cone_base=cone_base, Nrealizations=Nrealizations)
 
@@ -585,10 +585,18 @@ class HaloGen:
 
                         subhalo_args['truncation'] = truncation
 
+                        if 'nfw_g1' in modelkwargs[i].keys():
+                            g1 = modelkwargs[i]['nfw_g1']
+                        else:
+                            g1 = nfw_profile_defaults['concentration_scale']
+                        if 'nfw_g2' in modelkwargs[i].keys():
+                            g2 = modelkwargs[i]['nfw_g2']
+                        else:
+                            g2 = nfw_profile_defaults['concentration_power']
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
                         subhalo_args['c'] = self.cosmology.NFW_concentration(masses[j], logmhm=modelkwargs[i]['logmhm'], z=redshift,
-                                                             concentration_turnover=c_turnover)
+                                                             concentration_turnover=c_turnover,g1=g1,g2=g2)
 
                     elif massprofile == 'NFW':
 
@@ -596,9 +604,18 @@ class HaloGen:
 
                         lensmod = NFW.NFW(cosmology=cosmo_at_plane, c_turnover=c_turnover)
 
+                        if 'nfw_g1' in modelkwargs[i].keys():
+                            g1 = modelkwargs[i]['nfw_g1']
+                        else:
+                            g1 = nfw_profile_defaults['concentration_scale']
+                        if 'nfw_g2' in modelkwargs[i].keys():
+                            g2 = modelkwargs[i]['nfw_g2']
+                        else:
+                            g2 = nfw_profile_defaults['concentration_power']
+
                         subhalo_args['c'] = self.cosmology.NFW_concentration(masses[j], logmhm=modelkwargs[i]['logmhm'],
                                                                              z=redshift,
-                                                                             concentration_turnover=c_turnover)
+                                                                             concentration_turnover=c_turnover,g1=g1,g2=g2)
 
                         subhalo_args['mhm'] = modelkwargs[i]['logmhm']
 

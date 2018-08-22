@@ -9,6 +9,7 @@ spatial_defaults = {'Rmax_z_kpc':250,'theta_max':3,'nfw_core_kpc':6.1*25} # thet
 spatial_defaults['default_cone_base_factor'] = 1
 
 profile_defaults = {'c_turnover':True,'core':1e-6}
+nfw_profile_defaults = {'concentration_power':0.17,'concentration_scale':60}
 
 filter_args = {'mindis_front':0.5,'log_masscut_low':7,'mindis_back':0.3}
 

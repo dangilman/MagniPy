@@ -94,8 +94,11 @@ class RayTrace:
 
             xvals, yvals = xpos[i]+self.x_grid_0, ypos[i]+self.y_grid_0
             image = self.rayshoot(xvals,yvals,lensModel,kwargs_lens)
-            #print(image.shape)
-          
+            #n = int(np.sqrt(len(image)))
+
+            #plt.imshow(image.reshape(n,n))
+            #plt.show()
+
             #a=input('continue')
             flux.append(np.sum(image*self.res**2))
 

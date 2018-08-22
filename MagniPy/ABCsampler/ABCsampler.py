@@ -8,6 +8,17 @@ from MagniPy.paths import *
 import shutil
 from time import time
 
+def initialize_macro(solver,data,init):
+
+    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=False,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.001,
+                                                 tol_source=1e-5, tol_mag=0.1, tol_centroid=0.05,
+                                                 centroid_0=[0, 0], n_particles=60, n_iterations=700,
+                                                 polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=False,
+                                                 re_optimize=False, particle_swarm=True, restart=1)
+
+    return model
+
 def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_constructor, solver):
 
     chaindata = []
@@ -40,20 +51,21 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
             halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
                                             model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
-                                            Nrealizations=1, filter_halo_positions=True, **filter_kwargs)
+                                            Nrealizations=1, filter_halo_positions=False, **filter_kwargs)
 
 
             if chain_keys_run['multiplane']:
 
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           grid_rmax=None, source_size_kpc=chain_keys_run['source_size'],
+                                                           source_size_kpc=chain_keys_run['source_size'],
                                                            restart=2, n_particles=50, n_iterations=250,
-                                                           particle_swarm=True, re_optimize=True, verbose=False, polar_grid=False)
+                                                           particle_swarm=True, re_optimize=False, verbose=False, polar_grid=False,
+                                                           single_background=True)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           grid_rmax=None, source_size_kpc=chain_keys_run['source_size'],
+                                                           source_size_kpc=chain_keys_run['source_size'],
                                                            restart=2, particle_swarm=True, re_optimize=True, verbose=False,
                                                            polar_grid=False)
 

@@ -182,11 +182,9 @@ class Cosmo:
         return rho0_kpc, Rs, r200_kpc
 
     def NFW_concentration(self,M,model='bullock01',mdef='200c',logmhm=0,z=None,
-                           g1=60,concentration_turnover=True, scatter=True):
+                           concentration_turnover=True, scatter=True,g1=None,g2=None):
 
         # WDM relation adopted from Ludlow et al
-
-        g2 = concentration_power
 
         def beta(z_val):
             return 0.026*z_val - 0.04
@@ -213,9 +211,10 @@ class Cosmo:
         else:
 
             mhm = 10**logmhm
-            factor = (1+g1*mhm*M**-1)**g2
-            c_wdm = c_cdm*factor**-1
-            c_wdm *= (1+z)**beta(z)
+            concentration_factor = (1+g1*mhm*M**-1)**g2
+            redshift_factor = (1+z)**beta(z)
+            c_wdm = c_cdm * redshift_factor * concentration_factor**-1
+
             # scatter from Dutton, maccio et al 2014
             if scatter:
                 return np.random.lognormal(np.log(c_wdm),0.13)

@@ -15,26 +15,13 @@ def perturb_data(data,delta_pos,delta_flux):
 
     return new_data
 
-def initialize_macro(solver,data,init):
-
-    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=False,
-                                                 grid_rmax=None, source_shape='GAUSSIAN', source_size_kpc=0.001,
-                                                 tol_source=1e-5, tol_mag=0.1, tol_centroid=0.05,
-                                                 centroid_0=[0, 0], n_particles=100, n_iterations=700,
-                                                 polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=False,
-                                                 re_optimize=False, particle_swarm=True, restart=5)
-
-    return model
-
-def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2, SIE_shear=None,
-                   SIE_shear_start=0.04, mindis_front=0.5,mindis_back=0.4, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None,
-                   raytrace_with=None,
+def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
+                   mindis_back=0.4, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
-                   mass_profile=None, mass_func_type=None,
-                   log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None, zmin=None, zmax=None, params_to_vary={},
-                   core_index=int,
-                   chain_description='', chain_truths={}, Ncores=int, cores_per_lens=int, main_halo_args={},
-                   position_sigma=None, flux_sigma=None):
+                   mass_profile=None, mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
+                   nfw_g1=None,nfw_g2=None,zmin=None, zmax=None, params_to_vary={},chain_description='',
+                   chain_truths={}, Ncores=int,cores_per_lens=int, main_halo_args={},position_sigma=None, flux_sigma=None):
+
     chain_keys = {}
 
     chain_keys['zlens'] = zlens
@@ -97,6 +84,11 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
         chain_keys['A0'] = fsub
     if logmhm is not None:
         chain_keys['logmhm'] = logmhm
+
+    if nfw_g1 is None:
+        chain_keys['nfw_g1'] = nfw_profile_defaults['concentration_scale']
+    if nfw_g2 is None:
+        chain_keys['nfw_g2'] = nfw_profile_defaults['concentration_scale']
 
     chain_keys['zmin'] = zmin
     chain_keys['zmax'] = zmax
@@ -185,6 +177,9 @@ def halo_model_args(params):
             args.update({'zmax':params['zmax']})
         else:
             args.update({'zmax':params['zsrc']})
+
+        args['nfw_g1'] = params['nfw_g1']
+        args['nfw_g2'] = params['nfw_g2']
 
     return args
 
