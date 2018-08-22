@@ -67,8 +67,6 @@ class RayTrace:
             s = 0.35
 
         size = min(0.5*img_sep,s)
-        print(0.5*img_sep,s)
-        print(size)
 
         return size,res
 
@@ -97,11 +95,7 @@ class RayTrace:
             xvals, yvals = xpos[i]+self.x_grid_0, ypos[i]+self.y_grid_0
             image = self.rayshoot(xvals,yvals,lensModel,kwargs_lens)
             #print(image.shape)
-            n = int(np.sqrt(image.shape[0]))
-            plt.imshow(image.reshape(n,n))
-            print(np.sum(image*self.res**2))
-            plt.show()
-
+          
             #a=input('continue')
             flux.append(np.sum(image*self.res**2))
 
