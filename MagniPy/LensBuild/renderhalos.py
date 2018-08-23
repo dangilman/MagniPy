@@ -699,37 +699,47 @@ class HaloGen:
         realization_masses = []
 
         if specific_redshift is None:
+
             for realization in realization_list:
 
+                real = []
 
                 if mass_range is not None:
-
-                    object_generator = (deflector.other_args['mass'] for deflector in realization
-                                        if np.min(mass_range) <= deflector.other_args['mass'] < np.max(mass_range))
-
-                    realization_masses.append(list(object_generator))
+                    for deflector in realization:
+                        if 'mass' not in deflector.other_args:
+                            continue
+                        if np.min(mass_range) <= deflector.other_args['mass'] < np.max(mass_range):
+                            real.append(deflector.other_args['mass'])
 
                 else:
-                    realization_masses.append(np.array([deflector.other_args['mass'] for deflector in realization]))
+                    for deflector in realization:
+                        if 'mass' not in deflector.other_args:
+                            continue
+                        real.append(deflector.other_args['mass'])
+            realization_masses.append(real)
 
         else:
+
             for realization in realization_list:
-
+                real = []
                 if mass_range is not None:
-                    
-                    object_generator = (deflector.other_args['mass'] for deflector in realization
-                                        if (np.min(mass_range) <= deflector.other_args['mass'] <
-                                            np.max(mass_range) and
-                                            deflector.redshift == specific_redshift))
 
-                    realization_masses.append(list(object_generator))
+                    for deflector in realization:
+                        if 'mass' not in deflector.other_args:
+                            continue
+
+                        if (np.min(mass_range) <= deflector.other_args['mass'] <
+                                            np.max(mass_range) and
+                                            deflector.redshift == specific_redshift):
+                            real.append(deflector.other_args['mass'])
 
                 else:
 
-                    object_generator = (deflector.other_args['mass'] for deflector in realization
-                                        if (deflector.redshift == specific_redshift))
-
-                    realization_masses.append(list(object_generator))
+                    for deflector in realization:
+                        if 'mass' not in deflector.other_args:
+                            continue
+                        real.append(deflector.other_args['mass'])
+                realization_masses.append(real)
 
         return realization_masses
 

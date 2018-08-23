@@ -186,7 +186,6 @@ class CosmoExtension(Cosmo):
         if z2-z1 < zstep:
             return integrand(z1, angle, z_base, Rein_def) * (z2 - z1)
 
-
         if isinstance(z2,float) or isinstance(z2,int):
             return quad(integrand, z1, z2, args=(angle, z_base, Rein_def))[0]
         else:

@@ -70,21 +70,21 @@ class RayTrace:
 
         return size,res
 
-    def get_images(self,xpos,ypos,lens_system):
+    def get_images(self,xpos,ypos,lensModel,kwargs_lens,return_image=False):
 
         if isinstance(xpos,float) or isinstance(xpos,int):
-            xpos,ypos = self._get_grids([xpos],[ypos],1)
+            xpos,ypos = self._get_grids(np.array([xpos]),np.array([ypos]),1)
             xpos = xpos[0]
             ypos = ypos[0]
-
-        xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
-
-        img = self.rayshoot(xpos,ypos,lens_system)
-
-        if self.polar_grid:
-            return np.sum(img)*self.res**2,img
         else:
+            xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
+
+        img = self.rayshoot(xpos,ypos,lensModel,kwargs_lens)
+
+        if return_image:
             return np.sum(img)*self.res**2,array2image(img)
+        else:
+            return np.sum(img)*self.res**2
 
     def magnification(self,xpos,ypos,lensModel,kwargs_lens):
 

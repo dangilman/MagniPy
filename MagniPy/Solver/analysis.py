@@ -59,8 +59,7 @@ class Analysis(Magnipy):
 
         lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        extension = LensModelExtensions(lens_model_list=lensmodel.lens_model_list,redshift_list=lensmodel.redshift_list,
-                            cosmo=lensmodel.cosmo,multi_plane=multiplane,z_source=lensmodel.z_source)
+        extension = LensModelExtensions(lensmodel)
 
         if method=='tiling':
             xcrit, ycrit = extension.critical_curve_tiling(lensmodel_params,compute_window=compute_window,
@@ -162,17 +161,16 @@ class Analysis(Magnipy):
 
     def raytrace_images(self, full_system=None, macromodel=None, xcoord=None, ycoord=None, realizations=None,
                         multiplane=None,
-                        identifier=None, srcx=None, srcy=None, grid_rmax=None, res=None, method='lenstronomy',
-                        source_shape='GAUSSIAN', source_size=None, filter_by_position=False,
-                        image_index=None,polar_grid=True,**kwargs):
+                        identifier=None, srcx=None, srcy=None, res=None, method='lenstronomy',
+                        source_shape='GAUSSIAN', source_size_kpc=None, **kwargs):
 
         lens_systems = []
 
-        if source_size is None:
+        if source_size_kpc is None:
             raise Exception('specify source size')
 
-        if grid_rmax is None:
-            grid_rmax = default_gridrmax(source_size)
+        source_scale = self.cosmo.kpc_per_asec(self.zsrc)
+        source_size = source_size_kpc * source_scale ** -1
 
         if res is None:
             res = default_res(source_size)
@@ -180,23 +178,26 @@ class Analysis(Magnipy):
         if full_system is None:
 
             assert macromodel is not None
+
             if realizations is not None:
                 assert len(realizations) == 1
-                for real in realizations:
-                    lens_systems.append(
-                        self.build_system(main=copy.deepcopy(macromodel), additional_halos=real, multiplane=multiplane))
+                lens_system = self.build_system(main=copy.deepcopy(macromodel),additional_halos=realizations[0],
+                                                multiplane=multiplane)
 
         else:
 
-            lens_systems.append(copy.deepcopy(full_system))
+            lens_system=copy.deepcopy(full_system)
 
-        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method=method, grid_rmax=grid_rmax, res=res,
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, kwargs_lens = lenstronomy.get_lensmodel(lens_system)
+
+        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method=method, res=res,
                          source_shape=source_shape,raytrace_with=method,
-                         cosmology=self.cosmo, source_size=source_size,polar_grid=polar_grid,**kwargs)
+                         cosmology=self.cosmo, source_size=source_size,polar_grid=False,**kwargs)
 
-        magnifications, image = trace.get_images(xpos=xcoord, ypos=ycoord, lens_system=lens_systems[0],
+        magnifications, image = trace.get_images(xcoord, ycoord, lensmodel, kwargs_lens,
                                                  return_image=True)
-
 
         return magnifications, image
 

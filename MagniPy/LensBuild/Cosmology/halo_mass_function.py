@@ -150,5 +150,5 @@ class HaloMassFunction:
                        self.extension.comoving_volume_cone(z1, z + dz, cone_base, Rein_def= Rein_def)
             else:
                 integral += self.dN_dM_comoving(M, z) * self.extension.comoving_volume_cone(z, z + dz,
-                                                                                            cone_base, Rein_def= Rein_def)
+                                                        cone_base, Rein_def= Rein_def)
         return integral
