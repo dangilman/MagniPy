@@ -1,4 +1,4 @@
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
+from MagniPy.LensBuild.Cosmology.extension import CosmoExtension
 from MagniPy.LensBuild.spatial_distribution import *
 from MagniPy.LensBuild.massfunctions import *
 from MagniPy.MassModels import TNFW

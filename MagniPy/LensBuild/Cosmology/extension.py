@@ -39,6 +39,27 @@ class CosmoExtension(Cosmo):
 
         return cosmology.setCosmology('custom',params)
 
+    def _angle_to_physicalradius(self, angle, z, z_base, delta_angle):
+
+        angle_radian = angle * self.arcsec
+
+        angle_deflection = delta_angle * self.arcsec
+
+        if z <= z_base:
+            R = angle_radian * self.D_A(0, z)
+        else:
+            R = angle_radian * self.D_A(0, z) - angle_deflection * self.D_A(z_base, z)
+
+        return max(0,R)
+
+    def angle_behind_lens(self, angle, z, z_base, Rein_def):
+        if z <= z_base:
+            return angle
+
+        R = self._angle_to_physicalradius(angle, z, z_base, Rein_def)
+
+        return R * self.arcsec ** -1 * self.D_A(0, z) ** -1
+
     def D_growth(self,z,omega_M,omega_L):
 
         def f(x,OmO,OmL):
@@ -101,123 +122,3 @@ class CosmoExtension(Cosmo):
         """
         return 2*np.pi* self.mass2size_comoving(m, z) ** -1
 
-    def angle_behind_lens(self,angle,z,z_base,Rein_def):
-
-        if z <= z_base:
-            return angle
-
-        R = self._angle_to_physicalradius(angle,z,z_base,Rein_def)
-
-        return R*self.arcsec**-1*self.D_A(0,z)**-1
-
-    def _angle_to_physicalradius(self, angle, z, z_base, Rein_def=None):
-
-        angle_radian = angle*self.arcsec
-
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(angle)
-
-        angle_deflection_reduced = Rein_def * self.arcsec
-
-        angle_deflection = angle_deflection_reduced*self.D_s*self.D_ds**-1
-
-        if z<=z_base:
-            R = angle_radian*self.D_A(0,z)
-        else:
-            #print('check this computation... (angle_to_physicalradius)')
-            R = angle_radian * self.D_A(0, z) - angle_deflection * self.D_A(z_base, z)
-            #R = angle_radian * self.D_A(0, z_base) - angle_deflection * self.D_A(z_base, z)
-
-        if R<0:
-            return 0
-
-        return R
-
-    def angle_to_physical_area(self, angle, z, z_base, Rein_def=None):
-        """
-        computes the area corresponding to the angular radius of a plane at redshift z for a double cone with base at z_base
-        :param angle: angle in arcsec
-        :param z: redshift of plane
-        :param z_base: redshift of cone base
-        :return: comoving area
-        """
-
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(angle)
-
-        R = self._angle_to_physicalradius(angle, z, z_base, Rein_def=Rein_def)
-
-        return np.pi*R**2
-
-    def differential_physical_volume_cone(self, z, angle, z_base=None, Rein_def=None):
-        """
-        :param z: redshift
-        :param angle: in arcseconds
-        :param dz: redshift spacing
-        :return:
-        """
-
-        scale_factor = (1+z)**-1
-
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(angle)
-
-        return scale_factor*self.angle_to_physical_area(angle, z, z_base, Rein_def) * \
-               self.cosmo.hubble_distance.value * self.cosmo.efunc(z) ** -1
-
-    def comoving_volume_cone(self, z1, z2, angle, z_base=None, Rein_def=None):
-        """
-        computes the comoving volume in a surface specified by angle and z1,z2
-        :param z1: start redshift
-        :param z2: end redshift
-        :return:
-        """
-
-        if z_base is None:
-            z_base = self.zd
-
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(angle)
-
-        def integrand(z, angle, z_base, Rein_def):
-
-            return self.differential_physical_volume_cone(z, angle, z_base, Rein_def) * (1 + z) ** 3
-
-        if z2-z1 < zstep:
-            return integrand(z1, angle, z_base, Rein_def) * (z2 - z1)
-
-        if isinstance(z2,float) or isinstance(z2,int):
-            return quad(integrand, z1, z2, args=(angle, z_base, Rein_def))[0]
-        else:
-            integral = []
-            for value in z2:
-
-                integral.append(quad(integrand, z1, value, args=(angle, z_base, Rein_def))[0])
-            return np.array(integral)
-
-    def physical_volume_cone(self, z1, z2, angle, z_base=None, Rein_def=None):
-        """
-        computes the comoving volume in a surface specified by angle and z1,z2
-        :param z1: start redshift
-        :param z2: end redshift
-        :return:
-        """
-
-        if z_base is None:
-            z_base = self.zd
-
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(angle)
-
-        def integrand(z,angle,z_base,Rein_def):
-
-            return self.differential_physical_volume_cone(z, angle,z_base,Rein_def)
-
-        if isinstance(z2,float) or isinstance(z2,int):
-            return quad(integrand, z1, z2, args=(angle, z_base, Rein_def))[0]
-        else:
-            integral = []
-            for value in z2:
-
-                integral.append(quad(integrand, z1, value, args=(angle, z_base, Rein_def))[0])
-            return np.array(integral)

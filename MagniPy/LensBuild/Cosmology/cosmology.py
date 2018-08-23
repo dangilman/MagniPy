@@ -43,6 +43,10 @@ class Cosmo:
 
             self.d_hubble = self.c*self.Mpc*0.001*(self.h*100)
 
+    def reduced_to_phys(self,zlens,zsrc):
+
+        return self.D_A(0,zsrc)*self.D_A(zlens,zsrc)**-1
+
     def get_rhoc(self):
 
         return self.cosmo.critical_density0.value * self.density_to_MsunperMpc*self.cosmo.h**-2

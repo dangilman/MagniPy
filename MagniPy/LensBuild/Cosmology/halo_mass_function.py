@@ -2,7 +2,7 @@ import numpy as np
 from colossus.lss.mass_function import *
 from colossus.lss.bias import haloBiasFromNu,twoHaloTerm
 from MagniPy.LensBuild.defaults import default_Rein_deflection,spatial_defaults,default_sigma8,default_halo_mass_function
-from MagniPy.LensBuild.Cosmology.extension import CosmoExtension
+from MagniPy.LensBuild.Cosmology.geometry import Geometry
 
 class HaloMassFunction:
 
@@ -15,9 +15,10 @@ class HaloMassFunction:
         if model is None:
             model = default_halo_mass_function
 
-        self.extension = CosmoExtension(zd=zd,zsrc=zsrc,sigma_8=sigma8,rescale_sigma8=rescale_sigma8,omega_M_void=omega_M_void)
+        self.geometry = Geometry(zd=zd,zsrc=zsrc,sigma_8=sigma8,rescale_sigma8=rescale_sigma8,
+                                 omega_M_void=omega_M_void)
 
-        self.cosmology_params = self.extension.cosmology_params
+        self.cosmology_params = self.geometry.cosmology_params
 
         self.cosmology = self._set_cosmo()
 
@@ -46,11 +47,11 @@ class HaloMassFunction:
         :param omega: density parameter; fraction of the matter density (not fraction of critical density)
         :return: the number of objects of mass M * Mpc^-3
         """
-        return self.extension.rho_matter_crit(z)*omega*M**-1
+        return self.geometry.rho_matter_crit(z)*omega*M**-1
 
     def linear_bias(self,M,z):
 
-        M_h = M*self.extension.h
+        M_h = M*self.geometry.h
 
         nu = peaks.peakHeight(M_h,z)
 
@@ -58,7 +59,7 @@ class HaloMassFunction:
 
     def two_halo_term(self,R,M,z,mdef='vir'):
 
-        return twoHaloTerm(R,M*self.extension.h,z,mdef=mdef)
+        return twoHaloTerm(R,M*self.geometry.h,z,mdef=mdef)
 
     def dN_dM_physical(self,M,z):
         """
@@ -70,7 +71,7 @@ class HaloMassFunction:
         """
         q_out = 'dndlnM'
 
-        h = self.extension.h
+        h = self.geometry.h
 
         M_h = M*h
 
@@ -117,38 +118,31 @@ class HaloMassFunction:
             Nsub = norm * newindex ** -1 * (m_high ** newindex - m_low ** newindex)
             return Nsub,norm,plaw_index
 
-    def dndM_integrated_z1z2(self,M,z1,z2,delta_z_min=0.01,cone_base=None, Rein_def = None, functype='plaw',
-                             omega=None):
+    def dndM_integrated_z1z2(self, M, z1, z_base, cone_base, delta_theta):
 
         if z1<1e-4:
             z1 = 1e-4
 
         assert cone_base is not None,'Specify cone_base.'
+        assert delta_theta is not None
 
-        if Rein_def is None:
-            Rein_def = default_Rein_deflection(cone_base)
+        dV_comoving = self.geometry._dV_cone_comoving(cone_base,z1,z_base,delta_theta)
 
-        if z2 - z1 < delta_z_min:
+        dN_dMdV = self.dN_dM_comoving(M,z1)
 
-            if functype=='delta':
-                return self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z2, cone_base, Rein_def= Rein_def)
+        return dV_comoving*dN_dMdV
 
-            else:
-                return self.dN_dM_comoving(M, z1) * self.extension.comoving_volume_cone(z1, z2, cone_base, Rein_def= Rein_def)
 
-        N = int((z2 - z1)*delta_z_min**-1 + 1)
 
-        zvals = np.linspace(z1,z2,N)
-        dz = zvals[1] - zvals[0]
-        integral = 0
 
-        for z in zvals:
 
-            if functype=='delta':
-                integral += self.dN_dM_comoving_deltaFunc(M,z1,omega)*\
-                       self.extension.comoving_volume_cone(z1, z + dz, cone_base, Rein_def= Rein_def)
-            else:
-                integral += self.dN_dM_comoving(M, z) * self.extension.comoving_volume_cone(z, z + dz,
-                                                        cone_base, Rein_def= Rein_def)
-        return integral
+
+
+
+
+
+
+
+
+
+

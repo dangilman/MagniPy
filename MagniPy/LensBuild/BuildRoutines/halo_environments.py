@@ -18,7 +18,7 @@ def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=
     if zmin == 0:
         zmin = 1e-3
 
-    zstep = 0.02
+    zstep = 0.01
 
     assert zstep > 0.001 # so that the delta_z in multiplane PSO works
 
@@ -29,14 +29,12 @@ def LOS_plaw(zmin,zmax,zmain,zsrc,rescale_sigma8=False,omega_M_void=None,log_mL=
 
     M = np.logspace(log_mL,log_mH,30)
 
-    zstep = zvals[1]-zvals[0]
-
     A0_z = []
     plaw_index_z = []
 
     for z in zvals:
 
-        dn_dm = HMF.dndM_integrated_z1z2(M,z,z+zstep,cone_base=cone_base)
+        dn_dm = HMF.dndM_integrated_z1z2(M,z,zmain,cone_base,-cone_base)
 
         _,normalization,index = HMF.mass_function_moment(M,dn_dm,0)
 
@@ -69,7 +67,7 @@ def LOS_delta(M,omega,zmin,zmax,zmain,zsrc,cone_base):
 
     for z in zvals:
 
-        Nz = HMF.dndM_integrated_z1z2(M,z,z+zstep,functype='delta',omega=omega,cone_base=cone_base)
+        Nz = HMF.dndM_integrated_z1z2_delta(M,z,z+zstep,omega=omega,cone_base=cone_base)
 
         N_z.append(Nz)
 
