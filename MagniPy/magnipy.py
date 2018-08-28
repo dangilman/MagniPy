@@ -11,7 +11,6 @@ from MagniPy.lensdata import Data
 import os
 from pyHalo.Cosmology.cosmology import Cosmology
 
-
 class Magnipy:
     """
     This class is used to specify a lens system and solve the lens equation or optimize a lens model
