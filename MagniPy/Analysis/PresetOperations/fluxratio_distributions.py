@@ -1,4 +1,3 @@
-import numpy as np
 from MagniPy.util import *
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
@@ -84,7 +83,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
             #                             re_optimize=False, particle_swarm=True,restart=3)
             #    init_macromodel = init[0].lens_components[0]
-            
+
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=realizations,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
