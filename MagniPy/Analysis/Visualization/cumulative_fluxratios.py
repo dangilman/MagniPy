@@ -39,7 +39,6 @@ class FluxRatioCumulative:
             if cut_high is not None:
                 dset = dset[np.where(dset<=cut_high)]
 
-
             self.lensdata.append(dset)
 
     def set_reference_data(self,refdata):

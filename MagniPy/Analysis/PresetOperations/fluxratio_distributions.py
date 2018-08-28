@@ -72,7 +72,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
 
             Nreal = Ntotal - len(fit_fluxes)
 
-            print(str(len(fit_fluxes)) +' of '+str(Ntotal))
+            #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
             mod_args = copy(init_args)
             mod_args.update(model_args)
             realizations = pyhalo.render(halo_model,mod_args)

@@ -1,11 +1,11 @@
 from MagniPy.magnipy import Magnipy
-import numpy as np
 from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,default_res,\
     default_source_shape,default_source_size_kpc,default_solve_method,default_file_identifier,get_default_SIE_random
 import copy
 from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
 
 class SolveRoutines(Magnipy):
+
     """
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
