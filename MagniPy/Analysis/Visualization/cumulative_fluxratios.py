@@ -24,6 +24,7 @@ class FluxRatioCumulative:
     def __init__(self,fnames=None,reference_fluxes=None,read_fluxes=True,cut_high=None):
 
         self.lensdata = []
+        self.cut_high = cut_high
         lensdata = []
 
         for fname in fnames:
@@ -32,21 +33,24 @@ class FluxRatioCumulative:
 
             lensdata.append(anomalies)
 
-        for dset in lensdata:
-
-            dset = dset[np.where(np.isfinite(dset))]
-
-            if cut_high is not None:
-                dset = dset[np.where(dset<=cut_high)]
-
-            self.lensdata.append(dset)
+        self.lensdata = lensdata
 
     def set_reference_data(self,refdata):
 
         self.reference_data = refdata
 
-    def make_figure(self,nbins=100,xmax=0.5,color=None,xlabel=None,ylabel='',labels=None,linewidth=5,linestyle=None,alpha=0.8,
-                    xlims=None,ylims=None,legend_args={},shift_left=None):
+    def make_figure(self, cumulative, **kwargs):
+
+        if cumulative:
+
+            self._make_figure_cumulative(**kwargs)
+
+        else:
+
+            self._make_figure_hist(**kwargs)
+
+    def _make_figure_hist(self, nbins=50, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5,
+                          linestyle=None, alpha=0.8, xlims=None, ylims=None, legend_args={}, shift_left=None):
 
         if color is None:
             color = default_colors
@@ -57,11 +61,59 @@ class FluxRatioCumulative:
         if linestyle is None:
             linestyle = ['-']*len(self.lensdata)
 
+        for dset in self.lensdata:
+
+            dset = dset[np.where(np.isfinite(dset))]
+
+            if self.cut_high is not None:
+                dset = dset[np.where(np.absolute(dset)<=self.cut_high)]
+
+        lensdata = dset
+
+        fig = plt.figure(1)
+        fig.set_size_inches(7, 7)
+        ax1 = plt.subplot(131)
+        ax2 = plt.subplot(132)
+        ax3 = plt.subplot(133)
+
+        for i,ax in [ax1,ax2,ax3]:
+            for j, data in enumerate(lensdata):
+                for col in range(3):
+                    plt.hist(data[:, col], color=color[j], histtype='step',linewidth=linewidth, density=True)
+                    plt.hist(data[:, col], color=color[j], histtype='bar', linewidth=2, alpha=0.5, label = labels[j],
+                             density=True)
+            ax.set_xlabel(xlabel, fontsize=18)
+
+        if labels is not None:
+            plt.legend(**legend_args)
+        return fig, [ax1,ax2,ax3]
+
+    def _make_figure_cumulative(self, nbins=100, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5, linestyle=None, alpha=0.8,
+                                xlims=None, ylims=None, legend_args={}, shift_left=None):
+
+        if color is None:
+            color = default_colors
+        if xlabel is None:
+            xlabel = r'$\sqrt{\sum_{i=1}^{3} \left( \frac{F_{\rm{SIE(i)}} - F_{\rm{data(i)}}}{F_{\rm{data(i)}}} \right)^2}$'
+        if ylabel is None:
+            ylabel = 'Percent\n'+r'$ > x$'
+        if linestyle is None:
+            linestyle = ['-']*len(self.lensdata)
+
+        for dset in self.lensdata:
+
+            dset = dset[np.where(np.isfinite(dset))]
+
+            if self.cut_high is not None:
+                dset = dset[np.where(dset<=self.cut_high)]
+
+        lensdata = dset
+
         fig = plt.figure(1)
         fig.set_size_inches(7,7)
         ax = plt.subplot(111)
 
-        for i,anomalies in enumerate(self.lensdata):
+        for i,anomalies in enumerate(lensdata):
 
             L = len(anomalies)
 
