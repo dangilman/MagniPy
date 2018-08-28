@@ -107,8 +107,7 @@ def write_fluxes(filename='',fluxes = [], mode='append',summed_in_quad=True):
                     f.write(str(val)+'\n')
         return
 
-    if not isinstance(fluxes, np.ndarray):
-        fluxes = np.array(fluxes)
+    fluxes = np.array(fluxes)
 
     if fluxes.ndim == 1:
 
