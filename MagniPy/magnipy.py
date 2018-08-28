@@ -1,8 +1,8 @@
 from time import time
 
-import MagniPy.LensBuild.lens_system
 from MagniPy import paths
 from MagniPy.Solver.GravlensWrap._call import *
+from MagniPy.LensBuild.lens_system import LensSystem
 from MagniPy.Solver.GravlensWrap.generate_input import *
 from MagniPy.Solver.GravlensWrap.gravlens_to_kwargs import gravlens_to_kwargs
 from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import *
@@ -67,12 +67,11 @@ class Magnipy:
 
             return lens_system
 
-
     def build_system(self, main=None, realization=None, multiplane=None):
 
         assert multiplane is not None
 
-        newsystem = MagniPy.LensBuild.lens_system.LensSystem(main,realization,multiplane=multiplane)
+        newsystem = LensSystem(main,realization,multiplane=multiplane)
 
         return newsystem
 

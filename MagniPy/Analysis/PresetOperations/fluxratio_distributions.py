@@ -5,6 +5,7 @@ from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
 from MagniPy.lensdata import Data
 from pyHalo.pyhalo import pyHalo
+from copy import copy
 
 def compute_fluxratio_distributions(halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
@@ -60,6 +61,12 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
     n = 0
     init_macromodel = None
 
+    pyhalo = pyHalo(zlens,zsrc)
+    init_args = {'mdef_main': 'NFW', 'mdef_los': 'NFW', 'log_mlow': 7, 'log_mhigh': 10, 'power_law_index': -1.9,
+                 'parent_m200': 10 ** 13, 'parent_c': 3, 'mdef': 'TNFW', 'break_index': -1.3, 'c_scale': 60,
+                 'c_power': -0.17, 'r_tidal': '0.4Rs', 'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17,
+                 'cone_opening_angle': 5}
+
     if method=='lenstronomy':
 
         while len(fit_fluxes)<Ntotal:
@@ -67,8 +74,9 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             Nreal = Ntotal - len(fit_fluxes)
 
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
-
-            realizations = halo_generator.render(halo_model, model_args)
+            mod_args = copy(init_args)
+            mod_args.update(model_args)
+            realizations = pyhalo.render(halo_model,mod_args)
 
             #if init_macromodel is None:
             #    _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
@@ -76,7 +84,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
             #                             re_optimize=False, particle_swarm=True,restart=3)
             #    init_macromodel = init[0].lens_components[0]
-
+            
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=realizations,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
