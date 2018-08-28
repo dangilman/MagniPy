@@ -39,11 +39,11 @@ class SolveRoutines(Magnipy):
                 assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
 
                 for macro,real in zip(macromodel,realizations):
-                    lens_systems.append(self.build_system(main=macro,additional_halos=real,multiplane=multiplane))
+                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane))
             else:
                 if realizations is not None:
                     for real in realizations:
-                        lens_systems.append(self.build_system(main=macromodel,additional_halos=real,
+                        lens_systems.append(self.build_system(main=macromodel, realization=real,
                                                               multiplane=multiplane))
                 else:
                     lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
@@ -68,7 +68,8 @@ class SolveRoutines(Magnipy):
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                             ray_trace=True, identifier=None, srcx=None, srcy=None,  res=None,
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
-                            filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=True, shr_coords=1):
+                            filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=True, shr_coords=1,
+                            brightimg=True):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -94,9 +95,9 @@ class SolveRoutines(Magnipy):
             assert macromodel is not None
             if realizations is not None:
                 for real in realizations:
-                    lens_systems.append(self.build_system(main=macromodel, additional_halos=real, multiplane=multiplane))
+                    lens_systems.append(self.build_system(main=macromodel, realization=real, multiplane=multiplane))
             else:
-                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=None,multiplane=multiplane))
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=None, multiplane=multiplane))
 
         else:
 
@@ -107,7 +108,8 @@ class SolveRoutines(Magnipy):
 
         data = self._solve_4imgs(lens_systems=lens_systems, method=method, identifier=identifier, srcx=srcx, srcy=srcy,
                                  res=res, source_shape=source_shape, ray_trace=ray_trace,
-                                 raytrace_with=raytrace_with, source_size_kpc=source_size_kpc, polar_grid=polar_grid, shr_coords=shr_coords)
+                                 raytrace_with=raytrace_with, source_size_kpc=source_size_kpc, polar_grid=polar_grid,
+                                 shr_coords=shr_coords,brightimg=brightimg)
 
         if sort_by_pos is not None:
             data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)
@@ -193,7 +195,7 @@ class SolveRoutines(Magnipy):
 
         lens_systems = []
 
-        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), additional_halos=None, multiplane=multiplane))
+        lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=None, multiplane=multiplane))
 
         optimized_data, model = self._optimize_4imgs_lensmodel(lens_systems=lens_systems, data2fit=datatofit, method=method,
                                                                sigmas=sigmas, identifier=identifier,
@@ -252,11 +254,11 @@ class SolveRoutines(Magnipy):
             assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
 
             for macro,real in zip(macromodel,realizations):
-                lens_systems.append(self.build_system(main=macro,additional_halos=real,multiplane=multiplane))
+                lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane))
         else:
             if realizations is not None:
                 for real in realizations:
-                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),additional_halos=real,
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=real,
                                                           multiplane=multiplane))
             else:
                 lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
@@ -298,7 +300,7 @@ class SolveRoutines(Magnipy):
             res = default_res(source_size)
 
         if build:
-            lens_system = self.build_system(main=lens_system,realizations=realizations,multiplane=multiplane)
+            lens_system = self.build_system(main=lens_system, realization=realizations, multiplane=multiplane)
 
         if raytrace_with == 'lensmodel':
 

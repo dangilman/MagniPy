@@ -82,7 +82,8 @@ class SIE:
         subparams = {}
         otherkwargs = {}
 
-        otherkwargs['name']='SPEMD'
+        otherkwargs['parameterization'] = 'SIE_shear'
+        otherkwargs['name'] = 'SPEMD'
         q = 1-ellip
         subparams['q'] = q
         subparams['phi_G'] = (ellip_theta)*np.pi*180**-1
@@ -90,12 +91,5 @@ class SIE:
         subparams['center_x'] = x
         subparams['center_y'] = y
         subparams['theta_E'] = R_ein
-        #q = subparams['q']
-        #subparams['theta_E_fastell'] = R_ein*((1+q**2)*(2*q)**-1)**.5
 
-        return subparams,otherkwargs
-
-    #def R_ein(self,vdis,D_ds,D_s,arcsec):
-
-    #    return 4 * np.pi * (vdis * (0.001 * self.c * self.Mpc) ** -1) ** 2 * \
-    #           self.D_ds * self.D_s ** -1 * self.arcsec ** -1
+        return subparams, otherkwargs

@@ -1,8 +1,7 @@
 from time import time
+
+import MagniPy.LensBuild.lens_system
 from MagniPy import paths
-import MagniPy.LensBuild.lens_assemble as build
-import MagniPy.LensBuild.renderhalos as halo_gen
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 from MagniPy.Solver.GravlensWrap._call import *
 from MagniPy.Solver.GravlensWrap.generate_input import *
 from MagniPy.Solver.GravlensWrap.gravlens_to_kwargs import gravlens_to_kwargs
@@ -10,6 +9,7 @@ from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import *
 from MagniPy.Solver.RayTrace import raytrace
 from MagniPy.lensdata import Data
 import os
+from pyHalo.Cosmology.cosmology import Cosmology
 
 
 class Magnipy:
@@ -21,9 +21,7 @@ class Magnipy:
 
         self.zmain = zlens
         self.zsrc = zsrc
-        self.lens_halos = halo_gen.HaloGen(zd=zlens, zsrc=zsrc)
-
-        self.cosmo = Cosmo(zd=zlens, zsrc=zsrc)
+        self.cosmo = Cosmology()
         self.clean_up = clean_up
 
         self.paths = paths
@@ -37,7 +35,7 @@ class Magnipy:
 
     def lenstronomy_build(self):
 
-        return LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+        return LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
 
     def print_system(self, system_index, component_index=None):
 
@@ -70,26 +68,11 @@ class Magnipy:
             return lens_system
 
 
-    def build_system(self, main=None, additional_halos=None, multiplane=None):
-
-        """
-        This routine sets up the lens model. It assembles a "system", which is a list of Deflector instances
-        :param main: instance of Deflector for the main deflector
-        :param halo_model: specifies the halo content of the deflector
-        :param realization: specifies a specific realization; suborinate to halo_model
-        :param multiplane: whether halo_model includes multiple lens planes
-        :return:
-        """
+    def build_system(self, main=None, realization=None, multiplane=None):
 
         assert multiplane is not None
 
-        newsystem = build.LensSystem(multiplane=multiplane)
-
-        if main is not None:
-            newsystem.main_lens(main)
-
-        if additional_halos is not None:
-            newsystem.halos(additional_halos)
+        newsystem = MagniPy.LensBuild.lens_system.LensSystem(main,realization,multiplane=multiplane)
 
         return newsystem
 
@@ -103,7 +86,7 @@ class Magnipy:
 
         data, opt_sys = [], []
 
-        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
 
         for i, system in enumerate(lens_systems):
 
@@ -134,7 +117,7 @@ class Magnipy:
 
     def _solve_4imgs_lenstronomy(self, lens_systems, data2fit=None, method=str, sigmas=None, ray_trace=True, res=None,
                                  source_shape='GAUSSIAN', source_size_kpc=None, print_mag=False, raytrace_with=None, polar_grid=True,
-                                 solver_type=None, N_iter_max=None):
+                                 solver_type=None, N_iter_max=None, brightimg=None):
 
         data,opt_sys = [],[]
 
@@ -149,7 +132,7 @@ class Magnipy:
             xsrc, ysrc = lensModel.ray_shooting(data2fit.x, data2fit.y, kwargs_lens)
             xsrc, ysrc = np.mean(xsrc), np.mean(ysrc)
 
-            x_img,y_img = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,solver_type,kwargs_lens)
+            x_img,y_img = lenstronomyWrap.solve_leq(xsrc,ysrc,lensModel,solver_type,kwargs_lens,brightimg)
 
             if print_mag:
                 print('computing mag # '+str(i+1)+' of '+str(len(lens_systems)))
@@ -254,9 +237,9 @@ class Magnipy:
 
     def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None,
                      res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size_kpc=float, print_mag=False,
-                     raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1):
+                     raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1,brightimg=None):
 
-        lenstronomywrap = LenstronomyWrap(cosmo=self.cosmo.cosmo,z_source=self.zsrc)
+        lenstronomywrap = LenstronomyWrap(cosmo=self.cosmo.astropy,z_source=self.zsrc)
 
         if method == 'lensmodel':
 
@@ -315,7 +298,7 @@ class Magnipy:
 
             data = []
 
-            lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+            lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
 
             for i, system in enumerate(lens_systems):
 
@@ -323,7 +306,7 @@ class Magnipy:
 
                 lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(system)
 
-                x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,lensmodel_params)
+                x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,lensmodel_params,brightimg)
 
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1

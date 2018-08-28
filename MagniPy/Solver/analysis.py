@@ -22,22 +22,23 @@ class Analysis(Magnipy):
     def get_hessian(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
         if lens_system is None:
-            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+            lens_system = self.build_system(main=main, realization=halos, multiplane=multiplane)
 
         lenstronomy = self.lenstronomy_build()
 
         lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        if isinstance(x,int) or isinstance(x,list) or isinstance(x,np.ndarray):
+        if isinstance(x,int) or isinstance(x,list):
 
             f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x,y,kwargs=lensmodel_params)
 
             return f_xx, f_xy,f_yx,f_yy
         else:
+            initial_shape = x.shape
             f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x.ravel(), y.ravel(), kwargs=lensmodel_params)
 
-            return f_xx.reshape(len(x), len(y)), f_xy.reshape(len(x), len(y)), \
-                   f_yx.reshape(len(x), len(y)), f_yy.reshape(len(x), len(y))
+            return f_xx.reshape(initial_shape), f_xy.reshape(initial_shape), \
+                   f_yx.reshape(initial_shape), f_yy.reshape(initial_shape)
 
     def get_shear(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
@@ -53,7 +54,7 @@ class Analysis(Magnipy):
                                  scale=0.5,max_order=10,method=None,grid_scale=0.005):
 
         if lens_system is None:
-            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+            lens_system = self.build_system(main=main, realization=halos, multiplane=multiplane)
 
         lenstronomy = self.lenstronomy_build()
 
@@ -75,7 +76,7 @@ class Analysis(Magnipy):
     def rayshoot(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
 
         if lens_system is None:
-            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+            lens_system = self.build_system(main=main, realization=halos, multiplane=multiplane)
 
         lenstronomy = self.lenstronomy_build()
 
@@ -89,7 +90,7 @@ class Analysis(Magnipy):
 
         if lens_system is None:
 
-            lens_system = self.build_system(main=main,additional_halos=halos,multiplane=multiplane)
+            lens_system = self.build_system(main=main, realization=halos, multiplane=multiplane)
 
         lenstronomy = self.lenstronomy_build()
 
@@ -109,7 +110,7 @@ class Analysis(Magnipy):
             if len(lens_list)==1:
                 lens_system = self.build_system(lens_list[0],multiplane=multiplane)
             else:
-                lens_system = self.build_system(lens_list[0],additional_halos=lens_list[1:],multiplane=multiplane)
+                lens_system = self.build_system(lens_list[0], realization=lens_list[1:], multiplane=multiplane)
 
         lenstronomy_instance = self.lenstronomy_build()
 
@@ -124,7 +125,7 @@ class Analysis(Magnipy):
             if len(lens_list)==1:
                 lens_system = self.build_system(lens_list[0],multiplane=multiplane)
             else:
-                lens_system = self.build_system(lens_list[0],additional_halos=lens_list[1:],multiplane=multiplane)
+                lens_system = self.build_system(lens_list[0], realization=lens_list[1:], multiplane=multiplane)
 
         lenstronomy_instance = self.lenstronomy_build()
 
@@ -181,7 +182,7 @@ class Analysis(Magnipy):
 
             if realizations is not None:
                 assert len(realizations) == 1
-                lens_system = self.build_system(main=copy.deepcopy(macromodel),additional_halos=realizations[0],
+                lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=realizations[0],
                                                 multiplane=multiplane)
 
         else:

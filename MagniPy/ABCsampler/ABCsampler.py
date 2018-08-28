@@ -1,12 +1,7 @@
-from MagniPy.Analysis.PresetOperations.halo_constructor import Constructor
-from MagniPy.lensdata import Data
-from MagniPy.LensBuild.defaults import *
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
-import shutil
-from time import time
 
 def initialize_macro(solver,data,init):
 

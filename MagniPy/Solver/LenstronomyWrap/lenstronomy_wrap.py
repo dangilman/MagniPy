@@ -15,7 +15,7 @@ class LenstronomyWrap:
 
         self.xtol = 1e-10
         self.min_distance = 0.01
-        self.search_window = 4
+        self.search_window = 2
         self.precision_limit = 10**-10
         self.num_iter_max = 500
         self.astropy_instance = cosmo
@@ -37,16 +37,18 @@ class LenstronomyWrap:
 
         return lensmodel,lists['kwargs_lens']
 
-    def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params):
+    def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params,brightimg):
 
         lensEquationSolver = LensEquationSolver(lensModel=lensmodel)
 
-        #x_image, y_image = lensEquationSolver.image_position_from_source(kwargs_lens=lens_model_params, sourcePos_x=xsrc,
-        #                                                      sourcePos_y=ysrc,min_distance=self.min_distance, search_window=self.search_window,
-        #                                                                 precision_limit=self.precision_limit, num_iter_max=self.num_iter_max,
-        #                                                                 arrival_time_sort=False)
-        #if len(x_image) != 4:
-        x_image,y_image = lensEquationSolver.findBrightImage(xsrc,ysrc,lens_model_params,arrival_time_sort=False)
+        if brightimg:
+            x_image, y_image = lensEquationSolver.findBrightImage(xsrc, ysrc, lens_model_params,
+                                                                  arrival_time_sort=False)
+        else:
+            x_image, y_image = lensEquationSolver.image_position_from_source(kwargs_lens=lens_model_params, sourcePos_x=xsrc,
+                                                              sourcePos_y=ysrc,min_distance=self.min_distance, search_window=self.search_window,
+                                                                         precision_limit=self.precision_limit, num_iter_max=self.num_iter_max,
+                                                                         arrival_time_sort=False)
 
         return x_image,y_image
 
@@ -62,7 +64,7 @@ class LenstronomyWrap:
     def compute_mags(self,x_pos,y_pos,lensmodel,lens_args,source_size,grid_rmax,grid_number,source_shape):
 
         magnification = lensmodel.magnification_finite(x_pos,y_pos,kwargs_lens=lens_args,source_sigma=source_size,window_size=grid_rmax,grid_number=grid_number,
-                                                       shape=source_shape,polar_grid=True)
+                                                       shape=source_shape,polar_grid=False)
 
         return np.absolute(magnification)
 

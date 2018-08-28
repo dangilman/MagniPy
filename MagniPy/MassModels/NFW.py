@@ -1,5 +1,4 @@
 import numpy as np
-from MagniPy.LensBuild.Cosmology.cosmology import Cosmo
 
 class NFW:
 
@@ -10,17 +9,10 @@ class NFW:
         :param z2: source redshift
         :param h: little h
         """
-        if cosmology is None:
-            if z is None or zsrc is None:
-                pass
-            else:
-                self.cosmology = Cosmo(zd=z, zsrc=zsrc, compute=False)
-                self.z, self.zsrc = z, zsrc
-
-        else:
-            self.cosmology = cosmology
-            self.z, self.zsrc = cosmology.zd, cosmology.zsrc
-
+        self.cosmology = cosmology
+        self.cosmo = self.cosmology.cosmo.astropy
+        self.z = z
+        self.zsrc = zsrc
         self.c_turnover=c_turnover
 
     def def_angle(self, x, y, Rs=None, theta_Rs=None, center_x=0, center_y=0):
@@ -126,7 +118,7 @@ class NFW:
         :return: radius R_200 in comoving Mpc/h
         """
 
-        return (3*M/(4*np.pi*self.cosmology.get_rhoc()*200))**(1./3.)
+        return (3*M/(4*np.pi*self.cosmology.rhoc*200))**(1./3.)
 
     def M_r200(self, r200):
         """
@@ -141,7 +133,7 @@ class NFW:
         computes density normalization as a function of concentration parameter
         :return: density normalization in h^2/Mpc^3 (comoving)
         """
-        return 200./3*self.cosmology.get_rhoc()*c**3/(np.log(1+c)-c/(1+c))
+        return 200./3*self.cosmology.rhoc*c**3/(np.log(1+c)-c/(1+c))
 
     def nfw_concentration(self, m, logmhm, g1=60,g2=.17):
 
@@ -175,8 +167,8 @@ class NFW:
         """
         h = self.cosmology.cosmo.h
 
-        r200 = self.r200_M(M * h) * h * self.cosmology.a_z(self.z)  # physical radius r200
-        rho0 = self.rho0_c(c) / h**2 / self.cosmology.a_z(self.z)**3 # physical density in M_sun/Mpc**3
+        r200 = self.r200_M(M * h) * h * self.cosmology.cosmo.scale_factor(self.z)  # physical radius r200
+        rho0 = self.rho0_c(c) / h**2 / self.cosmology.cosmo.scale_factor(self.z)**3 # physical density in M_sun/Mpc**3
         Rs = r200/c
         return rho0, Rs, r200
 
@@ -189,11 +181,12 @@ class NFW:
         """
 
         rho0, Rs, r200 = self.nfwParam_physical(M, c)
-        Rs_angle = Rs / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec #Rs in asec
+
+        Rs_angle = Rs / self.cosmology.cosmo.D_A(0,self.z) / self.cosmology.cosmo.arcsec #Rs in asec
 
         theta_Rs = rho0 * (4 * Rs ** 2 * (1 + np.log(1. / 2.)))
 
-        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.zsrc) / self.cosmology.D_A(0,self.z) / self.cosmology.arcsec, Rs_angle
+        return theta_Rs / self.cosmology.get_epsiloncrit(self.z,self.zsrc) / self.cosmology.cosmo.D_A(0,self.z) / self.cosmology.cosmo.arcsec, Rs_angle
 
     def M_physical(self,m200,mhm=0,c=None):
         """
@@ -204,3 +197,4 @@ class NFW:
         #c = self.nfw_concentration(m200,mhm=mhm)
         rho0, Rs, r200 = self.nfwParam_physical(m200,c)
         return 4*np.pi*rho0*Rs**3*(np.log(1+c)-c*(1+c)**-1)
+

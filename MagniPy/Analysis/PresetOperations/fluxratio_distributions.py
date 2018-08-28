@@ -1,12 +1,12 @@
 import numpy as np
 from MagniPy.util import *
-from MagniPy.Analysis.PresetOperations.halo_constructor import Constructor
 from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import *
 from MagniPy.paths import *
 from MagniPy.lensdata import Data
+from pyHalo.pyhalo import pyHalo
 
-def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={},
+def compute_fluxratio_distributions(halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, res=None, sigmas=None,
                                     source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
@@ -30,7 +30,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
     if sigmas is None:
         sigmas = default_sigmas
 
-    halo_generator = Constructor(zlens=zlens, zsrc=zsrc)
+    halo_generator = pyHalo(zlens, zsrc)
 
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
@@ -43,13 +43,13 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=identifier)
 
-    if halo_model == 'plaw_main':
+    if halo_model == 'main_lens':
         multiplane = False
-    elif halo_model == 'plaw_LOS':
+    elif halo_model == 'line_of_sight':
         multiplane = True
     elif halo_model == 'delta_LOS':
         multiplane = True
-    elif halo_model == 'composite_plaw':
+    elif halo_model == 'composite_powerlaw':
         multiplane = True
 
     # initialize macromodel
@@ -68,8 +68,7 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
             print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
-            halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
-                                          Nrealizations=1,filter_halo_positions=filter_halo_positions,**filter_kwargs)
+            realizations = halo_generator.render(halo_model, model_args)
 
             #if init_macromodel is None:
             #    _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
@@ -77,11 +76,11 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
             #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
             #                             re_optimize=False, particle_swarm=True,restart=3)
             #    init_macromodel = init[0].lens_components[0]
-            print(len(halos[0]))
-            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=halos,
+
+            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=realizations,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
-                                         re_optimize=False, particle_swarm=True, restart=3,
+                                         re_optimize=False, particle_swarm=True, restart=1,
                                            single_background=single_background)
 
             for sys,dset in zip(system,model_data):
@@ -94,19 +93,17 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
                 if astro_error > 4:
                     continue
 
-                fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=True, index=0))
+                fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=False, index=0))
                 shears.append(sys.lens_components[0].shear)
                 xcen.append(sys.lens_components[0].lenstronomy_args['center_x'])
                 ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
                 shear_pa.append(sys.lens_components[0].shear_theta)
-
 
     elif method=='lensmodel':
 
         halos = halo_generator.render(massprofile=massprofile, model_name=halo_model, model_args=model_args,
                                       Nrealizations=Ntotal,
                                       filter_halo_positions=filter_halo_positions, **filter_kwargs_list[0])
-
 
         model_data, system = solver.two_step_optimize(macromodel=start_macromodel, datatofit=data[0],
                                                       realizations=halos,
@@ -135,7 +132,8 @@ def compute_fluxratio_distributions(massprofile='', halo_model='', model_args={}
 
     if write_to_file:
 
-        write_fluxes(filename=outfilepath+identifier+'_fluxes_'+outfilename+'.txt',fluxes=np.array(fit_fluxes),mode='append')
+        write_fluxes(filename=outfilepath+identifier+'_fluxes_'+outfilename+'.txt',fluxes=np.array(fit_fluxes),mode='append',
+                     summed_in_quad=False)
         with open(fluxratio_data_path + identifier+ '_shears_'+outfilename+'.txt', 'a') as f:
             np.savetxt(f, X=np.array(shears))
         with open(fluxratio_data_path + identifier+ '_shear_pa_'+outfilename+'.txt', 'a') as f:
