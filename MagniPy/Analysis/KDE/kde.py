@@ -1,5 +1,5 @@
 import numpy as np
-from kernels import *
+from MagniPy.Analysis.KDE.kernels import *
 from scipy.stats import gaussian_kde
 
 
@@ -105,14 +105,13 @@ class KernelDensity:
 
         functions = self._kernel(data[:, 0], data[:, 1], pranges_training, prior_weights)
 
-        xy = zip(xx,yy)
+        xy = list(zip(xx, yy))
 
         estimate = np.zeros(len(xy))
 
         for i, coord in enumerate(xy):
 
             for func in functions:
-
                 estimate[i] += func(*xy[i])
 
-        return estimate,xx,yy
+        return estimate, xx, yy

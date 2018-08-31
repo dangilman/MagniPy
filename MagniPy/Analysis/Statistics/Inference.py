@@ -7,15 +7,14 @@ def sample_chain(chain_name='',which_lenses=None, parameters=[],error=None,index
 
     full_chain = FullChains(chain_name,which_lens=which_lenses,error=error,index=index)
 
-    posteriors = full_chain.get_posteriors(500)
+    posteriors = full_chain.get_posteriors(2000)
 
-    prior_weights_global_gamma = WeightedSamples(params_to_weight=['SIE_gamma'],weight_args=[{'type':'Gaussian','mean':2.08,'sigma':0.05}])
+    prior_weights_global_gamma = WeightedSamples(params_to_weight=['SIE_gamma'],weight_args=[{'type':'Gaussian','mean':2,'sigma':0.025}])
 
+    prior_weights_global_fsub = WeightedSamples(params_to_weight=['fsub'],
+                                                 weight_args=[{'type': 'Gaussian', 'mean': 0.04, 'sigma': .01}])
 
-    #prior_weights_global_fsub = WeightedSamples(params_to_weight=['fsub'],
-    #                                             weight_args=[{'type': 'Gaussian', 'mean': 0.01, 'sigma': .002}])
-
-    posteriors = full_chain.re_weight(posteriors,[prior_weights_global_gamma],indexes=[1])
+    #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_fsub],indexes=[1])
 
     densities = []
 
@@ -29,9 +28,10 @@ def sample_chain(chain_name='',which_lenses=None, parameters=[],error=None,index
         densities.append(density)
 
     joint = Joint2D(densities)
-
-    joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=full_chain.truths)
+    #T = full_chain.truths
+    #joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=T)
+    joint.make_plot(param_names=parameters, param_ranges=full_chain.pranges,filled_contours=True)
 
     plt.show()
 
-sample_chain('singleplane_run',which_lenses=[1,2,3,4],parameters=['fsub','logmhm'],error=0,index=1)
+#sample_chain('he0435_LOS',which_lenses=[1],parameters=['fsub','logmhm'],error=0,index=1)

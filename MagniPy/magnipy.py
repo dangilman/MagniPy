@@ -80,11 +80,17 @@ class Magnipy:
                                     particle_swarm = True, restart = 1, constrain_params=None, shifting_background=False,
                                     pso_convergence_mean=None,
                                     pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
-                                    single_background=None,simplex_n_iter=None):
+                                    single_background=None,simplex_n_iter=None, init_system=None):
 
         data, opt_sys = [], []
 
         lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
+
+        if init_system is not None:
+            init_lensmodel, init_kwargs = lenstronomyWrap.get_lensmodel(init_system)
+        else:
+            init_lensmodel = None
+            init_kwargs = None
 
         for i, system in enumerate(lens_systems):
 
@@ -93,7 +99,8 @@ class Magnipy:
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
                             pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
-                              single_background=single_background,simplex_n_iter=simplex_n_iter)
+                              single_background=single_background,simplex_n_iter=simplex_n_iter, init_lensmodel=init_lensmodel,
+                              init_kwargs = init_kwargs)
 
             source_scale = self.cosmo.kpc_per_asec(self.zsrc)
             source_size = source_size_kpc * source_scale ** -1

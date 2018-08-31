@@ -1,20 +1,22 @@
 from MagniPy.Analysis.Statistics.summary_statistics import *
-from ChainOps import *
+from MagniPy.ABCsampler.ChainOps import *
 
 class FullChains:
 
     def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None):
 
-        self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
+        self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
+                                                                           chain_name + '/simulation_info.txt')
 
         self.pranges = self.get_pranges(self.prior_info)
 
         if Nlenses is None:
-            Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
+            Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
+                                                                    chain_name + '/simulation_info.txt')
         else:
             self.Nlenses = Nlenses
 
-        self.chain_file_path = chainpath + 'processed_chains/' + chain_name +'/'
+        self.chain_file_path = chainpath_out + 'processed_chains/' + chain_name +'/'
 
         self.lenses = []
 
@@ -63,11 +65,12 @@ class FullChains:
 
         pranges = {}
 
-        for pname,keys in info.iteritems():
-            if keys['prior_type'] == 'Gaussian':
-                pranges[pname] = [float(keys['mean']) - float(keys['sigma'])*2,float(keys['mean'])+float(keys['sigma'])*2]
-            elif keys['prior_type'] == 'Uniform':
-                pranges[pname] = [float(keys['low']),float(keys['high'])]
+        for keys in info.keys():
+            pname = info[keys]
+            if pname['prior_type'] == 'Gaussian':
+                pranges[keys] = [float(pname['mean']) - float(pname['sigma'])*2,float(pname['mean'])+float(pname['sigma'])*2]
+            elif pname['prior_type'] == 'Uniform':
+                pranges[keys] = [float(pname['low']),float(pname['high'])]
 
         return pranges
 
@@ -132,7 +135,8 @@ class SingleLens:
 
         new_param_dic = {}
 
-        for key, values in self.parameters.iteritems():
+        for key in self.parameters.keys():
+            values = self.parameters[key]
             new_param_dic.update({key:values[inds]})
 
         self.posterior = PosteriorSamples(new_param_dic,weights=None)
@@ -178,7 +182,10 @@ class PosteriorSamples:
 
         self.samples = samples
         self.pnames = samples.keys()
-        self.length = len(samples[samples.keys()[0]])
+
+        for ki in samples.keys():
+            self.length = int(len(samples[ki]))
+            break
 
         if weights is None:
             self.weights = np.ones(self.length)
@@ -204,14 +211,18 @@ class WeightedSamples:
 
                     self.functions.update({param:Gaussian(weight_args[i]['mean'],weight_args[i]['sigma'],param)})
 
+                #elif weight_args[i]['type'] == 'step':
+
+                    #self.functions.update({param: Step(weight_args[i]['step'], , param)})
+
     def __call__(self,samples):
 
         pnames = samples.pnames
 
         weight = 1
 
-        for name, function in self.functions.iteritems():
-
+        for name in self.functions.keys():
+            function = self.functions[name]
             if name in pnames:
 
                 weight *= function(x=samples.samples[name])

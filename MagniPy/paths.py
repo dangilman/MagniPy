@@ -40,6 +40,8 @@ gravlens_input_path_dump = gravlens_input_path + 'dump/'
 
 chainpath = prefix + 'data/ABC_chains/'
 
+chainpath_out = prefix + 'data/sims/'
+
 fluxratio_data_path = prefix+'data/fluxratio_distributions/'
 
 chain_output_path = prefix+'/data/ABC_chains/'

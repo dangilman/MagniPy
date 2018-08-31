@@ -53,7 +53,7 @@ class SingleDensity:
 
     def __call__(self, **kwargs):
 
-        if self.dimension==1:
+        if self.dimension == 1:
 
             kde = self.kde(self.data,self.X,**kwargs)[0]
 
@@ -61,13 +61,14 @@ class SingleDensity:
 
             return density.T,self.X,None
 
-        elif self.dimension==2:
+        elif self.dimension == 2:
 
             kde,xx,yy = self.kde(self.data,self.X,self.Y,
                                  pranges_training=[self.kde_train_ranges[self.param_names[0]],self.kde_train_ranges[self.param_names[1]]],
                                  prior_weights=self.prior_weights)
 
-            density = np.histogram2d(xx,yy, bins=len(self.X),normed=True, weights=kde.ravel())[0]
+
+            density = np.histogram2d(xx,yy, bins=len(self.X), normed=True, weights=kde.ravel())[0]
 
             return density.T,self.X,self.Y
 

@@ -39,53 +39,140 @@ class FluxRatioCumulative:
 
         self.reference_data = refdata
 
-    def make_figure(self, cumulative, **kwargs):
+    def make_figure(self, plot_type, **kwargs):
 
-        if cumulative:
+        if plot_type == 'cumulative':
 
             self._make_figure_cumulative(**kwargs)
 
-        else:
+        elif plot_type == 'distribution':
 
             self._make_figure_hist(**kwargs)
 
-    def _make_figure_hist(self, nbins=50, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5,
-                          linestyle=None, alpha=0.8, xlims=None, ylims=None, legend_args={}, shift_left=None):
+        elif plot_type == 'correlation':
+
+            self._make_figure_corr(**kwargs)
+
+    def _make_figure_corr(self, nbins=50, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5,
+                          linestyle=None, alpha=0.8, xlims=None, ylims=None, legend_args={}, shift_left=None,
+                          plot_mode='hist'):
 
         if color is None:
             color = default_colors
-        if xlabel is None:
-            xlabel = r'$\sqrt{\sum_{i=1}^{3} \left( \frac{F_{\rm{SIE(i)}} - F_{\rm{data(i)}}}{F_{\rm{data(i)}}} \right)^2}$'
-        if ylabel is None:
-            ylabel = 'Percent\n'+r'$ > x$'
         if linestyle is None:
             linestyle = ['-']*len(self.lensdata)
 
-        for dset in self.lensdata:
-
-            dset = dset[np.where(np.isfinite(dset))]
-
-            if self.cut_high is not None:
-                dset = dset[np.where(np.absolute(dset)<=self.cut_high)]
-
-        lensdata = dset
-
         fig = plt.figure(1)
-        fig.set_size_inches(7, 7)
-        ax1 = plt.subplot(131)
-        ax2 = plt.subplot(132)
-        ax3 = plt.subplot(133)
+        fig.set_size_inches(7, 10)
+        ax1 = plt.subplot(311)
+        ax2 = plt.subplot(312)
+        ax3 = plt.subplot(313)
+        labels_done = False
 
-        for i,ax in [ax1,ax2,ax3]:
-            for j, data in enumerate(lensdata):
-                for col in range(3):
-                    plt.hist(data[:, col], color=color[j], histtype='step',linewidth=linewidth, density=True)
-                    plt.hist(data[:, col], color=color[j], histtype='bar', linewidth=2, alpha=0.5, label = labels[j],
-                             density=True)
-            ax.set_xlabel(xlabel, fontsize=18)
+        for i,ax in enumerate([ax1,ax2,ax3]):
+
+            for j in range(int(len(self.lensdata))):
+                if i == 0:
+                    indx1 = 0
+                    indx2 = 1
+                elif i == 1:
+                    indx1 = 0
+                    indx2 = 2
+                else:
+                    indx1 = 1
+                    indx2 = 2
+
+                data1 = self.lensdata[j][:,indx1]
+                data1 = data1[np.where(np.isfinite(data1))]
+
+                data2 = self.lensdata[j][:,indx2]
+                data2 = data2[np.where(np.isfinite(data2))]
+
+                if labels_done:
+                    ax.scatter(data1,data2,color = color[j], marker='o', s = linewidth, alpha=alpha)
+                else:
+                    ax.scatter(data1, data2, color=color[j], marker='o', s=linewidth, alpha=alpha, label=labels[j])
+                if j == int(len(self.lensdata)) - 1:
+                    labels_done = True
+
+            if i == 0:
+                indx1 = 0
+                indx2 = 1
+            elif i == 1:
+                indx1 = 0
+                indx2 = 2
+            else:
+                indx1 = 1
+                indx2 = 2
+            labx, laby = r'$\delta F$' + str(indx1), r'$\delta F$' + str(indx2)
+            ax.set_xlabel(labx, fontsize=16)
+            ax.set_ylabel(laby, fontsize=16)
+
+            ax.set_xlim(-xmax,xmax)
+            ax.set_ylim(-xmax,xmax)
 
         if labels is not None:
-            plt.legend(**legend_args)
+            leg = ax1.legend(**legend_args)
+
+
+        return fig, [ax1,ax2,ax3]
+
+    def _make_figure_hist(self, nbins=50, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5,
+                          linestyle=None, alpha=0.8, xlims=None, ylims=None, legend_args={}, shift_left=None,
+                          plot_mode='hist'):
+
+        if color is None:
+            color = default_colors
+        if linestyle is None:
+            linestyle = ['-']*len(self.lensdata)
+        if xlabel is None:
+            xlabel = r'$F_{\rm{data(i)}} - F_{\rm{fit(i)}}$'
+
+        fig = plt.figure(1)
+        fig.set_size_inches(7, 10)
+        ax1 = plt.subplot(311)
+        ax2 = plt.subplot(312)
+        ax3 = plt.subplot(313)
+        labels_done = False
+
+        for i,ax in enumerate([ax1,ax2,ax3]):
+
+            for j in range(int(len(self.lensdata))):
+                data = self.lensdata[j][:,i]
+                data = data[np.where(np.isfinite(data))]
+
+                if labels_done:
+                    if plot_mode == 'lines':
+                        h, b = np.histogram(data, bins=nbins, density=True)
+                        ax.plot(b[0:-1],h, color=color[j], linewidth = linewidth, alpha=alpha, linestyle=linestyle[i])
+                    else:
+                        ax.hist(data, bins = nbins, color=color[j], histtype='step',linewidth=linewidth, density=True)
+                        ax.hist(data, bins = nbins, color=color[j], histtype='bar', linewidth=1.5, alpha=alpha, density=True)
+
+                else:
+                    if plot_mode == 'lines':
+                        h, b = np.histogram(data, bins=nbins, density=True)
+                        ax.plot(b[0:-1], h, color=color[j], linewidth=linewidth, alpha=alpha, linestyle=linestyle[i],
+                                label=labels[j])
+
+                    else:
+                        ax.hist(data, bins = nbins, color=color[j], histtype='step', linewidth=linewidth, density=True)
+                        ax.hist(data, bins = nbins, color=color[j], histtype='bar', linewidth=1.5, alpha=alpha,label = labels[j],
+                                density=True)
+                    if j == int(len(self.lensdata)) - 1:
+                        labels_done = True
+                ax.set_yticklabels([])
+
+            ax.set_xlim(-xmax,xmax)
+            ax.set_yticks([])
+            ax.set_xlabel(xlabel, fontsize=16)
+
+        if labels is not None:
+            leg = ax1.legend(**legend_args)
+            for i,lh in enumerate(leg.get_patches()):
+                lh.set_alpha(1)
+                lh.set_facecolor(color[i])
+
         return fig, [ax1,ax2,ax3]
 
     def _make_figure_cumulative(self, nbins=100, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5, linestyle=None, alpha=0.8,
@@ -100,20 +187,21 @@ class FluxRatioCumulative:
         if linestyle is None:
             linestyle = ['-']*len(self.lensdata)
 
-        for dset in self.lensdata:
+        lensdata_summed = []
 
-            dset = dset[np.where(np.isfinite(dset))]
+        #for dset in self.lensdata:
 
-            if self.cut_high is not None:
-                dset = dset[np.where(dset<=self.cut_high)]
+        #    lensdata_summed.append(np.sqrt(dset[:,0]**2 + dset[:,1]**2 + dset[:,2]**2))
 
-        lensdata = dset
-
+        lensdata_summed = self.lensdata
         fig = plt.figure(1)
         fig.set_size_inches(7,7)
         ax = plt.subplot(111)
 
-        for i,anomalies in enumerate(lensdata):
+        for i,anomalies in enumerate(lensdata_summed):
+
+            anomalies = anomalies[np.where(np.isfinite(anomalies))]
+            anomalies = anomalies[np.where(anomalies <= self.cut_high)]
 
             L = len(anomalies)
 

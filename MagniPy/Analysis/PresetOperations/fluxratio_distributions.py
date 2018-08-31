@@ -77,18 +77,17 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             mod_args.update(model_args)
             realizations = pyhalo.render(halo_model,mod_args)
 
-            #if init_macromodel is None:
-            #    _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
-            #                       multiplane=multiplane,n_particles = 50, n_iterations = 300,
-            #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-            #                             re_optimize=False, particle_swarm=True,restart=3)
-            #    init_macromodel = init[0].lens_components[0]
+            if init_macromodel is None:
+                _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
+                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+                                         re_optimize=False, particle_swarm=True,restart=3)
 
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=realizations,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
                                          re_optimize=False, particle_swarm=True, restart=1,
-                                           single_background=single_background)
+                                           single_background=single_background, init_system = init)
 
             for sys,dset in zip(system,model_data):
 
@@ -96,7 +95,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                     continue
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
-                print(astro_error)
+
                 if astro_error > 4:
                     continue
 

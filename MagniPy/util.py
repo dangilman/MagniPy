@@ -10,7 +10,8 @@ def min_img_sep(ximg,yimg):
 
     assert len(ximg) == len(yimg)
     dr = []
-
+    if len(ximg) == 1:
+        return 1
     for i in range(0,int(len(ximg)-1)):
         for j in range(i+1,int(len(ximg))):
             dx = ximg[i] - ximg[j]
@@ -451,7 +452,6 @@ def filter_by_position(lens_components, x_filter=None, y_filter=None, mindis_fro
 def copy_directory(dirname,location):
 
     shutil.copy(dirname,location)
-
 
 def create_directory(dirname=''):
 

@@ -61,7 +61,7 @@ def read_chain_info(fname):
     return params_varied,truth_dic,varyparams_info
 
 
-def read_run_partition(fname,fname_R_index):
+def read_run_partition(fname):
 
     with open(fname, 'r') as f:
         lines = f.readlines()
@@ -95,7 +95,7 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
     errors = [0]+errors
 
-    chain_file_path = chainpath + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/'
+    chain_file_path = chainpath_out + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/'
     perturbed_path = chain_file_path + 'fluxratios/'
 
     if ~os.path.exists(perturbed_path):
@@ -164,24 +164,24 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
                 
 def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
-    chain_info_path = chainpath + chain_name + '/simulation_info.txt'
+    chain_info_path = chainpath_out + chain_name + '/simulation_info.txt'
 
-    Ncores,cores_per_lens,Nlens = read_run_partition(chain_info_path)
+    Ncores,cores_per_lens,Nlens = read_run_partition(chain_info_path,'R_index_config.txt')
 
-    lens_config, lens_R_index = read_R_index(chainpath+chain_name+'R_index_config.txt')
+    lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
-    chain_file_path = chainpath + chain_name + '/chain'
+    chain_file_path = chainpath_out + chain_name + '/chain'
 
     params_header = None
     order = None
 
-    if ~os.path.exists(chainpath+'processed_chains/' + chain_name + '/'):
-        create_directory(chainpath+'processed_chains/' + chain_name + '/')
+    if ~os.path.exists(chainpath_out+'processed_chains/' + chain_name + '/'):
+        create_directory(chainpath_out+'processed_chains/' + chain_name + '/')
 
-    copy_directory(chain_info_path,chainpath+'processed_chains/' + chain_name + '/')
+    copy_directory(chain_info_path,chainpath_out+'processed_chains/' + chain_name + '/')
 
-    if ~os.path.exists(chainpath + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/'):
-        create_directory(chainpath + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/')
+    if ~os.path.exists(chainpath_out + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/'):
+        create_directory(chainpath_out + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/')
 
     start = int((which_lens-1)*cores_per_lens)
     end = int(start + cores_per_lens)
@@ -191,8 +191,9 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
         folder_name = chain_file_path + str(i+1) + '/'
 
         try:
+
             fluxes = np.loadtxt(folder_name + 'fluxes.txt')
-            astrometric_errors = np.loadtxt(folder_name + 'astrometric_errors.txt')
+            #astrometric_errors = np.loadtxt(folder_name + 'astrometric_errors.txt')
 
             obs_data = read_data(folder_name + 'lensdata.txt')
             observed_fluxes = obs_data[0].m
@@ -206,14 +207,16 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
                     order = [0,1,2,3]
 
+
                 else:
 
                     reference_x,reference_y = observed_pos_x[lens_R_index],observed_pos_y[lens_R_index]
                     order = find_closest_xy(observed_pos_x,observed_pos_y,reference_x,reference_y)
 
-            params = np.loadtxt(folder_name + 'parameters.txt')
+            params = np.loadtxt(folder_name + 'parameters.txt', skiprows=1)
 
         except:
+            #print('didnt find a file...')
             continue
 
         if params_header is None:
@@ -225,8 +228,8 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
                 if word not in ['#', '']:
                     params_header += word + ' '
 
-        inds = np.where(astrometric_errors > (2 * position_tol))
-        fluxes[inds,:] = 1000*np.ones_like(4)
+        #inds = np.where(astrometric_errors > (2 * position_tol))
+        #fluxes[inds,:] = 1000*np.ones_like(4)
 
         if i==start:
             lens_fluxes = fluxes
@@ -250,3 +253,4 @@ def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None,tol=None):
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
                            fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,tol=tol,lens_config=lens_config)
 
+#process_chain_i('he0435_LOS', which_lens=1, tol = 1000)

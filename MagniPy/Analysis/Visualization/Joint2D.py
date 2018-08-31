@@ -16,7 +16,7 @@ class Joint2D:
     plt.rcParams['ytick.major.size'] = 6
     plt.rcParams['ytick.minor.size'] = 2
 
-    cmap = 'gist_heat_r'
+    cmap = 'gist_heat'
 
     #default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
     default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),
@@ -42,7 +42,7 @@ class Joint2D:
         self.ax = ax
 
     def make_plot(self, xtick_labels=None, xticks=None, param_names = None,
-                  param_ranges=None,ytick_labels=None, yticks=None,filled_contours=True, contour_colors=None, contour_alpha=0.6,
+                  param_ranges=None,ytick_labels=None, yticks=None,filled_contours=False, contour_colors=None, contour_alpha=0.6,
                   tick_label_font=12, **kwargs):
 
         if contour_colors is None:
@@ -54,45 +54,54 @@ class Joint2D:
         extent = [param_ranges[param_names[0]][0],param_ranges[param_names[0]][1],param_ranges[param_names[1]][0],
                   param_ranges[param_names[1]][1]]
 
+        final_density = np.ones_like(self.simulation_densities[0])
+
         for idx,densities in enumerate(self.simulation_densities):
 
-            final_density = np.ones_like(densities[0])
+            #final_density = np.ones_like(densities)
+            final_density *= densities
 
-            for single_density in densities:
 
-                final_density *= self._norm_density(single_density)
+            #for di in range(len(densities)):
+            #for single_density in densities:
 
-            final_density = self._norm_density(final_density)
+            #    final_density *= self._norm_density(densities[di])
 
-            if filled_contours:
+        final_density = self._norm_density(final_density)
 
-                x,y = np.linspace(extent[0],extent[1],final_density.shape[0]),np.linspace(extent[2],extent[3],final_density.shape[0])
-                self.contours(x,y,final_density,contour_colors=contour_colors[idx],contour_alpha=contour_alpha, extent=extent,aspect=aspect)
+        if filled_contours:
 
-                self.ax.imshow(final_density, extent=extent,
-                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
+            x,y = np.linspace(extent[0],extent[1],final_density.shape[0]),np.linspace(extent[2],extent[3],final_density.shape[0])
 
-            else:
+            self.contours(x,y,final_density,contour_colors=contour_colors[idx],contour_alpha=contour_alpha, extent=extent,aspect=aspect)
 
-                self.ax.imshow(final_density, extent=extent,
-                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(final_density))
+            self.ax.imshow(final_density, extent=extent,
+                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
+
+        else:
+
+            self.ax.imshow(final_density, extent=extent,
+                           aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(final_density))
 
 
         if 'truths' in kwargs:
 
-            truth1,truth2 = kwargs['truths'][param_names[0]],kwargs['truths'][param_names[1]]
+            try:
+                truth1,truth2 = kwargs['truths'][param_names[0]],kwargs['truths'][param_names[1]]
 
-            inside1 = truth1 >= param_ranges[param_names[0]][0] and \
-                              truth1 <= param_ranges[param_names[0]][1]
-            inside2 = truth2 >= param_ranges[param_names[1]][0] and \
-                              truth2 <= param_ranges[param_names[1]][1]
+                inside1 = truth1 >= param_ranges[param_names[0]][0] and \
+                                  truth1 <= param_ranges[param_names[0]][1]
+                inside2 = truth2 >= param_ranges[param_names[1]][0] and \
+                                  truth2 <= param_ranges[param_names[1]][1]
 
-            if inside1:
-                self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
-            if inside2:
-                self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
-            if inside1 and inside2:
-                self.ax.scatter(truth1,truth2,color=self.truth_color,s=25)
+                if inside1:
+                    self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
+                if inside2:
+                    self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
+                if inside1 and inside2:
+                    self.ax.scatter(truth1,truth2,color=self.truth_color,s=25)
+            except:
+                pass
 
         self.ax.set_xlabel(param_names[0])
         self.ax.set_ylabel(param_names[1])
@@ -129,7 +138,7 @@ class Joint2D:
         X, Y = np.meshgrid(x, y)
 
         if filled_contours:
-
+            print(grid.shape)
             plt.contour(X, Y, grid, levels, extent=extent,
                               colors=contour_colors, linewidths=linewidths, zorder=1)
             plt.contourf(X, Y, grid, levels, colors=contour_colors, alpha=contour_alpha, zorder=1,
@@ -185,6 +194,8 @@ class Joint2D:
             return '%.3f'
         elif pname=='SIE_shear':
             return '%.3f'
+        elif pname == 'source_size':
+            return '%.4f'
         else:
             return '%.2f'
 
