@@ -87,7 +87,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
                                          re_optimize=False, particle_swarm=True, restart=1,
-                                           single_background=single_background, init_system = init)
+                                           single_background=single_background, init_system = init[0])
 
             for sys,dset in zip(system,model_data):
 
