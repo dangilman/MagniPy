@@ -16,12 +16,9 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
-    filter_kwargs = {'x_filter': data.x,'y_filter': data.y,'mindis_front':mindis_front,'mindis_back':
-        mindis_back,'log_masscut_low':log_masscut_low}
-
     if write_to_file:
         assert outfilepath is not None
-        print(outfilepath)
+
         assert os.path.exists(outfilepath)
 
     if start_macromodel is None:
@@ -53,18 +50,12 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
         multiplane = True
 
     # initialize macromodel
-    start_macromodel.shear = start_shear
-
     fit_fluxes = []
     shears, shear_pa, xcen, ycen = [], [], [], []
     n = 0
     init_macromodel = None
 
     pyhalo = pyHalo(zlens,zsrc)
-    init_args = {'mdef_main': 'NFW', 'mdef_los': 'NFW', 'log_mlow': 7, 'log_mhigh': 10, 'power_law_index': -1.9,
-                 'parent_m200': 10 ** 13, 'parent_c': 3, 'mdef': 'TNFW', 'break_index': -1.3, 'c_scale': 60,
-                 'c_power': -0.17, 'r_tidal': '0.4Rs', 'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17,
-                 'cone_opening_angle': 5}
 
     if method=='lenstronomy':
 
@@ -73,21 +64,25 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             Nreal = Ntotal - len(fit_fluxes)
 
             #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
-            mod_args = copy(init_args)
-            mod_args.update(model_args)
-            realizations = pyhalo.render(halo_model,mod_args)
 
-            if init_macromodel is None:
-                _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-                                         re_optimize=False, particle_swarm=True,restart=3)
+            realizations = pyhalo.render(halo_model,model_args)
 
-            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=realizations,
+            if filter_halo_positions:
+                use_real = list(real.filter(data.x, data.y) for real in realizations)
+            else:
+                use_real = realizations
+
+            #if init_macromodel is None:
+            #    _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
+            #                       multiplane=multiplane,n_particles = 50, n_iterations = 300,
+            #                       optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+            #                             re_optimize=False, particle_swarm=True,restart=3)
+
+            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=use_real,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True,
                                          re_optimize=False, particle_swarm=True, restart=1,
-                                           single_background=single_background, init_system = init[0])
+                                           single_background=single_background)
 
             for sys,dset in zip(system,model_data):
 
