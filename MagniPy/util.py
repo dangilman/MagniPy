@@ -187,15 +187,14 @@ def identify(x,y,RE):
 
     separations = img_sept(x,y)
 
-    if separations[0]>=.7*RE:
-        return 0
+    if separations[1] <= 1.3*RE:
+        return 2
+
+    elif separations[0] <= 0.85*RE:
+        return 1
 
     else:
-
-        if separations[1]<=1.2*RE:
-            return 2
-        else:
-            return 1
+        return 0
 
 def read_dat_file(fname):
 

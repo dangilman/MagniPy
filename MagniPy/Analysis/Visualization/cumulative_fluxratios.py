@@ -43,15 +43,17 @@ class FluxRatioCumulative:
 
         if plot_type == 'cumulative':
 
-            self._make_figure_cumulative(**kwargs)
+            out = self._make_figure_cumulative(**kwargs)
 
         elif plot_type == 'distribution':
 
-            self._make_figure_hist(**kwargs)
+            out = self._make_figure_hist(**kwargs)
 
         elif plot_type == 'correlation':
 
-            self._make_figure_corr(**kwargs)
+            out = self._make_figure_corr(**kwargs)
+
+        return out
 
     def _make_figure_corr(self, nbins=50, xmax=0.5, color=None, xlabel=None, ylabel='', labels=None, linewidth=5,
                           linestyle=None, alpha=0.8, xlims=None, ylims=None, legend_args={}, shift_left=None,
@@ -189,14 +191,15 @@ class FluxRatioCumulative:
 
         lensdata_summed = []
 
-        #for dset in self.lensdata:
+        for dset in self.lensdata:
 
-        #    lensdata_summed.append(np.sqrt(dset[:,0]**2 + dset[:,1]**2 + dset[:,2]**2))
+            lensdata_summed.append(np.sqrt(dset[:,0]**2 + dset[:,1]**2 + dset[:,2]**2))
 
-        lensdata_summed = self.lensdata
+        #lensdata_summed = self.lensdata
         fig = plt.figure(1)
         fig.set_size_inches(7,7)
         ax = plt.subplot(111)
+        curves = []
 
         for i,anomalies in enumerate(lensdata_summed):
 
@@ -216,7 +219,7 @@ class FluxRatioCumulative:
                 y.append((L - sum(val < (x[k]+shift) for val in anomalies))*L**-1)
 
             y = np.array(y)
-
+            curves.append(y)
             if labels is not None:
                 plt.plot(x, y, c=color[i], label=labels[i], linewidth=linewidth,
                          linestyle=linestyle[i], alpha=alpha)
@@ -250,7 +253,7 @@ class FluxRatioCumulative:
         if leg:
             plt.legend(**legend_args)
 
-        return fig,ax
+        return fig, ax, curves
 
 if False:
     import os
