@@ -26,8 +26,6 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
     if sigmas is None:
         sigmas = default_sigmas
 
-    halo_generator = pyHalo(zlens, zsrc)
-
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
         start_macromodel.redshift = zlens
