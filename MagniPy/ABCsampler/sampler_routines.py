@@ -15,29 +15,30 @@ def perturb_data(data,delta_pos,delta_flux):
 
     return new_data
 
-def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
-                   mindis_back=0.4, log_masscut_low=7, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
+def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
+                   mindis_back=0.4, log_masscut_front=None, log_masscut_back=None, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
-                   mass_profile=None, mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
-                   nfw_g1=None,nfw_g2=None,zmin=None, zmax=None, params_to_vary={},chain_description='',
-                   chain_truths={}, Ncores=int,cores_per_lens=int, main_halo_args={},position_sigma=None, flux_sigma=None):
+                   mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
+                   zmin=None, zmax=None, params_to_vary={},chain_description='',
+                   chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},position_sigma=None, flux_sigma=None):
 
     chain_keys = {}
 
     chain_keys['zlens'] = zlens
     chain_keys['zsrc'] = zsrc
-    chain_keys['source_size'] = source_size
+    chain_keys['source_size_kpc'] = source_size_kpc
     if SIE_gamma is not None:
         chain_keys['SIE_gamma'] = SIE_gamma
 
     chain_keys['multiplane'] = multiplane
 
-    for param in main_halo_args.keys():
-        chain_keys.update({param: main_halo_args[param]})
+    for param in halo_args_init.keys():
+        chain_keys.update({param: halo_args_init[param]})
 
     chain_keys['mindis_front'] = mindis_front
     chain_keys['mindis_back'] = mindis_back
-    chain_keys['log_masscut_low'] = log_masscut_low
+    chain_keys['log_masscut_front'] = log_masscut_front
+    chain_keys['log_masscut_back'] = log_masscut_back
 
     chain_keys['grid_rmax'] = grid_rmax
     chain_keys['grid_res'] = grid_res
@@ -71,7 +72,6 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     chain_keys['Ncores'] = Ncores
     chain_keys['cores_per_lens'] = cores_per_lens
 
-    chain_keys['mass_profile'] = mass_profile
     chain_keys['mass_func_type'] = mass_func_type
     chain_keys['log_mL'] = log_mL
     chain_keys['log_mH'] = log_mH
@@ -85,13 +85,10 @@ def set_chain_keys(zlens=None, zsrc=None, source_size=None, multiplane=None, SIE
     if logmhm is not None:
         chain_keys['logmhm'] = logmhm
 
-    if nfw_g1 is None:
-        chain_keys['nfw_g1'] = nfw_profile_defaults['concentration_scale']
-    if nfw_g2 is None:
-        chain_keys['nfw_g2'] = nfw_profile_defaults['concentration_scale']
-
-    chain_keys['zmin'] = zmin
-    chain_keys['zmax'] = zmax
+    if zmin is not None:
+        chain_keys['zmin'] = zmin
+    if zmax is not None:
+        chain_keys['zmax'] = zmax
 
     chain_keys_to_vary = {}
 
@@ -138,14 +135,15 @@ def halo_model_args(params):
 
     args = {}
 
-    names = ['log_mL', 'log_mH', 'logmhm']
-
-    for name in names:
-        args.update({name: params[name]})
-
     mass_func_type = params['mass_func_type']
 
-    if mass_func_type == 'plaw_main' or mass_func_type == 'composite_plaw':
+    if mass_func_type == 'composite_powerlaw':
+
+        names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'power_law_index',
+                 'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main', 'parent_c']
+
+        for name in names:
+            args.update({name: params[name]})
 
         args.update({'mass_func_type':mass_func_type})
 
@@ -154,33 +152,16 @@ def halo_model_args(params):
         elif 'fsub' in params.keys():
             args.update({'fsub': params['fsub']})
 
-        if 'M_halo' in params.keys():
-            args.update({'M_halo': params['M_halo']})
-            args.update({'tidal_core': params['tidal_core']})
-            args.update({'r_core': params['r_core']})
-
-        elif 'Rs' in params.keys():
-            args.update({'Rs': params['Rs']})
-            args.update({'r200_kpc': params['r200_kpc']})
-
-        if 'plaw_order2' in params.keys():
-            args.update({'plaw_order2': True})
-
-        if 'rmax2d_asec' in params.keys():
-            args.update({'rmax2d_asec': params['rmax2d_asec']})
-
         if 'zmin' in params.keys():
             args.update({'zmin':params['zmin']})
         else:
-            args.update({'zmin':0})
+            args.update({'zmin':0.01})
+
         if 'zmax' in params.keys():
             args.update({'zmax':params['zmax']})
         else:
-            args.update({'zmax':params['zsrc']})
-
-        args['nfw_g1'] = params['nfw_g1']
-        args['nfw_g2'] = params['nfw_g2']
-
+            args.update({'zmax':params['zsrc']-0.01})
+    print(args['zmin'],args['zmax'])
     return args
 
 

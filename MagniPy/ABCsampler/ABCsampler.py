@@ -2,6 +2,7 @@ from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
+from pyHalo.pyhalo import pyHalo
 
 def initialize_macro(solver,data,init):
 
@@ -37,30 +38,30 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
         halo_args = halo_model_args(chain_keys_run)
-        filter_kwargs = {'x_filter':data.x,'y_filter':data.y,'mindis_front': chain_keys_run['mindis_front'],
-                         'mindis_back':chain_keys_run['mindis_back'],'log_masscut_low':chain_keys_run['log_masscut_low']}
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
 
         while True:
 
-            halos = halo_constructor.render(massprofile=chain_keys_run['mass_profile'],
-                                            model_name=chain_keys_run['mass_func_type'], model_args=halo_args,
-                                            Nrealizations=1, filter_halo_positions=False, **filter_kwargs)
+            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
+            halos[0] = halos[0].filter(data.x, data.y, mindis_front=chain_keys_run['mindis_front'],
+                                       mindis_back=chain_keys_run['mindis_back'],
+                                       logmasscut_back=chain_keys_run['log_masscut_back'],
+                                       logmasscut_front=chain_keys_run['log_masscut_front'])
 
             if chain_keys_run['multiplane']:
 
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           source_size_kpc=chain_keys_run['source_size'],
-                                                           restart=2, n_particles=50, n_iterations=250,
+                                                           source_size_kpc=chain_keys_run['source_size_kpc'],
+                                                           restart=2, n_particles=50, n_iterations=300,
                                                            particle_swarm=True, re_optimize=False, verbose=False, polar_grid=False,
-                                                           single_background=True)
+                                                           single_background=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           source_size_kpc=chain_keys_run['source_size'],
+                                                           source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=2, particle_swarm=True, re_optimize=True, verbose=False,
                                                            polar_grid=False)
 
@@ -117,7 +118,7 @@ def runABC(chain_ID='',core_index=int):
 
     prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1, macromodel=macromodel)
 
-    constructor = Constructor(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'], LOS_mass_sheet=True)
+    constructor = pyHalo(chain_keys['zlens'], chain_keys['zsrc'])
 
     if chain_keys['solve_method'] == 'lensmodel':
 
@@ -185,7 +186,7 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/he0435_LOS/',1)
+#runABC(prefix+'data/LOS_run/',1)
 
 
 
