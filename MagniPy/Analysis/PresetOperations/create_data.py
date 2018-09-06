@@ -15,24 +15,29 @@ from MagniPy.paths import *
 
 def set_Rindex(dfile_base,minidx,maxidx):
 
-    for i in range(minidx, maxidx):
-        data = read_data(dfile_base + str(i)+'/lensdata.txt')[0]
+    indexes = np.arange(minidx,maxidx)
 
+    for i in indexes:
+
+        data = read_data(dfile_base + str(i)+'/lensdata.txt')[0]
+        with open(dfile_base + str(i)+'/info.txt') as f:
+            info = eval(f.readlines())
+            config = info['config']
         plt.scatter(data.x, data.y)
         plt.xlim(-1.4, 1.4)
         plt.ylim(-1.4, 1.4)
         ax = plt.gca()
         ax.set_aspect('equal')
-        for i, m in enumerate(data.m):
-            plt.annotate(str(np.round(m, 3)), xy=(data.x[i], data.y[i]))
-            plt.annotate(str(i), xy=(data.x[i] - 0.2, data.y[i] + 0.2))
+        for k, m in enumerate(data.m):
+            plt.annotate(str(np.round(m, 3)), xy=(data.x[k], data.y[k]))
+            plt.annotate(str(k), xy=(data.x[k] - 0.2, data.y[k] + 0.2))
+
         plt.show()
         Rindex = input('R_index: ')
-        write_info(str('R_index: ' + str(Rindex)),
+
+        write_info(str(Rindex)+'\n'+config,
                    dfile_base + str(i) + '/Rindex.txt')
 
-
-    return int(Rindex)
 
 def guess_source(xcaus,ycaus):
 
@@ -272,7 +277,7 @@ src_size_sigma = 0.0001
 log_ml, log_mh = 6, 10
 break_index = -1.3
 
-nav = IO_directory
+nav = prefix
 dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 
 #ncusp = int(sys.argv[1])
@@ -281,4 +286,6 @@ dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 #start_idx = int(sys.argv[4])
 
 #run(ncusp,nfold,ncross)
+
+#set_Rindex('../../../../../data/mock_data/LOS_CDM/lens_',7,8)
 
