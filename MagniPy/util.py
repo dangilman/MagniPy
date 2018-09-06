@@ -187,7 +187,10 @@ def identify(x,y,RE):
 
     separations = img_sept(x,y)
 
-    if separations[1] <= 1.3*RE:
+    if separations[0] > RE:
+        return 0
+
+    if separations[1] <= 1.15*RE:
         return 2
 
     elif separations[0] <= 0.85*RE:
