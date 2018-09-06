@@ -20,13 +20,15 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
                    mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
                    zmin=None, zmax=None, params_to_vary={},chain_description='',
-                   chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},position_sigma=None, flux_sigma=None):
+                   chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
+                   position_sigma=None, flux_sigma=None, single_background=None):
 
     chain_keys = {}
 
     chain_keys['zlens'] = zlens
     chain_keys['zsrc'] = zsrc
     chain_keys['source_size_kpc'] = source_size_kpc
+    chain_keys['single_background'] = single_background
     if SIE_gamma is not None:
         chain_keys['SIE_gamma'] = SIE_gamma
 
@@ -161,7 +163,7 @@ def halo_model_args(params):
             args.update({'zmax':params['zmax']})
         else:
             args.update({'zmax':params['zsrc']-0.01})
-    print(args['zmin'],args['zmax'])
+
     return args
 
 
