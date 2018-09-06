@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from MagniPy.LensBuild.defaults import *
 from MagniPy.Solver.analysis import Analysis
 from MagniPy.util import min_img_sep
+from MagniPy.paths import *
 
 def set_Rindex(dfile_base,minidx,maxidx):
 
@@ -91,7 +92,7 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
         xs, ys = guess_source(xcaus, ycaus)
 
 
-def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross):
+def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
     continue_loop = True
     n_computed = 0
@@ -271,13 +272,13 @@ src_size_sigma = 0.0001
 log_ml, log_mh = 6, 10
 break_index = -1.3
 
-nav = '../../../../../'
-dpath_base = nav + 'data/mock_data/LOS_CDM/lens_'
+nav = IO_directory
+dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 
-ncusp = int(sys.argv[1])
-nfold = int(sys.argv[2])
-ncross = int(sys.argv[3])
-start_idx = int(sys.argv[4])
+#ncusp = int(sys.argv[1])
+#nfold = int(sys.argv[2])
+#ncross = int(sys.argv[3])
+#start_idx = int(sys.argv[4])
 
-run(ncusp,nfold,ncross)
+#run(ncusp,nfold,ncross)
 
