@@ -110,8 +110,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross):
         if done_cusp and done_cross and done_fold:
             break
 
-        index = 1
-        vdis = np.random.normal(260, 10)
+        vdis = np.random.normal(260, 20)
         ellip = np.absolute(np.random.normal(0.15, 0.05))
         ellip_theta = np.absolute(np.random.uniform(-90, 90))
         gamma = np.round(np.random.normal(2.08, 0.05), 2)
@@ -125,7 +124,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross):
                 if zlens > 0.3:
                     break
         while True:
-            source_size_kpc = np.round(np.random.normal(0.025, 0.01), 3)
+            source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
             if source_size_kpc < 0.01:
                 continue
             if source_size_kpc > 0.07:
@@ -139,10 +138,10 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross):
         analysis = Analysis(zlens, zsrc)
         rein = c.vdis_to_Rein(zlens, zsrc, vdis)
 
-        halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'NFW', 'fsub': fsub, 'log_mlow': 6, 'log_mhigh': 10,
-                     'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 3, 'mdef': 'TNFW',
-                     'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17, 'r_tidal': '0.4Rs', 'break_index': break_index,
-                     'c_scale': 60, 'c_power': -0.17, 'cone_opening_angle': 6 * rein}
+        halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'NFW', 'fsub': fsub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
+                     'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4, 'mdef': 'TNFW',
+                     'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17, 'r_tidal': '0.5Rs', 'break_index': break_index,
+                     'c_scale': 60, 'cone_opening_angle': 6 * rein}
 
         real = pyhalo.render(model_type, halo_args)
 
@@ -267,12 +266,18 @@ fsub = 0.01
 M_halo = 10 ** 13
 logmhm = 0
 r_core = '0.5Rs'
-
+src_size_mean = 0.02
+src_size_sigma = 0.0001
+log_ml, log_mh = 6, 10
 break_index = -1.3
-start_idx = int(sys.argv[1])
 
 nav = '../../../../../'
 dpath_base = nav + 'data/mock_data/LOS_CDM/lens_'
 
-run(1,1,1)
+ncusp = int(sys.argv[1])
+nfold = int(sys.argv[2])
+ncross = int(sys.argv[3])
+start_idx = int(sys.argv[4])
+
+run(ncusp,nfold,ncross)
 

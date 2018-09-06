@@ -89,7 +89,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
 
                 astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
 
-                if astro_error > 4:
+                if astro_error > 2:
                     continue
 
                 fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=False, index=0))
