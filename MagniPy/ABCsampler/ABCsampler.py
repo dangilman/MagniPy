@@ -56,7 +56,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=2, n_particles=50, n_iterations=350,
-                                                           particle_swarm=True, re_optimize=True, verbose=True, polar_grid=False,
+                                                           particle_swarm=True, re_optimize=False, verbose=False, polar_grid=False,
                                                            single_background=chain_keys_run['single_background'])
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
