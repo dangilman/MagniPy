@@ -76,7 +76,7 @@ class Magnipy:
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None, tol_source=None, tol_mag=None, tol_centroid=None,
                                     centroid_0=None, n_particles=50, n_iterations=400,res=None, source_shape='GAUSSIAN', source_size_kpc=None, raytrace_with='lenstronomy',
-                                    polar_grid=False, solver_type='PROFILE_SHEAR', optimizer_routine=str, verbose=bool, re_optimize=False,
+                                    polar_grid=None, solver_type='PROFILE_SHEAR', optimizer_routine=str, verbose=bool, re_optimize=False,
                                     particle_swarm = True, restart = 1, constrain_params=None, shifting_background=False,
                                     pso_convergence_mean=None,
                                     pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,

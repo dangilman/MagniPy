@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
-                 polar_grid=False, polar_q = 0.5, minimum_image_sep = None, **kwargs):
+                 polar_grid=False, polar_q = 0.6, minimum_image_sep = None, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -89,11 +89,11 @@ class RayTrace:
     def magnification(self,xpos,ypos,lensModel,kwargs_lens):
 
         flux = []
+        xgrids, ygrids = self._get_grids(xpos, ypos, len(xpos))
 
         for i in range(0,len(xpos)):
 
-            xvals, yvals = xpos[i]+self.x_grid_0, ypos[i]+self.y_grid_0
-            image = self.rayshoot(xvals,yvals,lensModel,kwargs_lens)
+            image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
             #n = int(np.sqrt(len(image)))
 
             #plt.imshow(image.reshape(n,n))

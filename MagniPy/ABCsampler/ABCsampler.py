@@ -55,8 +55,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=2, n_particles=50, n_iterations=350,
-                                                           particle_swarm=True, re_optimize=False, verbose=False, polar_grid=False,
+                                                           restart=2, n_particles=50, n_iterations=350, polar_grid=True,
+                                                           particle_swarm=True, re_optimize=False, verbose=False,
                                                            single_background=chain_keys_run['single_background'])
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
@@ -128,13 +128,18 @@ def runABC(chain_ID='',core_index=int):
 
         fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, macromodel, constructor, solver)
 
-    header_string = ''
-    for name in param_names_tovary:
-        header_string += name + ' '
+    write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False)
 
-    write_fluxes(output_path+'fluxes.txt',fluxes=fluxes,summed_in_quad=False)
+    if chain_keys['write_header']:
+        header_string = ''
+        for name in param_names_tovary:
+            header_string += name + ' '
+        write_params(parameters, output_path + 'parameters.txt', header_string)
 
-    write_params(parameters,output_path + 'parameters.txt',header_string)
+    else:
+        write_fluxes(output_path+'fluxes.txt',fluxes=fluxes,summed_in_quad=False)
+
+        write_params(parameters,output_path + 'parameters.txt')
 
 def write_params(params,fname,header):
 
@@ -187,7 +192,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write(keys['chain_description'])
 
 #runABC(prefix+'data/LOS_CDM_1/',1)
-
-
 
 

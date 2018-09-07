@@ -21,7 +21,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
                    mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
                    zmin=None, zmax=None, params_to_vary={},chain_description='',
                    chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
-                   position_sigma=None, flux_sigma=None, single_background=None):
+                   position_sigma=None, flux_sigma=None, single_background=None,Nsamples_perlens=None):
 
     chain_keys = {}
 
@@ -73,6 +73,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
     chain_keys['chain_truths'] = chain_truths
     chain_keys['Ncores'] = Ncores
     chain_keys['cores_per_lens'] = cores_per_lens
+    chain_keys['Nsamples_perlens'] = Nsamples_perlens
 
     chain_keys['mass_func_type'] = mass_func_type
     chain_keys['log_mL'] = log_mL
@@ -204,9 +205,15 @@ def initialize(chain_ID, core_index):
         create_directory(output_path)
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
-
+    chain_keys['write_header'] = True
     if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
-        return False, False, False, False
+        values = np.loadtxt(output_path + 'fluxes.txt')
+        N_lines = int(np.shape(values)[0])
+        if N_lines >= chain_keys['Nsamples']:
+            return False, False, False, False
+        else:
+            chain_keys['Nsamples'] = chain_keys['Nsamples'] - N_lines
+            chain_keys['write_header'] = False
 
     if os.path.exists(output_path):
         pass
