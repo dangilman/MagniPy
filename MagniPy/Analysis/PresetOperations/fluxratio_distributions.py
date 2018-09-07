@@ -98,3 +98,5 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                 ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
                 shear_pa.append(sys.lens_components[0].shear_theta)
 
+        write_fluxes(identifier + 'fluxes_'+outfilename+'.txt')
+
