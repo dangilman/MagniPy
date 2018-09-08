@@ -192,6 +192,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-runABC(prefix+'data/LOS_CDM_1/',1)
+#runABC(prefix+'data/LOS_CDM_1/',1)
 
 
