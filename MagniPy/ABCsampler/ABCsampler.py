@@ -6,7 +6,7 @@ from pyHalo.pyhalo import pyHalo
 
 def initialize_macro(solver,data,init):
 
-    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=False,
+    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.01,
                                                  tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,
@@ -40,7 +40,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
         halo_args = halo_model_args(chain_keys_run)
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
-
+        print('running... ')
         while True:
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
