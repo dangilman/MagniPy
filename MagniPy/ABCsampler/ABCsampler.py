@@ -57,7 +57,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=2, n_particles=50, n_iterations=350, polar_grid=True,
                                                            particle_swarm=True, re_optimize=False, verbose=False,
-                                                           single_background=chain_keys_run['single_background'])
+                                                           single_background=chain_keys_run['single_background'],
+                                                           init_system=macromodel)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
@@ -191,6 +192,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/LOS_CDM_1/',1)
+runABC(prefix+'data/LOS_CDM_1/',1)
 
 
