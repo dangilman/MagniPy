@@ -11,7 +11,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     start_macromodel=None, identifier=None, res=None, sigmas=None,
                                     source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
-                                    start_shear=0.05, mindis_front=0.5, mindis_back=0.3, log_masscut_low=7,
+                                    start_shear=0.05, mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
                                     single_background=False):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
@@ -66,7 +66,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
 
             if filter_halo_positions:
                 use_real = list(real.filter(data.x, data.y, mindis_front = mindis_front, mindis_back = mindis_back,
-                             logmasscut_front = log_masscut_low, logmasscut_back = 8, back_scale_z = 0) for real in realizations)
+                             logmasscut_front = logmcut_front, logmasscut_back = logmcut_back, back_scale_z = 0) for real in realizations)
             else:
                 use_real = realizations
 
