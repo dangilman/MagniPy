@@ -18,14 +18,16 @@ def set_Rindex(dfile_base,minidx,maxidx):
     indexes = np.arange(minidx,maxidx)
 
     for i in indexes:
-
+        print(i)
         data = read_data(dfile_base + str(i)+'/lensdata.txt')[0]
+
         with open(dfile_base + str(i)+'/info.txt') as f:
-            info = eval(f.readlines())
-            config = info['config']
+            info = eval(f.read())
+            print('maybe a '+info['config'])
+
         plt.scatter(data.x, data.y)
-        plt.xlim(-1.4, 1.4)
-        plt.ylim(-1.4, 1.4)
+        plt.xlim(-1.7, 1.7)
+        plt.ylim(-1.7, 1.7)
         ax = plt.gca()
         ax.set_aspect('equal')
         for k, m in enumerate(data.m):
@@ -33,6 +35,10 @@ def set_Rindex(dfile_base,minidx,maxidx):
             plt.annotate(str(k), xy=(data.x[k] - 0.2, data.y[k] + 0.2))
 
         plt.show()
+        try:
+            config = input('config: ')
+        except:
+            config = info['config']
         Rindex = input('R_index: ')
 
         write_info(str(Rindex)+'\n'+config,
@@ -274,7 +280,7 @@ logmhm = 0
 r_core = '0.5Rs'
 src_size_mean = 0.02
 src_size_sigma = 0.0001
-log_ml, log_mh = 6, 10
+log_ml, log_mh = 6.7, 10
 break_index = -1.3
 
 nav = prefix
@@ -283,9 +289,8 @@ dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 #ncusp = int(sys.argv[1])
 #nfold = int(sys.argv[2])
 #ncross = int(sys.argv[3])
-#start_idx = int(sys.argv[4])
+#start_idx = int(sys.argv[1])
 
-#run(ncusp,nfold,ncross)
+#run(1,1,1, start_idx)
 
-#set_Rindex('../../../../../data/mock_data/LOS_CDM/lens_',7,8)
 
