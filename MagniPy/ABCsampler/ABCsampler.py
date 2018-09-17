@@ -55,7 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=2, n_particles=50, n_iterations=350, polar_grid=True,
+                                                           restart=1, n_particles=50, n_iterations=350, polar_grid=True,
                                                            particle_swarm=True, re_optimize=False, verbose=False,
                                                            single_background=chain_keys_run['single_background'],
                                                            init_system=macromodel)
@@ -63,7 +63,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=2, particle_swarm=True, re_optimize=True, verbose=False,
+                                                           restart=1, particle_swarm=True, re_optimize=True, verbose=False,
                                                            polar_grid=False)
 
             if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
