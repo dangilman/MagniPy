@@ -56,8 +56,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=1, n_particles=50, n_iterations=350, polar_grid=True,
-                                                           particle_swarm=True, re_optimize=False, verbose=False,
-                                                           single_background=chain_keys_run['single_background'],
+                                                           particle_swarm=True, re_optimize=True, verbose=False,
+                                                           single_background=False,
                                                            init_system=macromodel)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
@@ -115,7 +115,7 @@ def runABC(chain_ID='',core_index=int):
     param_names_tovary = chain_keys_to_vary.keys()
     write_info_file(chainpath + chain_keys['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
-    copy_directory(chain_ID + '/R_index_config.txt', chainpath + chain_keys['output_folder'])
+    #copy_directory(chain_ID + '/R_index_config.txt', chainpath + chain_keys['output_folder'])
 
     prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1, macromodel=macromodel)
 
@@ -192,6 +192,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/LOS_CDM_1/',1)
+#runABC(prefix+'data/CDM_diverse/',1)
 
 
