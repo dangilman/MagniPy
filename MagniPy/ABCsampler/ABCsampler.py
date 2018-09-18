@@ -21,7 +21,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
     parameters = []
     start = True
     N_computed = 0
-
+    #keys['Nsamples'] = 8
+    import time
+    t0 = time.time()
     while N_computed < keys['Nsamples']:
 
         samples = prior.sample(scale_by='Nsamples')[0]
@@ -41,6 +43,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
         print('running... ')
+        #print(samples)
         while True:
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
@@ -55,8 +58,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=1, n_particles=50, n_iterations=350, polar_grid=True,
-                                                           particle_swarm=True, re_optimize=True, verbose=False,
+                                                           restart=1, n_particles=25, n_iterations=500, simplex_n_iter=300,
+                                                           pso_convergence_mean=80, polar_grid=True,
+                                                           particle_swarm=True, re_optimize=False, verbose=False,
                                                            single_background=False,
                                                            init_system=macromodel)
             else:
@@ -85,7 +89,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
             parameters = np.vstack((parameters,np.array(samples_array)))
 
         start = False
-
+    print('time elapsed: ', time.time() - t0)
     return chaindata, parameters
 
 def runABC(chain_ID='',core_index=int):
