@@ -12,7 +12,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
                                     start_shear=0.05, mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
-                                    single_background=False,n_restart=1):
+                                    single_background=False,n_restart=1, pso_conv_mean = 100):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
@@ -70,17 +70,11 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             else:
                 use_real = realizations
 
-            if init_macromodel is None:
-                _, init = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=None,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
-                                         re_optimize=False, particle_swarm=True,restart=3)
-
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=use_real,
                                    multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
-                                   optimize_routine = 'fixed_powerlaw_shear',verbose=False,
+                                   optimize_routine = 'fixed_powerlaw_shear',verbose=True, pso_convergence_mean=pso_conv_mean,
                                          re_optimize=False, particle_swarm=True, restart=n_restart,
-                                           single_background=single_background, init_system = init[0])
+                                           single_background=single_background)
 
             for sys,dset in zip(system,model_data):
 
