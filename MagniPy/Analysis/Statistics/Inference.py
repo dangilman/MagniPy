@@ -3,18 +3,21 @@ from MagniPy.Analysis.Statistics.singledensity import *
 from MagniPy.ABCsampler.Chain import *
 from MagniPy.Analysis.Visualization.Joint2D import Joint2D
 
-def sample_chain(chain_name='',which_lenses=None, parameters=[],error=None,index=None):
+def sample_chain(chain_name='',which_lenses=None,
+                 parameters=[],error=None,
+                 index=None, tol = 500, savename=None):
 
     full_chain = FullChains(chain_name,which_lens=which_lenses,error=error,index=index)
 
-    posteriors = full_chain.get_posteriors(2000)
+    posteriors = full_chain.get_posteriors(tol)
 
-    prior_weights_global_gamma = WeightedSamples(params_to_weight=['SIE_gamma'],weight_args=[{'type':'Gaussian','mean':2,'sigma':0.025}])
+    prior_weights_global_cpower = WeightedSamples(params_to_weight=['c_power'],weight_args=[{'type':'Gaussian','mean':-0.17,'sigma':0.02}])
 
-    prior_weights_global_fsub = WeightedSamples(params_to_weight=['fsub'],
-                                                 weight_args=[{'type': 'Gaussian', 'mean': 0.04, 'sigma': .01}])
+    prior_weights_global_srcsize = WeightedSamples(params_to_weight=['source_size_kpc'],
+                                                 weight_args=[{'type': 'Gaussian', 'mean': 0.02, 'sigma': 0.002}])
 
-    #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_fsub],indexes=[1])
+    #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_cpower,
+    #                                              prior_weights_global_srcsize],indexes=None)
 
     densities = []
 
@@ -28,10 +31,19 @@ def sample_chain(chain_name='',which_lenses=None, parameters=[],error=None,index
         densities.append(density)
 
     joint = Joint2D(densities)
-    #T = full_chain.truths
-    #joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=T)
-    joint.make_plot(param_names=parameters, param_ranges=full_chain.pranges,filled_contours=True)
 
+    joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=full_chain.truths,
+                    filled_contours=True, color_index=2)
+    if savename is not None:
+        plt.savefig(savename)
+    #joint.make_plot(param_names=parameters, param_ranges=full_chain.pranges,filled_contours=True)
     plt.show()
 
-#sample_chain('he0435_LOS',which_lenses=[1],parameters=['fsub','logmhm'],error=0,index=1)
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=0,index=1,tol = 500, savename='fsub_logmhm.pdf')
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['c_power','log_m_break'],error=0,index=1,tol = 500, savename='cpower_logmhm.pdf')
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['source_size_kpc','log_m_break'],error=0,index=1,tol = 500, savename='srcsize_logmhm.pdf')
+
+sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=4,index=1,tol = 800, savename='fsub_logmhm_error4.pdf')
+sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=0,index=1,tol = 800, savename='fsub_logmhm.pdf')
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['c_power','log_m_break'],error=0,index=1,tol = 1500, savename='cpower_logmhm_srcsizeweight.pdf')
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['source_size_kpc','log_m_break'],error=0,index=1,tol = 800, savename='srcsize_logmhm_allweight.pdf')

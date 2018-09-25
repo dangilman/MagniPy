@@ -11,7 +11,7 @@ def initialize_macro(solver,data,init):
                                                  tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,
                                                  polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=False,
-                                                 re_optimize=False, particle_swarm=True, restart=2)
+                                                 re_optimize=False, particle_swarm=True, restart=2, toggle_interp=False)
 
     return model
 
@@ -43,7 +43,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
         print('running... ')
-        print(samples)
+        #print(samples)
         while True:
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
@@ -60,8 +60,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=1, n_particles=40, n_iterations=600, simplex_n_iter=500,
                                                            pso_convergence_mean=5000, polar_grid=True,
-                                                           particle_swarm=True, re_optimize=False, verbose=True,
-                                                           single_background=False)
+                                                           particle_swarm=True, re_optimize=False, verbose=False,
+                                                           single_background=False, toggle_interp=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],

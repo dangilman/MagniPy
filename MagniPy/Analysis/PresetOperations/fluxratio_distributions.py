@@ -12,7 +12,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
                                     filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
                                     start_shear=0.05, mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
-                                    single_background=False,n_restart=1, pso_conv_mean = 100):
+                                    single_background=False,n_restart=1, pso_conv_mean = 100, toggle_interp = 1e+6):
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=None)
 
@@ -69,12 +69,26 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                              logmasscut_front = logmcut_front, logmasscut_back = logmcut_back, back_scale_z = 0) for real in realizations)
             else:
                 use_real = realizations
-
+            print('high res')
             model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data,macromodel=start_macromodel,realizations=use_real,
-                                   multiplane=multiplane,n_particles = 50, n_iterations = 300,source_size_kpc=source_size_kpc,
+                                   multiplane=multiplane,n_particles = 50, simplex_n_iter=400, n_iterations = 300, source_size_kpc=source_size_kpc,
                                    optimize_routine = 'fixed_powerlaw_shear',verbose=True, pso_convergence_mean=pso_conv_mean,
                                          re_optimize=False, particle_swarm=True, restart=n_restart,
-                                           single_background=single_background)
+                                           single_background=single_background, toggle_interp=toggle_interp, interp_res=5e-5,
+                                                                   interp_range=0.025)
+            print('high res')
+            model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data, macromodel=start_macromodel,
+                                                                   realizations=use_real,
+                                                                   multiplane=multiplane, n_particles=50,
+                                                                   simplex_n_iter=400, n_iterations=300,
+                                                                   source_size_kpc=source_size_kpc,
+                                                                   optimize_routine='fixed_powerlaw_shear',
+                                                                   verbose=True, pso_convergence_mean=pso_conv_mean,
+                                                                   re_optimize=False, particle_swarm=True,
+                                                                   restart=n_restart,
+                                                                   single_background=single_background,
+                                                                   toggle_interp=toggle_interp, interp_res=5e-5,
+                                                                   interp_range=0.025)
 
             for sys,dset in zip(system,model_data):
 
