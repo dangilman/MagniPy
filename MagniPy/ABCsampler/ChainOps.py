@@ -56,6 +56,7 @@ def read_chain_info(fname):
             if len(line)==0:
                 nextline=False
                 break
+
             truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
 
     return params_varied,truth_dic,varyparams_info
@@ -81,7 +82,7 @@ def read_R_index(fname,lens_index):
     return config,int(R_index)
 
 def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None, parameters=None,fluxes_obs=None,
-                           fluxes=None,header=str,tol=None,stat='quad',lens_config=None):
+                           fluxes=None,header=str,stat='quad',lens_config=None):
 
     #Ncores, cores_per_lens, Nlenses = read_run_partition(chainpath + '/processed_chains/' + chain_name + '/simulation_info.txt')
 
@@ -166,7 +167,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     chain_info_path = chainpath_out + chain_name + '/simulation_info.txt'
 
-    Ncores,cores_per_lens,Nlens = read_run_partition(chain_info_path,'R_index_config.txt')
+    Ncores,cores_per_lens,Nlens = read_run_partition(chain_info_path)
 
     lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
@@ -246,11 +247,12 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
     #np.savetxt(savename + 'observedfluxes' + '.txt', observed_fluxes.reshape(1, 4), fmt='%.6f')
     #np.savetxt(savename + 'samples.txt', lens_params[inds_to_keep], fmt='%.6f', header=params_header)
 
-def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None,tol=None):
+def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
 
     fluxes,fluxes_obs,parameters,header,lens_config = extract_chain(name,which_lens)
     
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
-                           fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,tol=tol,lens_config=lens_config)
+                           fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
 
-#process_chain_i('he0435_LOS', which_lens=1, tol = 1000)
+#for i in range(1, 6):
+#    process_chain_i('LOS_CDM_1', which_lens=int(i), errors= [0.04])

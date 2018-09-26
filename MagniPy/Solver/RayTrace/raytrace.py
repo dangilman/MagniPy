@@ -58,13 +58,13 @@ class RayTrace:
             s = 0.08
             res *= 0.5
         elif size_asec < 0.002:
-            s = 0.14
+            s = 0.16
         elif size_asec < 0.003:
-            s = 0.18
+            s = 0.22
         elif size_asec < 0.005:
-            s = 0.32
+            s = 0.27
         else:
-            s = 0.36
+            s = 0.38
 
         size = min(0.5*img_sep,s)
 
