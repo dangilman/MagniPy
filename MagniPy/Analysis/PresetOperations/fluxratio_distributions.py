@@ -87,8 +87,8 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                    re_optimize=False, particle_swarm=True,
                                                                    restart=n_restart,
                                                                    single_background=single_background,
-                                                                   toggle_interp=toggle_interp, interp_res=5e-5,
-                                                                   interp_range=0.025)
+                                                                   toggle_interp=toggle_interp, interp_res=1e-4,
+                                                                   interp_range=0.03)
 
             for sys,dset in zip(system,model_data):
 
