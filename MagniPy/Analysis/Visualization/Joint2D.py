@@ -3,6 +3,7 @@ import matplotlib.colors as colors
 import numpy as np
 from matplotlib.ticker import FormatStrFormatter
 from MagniPy.util import confidence_interval
+from MagniPy.Analysis.Visualization.barplot import bar_plot
 
 class Joint2D:
 
@@ -194,32 +195,41 @@ class Joint2D:
             plt.contour(X, Y, grid, extent=extent, colors=contour_colors,
                                   levels=np.array(levels) * np.max(grid), linewidths=linewidths)
 
-    def _get_1d(self,pname,density):
+    def _get_1d(self,pname,density,pnames):
 
-        if self.param_names[0] == pname:
+        if pnames[0] == pname:
             axis = 1
         else:
             axis = 0
 
-        return np.sum(density,axis=axis)
+        return np.sum(density,axis=axis), axis
 
-    def marginalize(self, param_name, rebin=25):
+    def marginalize(self, param_name, pnames, density, pranges, rebin=25):
 
-        assert param_name in self.param_names
-
-        marginal = self._get_1d(param_name)
+        marginal, idx = self._get_1d(param_name, density, pnames)
 
         if len(marginal)>rebin:
 
-            marginalized = self.bar_plot(marginal,prange=self.param_ranges,rebin=rebin)
+            marginalized, bar_cen, bar_h = bar_plot(marginal,pranges[param_name],rebin=rebin)
+
         else:
-            marginalized = self.bar_plot(marginal,prange=self.param_ranges)
+            marginalized, bar_cen, bar_h = bar_plot(marginal,pranges[param_name])
+        print(self._quick_confidence(bar_cen, bar_h))
 
         return marginalized
 
-    def confidence_interval(self,pname,percentile=[0.05,0.95]):
+    def _quick_confidence(self, centers, heights, percentile = 0.95):
 
-        marginal = self._get_1d(pname)
+        total = np.sum(heights)
+        summ, index = 0, 0
+        while summ < total * percentile:
+            summ += heights[index]
+            index += 1
+        return centers[index]
+
+    def confidence_interval(self,pname,density,pnames,percentile=[0.05,0.95]):
+
+        marginal, idx = self._get_1d(pname,density,pnames)
 
         if isinstance(percentile,list):
             interval = []

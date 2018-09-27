@@ -16,8 +16,7 @@ def sample_chain(chain_name='',which_lenses=None,
     prior_weights_global_srcsize = WeightedSamples(params_to_weight=['source_size_kpc'],
                                                  weight_args=[{'type': 'Gaussian', 'mean': 0.02, 'sigma': 0.002}])
 
-    #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_cpower,
-    #                                              prior_weights_global_srcsize],indexes=None)
+    #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_srcsize],indexes=None)
 
     densities = []
 
@@ -33,7 +32,7 @@ def sample_chain(chain_name='',which_lenses=None,
     joint = Joint2D(densities)
 
     joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=full_chain.truths,
-                    filled_contours=True, color_index=2)
+                    filled_contours=True, color_index=0)
     if savename is not None:
         plt.savefig(savename)
     #joint.make_plot(param_names=parameters, param_ranges=full_chain.pranges,filled_contours=True)
@@ -42,8 +41,8 @@ def sample_chain(chain_name='',which_lenses=None,
 #sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=0,index=1,tol = 500, savename='fsub_logmhm.pdf')
 #sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['c_power','log_m_break'],error=0,index=1,tol = 500, savename='cpower_logmhm.pdf')
 #sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['source_size_kpc','log_m_break'],error=0,index=1,tol = 500, savename='srcsize_logmhm.pdf')
-
-sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=4,index=1,tol = 800, savename='fsub_logmhm_error4.pdf')
-sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=0,index=1,tol = 800, savename='fsub_logmhm.pdf')
+#sample_chain('CDM_diverse',which_lenses=[1,2,3,4,5,6,7,8,9,10],parameters=['log_m_break','source_size_kpc'],error=0,index=1,tol = 1000, savename='logmhm_srcsize_error0.pdf')
+#sample_chain('CDM_diverse',which_lenses=[2],parameters=['fsub','log_m_break'],error=4,index=1,tol = 1800, savename='fsub_logmhm_error4_weightedsrcsize.pdf')
+#sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['fsub','log_m_break'],error=0,index=1,tol = 800, savename='fsub_logmhm.pdf')
 #sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['c_power','log_m_break'],error=0,index=1,tol = 1500, savename='cpower_logmhm_srcsizeweight.pdf')
 #sample_chain('LOS_CDM_1',which_lenses=[1,2,3,4,5],parameters=['source_size_kpc','log_m_break'],error=0,index=1,tol = 800, savename='srcsize_logmhm_allweight.pdf')

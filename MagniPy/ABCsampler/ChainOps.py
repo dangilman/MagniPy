@@ -96,13 +96,15 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
 
     errors = [0]+errors
 
+    fluxes, fluxes_obs = np.squeeze(fluxes), np.squeeze(fluxes_obs)
+
     chain_file_path = chainpath_out + 'processed_chains/' + chain_name + '/lens' + str(which_lens) + '/'
     perturbed_path = chain_file_path + 'fluxratios/'
 
     if ~os.path.exists(perturbed_path):
         create_directory(perturbed_path)
 
-    np.savetxt(chain_file_path + 'modelfluxes' + '.txt',fluxes, fmt='%.6f')
+    np.savetxt(chain_file_path + 'modelfluxes' + '.txt', fluxes, fmt='%.6f')
     np.savetxt(chain_file_path + 'observedfluxes' + '.txt',fluxes_obs, fmt='%.6f')
     np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.6f',header=header)
 
@@ -169,7 +171,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     Ncores,cores_per_lens,Nlens = read_run_partition(chain_info_path)
 
-    lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
+    #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
     chain_file_path = chainpath_out + chain_name + '/chain'
 
@@ -186,7 +188,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     start = int((which_lens-1)*cores_per_lens)
     end = int(start + cores_per_lens)
-
+    init = True
     for i in range(start,end):
 
         folder_name = chain_file_path + str(i+1) + '/'
@@ -203,16 +205,17 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
             observed_pos_y = obs_data[0].y
 
             if order is None:
+                lens_config = [0,1,2,3]
+                #continue
+                #if lens_config == 'cross':
 
-                if lens_config == 'cross':
-
-                    order = [0,1,2,3]
+                #    order = [0,1,2,3]
 
 
-                else:
+                #else:
 
-                    reference_x,reference_y = observed_pos_x[lens_R_index],observed_pos_y[lens_R_index]
-                    order = find_closest_xy(observed_pos_x,observed_pos_y,reference_x,reference_y)
+                #    reference_x,reference_y = observed_pos_x[lens_R_index],observed_pos_y[lens_R_index]
+                #    order = find_closest_xy(observed_pos_x,observed_pos_y,reference_x,reference_y)
 
             params = np.loadtxt(folder_name + 'parameters.txt', skiprows=1)
 
@@ -232,9 +235,11 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
         #inds = np.where(astrometric_errors > (2 * position_tol))
         #fluxes[inds,:] = 1000*np.ones_like(4)
 
-        if i==start:
+        if init:
+
             lens_fluxes = fluxes
             lens_params = params
+            init = False
         else:
             lens_fluxes = np.vstack((lens_fluxes,fluxes))
             lens_params = np.vstack((lens_params,params))
@@ -254,5 +259,5 @@ def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
                            fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
 
-#for i in range(1, 6):
-#    process_chain_i('LOS_CDM_1', which_lens=int(i), errors= [0.04])
+#for i in range(10, 11):
+#    process_chain_i('CDM_diverse', which_lens=int(i), errors= [0.04])

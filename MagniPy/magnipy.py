@@ -80,8 +80,7 @@ class Magnipy:
                                     particle_swarm = True, restart = 1, constrain_params=None, shifting_background=False,
                                     pso_convergence_mean=None,
                                     pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
-                                    single_background=None,simplex_n_iter=None, toggle_interp = None, interp_res=None,
-                                    interp_range=None):
+                                    single_background=None,simplex_n_iter=None):
 
         data, opt_sys = [], []
 
@@ -94,8 +93,7 @@ class Magnipy:
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
                             pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
-                              single_background=single_background,simplex_n_iter=simplex_n_iter,
-                                    toggle_interp = toggle_interp,interp_res=interp_res,interp_range=interp_range)
+                              single_background=single_background,simplex_n_iter=simplex_n_iter)
 
             source_scale = self.cosmo.kpc_per_asec(self.zsrc)
             source_size = source_size_kpc * source_scale ** -1

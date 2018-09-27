@@ -42,4 +42,4 @@ def bar_plot(bar_heights, coords, color='0', alpha='1', rebin=None, ax=None):
 
     ax.set_xlim(coords[0], coords[-1])
     ax.set_ylim(0, max(bar_heights) * 1.05)
-    return ax
+    return ax, bar_centers, bar_heights

@@ -3,26 +3,56 @@ from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
 from pyHalo.pyhalo import pyHalo
+import time
 
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.01,
                                                  tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
-                                                 centroid_0=[0, 0], n_particles=60, n_iterations=700,
-                                                 polar_grid=True, optimize_routine='fixed_powerlaw_shear', verbose=False,
-                                                 re_optimize=False, particle_swarm=True, restart=2, toggle_interp=False)
+                                                 centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
+                                                 simplex_n_iter=400, polar_grid=True, optimize_routine='fixed_powerlaw_shear',
+                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=2)
 
     return model
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_constructor, solver):
+def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
+
+    macromodels_init = []
+
+    if 'SIE_gamma' in keys_to_vary:
+        gamma_values = [1.9, 1.95, 2, 2.05, 2.1, 2.15, 2.2]
+        gamma_values = [1.9,2,2.1]
+        for gi in gamma_values:
+            _macro = get_default_SIE(z=chain_keys_run['zlens'])
+            _macro.lenstronomy_args['gamma'] = gi
+            macro_i = initialize_macro(solver, data, _macro)
+            macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
+            macromodels_init.append(macro_i)
+
+    else:
+        _macro = get_default_SIE(z=chain_keys_run['zlens'])
+        macro_i = initialize_macro(solver, data, _macro)
+        macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
+        macromodels_init.append(initialize_macro(solver, data, _macro))
+
+    return macromodels_init, gamma_values
+
+def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
+
+    dgamma = np.absolute(np.array(gamma_values) - chain_keys_run['SIE_gamma'])
+
+    index = np.argmin(dgamma)
+
+    return macro_list[index]
+
+def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
 
     chaindata = []
     parameters = []
     start = True
     N_computed = 0
-    #keys['Nsamples'] = 8
-    import time
+    init_macro = False
     t0 = time.time()
     while N_computed < keys['Nsamples']:
 
@@ -34,10 +64,21 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
             chain_keys_run[pname] = samples[i]
 
-        macromodel = deepcopy(macromodel_init[0])
+        if not init_macro:
+            print('initializing macromodels.... ')
+            macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
+            init_macro = True
 
         if 'SIE_gamma' in keys_to_vary:
-            macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
+
+            base = choose_macromodel_init(macro_list, gamma_values, chain_keys_run)
+
+        else:
+
+            base = macro_list[0]
+
+        macromodel = deepcopy(base[0])
+        macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
         halo_args = halo_model_args(chain_keys_run)
 
@@ -48,7 +89,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            halos[0] = halos[0].filter(data.x, data.y, mindis_front=chain_keys_run['mindis_front'],
+            halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
                                        mindis_back=chain_keys_run['mindis_back'],
                                        logmasscut_back=chain_keys_run['log_masscut_back'],
                                        logmasscut_front=chain_keys_run['log_masscut_front'])
@@ -60,8 +101,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, macromodel_init, halo_const
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
                                                            restart=1, n_particles=40, n_iterations=600, simplex_n_iter=500,
                                                            pso_convergence_mean=5000, polar_grid=True,
-                                                           particle_swarm=True, re_optimize=False, verbose=False,
-                                                           single_background=False, toggle_interp=False)
+                                                           particle_swarm=True, re_optimize=True, verbose=False,
+                                                           single_background=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
@@ -109,18 +150,13 @@ def runABC(chain_ID='',core_index=int):
 
     solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
                            temp_folder=chain_keys['scratch_file'], clean_up=True)
-    _macro = get_default_SIE(z=chain_keys['zlens'])
-
-    macromodel = initialize_macro(solver, datatofit, _macro)
-
-    macromodel[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
 
     param_names_tovary = chain_keys_to_vary.keys()
     write_info_file(chainpath + chain_keys['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
     #copy_directory(chain_ID + '/R_index_config.txt', chainpath + chain_keys['output_folder'])
 
-    prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1, macromodel=macromodel)
+    prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1)
 
     constructor = pyHalo(chain_keys['zlens'], chain_keys['zsrc'])
 
@@ -130,7 +166,7 @@ def runABC(chain_ID='',core_index=int):
 
     else:
 
-        fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, macromodel, constructor, solver)
+        fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver)
 
     write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False)
 
