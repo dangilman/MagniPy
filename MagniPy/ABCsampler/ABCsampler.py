@@ -22,7 +22,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.9, 1.95, 2, 2.05, 2.1, 2.15, 2.2]
-        gamma_values = [1.9,2,2.1]
+        #gamma_values = [1.9,2,2.1]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
