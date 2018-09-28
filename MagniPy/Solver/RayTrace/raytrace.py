@@ -58,13 +58,13 @@ class RayTrace:
             s = 0.08
             res *= 0.5
         elif size_asec < 0.002:
-            s = 0.16
+            s = 0.18
         elif size_asec < 0.003:
-            s = 0.22
+            s = 0.25
         elif size_asec < 0.005:
-            s = 0.27
+            s = 0.3
         else:
-            s = 0.38
+            s = 0.45
 
         size = min(0.5*img_sep,s)
 
@@ -94,12 +94,12 @@ class RayTrace:
         for i in range(0,len(xpos)):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
-            #n = int(np.sqrt(len(image)))
+            n = int(np.sqrt(len(image)))
 
-            #plt.imshow(image.reshape(n,n))
-            #plt.show()
+            plt.imshow(image.reshape(n,n))
+            plt.show()
 
-            #a=input('continue')
+            a=input('continue')
             flux.append(np.sum(image*self.res**2))
 
         return np.array(flux)

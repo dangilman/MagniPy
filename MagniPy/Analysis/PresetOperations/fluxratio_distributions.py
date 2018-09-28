@@ -63,7 +63,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
             #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
             realizations = pyhalo.render(halo_model,model_args)
-
+            print(len(realizations[0].x))
             if filter_halo_positions:
                 use_real = list(real.filter(data.x, data.y, mindis_front = mindis_front, mindis_back = mindis_back,
                              logmasscut_front = logmcut_front, logmasscut_back = logmcut_back, back_scale_z = 0) for real in realizations)
