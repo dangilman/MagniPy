@@ -190,7 +190,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         ellip = np.absolute(np.random.normal(0.15, 0.05))
         ellip_theta = np.absolute(np.random.uniform(-90, 90))
         gamma = np.round(np.random.normal(2.08, 0.05), 2)
-        shear = np.random.normal(0.05, 0.01)
+        shear = np.absolute(np.random.normal(0.05, 0.01))
         shear_theta = np.random.uniform(-90, 90)
 
         while True:
@@ -349,6 +349,4 @@ dpath_base = nav + '/mock_data/LOS_WDM_8/lens_'
 #ncross = int(sys.argv[3])
 #start_idx = int(sys.argv[1])
 
-#run(1,1,1, start_idx=start_idx)
-
-
+#run(1,0,0, start_idx=1)
