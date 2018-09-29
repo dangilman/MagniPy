@@ -338,7 +338,7 @@ logmhm = 8
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
-log_ml, log_mh = 6.7, 10
+log_ml, log_mh = 7, 10
 break_index = -1.3
 
 nav = prefix
@@ -350,3 +350,6 @@ dpath_base = nav + '/mock_data/LOS_WDM_8/lens_'
 #start_idx = int(sys.argv[1])
 
 #run(1,0,0, start_idx=1)
+
+#vals = np.random.lognormal(0.05, 0.01, size=1000)
+#plt.hist(vals,bins=12); plt.show()
