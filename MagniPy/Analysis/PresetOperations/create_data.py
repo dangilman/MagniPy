@@ -194,16 +194,10 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         shear_theta = np.random.uniform(-90, 90)
 
         while True:
-            zlens = np.round(np.random.normal(0.5, 0.2), 2)
-            zsrc = np.round(zlens + 1 + np.random.normal(0, 0.5), 2)
-            if zsrc - zlens > 0.4:
-                if zlens > 0.3:
-                    break
-        while True:
             source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
             if source_size_kpc < 0.01:
                 continue
-            if source_size_kpc > 0.07:
+            if source_size_kpc > 0.06:
                 continue
             else:
                 break
