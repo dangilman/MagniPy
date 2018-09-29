@@ -4,6 +4,7 @@ from copy import deepcopy,copy
 from MagniPy.paths import *
 from pyHalo.pyhalo import pyHalo
 import time
+from MagniPy.util import approx_theta_E
 
 def initialize_macro(solver,data,init):
 
@@ -110,7 +111,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
                                                            restart=1, particle_swarm=True, re_optimize=True, verbose=False,
                                                            polar_grid=False)
 
-            if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 2:
+            if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 1:
                 break
 
         N_computed += 1
@@ -139,9 +140,10 @@ def runABC(chain_ID='',core_index=int):
     if run is False:
         return
 
-    # Initialize data, macormodel
+    # Initialize data
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
+    chain_keys.update({'cone_opening_angle': 6*approx_theta_E(datatofit.x, datatofit.y)})
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 

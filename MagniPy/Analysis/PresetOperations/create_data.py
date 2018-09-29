@@ -1,17 +1,51 @@
 from pyHalo.pyhalo import pyHalo
 from pyHalo.Cosmology.lens_cosmo import LensCosmo
+from pyHalo.Cosmology.cosmology import Cosmology
 from MagniPy.Solver.solveroutines import *
-from MagniPy.Solver.analysis import Analysis
-from MagniPy.LensBuild.main_deflector import Deflector
 from MagniPy.MassModels.SIE import *
-import matplotlib.pyplot as plt
-from lenstronomy.Util.param_util import *
-import sys
 import matplotlib.pyplot as plt
 from MagniPy.LensBuild.defaults import *
 from MagniPy.Solver.analysis import Analysis
 from MagniPy.util import min_img_sep
 from MagniPy.paths import *
+from scipy.optimize import minimize
+
+cosmo = Cosmology()
+arcsec = 206265  # arcsec per radian
+
+def draw_zlens(n, mean=0.5, sigma=0.2, zlens_min=0.2):
+    while True:
+        zlens = np.random.normal(mean, sigma, size=n)
+        if zlens > zlens_min:
+            break
+    return zlens
+
+def draw_vdis(n, mean=260, sigma=15):
+    return np.random.normal(mean, sigma, size=n)
+
+
+def draw_img_sep(n, mean=1.2, sigma=0.15):
+    return np.absolute(np.random.normal(mean, sigma, size=n))
+
+
+def solve_for_distanceratio(imgsep, sigma):
+    return imgsep * (4 * np.pi) ** -1 * (sigma * 299792 ** -1) ** -2 / arcsec
+
+def distance_ratio(zsrc, zlens):
+    Ds = cosmo.T_xy(0, zsrc)
+    D_ds = cosmo.T_xy(zlens, zsrc)
+    return D_ds / Ds
+
+
+def _func_to_minimize(zsrc, zlens, R):
+    return np.absolute(distance_ratio(zsrc, zlens) - R)
+
+def solve_for_zsrc(dratio, zlens, start_guess):
+    res = minimize(_func_to_minimize, x0 = start_guess, args = (zlens, dratio), method = 'Nelder-Mead')
+    return res['x']
+
+def draw_zlens_src(mean_zlens=0.5, shift=0.4, slope=0.5):
+    return mean_zlens + slope * mean_zlens + shift + np.random.normal(0, 0.3)
 
 def set_Rindex(dfile_base,minidx,maxidx):
 
@@ -102,6 +136,35 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
 
         xs, ys = guess_source(xcaus, ycaus)
 
+def get_redshift_vdis(method, z_source_max = 4, vdis_mean = 260, vdis_sigma = 15, imgsep_mean = 1.2,
+                      imgsep_sigma = 0.15):
+
+    if method == 'inversion':
+
+        while True:
+            vdis = draw_vdis(1, mean = vdis_mean, sigma=vdis_sigma)[0]
+            imgsep = draw_img_sep(1, mean = imgsep_mean, sigma = imgsep_sigma)[0]
+            d_ratio = solve_for_distanceratio(imgsep, vdis)
+            zlens = draw_zlens(1)[0]
+            start_guess = zlens + 0.1
+            # print(zlens)
+            z_source = solve_for_zsrc(d_ratio, zlens, start_guess)
+            if z_source[0] < z_source_max and z_source[0] != start_guess and z_source[0] > 0:
+                z_source = z_source[0]
+                break
+
+    else:
+
+        while True:
+            zlens = np.round(np.random.normal(0.5, 0.2), 2)
+            z_source = np.round(zlens + 1 + np.random.normal(0, 0.5), 2)
+            if z_source - zlens > 0.4:
+                if zlens > 0.3:
+                    vdis = np.random.normal(vdis_mean, vdis_sigma)
+                    break
+
+    return vdis, np.round(zlens, 2), np.round(z_source, 2)
+
 
 def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
@@ -122,7 +185,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         if done_cusp and done_cross and done_fold:
             break
 
-        vdis = np.random.normal(260, 20)
+        vdis, zlens, zsrc = get_redshift_vdis(method='inversion')
+        print('vdis, zlens, zsrc: ', str(vdis) + ' '+str(zlens) + ' '+str(zsrc))
         ellip = np.absolute(np.random.normal(0.15, 0.05))
         ellip_theta = np.absolute(np.random.uniform(-90, 90))
         gamma = np.round(np.random.normal(2.08, 0.05), 2)
@@ -276,9 +340,9 @@ multiplane = True
 
 fsub = 0.01
 M_halo = 10 ** 13
-logmhm = 0
+logmhm = 8
 r_core = '0.5Rs'
-src_size_mean = 0.02
+src_size_mean = 0.04
 src_size_sigma = 0.0001
 log_ml, log_mh = 6.7, 10
 break_index = -1.3
@@ -291,6 +355,6 @@ dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 #ncross = int(sys.argv[3])
 #start_idx = int(sys.argv[1])
 
-#run(1,1,1, start_idx)
+#run(1,1,1, start_idx=start_idx)
 
 
