@@ -21,7 +21,8 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
                    mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
                    zmin=None, zmax=None, params_to_vary={},chain_description='',
                    chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
-                   position_sigma=None, flux_sigma=None, single_background=None,Nsamples_perlens=None):
+                   position_sigma=None, flux_sigma=None, single_background=None,Nsamples_perlens=None,
+                   LOS_normalization = None):
 
     chain_keys = {}
 
@@ -78,6 +79,7 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
     chain_keys['mass_func_type'] = mass_func_type
     chain_keys['log_mL'] = log_mL
     chain_keys['log_mH'] = log_mH
+    chain_keys['LOS_normalization'] = LOS_normalization
 
     if fsub is not None:
         assert A0 is None
@@ -143,7 +145,8 @@ def halo_model_args(params):
     if mass_func_type == 'composite_powerlaw':
 
         names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'power_law_index',
-                 'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main', 'parent_c']
+                 'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main', 'parent_c',
+                 'LOS_normalization']
 
         for name in names:
             args.update({name: params[name]})

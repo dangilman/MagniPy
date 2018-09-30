@@ -233,6 +233,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/CDM_diverse/',1)
+#runABC(prefix+'data/runtest_time100_singlecore_mindis0.2/',1)
 
 
