@@ -40,6 +40,9 @@ class RayTrace:
         else:
             raise ValueError('other source models not yet implemented')
 
+        if 'grid_rmax' in kwargs:
+            self.grid_rmax = kwargs['grid_rmax']
+
         self.x_grid_0, self.y_grid_0 = np.meshgrid(
             np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1),
             np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1))

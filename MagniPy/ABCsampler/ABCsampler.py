@@ -93,7 +93,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
             halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
                                        mindis_back=chain_keys_run['mindis_back'],
                                        logmasscut_back=chain_keys_run['log_masscut_back'],
-                                       logmasscut_front=chain_keys_run['log_masscut_front'])
+                                       logmasscut_front=chain_keys_run['log_masscut_front'], source_x = d2fit.srcx,
+                                       source_y = d2fit.srcy)
 
             if chain_keys_run['multiplane']:
                 #print(samples)
@@ -143,6 +144,7 @@ def runABC(chain_ID='',core_index=int):
     # Initialize data
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
+
     chain_keys.update({'cone_opening_angle': 6*approx_theta_E(datatofit.x, datatofit.y)})
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
