@@ -1,10 +1,14 @@
 from MagniPy.util import *
-from MagniPy.lensdata import Data
+from matplotlib import colors
 import matplotlib.pyplot as plt
 from matplotlib.colors import cnames
 
 default_colors = ['k',cnames['indianred'],cnames['royalblue'],
                   cnames['mediumpurple'],cnames['forestgreen']]
+default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),
+                                (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
+                              (colors.cnames['coral'], 'r', 'k'),
+                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
 plt.rcParams['axes.linewidth'] = 2.5
 
@@ -90,10 +94,19 @@ class FluxRatioCumulative:
                 data2 = self.lensdata[j][:,indx2]
                 data2 = data2[np.where(np.isfinite(data2))]
 
-                if labels_done:
-                    ax.scatter(data1,data2,color = color[j], marker='o', s = linewidth, alpha=alpha)
-                else:
-                    ax.scatter(data1, data2, color=color[j], marker='o', s=linewidth, alpha=alpha, label=labels[j])
+                #if labels_done:
+                #    ax.scatter(data1,data2,color = color[j], marker='o', s = linewidth, alpha=alpha)
+                #else:
+                #    ax.scatter(data1, data2, color=color[j], marker='o', s=linewidth, alpha=alpha, label=labels[j])
+                grid, X, Y = np.histogram2d(data1, data2, bins=nbins,
+                                            range=[[-xmax, xmax],[-xmax, xmax]], density=True)
+                X, Y = X[0:-1], Y[0:-1]
+                levels = [0.05, 1]
+
+                levels = np.array(levels) * np.max(grid)
+                #ax.contour(X, Y, grid, [], colors=color[j], linewidths=4, zorder=1)
+                ax.contourf(X, Y, grid, levels, colors=color[j], alpha=alpha, zorder=1)
+
                 if j == int(len(self.lensdata)) - 1:
                     labels_done = True
 
