@@ -353,7 +353,7 @@ log_ml, log_mh = 6.7, 10
 break_index = -1.3
 
 nav = prefix
-dpath_base = nav + '/mock_data/LOS_WDM_8/lens_'
+dpath_base = nav + '/mock_data/LOS_WDM_8.5/lens_'
 
 #ncusp = int(sys.argv[1])
 #nfold = int(sys.argv[2])
