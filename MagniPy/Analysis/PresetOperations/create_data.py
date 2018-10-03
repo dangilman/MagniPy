@@ -1,6 +1,7 @@
 from pyHalo.pyhalo import pyHalo
 from pyHalo.Cosmology.lens_cosmo import LensCosmo
 from pyHalo.Cosmology.cosmology import Cosmology
+from scipy.stats import gaussian_kde
 from MagniPy.Solver.solveroutines import *
 from MagniPy.MassModels.SIE import *
 import matplotlib.pyplot as plt
@@ -12,40 +13,6 @@ from scipy.optimize import minimize
 
 cosmo = Cosmology()
 arcsec = 206265  # arcsec per radian
-
-def draw_zlens(n, mean=0.5, sigma=0.2, zlens_min=0.2):
-    while True:
-        zlens = np.random.normal(mean, sigma, size=n)
-        if zlens > zlens_min:
-            break
-    return zlens
-
-def draw_vdis(n, mean=260, sigma=15):
-    return np.random.normal(mean, sigma, size=n)
-
-
-def draw_img_sep(n, mean=1.2, sigma=0.15):
-    return np.absolute(np.random.normal(mean, sigma, size=n))
-
-
-def solve_for_distanceratio(imgsep, sigma):
-    return imgsep * (4 * np.pi) ** -1 * (sigma * 299792 ** -1) ** -2 / arcsec
-
-def distance_ratio(zsrc, zlens):
-    Ds = cosmo.T_xy(0, zsrc)
-    D_ds = cosmo.T_xy(zlens, zsrc)
-    return D_ds / Ds
-
-
-def _func_to_minimize(zsrc, zlens, R):
-    return np.absolute(distance_ratio(zsrc, zlens) - R)
-
-def solve_for_zsrc(dratio, zlens, start_guess):
-    res = minimize(_func_to_minimize, x0 = start_guess, args = (zlens, dratio), method = 'Nelder-Mead')
-    return res['x']
-
-def draw_zlens_src(mean_zlens=0.5, shift=0.4, slope=0.5):
-    return mean_zlens + slope * mean_zlens + shift + np.random.normal(0, 0.3)
 
 def set_Rindex(dfile_base,minidx,maxidx):
 
@@ -136,35 +103,79 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
 
         xs, ys = guess_source(xcaus, ycaus)
 
-def get_redshift_vdis(method, z_source_max = 4, vdis_mean = 260, vdis_sigma = 15, imgsep_mean = 1.2,
-                      imgsep_sigma = 0.15):
+def sample_from_strides(nsamples):
+    def get_density():
+        quad_imgsep, quad_vdis, _, quad_zlens, quad_zsrc = np.loadtxt(prefix + '/data/quad_info.txt', unpack=True)
+        data = np.vstack((quad_imgsep, quad_vdis))
+        data = np.vstack((data, quad_zlens))
+        data = np.vstack((data, quad_zsrc))
+        kde = gaussian_kde(data)
+        return kde
 
-    if method == 'inversion':
+    def cuts(imgsep, vdis, zlens, zsrc, imgsep_min=0.5,
+             vdis_min=230, zlens_min=0.2, zlens_max=0.8, zsrc_max=3):
 
-        while True:
-            vdis = draw_vdis(1, mean = vdis_mean, sigma=vdis_sigma)[0]
-            imgsep = draw_img_sep(1, mean = imgsep_mean, sigma = imgsep_sigma)[0]
-            d_ratio = solve_for_distanceratio(imgsep, vdis)
-            zlens = draw_zlens(1)[0]
-            start_guess = zlens + 0.1
-            # print(zlens)
-            z_source = solve_for_zsrc(d_ratio, zlens, start_guess)
-            if z_source[0] < z_source_max and z_source[0] != start_guess and z_source[0] > 0:
-                z_source = z_source[0]
-                break
+        if imgsep > imgsep_min and vdis > vdis_min and zlens > zlens_min and zsrc < zsrc_max and zlens < zlens_max and zsrc > zlens + 0.2:
+            return imgsep, vdis, zlens, zsrc
+        else:
+            return None, None, None, None
 
-    else:
+    def resample(KDE):
+        samples = KDE.resample(1)
+        imgsep = samples[0][0]
+        vdis = samples[1][0]
+        zlens = samples[2][0]
+        zsrc = samples[3][0]
 
-        while True:
-            zlens = np.round(np.random.normal(0.5, 0.2), 2)
-            z_source = np.round(zlens + 1 + np.random.normal(0, 0.5), 2)
-            if z_source - zlens > 0.4:
-                if zlens > 0.3:
-                    vdis = np.random.normal(vdis_mean, vdis_sigma)
-                    break
+        return cuts(imgsep, vdis, zlens, zsrc)
 
-    return vdis, np.round(zlens, 2), np.round(z_source, 2)
+    image_sep, v_dis, zd, zsrc = [], [], [], []
 
+    while len(image_sep) < nsamples:
+        kde = get_density()
+        values = resample(kde)
+        if values[0] is not None:
+            image_sep.append(values[0])
+            v_dis.append(values[1])
+            zd.append(values[2])
+            zsrc.append(values[3])
+    image_sep = np.array(image_sep)
+    v_dis = np.array(v_dis)
+    zd = np.array(zd)
+    zsrc = np.array(zsrc)
+
+    if nsamples == 1:
+        image_sep, v_dis, zd, zsrc = image_sep[0], v_dis[0], zd[0], zsrc[0]
+
+    return 0.5 * image_sep, v_dis, zd, zsrc
+
+
+def draw_vdis(mean=260, sigma=15):
+    return np.random.normal(mean, sigma)
+
+def draw_ellip(mean = 0.3, sigma = 0.16, low = 0, high = 0.5):
+
+    while True:
+        ellip = np.random.normal(mean, sigma)
+        if ellip > low and ellip < high:
+            break
+    return ellip
+
+def draw_ellip_PA(low = -90, high = 90):
+
+    return np.random.uniform(low, high)
+
+def draw_shear(mean = 0.05, sigma = 0.02, low = 0.01, high = 0.1):
+
+    while True:
+        shear = np.random.normal(mean, sigma)
+        if shear > low and shear < high:
+            break
+    return shear
+
+def draw_shear_PA(low = -90, high = 90):
+
+    return np.random.uniform(low, high)
 
 def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
@@ -185,13 +196,13 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         if done_cusp and done_cross and done_fold:
             break
 
-        vdis, zlens, zsrc = get_redshift_vdis(method='inversion')
+        rein, vdis, zlens, zsrc = sample_from_strides(1)
         print('vdis, zlens, zsrc: ', str(vdis) + ' '+str(zlens) + ' '+str(zsrc))
-        ellip = np.absolute(np.random.normal(0.15, 0.05))
-        ellip_theta = np.absolute(np.random.uniform(-90, 90))
+        ellip = draw_ellip()
+        ellip_theta = draw_ellip_PA()
+        shear = draw_shear()
+        shear_theta = draw_shear_PA()
         gamma = np.round(np.random.normal(2.08, 0.05), 2)
-        shear = np.absolute(np.random.normal(0.05, 0.01))
-        shear_theta = np.random.uniform(-90, 90)
 
         while True:
             source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
@@ -206,7 +217,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         c = LensCosmo(zlens, zsrc)
         solver = SolveRoutines(zlens, zsrc)
         analysis = Analysis(zlens, zsrc)
-        rein = c.vdis_to_Rein(zlens, zsrc, vdis)
+        #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
 
         halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'NFW', 'fsub': fsub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4, 'mdef': 'TNFW',
@@ -334,7 +345,7 @@ multiplane = True
 
 fsub = 0.01
 M_halo = 10 ** 13
-logmhm = 8
+logmhm = 8.5
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
@@ -349,4 +360,4 @@ dpath_base = nav + '/mock_data/LOS_WDM_8/lens_'
 #ncross = int(sys.argv[3])
 #start_idx = int(sys.argv[1])
 
-#(1,0,0, start_idx=1)
+#run(1,0,0, start_idx=1)
