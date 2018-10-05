@@ -101,10 +101,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
                                                            source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=1, n_particles=40, n_iterations=600, simplex_n_iter=500,
-                                                           pso_convergence_mean=5000, polar_grid=True,
-                                                           particle_swarm=True, re_optimize=True, verbose=False,
-                                                           single_background=False)
+                                                           restart=1, n_particles=40, n_iterations=200, simplex_n_iter=500,
+                                                           pso_convergence_mean=15000, polar_grid=True,
+                                                           pso_compute_magnification=500, particle_swarm=True,
+                                                           re_optimize=True, verbose=False)
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
@@ -235,6 +235,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/runtest_time100_singlecore_mindis0.2/',1)
+#runABC(prefix+'data/WDM_run_8.5_mlow6/',1)
 
 
