@@ -104,6 +104,7 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
         xs, ys = guess_source(xcaus, ycaus)
 
 def sample_from_strides(nsamples):
+
     def get_density():
         quad_imgsep, quad_vdis, _, quad_zlens, quad_zsrc = np.loadtxt(prefix + '/data/quad_info.txt', unpack=True)
         data = np.vstack((quad_imgsep, quad_vdis))
@@ -153,7 +154,7 @@ def sample_from_strides(nsamples):
 def draw_vdis(mean=260, sigma=15):
     return np.random.normal(mean, sigma)
 
-def draw_ellip(mean = 0.3, sigma = 0.16, low = 0, high = 0.5):
+def draw_ellip(mean = 0.2, sigma = 0.1, low = 0, high = 0.5):
 
     while True:
         ellip = np.random.normal(mean, sigma)
@@ -315,7 +316,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 if n_cusp == Ntotal_cusp:
                     done_cusp = True
 
-            lens_idx = start_idx + n_computed
+            lens_idx = int(start_idx) + n_computed
             n_computed += 1
 
             dpath = dpath_base + str(lens_idx)
@@ -353,11 +354,16 @@ log_ml, log_mh = 6.7, 10
 break_index = -1.3
 
 nav = prefix
-dpath_base = nav + '/mock_data/LOS_WDM_8.5/lens_'
 
-#ncusp = int(sys.argv[1])
-#nfold = int(sys.argv[2])
-#ncross = int(sys.argv[3])
-#start_idx = int(sys.argv[1])
-
-#run(1,0,0, start_idx=1)
+dpath_base = nav + 'data/mock_data/LOS_WDM_8.5/lens_'
+import sys
+start_idx=int(sys.argv[1])
+cusps = np.arange(1,60,3)
+folds = cusps + 1
+crosses = cusps + 2
+if start_idx in cusps:
+    run(1,0,0, start_idx=sys.argv[1])
+if start_idx in folds:
+    run(0,1,0, start_idx=sys.argv[1])
+if start_idx in crosses:
+    run(0,0,1, start_idx=sys.argv[1])

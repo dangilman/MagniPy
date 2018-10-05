@@ -71,7 +71,7 @@ class LenstronomyWrap:
     def run_optimize(self,lens_system,z_source,x_pos,y_pos,tol_source,magnification_target,tol_mag,tol_centroid,centroid_0,
                      optimizer_routine,z_main,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,
                      constrain_params,pso_convergence_mean,pso_compute_magnification, tol_simplex_params,
-                     tol_simplex_func,single_background,simplex_n_iter):
+                     tol_simplex_func,single_background,simplex_n_iter,optimizer_kwargs):
 
         lensmodel_kwargs = self.assemble(lens_system)
 
@@ -82,8 +82,8 @@ class LenstronomyWrap:
                               verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm,
                               constrain_params=constrain_params,pso_compute_magnification=pso_compute_magnification,pso_convergence_mean=pso_convergence_mean,
                               tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,single_background=single_background,
-                              simplex_n_iterations=simplex_n_iter)
+                              simplex_n_iterations=simplex_n_iter,optimizer_kwargs = optimizer_kwargs)
 
-        optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
+        optimized_args, source, images, optimizer_kwargs = optimizer.optimize(n_particles,n_iterations,restart)
 
-        return optimized_args, source, images, optimizer.lensModel
+        return optimized_args, source, images, optimizer.lensModel, optimizer_kwargs
