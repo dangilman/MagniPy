@@ -26,8 +26,8 @@ class SolveRoutines(Magnipy):
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
             if m_ref < 7:
-                background_aperture_masses = [10, 9, 8, 0]
-                background_globalmin_masses = [10, 9, 8, 8]
+                background_aperture_masses = [10, 8.5, 8, 0]
+                background_globalmin_masses = [10, 8.5, 8, 8]
                 background_filters = [0.5, 0.5, 0.25, 0.005]
                 reoptimize_scale = [1, 1, 0.3, 0.2]
                 particle_swarm_reopt = [True, True, False, False]
@@ -139,7 +139,7 @@ class SolveRoutines(Magnipy):
                                    particle_swarm = True, solver_type = 'PROFILE_SHEAR', restart=1,
                                    constrain_params=None, shifting_background=False, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
-                                   simplex_n_iter=300, single_background=False):
+                                   simplex_n_iter=300):
 
 
         raytrace_with = raytrace_with_default
