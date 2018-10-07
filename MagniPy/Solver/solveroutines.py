@@ -26,9 +26,9 @@ class SolveRoutines(Magnipy):
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
             if m_ref < 7:
-                background_aperture_masses = [10, 8.5, 8, 0]
-                background_globalmin_masses = [10, 8.5, 8, 8]
-                background_filters = [0.5, 0.5, 0.25, 0.005]
+                background_aperture_masses = [10, 8, 7.5, 0]
+                background_globalmin_masses = [10, 9, 8, 8]
+                background_filters = [0.5, 0.5, 0.2, 0.03]
                 reoptimize_scale = [1, 1, 0.3, 0.2]
                 particle_swarm_reopt = [True, True, False, False]
 
@@ -84,6 +84,7 @@ class SolveRoutines(Magnipy):
                                                               mindis_back = background_filters[h], logmasscut_front = logmasscut_front,
                                                               logmasscut_back = background_aperture_masses[h],
                                                               logabsolute_mass_cut = background_globalmin_masses[h])
+
             else:
                 macromodel = model[0].lens_components[0]
                 re_optimize = True
@@ -94,13 +95,16 @@ class SolveRoutines(Magnipy):
                 else:
                     optimizer_kwargs.update({'save_background_path': True})
 
-                realization_filtered = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
+                real = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
                                                               mindis_back=background_filters[h], logmasscut_front=logmasscut_front,
                                                               logmasscut_back=background_globalmin_masses[h],
                                                               ray_x=x_background, ray_y=y_background,
                                                               logabsolute_mass_cut = background_aperture_masses[h],
                                                               background_redshifts = background_redshifts, Tzlist_background = Tzlist)
 
+                realization_filtered = real.join(realization_filtered)
+
+            #realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
             print('N background halos: ', len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)]))
             #print(macromodel.lenstronomy_args)
             lens_system = self.build_system(main=macromodel, realization=realization_filtered, multiplane=multiplane)
