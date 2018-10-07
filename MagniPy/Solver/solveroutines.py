@@ -26,24 +26,32 @@ class SolveRoutines(Magnipy):
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
             if m_ref < 7:
-                background_aperture_masses = [10, 8, 7.5, 0]
+                background_aperture_masses = [10, 8, 7.4, 0]
                 background_globalmin_masses = [10, 9, 8, 8]
                 background_filters = [0.5, 0.5, 0.2, 0.03]
                 reoptimize_scale = [1, 1, 0.3, 0.2]
                 particle_swarm_reopt = [True, True, False, False]
 
+            elif m_ref < 7.5:
+                background_aperture_masses = [10, 7.5, 0]
+                background_globalmin_masses = [10, 8, 8]
+                background_filters = [0.5, 0.4, 0.03]
+                reoptimize_scale = [1, 0.2, 0.2]
+                particle_swarm_reopt = [True, True, False, False]
+
             elif m_ref < 8:
                 background_aperture_masses = [9, 8, 0]
-                background_globalmin_masses = [9, 9, 8]
-                background_filters = [0.5, 0.25, 0.025]
+                background_globalmin_masses = [9, 8, 8]
+                background_filters = [0.5, 0.5, 0.025]
                 reoptimize_scale = [1, 1, 0.2]
                 particle_swarm_reopt = [True, True, False]
 
             else:
                 background_aperture_masses = [9, 0]
                 background_globalmin_masses = [9, 8]
-                background_filters = [0.5, 0.2]
+                background_filters = [0.5, 0.3]
                 reoptimize_scale = [1, 0.2]
+                particle_swarm_reopt = [True, False]
         else:
             reoptimize_scale = np.ones_like(background_filters)
 

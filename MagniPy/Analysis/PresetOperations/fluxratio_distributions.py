@@ -88,7 +88,9 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        optimize_routine='fixed_powerlaw_shear',
                                                                        verbose=True, pso_convergence_mean=pso_conv_mean,
                                                                        re_optimize=False, particle_swarm=True,
-                                                                       restart=n_restart, grid_res=grid_res)
+                                                                       restart=n_restart, grid_res=grid_res,
+                                                                       min_mass=model_args['log_mlow'],
+                                                                         m_break=model_args['log_m_break'])
 
             else:
                 model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data, macromodel=start_macromodel,
