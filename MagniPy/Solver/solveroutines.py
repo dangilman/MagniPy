@@ -11,17 +11,19 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def hierarchical_optimization(self, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
-                                  source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
-                                  n_particles = 50, n_iterations = 250, polar_grid = False,
-                                  optimize_routine = 'fixed_powerlaw_shear', verbose=False, re_optimize=False,
-                                  particle_swarm = True, solver_type = 'PROFILE_SHEAR', restart=1,
+    def hierarchical_optimization(self, datatofit=None, macromodel=None, realizations=None, multiplane=None,
+                                  source_shape='GAUSSIAN',
+                                  source_size_kpc=None, grid_res=None, tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
+                                  centroid_0=[0, 0],
+                                  n_particles=50, n_iterations=250, polar_grid=False,
+                                  optimize_routine='fixed_powerlaw_shear', verbose=False, re_optimize=False,
+                                  particle_swarm=True, solver_type='PROFILE_SHEAR', restart=1,
                                   constrain_params=None, pso_convergence_mean=5000,
-                                  pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
-                                  simplex_n_iter=300, background_globalmin_masses = None,
-                                  background_aperture_masses = None, background_filters = None,
-                                  mindis_front = 0.5, logmasscut_front = 7.5, min_mass = 6, m_break = 0,
-                                  particle_swarm_reopt = True, save_all_paths=True, reoptimize_scale = None):
+                                  pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func=0.01,
+                                  simplex_n_iter=300, background_globalmin_masses=None,
+                                  background_aperture_masses=None, background_filters=None,
+                                  mindis_front=0.5, logmasscut_front=7.5, min_mass=6, m_break=0,
+                                  particle_swarm_reopt=True, save_all_paths=True, reoptimize_scale=None):
 
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
@@ -88,15 +90,16 @@ class SolveRoutines(Magnipy):
             else:
                 finite_source_magnification = False
 
-            print('iterating '+str(h+1)+' of '+str(N_iterations)+'... ')
+            print('iterating ' + str(h + 1) + ' of ' + str(N_iterations) + '... ')
             if h == 0:
 
-                optimizer_kwargs = {'save_background_path':True, 're_optimize_scale': reoptimize_scale[h]}
+                optimizer_kwargs = {'save_background_path': True, 're_optimize_scale': reoptimize_scale[h]}
 
-                realization_filtered = realizations[0].filter(datatofit.x, datatofit.y, mindis_front = mindis_front,
-                                                              mindis_back = background_filters[h], logmasscut_front = logmasscut_front,
-                                                              logmasscut_back = background_aperture_masses[h],
-                                                              logabsolute_mass_cut = background_globalmin_masses[h])
+                realization_filtered = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
+                                                              mindis_back=background_filters[h],
+                                                              logmasscut_front=logmasscut_front,
+                                                              logmasscut_back=background_aperture_masses[h],
+                                                              logabsolute_mass_cut=background_globalmin_masses[h])
 
             else:
                 macromodel = model[0].lens_components[0]
@@ -109,45 +112,60 @@ class SolveRoutines(Magnipy):
                     optimizer_kwargs.update({'save_background_path': True})
 
                 real = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
-                                                              mindis_back=background_filters[h], logmasscut_front=logmasscut_front,
-                                                              logmasscut_back=background_globalmin_masses[h],
-                                                              ray_x=x_background, ray_y=y_background,
-                                                              logabsolute_mass_cut = background_aperture_masses[h],
-                                                              background_redshifts = background_redshifts, Tzlist_background = Tzlist)
+                                              mindis_back=background_filters[h], logmasscut_front=logmasscut_front,
+                                              logmasscut_back=background_globalmin_masses[h],
+                                              ray_x=x_background, ray_y=y_background,
+                                              logabsolute_mass_cut=background_aperture_masses[h],
+                                              background_redshifts=background_redshifts, Tzlist_background=Tzlist)
 
                 realization_filtered = real.join(realization_filtered)
 
-            #realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
-            print('N background halos: ', len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)]))
-            #print(macromodel.lenstronomy_args)
+            # realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
+            print('N background halos: ',
+                  len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)]))
+            # print(macromodel.lenstronomy_args)
             lens_system = self.build_system(main=macromodel, realization=realization_filtered, multiplane=multiplane)
 
-            optimized_data, model, optimizer_kwargs = self._optimize_4imgs_lenstronomy([lens_system], data2fit=datatofit, tol_source=tol_source,
-                                                                     tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
-                                                                     n_particles=n_particles, n_iterations=n_iterations,
-                                                                     res=grid_res, source_shape=source_shape,
-                                                                     source_size_kpc=source_size_kpc,
-                                                                     raytrace_with=raytrace_with, polar_grid=polar_grid, solver_type=solver_type,
-                                                                     optimizer_routine=optimize_routine, verbose=verbose, re_optimize=re_optimize,
-                                                                     particle_swarm=particle_swarm, restart=restart,
-                                                                     constrain_params=constrain_params,
-                                                                     pso_convergence_mean=pso_convergence_mean,
-                                                                     pso_compute_magnification=pso_compute_magnification,
-                                                                     tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
-                                                                     simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs,
-                                                                     finite_source_magnification = finite_source_magnification)
+            optimized_data, model, optimizer_kwargs = self._optimize_4imgs_lenstronomy([lens_system],
+                                                                                       data2fit=datatofit,
+                                                                                       tol_source=tol_source,
+                                                                                       tol_mag=tol_mag,
+                                                                                       tol_centroid=tol_centroid,
+                                                                                       centroid_0=centroid_0,
+                                                                                       n_particles=n_particles,
+                                                                                       n_iterations=n_iterations,
+                                                                                       res=grid_res,
+                                                                                       source_shape=source_shape,
+                                                                                       source_size_kpc=source_size_kpc,
+                                                                                       raytrace_with=raytrace_with,
+                                                                                       polar_grid=polar_grid,
+                                                                                       solver_type=solver_type,
+                                                                                       optimizer_routine=optimize_routine,
+                                                                                       verbose=verbose,
+                                                                                       re_optimize=re_optimize,
+                                                                                       particle_swarm=particle_swarm,
+                                                                                       restart=restart,
+                                                                                       constrain_params=constrain_params,
+                                                                                       pso_convergence_mean=pso_convergence_mean,
+                                                                                       pso_compute_magnification=pso_compute_magnification,
+                                                                                       tol_simplex_params=tol_simplex_params,
+                                                                                       tol_simplex_func=tol_simplex_func,
+                                                                                       simplex_n_iter=simplex_n_iter,
+                                                                                       optimizer_kwargs=optimizer_kwargs,
+                                                                                       finite_source_magnification=finite_source_magnification)
 
             if save_all_paths is True:
                 x_background, y_background, background_redshifts, Tzlist = optimizer_kwargs['x_background'], \
-                                  optimizer_kwargs['y_background'], optimizer_kwargs['background_redshifts'], \
-                                                                                 optimizer_kwargs['Tz_list_background']
+                                                                           optimizer_kwargs['y_background'], \
+                                                                           optimizer_kwargs['background_redshifts'], \
+                                                                           optimizer_kwargs['Tz_list_background']
                 backx.append(x_background)
                 backy.append(y_background)
                 background_Tzs.append(Tzlist)
                 background_zs.append(background_redshifts)
                 reoptimized_realizations.append(realization_filtered)
 
-        return optimized_data,model, (backx, backy, background_Tzs, background_zs, reoptimized_realizations)
+        return optimized_data, model, (backx, backy, background_Tzs, background_zs, reoptimized_realizations)
 
     def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
