@@ -84,6 +84,6 @@ class LenstronomyWrap:
                               tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
                               simplex_n_iterations=simplex_n_iter,optimizer_kwargs = optimizer_kwargs)
 
-        optimized_args, source, images, optimizer_kwargs = optimizer.optimize(n_particles,n_iterations,restart)
+        optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 
-        return optimized_args, source, images, optimizer.lensModel, optimizer_kwargs
+        return optimized_args, source, images, optimizer

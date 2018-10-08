@@ -23,7 +23,7 @@ class SolveRoutines(Magnipy):
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
                                   mindis_front=0.5, logmasscut_front=7.5, min_mass=6, m_break=0,
-                                  particle_swarm_reopt=True, save_all_paths=True, reoptimize_scale=None):
+                                  particle_swarm_reopt=True, reoptimize_scale=None):
 
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
@@ -106,23 +106,22 @@ class SolveRoutines(Magnipy):
                 re_optimize = True
                 particle_swarm = particle_swarm_reopt[h]
                 optimizer_kwargs = {'re_optimize_scale': reoptimize_scale[h]}
-                if h == N_iterations - 1 and save_all_paths is False:
-                    optimizer_kwargs.update({'save_background_path': False})
-                else:
-                    optimizer_kwargs.update({'save_background_path': True})
+                optimizer_kwargs.update({'save_background_path': True})
+                optimizer_kwargs.update({'precomputed_rays': precomputed_foreground})
 
                 real = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
                                               mindis_back=background_filters[h], logmasscut_front=logmasscut_front,
                                               logmasscut_back=background_globalmin_masses[h],
-                                              ray_x=x_background, ray_y=y_background,
+                                              ray_x=path_x, ray_y=path_y,
                                               logabsolute_mass_cut=background_aperture_masses[h],
-                                              background_redshifts=background_redshifts, Tzlist_background=Tzlist)
+                                              background_redshifts=path_redshifts, Tzlist_background=path_Tzlist)
 
                 realization_filtered = real.join(realization_filtered)
 
             # realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
-            print('N background halos: ',
-                  len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)]))
+            N_background_halos = len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)])
+            
+            print('N background halos: ', N_background_halos)
             # print(macromodel.lenstronomy_args)
             lens_system = self.build_system(main=macromodel, realization=realization_filtered, multiplane=multiplane)
 
@@ -137,7 +136,7 @@ class SolveRoutines(Magnipy):
                                                                                        res=grid_res,
                                                                                        source_shape=source_shape,
                                                                                        source_size_kpc=source_size_kpc,
-                                                                                       raytrace_with=raytrace_with,
+                                                                                       return_ray_path=True,
                                                                                        polar_grid=polar_grid,
                                                                                        solver_type=solver_type,
                                                                                        optimizer_routine=optimize_routine,
@@ -154,16 +153,15 @@ class SolveRoutines(Magnipy):
                                                                                        optimizer_kwargs=optimizer_kwargs,
                                                                                        finite_source_magnification=finite_source_magnification)
 
-            if save_all_paths is True:
-                x_background, y_background, background_redshifts, Tzlist = optimizer_kwargs['x_background'], \
-                                                                           optimizer_kwargs['y_background'], \
-                                                                           optimizer_kwargs['background_redshifts'], \
-                                                                           optimizer_kwargs['Tz_list_background']
-                backx.append(x_background)
-                backy.append(y_background)
-                background_Tzs.append(Tzlist)
-                background_zs.append(background_redshifts)
-                reoptimized_realizations.append(realization_filtered)
+            path_x, path_y, path_redshifts, path_Tzlist = optimizer_kwargs['path_x'], optimizer_kwargs['path_y'], \
+                                                          optimizer_kwargs['path_redshifts'], optimizer_kwargs['path_Tzlist']
+            precomputed_foreground = optimizer_kwargs['precomputed_rays']
+            backx.append(path_x)
+            backy.append(path_y)
+            background_Tzs.append(path_Tzlist)
+            background_zs.append(path_redshifts)
+            reoptimized_realizations.append(realization_filtered)
+            N_background_halos_last = N_background_halos
 
         return optimized_data, model, (backx, backy, background_Tzs, background_zs, reoptimized_realizations)
 

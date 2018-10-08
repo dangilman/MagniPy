@@ -75,13 +75,11 @@ class Magnipy:
         return newsystem
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None, tol_source=None, tol_mag=None, tol_centroid=None,
-                                    centroid_0=None, n_particles=50, n_iterations=400,res=None, source_shape='GAUSSIAN', source_size_kpc=None, raytrace_with='lenstronomy',
+                                    centroid_0=None, n_particles=50, n_iterations=400,res=None, source_shape='GAUSSIAN', source_size_kpc=None,
                                     polar_grid=None, solver_type='PROFILE_SHEAR', optimizer_routine=str, verbose=bool, re_optimize=False,
-                                    particle_swarm = True, restart = 1, constrain_params=None, shifting_background=False,
-                                    pso_convergence_mean=None,
-                                    pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
-                                    simplex_n_iter=None, optimizer_kwargs = {},
-                                    finite_source_magnification = True):
+                                    particle_swarm = True, restart = 1, constrain_params=None, return_ray_path = False,
+                                    pso_convergence_mean=None, pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
+                                    simplex_n_iter=None, optimizer_kwargs = {}, finite_source_magnification = True):
 
         data, opt_sys = [], []
 
@@ -89,14 +87,28 @@ class Magnipy:
 
         for i, system in enumerate(lens_systems):
 
-            kwargs_lens, [xsrc,ysrc], [x_opt,y_opt], lensModel, optimizer_kwargs = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
+            kwargs_lens, [xsrc,ysrc], [x_opt,y_opt], optimizer = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
                             pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
                               simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs)
-            #print(optimizer_kwargs['magnification_pointsrc'])
-            #print(optimizer_kwargs)
+
+            lensModel = optimizer.lensModel
+            optimizer_kwargs = {}
+            optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
+
+            if return_ray_path:
+
+                optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
+
+                x_path, y_path, redshifts, Tzlist = lensModel._ray_shooting_steps(kwargs_lens)
+
+                optimizer_kwargs.update({'path_x': x_path})
+                optimizer_kwargs.update({'path_y': y_path})
+                optimizer_kwargs.update({'path_Tzlist': Tzlist})
+                optimizer_kwargs.update({'path_redshifts': redshifts})
+
             if finite_source_magnification:
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
@@ -109,7 +121,6 @@ class Magnipy:
                 fluxes = optimizer_kwargs['magnification_pointsrc']
 
             optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy',solver_type=solver_type)
-
 
             new_data = Data(x_opt,y_opt,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
