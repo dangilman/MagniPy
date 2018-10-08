@@ -96,6 +96,7 @@ class Magnipy:
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
                               simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs)
             #print(optimizer_kwargs['magnification_pointsrc'])
+            #print(optimizer_kwargs)
             if finite_source_magnification:
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
