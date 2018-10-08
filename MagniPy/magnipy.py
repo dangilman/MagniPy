@@ -110,13 +110,8 @@ class Magnipy:
                 optimizer_kwargs.update({'path_redshifts': redshifts})
 
             if finite_source_magnification:
-                source_scale = self.cosmo.kpc_per_asec(self.zsrc)
-                source_size = source_size_kpc * source_scale ** -1
-                img_sep_small = min_img_sep(x_opt, y_opt)
-                raytracing = raytrace.RayTrace(xsrc=xsrc,ysrc=ysrc,multiplane=system.multiplane,
-                                               res=res,source_shape=source_shape,polar_grid=polar_grid, source_size=source_size,
-                                               minimum_image_sep = img_sep_small)
-                fluxes = raytracing.magnification(x_opt,y_opt,lensModel,kwargs_lens)
+                fluxes = self._ray_trace_finite(x_opt, y_opt, xsrc, ysrc, system.multiplane, lensModel, kwargs_lens, res,
+                                                source_shape, source_size_kpc, polar_grid)
             else:
                 fluxes = optimizer_kwargs['magnification_pointsrc']
 
@@ -128,6 +123,21 @@ class Magnipy:
             opt_sys.append(optimized_sys)
 
         return data, opt_sys, optimizer_kwargs
+
+    def _ray_trace_finite(self, ximg, yimg, xsrc, ysrc, multiplane, lensModel, kwargs_lens, resolution, source_shape, source_size_kpc, polar_grid):
+
+        source_scale = self.cosmo.kpc_per_asec(self.zsrc)
+        source_size = source_size_kpc * source_scale ** -1
+        img_sep_small = min_img_sep(ximg, yimg)
+
+        raytracing = raytrace.RayTrace(xsrc=xsrc, ysrc=ysrc, multiplane=multiplane,
+                                       res=resolution, source_shape=source_shape, polar_grid=polar_grid,
+                                       source_size=source_size,
+                                       minimum_image_sep=img_sep_small)
+
+        fluxes = raytracing.magnification(ximg, yimg, lensModel, kwargs_lens)
+
+        return fluxes
 
     def _solve_4imgs_lenstronomy(self, lens_systems, data2fit=None, method=str, sigmas=None, ray_trace=True, res=None,
                                  source_shape='GAUSSIAN', source_size_kpc=None, print_mag=False, raytrace_with=None, polar_grid=True,

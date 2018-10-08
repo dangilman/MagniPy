@@ -4,6 +4,7 @@ from MagniPy.LensBuild.defaults import raytrace_with_default,default_sigmas,defa
 import copy
 import numpy as np
 from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
+from MagniPy.Solver.hierarchical_optimization import *
 
 class SolveRoutines(Magnipy):
 
@@ -28,60 +29,21 @@ class SolveRoutines(Magnipy):
         if background_globalmin_masses is None or background_aperture_masses is None:
             m_ref = max(m_break, min_mass)
 
-            background_aperture_masses = [10]
-            background_globalmin_masses = [10]
-            background_filters = [1]
-            reoptimize_scale = [1]
-            particle_swarm_reopt = [True]
-
-            if m_ref < 7:
-                background_aperture_masses += [8.5, 7.5, 0]
-                background_globalmin_masses += [8.5, 8, 8]
-                background_filters += [0.5, 0.15, 0.01]
-                reoptimize_scale += [1, 0.3, 0.2]
-                particle_swarm_reopt += [True, False, False]
-
-            elif m_ref < 7.5:
-                background_aperture_masses += [7.5, 0]
-                background_globalmin_masses += [8, 8]
-                background_filters += [0.4, 0.03]
-                reoptimize_scale += [0.2, 0.2]
-                particle_swarm_reopt += [True, False, False]
-
-            elif m_ref < 8:
-                background_aperture_masses += [8, 0]
-                background_globalmin_masses += [8, 8]
-                background_filters += [0.5, 0.025]
-                reoptimize_scale += [1, 0.2]
-                particle_swarm_reopt += [True, False]
-
-            else:
-                background_aperture_masses += [0]
-                background_globalmin_masses += [8]
-                background_filters += [0.3]
-                reoptimize_scale += [0.2]
-                particle_swarm_reopt += [False]
-
-        if not isinstance(particle_swarm_reopt, list):
-            particle_swarm_reopt = [particle_swarm_reopt] * len(background_filters)
+            background_aperture_masses, background_globalmin_masses, background_filters, \
+            reoptimize_scale, particle_swarm_reopt = background_mass_filters(m_ref)
         else:
-            assert len(particle_swarm_reopt) == len(background_filters)
+            assert len(background_filters) == len(background_aperture_masses)
+            assert len(background_globalmin_masses) == len(background_filters)
 
-        raytrace_with = raytrace_with_default
+        N_iterations = len(background_filters)
+        backx, backy, background_Tzs, background_zs, reoptimized_realizations = [], [], [], [], []
 
         if source_shape is None:
             source_shape = default_source_shape
-
         if source_size_kpc is None:
             source_size_kpc = default_source_size_kpc
-
         if grid_res is None:
             grid_res = default_res(source_size_kpc)
-
-        assert len(background_filters) == len(background_aperture_masses)
-        assert len(background_globalmin_masses) == len(background_filters)
-        N_iterations = len(background_filters)
-        backx, backy, background_Tzs, background_zs, reoptimized_realizations = [], [], [], [], []
 
         for h in range(0, N_iterations):
 
@@ -120,7 +82,7 @@ class SolveRoutines(Magnipy):
 
             # realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
             N_background_halos = len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)])
-            
+
             print('N background halos: ', N_background_halos)
             # print(macromodel.lenstronomy_args)
             lens_system = self.build_system(main=macromodel, realization=realization_filtered, multiplane=multiplane)
