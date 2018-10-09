@@ -13,9 +13,8 @@ def straight_line(dcurrent, dstart, dend, ystart, yend):
     dx = dcurrent - dstart
     return dx * slope + intersect
 
-def run(outidx, identifier):
+def run(outidx, identifier, zlens, zsrc):
 
-    zlens, zsrc = 0.3, 1.2
     pyhalo = pyHalo(zlens, zsrc)
     lens_params = {'R_ein': 1.2, 'x': 0, 'y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.06, 'shear_theta': -40,
                    'gamma': 2}
