@@ -24,7 +24,7 @@ class SolveRoutines(Magnipy):
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
                                   mindis_front=0.5, logmasscut_front=7.5, min_mass=6, m_break=0,
-                                  particle_swarm_reopt=True, reoptimize_scale=None):
+                                  particle_swarm_reopt=True, reoptimize_scale=None,LOS_mass_sheet = True):
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -41,7 +41,7 @@ class SolveRoutines(Magnipy):
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
                           restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                            tol_simplex_func, simplex_n_iter, m_ref, self)
+                            tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet)
 
         print('optimizing background... ')
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
@@ -51,7 +51,7 @@ class SolveRoutines(Magnipy):
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
                         background_globalmin_masses = background_globalmin_masses,
                          background_aperture_masses = background_aperture_masses, background_filters = background_filters,
-                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt)
+                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt, LOS_mass_sheet = LOS_mass_sheet)
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
