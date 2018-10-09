@@ -18,25 +18,13 @@ class SolveRoutines(Magnipy):
                                   centroid_0=[0, 0],
                                   n_particles=50, n_iterations=250, polar_grid=False,
                                   optimize_routine='fixed_powerlaw_shear', verbose=False, re_optimize=False,
-                                  particle_swarm=True, solver_type='PROFILE_SHEAR', restart=1,
+                                  particle_swarm=True, restart=1,
                                   constrain_params=None, pso_convergence_mean=5000,
                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func=0.01,
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
                                   mindis_front=0.5, logmasscut_front=7.5, min_mass=6, m_break=0,
                                   particle_swarm_reopt=True, reoptimize_scale=None):
-
-        if background_globalmin_masses is None or background_aperture_masses is None:
-            m_ref = max(m_break, min_mass)
-
-            background_aperture_masses, background_globalmin_masses, background_filters, \
-            reoptimize_scale, particle_swarm_reopt = background_mass_filters(m_ref)
-        else:
-            assert len(background_filters) == len(background_aperture_masses)
-            assert len(background_globalmin_masses) == len(background_filters)
-
-        N_iterations = len(background_filters)
-        backx, backy, background_Tzs, background_zs, reoptimized_realizations = [], [], [], [], []
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -45,99 +33,44 @@ class SolveRoutines(Magnipy):
         if grid_res is None:
             grid_res = default_res(source_size_kpc)
 
-        for h in range(0, N_iterations):
+        m_ref = max(m_break, min_mass)
+        foreground_realization, background_realization = split_realization(datatofit, realizations[0])
 
-            if h == N_iterations - 1:
-                finite_source_magnification = True
-            else:
-                finite_source_magnification = False
+        print('optimizing foreground... ')
+        foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel = optimize_foreground(macromodel,
+                              [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
+                              n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
+                          restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
+                            tol_simplex_func, simplex_n_iter, m_ref, self)
 
-            print('iterating ' + str(h + 1) + ' of ' + str(N_iterations) + '... ')
-            if h == 0:
+        print('optimizing background... ')
+        optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
+                      datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,  n_iterations,
+                      source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose,
+                        particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification,
+                        tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
+                        background_globalmin_masses = background_globalmin_masses,
+                         background_aperture_masses = background_aperture_masses, background_filters = background_filters,
+                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt)
 
-                optimizer_kwargs = {'save_background_path': True, 're_optimize_scale': reoptimize_scale[h]}
+        fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
+                               keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
+                               source_size_kpc, polar_grid)
 
-                realization_filtered = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
-                                                              mindis_back=background_filters[h],
-                                                              logmasscut_front=logmasscut_front,
-                                                              logmasscut_back=background_aperture_masses[h],
-                                                              logabsolute_mass_cut=background_globalmin_masses[h])
+        optimized_data[0].set_mag(fluxes)
+        optimized_data[0].sort_by_pos(datatofit.x,datatofit.y)
 
-            else:
-                macromodel = model[0].lens_components[0]
-                re_optimize = True
-                particle_swarm = particle_swarm_reopt[h]
-                optimizer_kwargs = {'re_optimize_scale': reoptimize_scale[h]}
-                optimizer_kwargs.update({'save_background_path': True})
-                optimizer_kwargs.update({'precomputed_rays': precomputed_foreground})
-
-                real = realizations[0].filter(datatofit.x, datatofit.y, mindis_front=mindis_front,
-                                              mindis_back=background_filters[h], logmasscut_front=logmasscut_front,
-                                              logmasscut_back=background_globalmin_masses[h],
-                                              ray_x=path_x, ray_y=path_y,
-                                              logabsolute_mass_cut=background_aperture_masses[h],
-                                              background_redshifts=path_redshifts, Tzlist_background=path_Tzlist)
-
-                realization_filtered = real.join(realization_filtered)
-
-            # realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
-            N_background_halos = len(realization_filtered.masses[np.where(realization_filtered.redshifts > self.zmain)])
-
-            print('N background halos: ', N_background_halos)
-            # print(macromodel.lenstronomy_args)
-            lens_system = self.build_system(main=macromodel, realization=realization_filtered, multiplane=multiplane)
-
-            optimized_data, model, optimizer_kwargs = self._optimize_4imgs_lenstronomy([lens_system],
-                                                                                       data2fit=datatofit,
-                                                                                       tol_source=tol_source,
-                                                                                       tol_mag=tol_mag,
-                                                                                       tol_centroid=tol_centroid,
-                                                                                       centroid_0=centroid_0,
-                                                                                       n_particles=n_particles,
-                                                                                       n_iterations=n_iterations,
-                                                                                       res=grid_res,
-                                                                                       source_shape=source_shape,
-                                                                                       source_size_kpc=source_size_kpc,
-                                                                                       return_ray_path=True,
-                                                                                       polar_grid=polar_grid,
-                                                                                       solver_type=solver_type,
-                                                                                       optimizer_routine=optimize_routine,
-                                                                                       verbose=verbose,
-                                                                                       re_optimize=re_optimize,
-                                                                                       particle_swarm=particle_swarm,
-                                                                                       restart=restart,
-                                                                                       constrain_params=constrain_params,
-                                                                                       pso_convergence_mean=pso_convergence_mean,
-                                                                                       pso_compute_magnification=pso_compute_magnification,
-                                                                                       tol_simplex_params=tol_simplex_params,
-                                                                                       tol_simplex_func=tol_simplex_func,
-                                                                                       simplex_n_iter=simplex_n_iter,
-                                                                                       optimizer_kwargs=optimizer_kwargs,
-                                                                                       finite_source_magnification=finite_source_magnification)
-
-            path_x, path_y, path_redshifts, path_Tzlist = optimizer_kwargs['path_x'], optimizer_kwargs['path_y'], \
-                                                          optimizer_kwargs['path_redshifts'], optimizer_kwargs['path_Tzlist']
-            precomputed_foreground = optimizer_kwargs['precomputed_rays']
-            backx.append(path_x)
-            backy.append(path_y)
-            background_Tzs.append(path_Tzlist)
-            background_zs.append(path_redshifts)
-            reoptimized_realizations.append(realization_filtered)
-            N_background_halos_last = N_background_halos
-
-        return optimized_data, model, (backx, backy, background_Tzs, background_zs, reoptimized_realizations)
+        return optimized_data, model, outputs
 
     def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
                                    n_particles = 50, n_iterations = 250, polar_grid = False,
                                    optimize_routine = 'fixed_powerlaw_shear', verbose=False, re_optimize=False,
-                                   particle_swarm = True, solver_type = 'PROFILE_SHEAR', restart=1,
-                                   constrain_params=None, shifting_background=False, pso_convergence_mean=5000,
+                                   particle_swarm = True, restart=1,
+                                   constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
                                    simplex_n_iter=300):
 
-
-        raytrace_with = raytrace_with_default
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -167,16 +100,14 @@ class SolveRoutines(Magnipy):
                     lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
 
 
-        optimized_data, model, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
+        optimized_data, model, _, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
                                                                  tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
                                                                  n_particles=n_particles, n_iterations=n_iterations,
                                                                  res=grid_res, source_shape=source_shape,
-                                                                 source_size_kpc=source_size_kpc,
-                                                                 raytrace_with=raytrace_with, polar_grid=polar_grid, solver_type=solver_type,
+                                                                 source_size_kpc=source_size_kpc, polar_grid=polar_grid,
                                                                  optimizer_routine=optimize_routine, verbose=verbose, re_optimize=re_optimize,
                                                                  particle_swarm=particle_swarm, restart=restart,
-                                                                 constrain_params=constrain_params,
-                                                                 shifting_background=shifting_background, pso_convergence_mean=pso_convergence_mean,
+                                                                 constrain_params=constrain_params, pso_convergence_mean=pso_convergence_mean,
                                                                  pso_compute_magnification=pso_compute_magnification,
                                                                  tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
                                                                  simplex_n_iter=simplex_n_iter)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 class RayTrace:
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
-                 polar_grid=False, polar_q = 0.6, minimum_image_sep = None, **kwargs):
+                 polar_grid=False, polar_q = 1, minimum_image_sep = None, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -17,6 +17,7 @@ class RayTrace:
         """
 
         self.polar_grid = polar_grid
+
         self.xsrc,self.ysrc = xsrc,ysrc
         self.multiplane = multiplane
 

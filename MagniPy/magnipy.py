@@ -45,7 +45,7 @@ class Magnipy:
             for component in system.lens_components:
                 component.print_args()
 
-    def update_system(self, lens_system, newkwargs, method, solver_type):
+    def update_system(self, lens_system, newkwargs, method):
 
         if lens_system.lens_components[0].other_args['name'] == 'SERSIC_NFW':
             raise Exception('not yet implemented')
@@ -55,9 +55,7 @@ class Magnipy:
 
                 lens_system.lens_components[0].update(method=method, is_shear=False, **newkwargs[0])
 
-                if solver_type == 'PROFILE_SHEAR':
-
-                    lens_system.lens_components[0].update(method=method, is_shear=True, **newkwargs[1])
+                lens_system.lens_components[0].update(method=method, is_shear=True, **newkwargs[1])
 
             elif method == 'lensmodel':
 
@@ -76,7 +74,7 @@ class Magnipy:
 
     def _optimize_4imgs_lenstronomy(self, lens_systems, data2fit=None, tol_source=None, tol_mag=None, tol_centroid=None,
                                     centroid_0=None, n_particles=50, n_iterations=400,res=None, source_shape='GAUSSIAN', source_size_kpc=None,
-                                    polar_grid=None, solver_type='PROFILE_SHEAR', optimizer_routine=str, verbose=bool, re_optimize=False,
+                                    polar_grid=None, optimizer_routine=str, verbose=bool, re_optimize=False,
                                     particle_swarm = True, restart = 1, constrain_params=None, return_ray_path = False,
                                     pso_convergence_mean=None, pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
                                     simplex_n_iter=None, optimizer_kwargs = {}, finite_source_magnification = True):
@@ -84,7 +82,7 @@ class Magnipy:
         data, opt_sys = [], []
 
         lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
-
+        assert len(lens_systems) == 1
         for i, system in enumerate(lens_systems):
 
             kwargs_lens, [xsrc,ysrc], [x_opt,y_opt], optimizer = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
@@ -97,10 +95,9 @@ class Magnipy:
             lensModel = optimizer.lensModel
             optimizer_kwargs = {}
             optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
+            optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
 
             if return_ray_path:
-
-                optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
 
                 x_path, y_path, redshifts, Tzlist = lensModel._ray_shooting_steps(kwargs_lens)
 
@@ -115,14 +112,14 @@ class Magnipy:
             else:
                 fluxes = optimizer_kwargs['magnification_pointsrc']
 
-            optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy',solver_type=solver_type)
+            optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy')
 
             new_data = Data(x_opt,y_opt,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
             data.append(new_data)
             opt_sys.append(optimized_sys)
 
-        return data, opt_sys, optimizer_kwargs
+        return data, opt_sys, optimizer_kwargs, {'kwargs_lens': kwargs_lens, 'lensModel': lensModel}
 
     def _ray_trace_finite(self, ximg, yimg, xsrc, ysrc, multiplane, lensModel, kwargs_lens, resolution, source_shape, source_size_kpc, polar_grid):
 
@@ -171,8 +168,7 @@ class Magnipy:
 
             fluxes = raytracing.magnification(x_img, y_img, lensModel, kwargs_lens)
 
-            optimized_sys = self.update_system(lens_system=system, newkwargs=kwargs_lens, method='lenstronomy',
-                                               solver_type=solver_type)
+            optimized_sys = self.update_system(lens_system=system, newkwargs=kwargs_lens, method='lenstronomy')
 
             new_data = Data(x_img,y_img,fluxes,None,[xsrc,ysrc])
             new_data.sort_by_pos(data2fit.x,data2fit.y)
@@ -229,8 +225,7 @@ class Magnipy:
 
             newmacromodel = gravlens_to_kwargs(macrovals,shr_coords=shr_coords)
 
-            optimized_sys = self.update_system(lens_system=lens_systems[i], newkwargs=newmacromodel, method='lensmodel',
-                                               solver_type=solver_type)
+            optimized_sys = self.update_system(lens_system=lens_systems[i], newkwargs=newmacromodel, method='lensmodel')
 
             optimized_systems.append(optimized_sys)
 
