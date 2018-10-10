@@ -53,7 +53,9 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
             realization_filtered = real.join(realization_filtered)
 
         N_foreground_halos = len(realization_filtered.masses[np.where(realization_filtered.redshifts <= solver_class.zmain)])
-        print('N foreground halos: ', N_foreground_halos)
+
+        if verbose:
+            print('N foreground halos: ', N_foreground_halos)
 
         do_optimization = True
         if h > 0:
@@ -117,8 +119,8 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
     backx, backy, background_Tzs, background_zs, reoptimized_realizations = [], [], [], [], []
 
     for h in range(0, N_iterations):
-
-        print('iterating ' + str(h + 1) + ' of ' + str(N_iterations) + '... ')
+        if verbose:
+            print('iterating ' + str(h + 1) + ' of ' + str(N_iterations) + '... ')
 
         if h == 0:
 
@@ -218,11 +220,11 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 def foreground_mass_filters(m_ref):
 
     if m_ref < 7:
-        foreground_aperture_masses = [7, 0]
-        foreground_globalmin_masses = [8, 8]
-        foreground_filters = [0.5, 0.05]
-        reoptimize_scale = [0.5, 0.5]
-        particle_swarm_reopt = [True, True]
+        foreground_aperture_masses = [8, 7, 0]
+        foreground_globalmin_masses = [8, 8, 8]
+        foreground_filters = [0.5, 0.1, 0.05]
+        reoptimize_scale = [0.5, 0.5, 0.5]
+        particle_swarm_reopt = [True, True, False]
     else:
         foreground_aperture_masses = [0]
         foreground_globalmin_masses = [8]
@@ -235,47 +237,58 @@ def foreground_mass_filters(m_ref):
 
 def background_mass_filters(m_ref):
 
-    background_aperture_masses = [8.5]
-    background_globalmin_masses = [8.5]
-    background_filters = [10]
+    rung_0_mass = 8
+    rung_0_window = 10
+
+    background_aperture_masses = [rung_0_mass]
+    background_globalmin_masses = [rung_0_mass]
+    background_filters = [rung_0_window]
     reoptimize_scale = [0.5]
     particle_swarm_reopt = [True]
     optimize_iteration = [True]
 
-    if m_ref < 7:
-        background_aperture_masses += [7.5, 0]
-        background_globalmin_masses += [8, 8]
-        background_filters += [0.15, 0.02]
-        reoptimize_scale += [0.25, 0.05]
-        particle_swarm_reopt += [False, False]
-        optimize_iteration += [True, False]
+    rung_1_mass = 7.5
+    rung_2_mass = 6
+    rung_3_mass = 0
+    rung_1_window = 0.2
+    rung_2_window = 0.02
+    rung_3_window = 0.01
+
+    if m_ref < 6:
+        background_aperture_masses += [rung_1_mass, rung_2_mass, rung_3_mass]
+        background_globalmin_masses += [rung_0_mass, rung_0_mass, rung_0_mass]
+        background_filters += [rung_1_window, rung_2_window, rung_3_window]
+        reoptimize_scale += [0.5, 0.05, 0.05]
+        particle_swarm_reopt += [True, False, False]
+        optimize_iteration += [True, False, False]
 
     elif m_ref < 7.5:
-        background_aperture_masses += [8, 0]
-        background_globalmin_masses += [8, 8]
-        background_filters += [0.4, 0.03]
-        reoptimize_scale += [0.2, 0.2]
+        background_aperture_masses += [rung_1_mass, rung_2_mass]
+        background_globalmin_masses += [rung_0_mass, rung_0_mass]
+        background_filters += [rung_1_window, rung_2_window]
+        reoptimize_scale += [0.5, 0.05]
         particle_swarm_reopt += [True, False]
         optimize_iteration += [True, False]
 
     elif m_ref < 8:
-        background_aperture_masses += [8, 0]
-        background_globalmin_masses += [8.5, 8]
-        background_filters += [0.5, 0.025]
+        background_aperture_masses += [rung_1_mass, rung_2_mass]
+        background_globalmin_masses += [rung_0_mass, rung_0_mass]
+        background_filters += [rung_1_window, rung_2_window]
         reoptimize_scale += [1, 0.2]
         particle_swarm_reopt += [True, False]
         optimize_iteration += [True, True]
 
     else:
         background_aperture_masses += [0]
-        background_globalmin_masses += [8]
+        background_globalmin_masses += [rung_0_mass]
         background_filters += [0.3]
         reoptimize_scale += [0.2]
         particle_swarm_reopt += [False]
-        optimize_iteration += [True, True]
+        optimize_iteration += [True]
 
     return background_aperture_masses, background_globalmin_masses, background_filters, \
     reoptimize_scale, particle_swarm_reopt, optimize_iteration
+
 
 def build_kwargs(lens_system,data2fit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations, res,
                  source_shape, source_size_kpc, return_ray_path, polar_grid, optimizer_routine, verbose, re_optimize,
