@@ -218,11 +218,11 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 def foreground_mass_filters(m_ref):
 
     if m_ref < 7:
-        foreground_aperture_masses = [8, 7, 0]
-        foreground_globalmin_masses = [9, 8.5, 8]
-        foreground_filters = [0.75, 0.2, 0.05]
-        reoptimize_scale = [0.75, 0.5, 0.5]
-        particle_swarm_reopt = [True, True, False]
+        foreground_aperture_masses = [7, 0]
+        foreground_globalmin_masses = [8.5, 8.5]
+        foreground_filters = [0.5, 0.05]
+        reoptimize_scale = [0.5, 0.5]
+        particle_swarm_reopt = [True, True]
     else:
         foreground_aperture_masses = [0]
         foreground_globalmin_masses = [8]
