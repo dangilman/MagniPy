@@ -31,12 +31,9 @@ def run(outidx, identifier, zlens, zsrc):
     model_args_CDM.update({'fsub': 0.01, 'log_m_break': 0})
     halos = pyhalo.render('composite_powerlaw', model_args_CDM)
 
-    init_system = solver.build_system(main=start, realization=None, multiplane=True)
-
     dtofit = solver.solve_lens_equation(macromodel=start, realizations=None, multiplane=multiplane, srcx=-0.085,
                                         srcy=0.13,
                                         polar_grid=False, source_size_kpc=0.05, brightimg=True)
-    start_macro = get_default_SIE(zlens)
 
     opt_full, mod_full, info = solver.hierarchical_optimization(macromodel=start, datatofit=dtofit[0],
                                                                 realizations=halos,
