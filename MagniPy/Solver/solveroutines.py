@@ -69,7 +69,7 @@ class SolveRoutines(Magnipy):
                                    particle_swarm = True, restart=1,
                                    constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
-                                   simplex_n_iter=300):
+                                   simplex_n_iter=300, LOS_mass_sheet = 8):
 
 
         if source_shape is None:
@@ -90,14 +90,14 @@ class SolveRoutines(Magnipy):
                 assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
 
                 for macro,real in zip(macromodel,realizations):
-                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane))
+                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane,LOS_mass_sheet=LOS_mass_sheet))
             else:
                 if realizations is not None:
                     for real in realizations:
                         lens_systems.append(self.build_system(main=macromodel, realization=real,
-                                                              multiplane=multiplane))
+                                                              multiplane=multiplane,LOS_mass_sheet=LOS_mass_sheet))
                 else:
-                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane))
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet=LOS_mass_sheet))
 
 
         optimized_data, model, _, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,

@@ -64,7 +64,7 @@ class Magnipy:
 
             return lens_system
 
-    def build_system(self, main=None, realization=None, multiplane=None,LOS_mass_sheet=True):
+    def build_system(self, main=None, realization=None, multiplane=None,LOS_mass_sheet=8):
 
         assert multiplane is not None
 

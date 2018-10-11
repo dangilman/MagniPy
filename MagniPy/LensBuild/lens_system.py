@@ -12,7 +12,12 @@ class LensSystem:
         self.lens_components = []
         self.redshift_list = []
         self.multiplane = multiplane
-        self._LOS_mass_sheet = LOS_mass_sheet
+        print(LOS_mass_sheet)
+        if LOS_mass_sheet is False:
+            self._LOS_mass_sheet = LOS_mass_sheet
+        else:
+            assert isinstance(LOS_mass_sheet, float) or isinstance(LOS_mass_sheet, int)
+            self._LOS_mass_sheet = LOS_mass_sheet
 
         self.main_lens(main_deflector)
         self.realization = realization
