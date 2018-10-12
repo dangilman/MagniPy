@@ -237,7 +237,7 @@ def foreground_mass_filters(m_ref):
 
 def background_mass_filters(m_ref):
 
-    rung_0_mass = 7.7
+    rung_0_mass = 8
     rung_0_window = 10
 
     background_aperture_masses = [rung_0_mass]
@@ -250,7 +250,7 @@ def background_mass_filters(m_ref):
     rung_1_mass = 7.5
     rung_2_mass = 6
     rung_3_mass = 0
-    rung_1_window = 0.2
+    rung_1_window = 0.25
     rung_2_window = 0.02
     rung_3_window = 0.01
 
