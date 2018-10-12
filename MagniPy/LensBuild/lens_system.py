@@ -12,7 +12,7 @@ class LensSystem:
         self.lens_components = []
         self.redshift_list = []
         self.multiplane = multiplane
-        print(LOS_mass_sheet)
+
         if LOS_mass_sheet is False:
             self._LOS_mass_sheet = LOS_mass_sheet
         else:
