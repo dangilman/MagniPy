@@ -117,7 +117,7 @@ class SolveRoutines(Magnipy):
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                             ray_trace=True, identifier=None, srcx=None, srcy=None,  res=None,
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
-                            filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=True, shr_coords=1,
+                            filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=False, shr_coords=1,
                             brightimg=True):
 
         if raytrace_with is None:
@@ -259,7 +259,7 @@ class SolveRoutines(Magnipy):
     def fit(self, macromodel=None, datatofit=None, realizations=None, multiplane = None, method=None, ray_trace=True, sigmas=None,
                       identifier=None, srcx=None, srcy=None, res=None,
                       source_shape='GAUSSIAN', source_size=None, print_mag=False, raytrace_with=None, filter_by_position=False,
-                      polar_grid=True,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR',N_iter_max=100,shr_coords=1):
+                      polar_grid=False,filter_kwargs={},which_chi = 'src',solver_type='PROFILE_SHEAR',N_iter_max=100,shr_coords=1):
 
         # uses source plane chi^2
 
