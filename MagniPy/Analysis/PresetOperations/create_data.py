@@ -178,6 +178,17 @@ def draw_shear_PA(low = -90, high = 90):
 
     return np.random.uniform(low, high)
 
+def draw_shear_PA_correlated(mean, sigma):
+
+    pa = np.random.normal(mean, sigma)
+
+    if pa <= -360:
+        pa = pa + 360
+    elif pa >= 360:
+        pa = pa - 360
+
+    return pa
+
 def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
     continue_loop = True
@@ -202,7 +213,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         ellip = draw_ellip()
         ellip_theta = draw_ellip_PA()
         shear = draw_shear()
-        shear_theta = draw_shear_PA()
+        #shear_theta = draw_shear_PA()
+        shear_theta = draw_shear_PA_correlated(ellip_theta, sigma = 50)
         gamma = np.round(np.random.normal(2.08, 0.05), 2)
 
         while True:
