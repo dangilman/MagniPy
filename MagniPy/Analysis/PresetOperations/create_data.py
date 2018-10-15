@@ -91,7 +91,7 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
 
         data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
                                                     multiplane=True, method='lenstronomy',
-                                                    polar_grid=False, brightimg=True)
+                                                    polar_grid=False, brightimg=True, res=0.002)
 
         if xcrit is None:
             xcrit, ycrit, xcaus, ycaus = analysis.critical_cruves_caustics(main=startmod,
@@ -280,8 +280,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             other_lens_args['rmax2d_asec'] = 3 * c.vdis_to_Rein(zlens, zsrc, vdis)
             continue_findimg_loop = False
 
-        mags = []
-        ind = np.argsort(data_withhalos[0].m)[::-1]
+
         save = True
         for i in range(0, 4):
             magnifications, image = analysis.raytrace_images(macromodel=start, xcoord=data_withhalos[0].x[i],
@@ -319,7 +318,11 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             lens_idx = int(start_idx) + n_computed
             n_computed += 1
 
-            dpath = dpath_base + str(lens_idx)
+            if zsrc > 2.5:
+                dpath = dpath_base + str(lens_idx)
+            else:
+                dpath = dpath_base + str(lens_idx) + '_highz'
+
             create_directory(dpath)
 
             data_withhalos[0].x += np.random.normal(0, 0.003, 4)
@@ -346,24 +349,24 @@ multiplane = True
 
 fsub = 0.01
 M_halo = 10 ** 13
-logmhm = 8.5
+logmhm = 7.7
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
-log_ml, log_mh = 6.7, 10
+log_ml, log_mh = 6, 10
 break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + 'data/mock_data/LOS_WDM_8.5/lens_'
-import sys
-start_idx=int(sys.argv[1])
-cusps = np.arange(1,60,3)
-folds = cusps + 1
-crosses = cusps + 2
-if start_idx in cusps:
-    run(1,0,0, start_idx=sys.argv[1])
-if start_idx in folds:
-    run(0,1,0, start_idx=sys.argv[1])
-if start_idx in crosses:
-    run(0,0,1, start_idx=sys.argv[1])
+dpath_base = nav + 'mock_data/LOS_WDM_7.7/lens_'
+
+#import sys
+#start_idx=int(sys.argv[1])
+#cusps = np.arange(1,60,3)
+#folds = cusps + 1
+#crosses = cusps + 2
+#run(1,0,0, start_idx=1)
+#if start_idx in folds:
+#    run(0,1,0, start_idx=sys.argv[1])
+#if start_idx in crosses:
+#    run(0,0,1, start_idx=sys.argv[1])
