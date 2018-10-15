@@ -13,7 +13,7 @@ def straight_line(dcurrent, dstart, dend, ystart, yend):
     dx = dcurrent - dstart
     return dx * slope + intersect
 
-def run(outidx, identifier, zlens, zsrc):
+def run(outidx, identifier, zlens, zsrc, log_m_break):
 
     pyhalo = pyHalo(zlens, zsrc)
     lens_params = {'R_ein': 1.2, 'x': 0, 'y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.06, 'shear_theta': -40,
@@ -28,7 +28,7 @@ def run(outidx, identifier, zlens, zsrc):
                  'c_power': -0.17, 'r_tidal': '0.4Rs', 'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17,
                  'cone_opening_angle': 6}
     model_args_CDM = init_args
-    model_args_CDM.update({'fsub': 0.01, 'log_m_break': 8})
+    model_args_CDM.update({'fsub': 0.01, 'log_m_break': log_m_break})
     halos = pyhalo.render('composite_powerlaw', model_args_CDM)
 
     dtofit = solver.solve_lens_equation(macromodel=start, realizations=None, multiplane=multiplane, srcx=-0.085,
@@ -44,7 +44,7 @@ def run(outidx, identifier, zlens, zsrc):
                                                                 pso_convergence_mean=20000,
                                                                 pso_compute_magnification=500, source_size_kpc=0.05,
                                                                 simplex_n_iter=400, grid_res=0.0025,
-                                                                LOS_mass_sheet=8)
+                                                                LOS_mass_sheet=7.7)
 
     relative_paths(info, zlens, identifier, outidx)
 
