@@ -330,7 +330,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             lens_idx = int(start_idx) + n_computed
             n_computed += 1
 
-            if zsrc > 2.5:
+            if zsrc <= 2.5:
                 dpath = dpath_base + str(lens_idx)
             else:
                 dpath = dpath_base + str(lens_idx) + '_highz'
