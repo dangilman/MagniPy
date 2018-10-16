@@ -232,7 +232,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         analysis = Analysis(zlens, zsrc)
         #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
 
-        halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'NFW', 'fsub': fsub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
+        halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'TNFW', 'fsub': fsub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4, 'mdef': 'TNFW',
                      'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17, 'r_tidal': '0.5Rs', 'break_index': break_index,
                      'c_scale': 60, 'cone_opening_angle': 6 * rein}
@@ -289,9 +289,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             other_lens_args['gamma'] = gamma
             other_lens_args['config'] = config
             other_lens_args['source_size_kpc'] = source_size_kpc
-            other_lens_args['rmax2d_asec'] = 3 * c.vdis_to_Rein(zlens, zsrc, vdis)
+            other_lens_args['rmax2d_asec'] = 3*rein
             continue_findimg_loop = False
-
 
         save = True
         for i in range(0, 4):
