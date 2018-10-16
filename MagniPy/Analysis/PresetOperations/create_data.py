@@ -100,8 +100,11 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
         if data_withhalos[0].nimg == 4:
             print('done finding images.')
             return data_withhalos, xcaus, ycaus
+        try:
+            xs, ys = guess_source(xcaus, ycaus)
+        except:
+            xs, ys = np.random.uniform(-0.1, 0.1), np.random.uniform(-0.1, 0.1)
 
-        xs, ys = guess_source(xcaus, ycaus)
 
 def sample_from_strides(nsamples):
 
@@ -360,7 +363,7 @@ multiplane = True
 
 fsub = 0.01
 M_halo = 10 ** 13
-logmhm = 7.7
+logmhm = 0
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
@@ -369,7 +372,7 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + 'mock_data/LOS_WDM_7.7/lens_'
+dpath_base = nav + 'mock_data/LOS_CDM/lens_'
 
 #import sys
 #start_idx=int(sys.argv[1])
