@@ -23,8 +23,8 @@ class SolveRoutines(Magnipy):
                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func=0.01,
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
-                                  mindis_front=0.5, logmasscut_front=7.5, min_mass=6, m_break=0,
-                                  particle_swarm_reopt=True, reoptimize_scale=None,LOS_mass_sheet = True):
+                                  min_mass=6, m_break=0, particle_swarm_reopt=True,
+                                  reoptimize_scale=None,LOS_mass_sheet = True):
 
         if source_shape is None:
             source_shape = default_source_shape
