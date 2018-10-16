@@ -33,6 +33,7 @@ class SolveRoutines(Magnipy):
         if grid_res is None:
             grid_res = default_res(source_size_kpc)
 
+        assert isinstance(source_size_kpc, float) or isinstance(source_size_kpc, int)
         m_ref = max(m_break, min_mass)
         foreground_realization, background_realization = split_realization(datatofit, realizations[0])
 

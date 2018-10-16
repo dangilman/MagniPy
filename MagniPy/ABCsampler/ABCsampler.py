@@ -12,7 +12,7 @@ def initialize_macro(solver,data,init):
                                                  source_shape='GAUSSIAN', source_size_kpc=0.01,
                                                  tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
-                                                 simplex_n_iter=400, polar_grid=True, optimize_routine='fixed_powerlaw_shear',
+                                                 simplex_n_iter=400, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=False, re_optimize=False, particle_swarm=True, restart=2)
 
     return model
@@ -23,7 +23,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.9, 1.95, 2, 2.05, 2.1, 2.15, 2.2]
-        #gamma_values = [1.9,2,2.1]
+        #gamma_values = [2]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -87,24 +87,25 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
         print('running... ')
         #print(samples)
         while True:
-
+            print(chain_keys_run['mass_func_type'])
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
-                                       mindis_back=chain_keys_run['mindis_back'],
-                                       logmasscut_back=chain_keys_run['log_masscut_back'],
-                                       logmasscut_front=chain_keys_run['log_masscut_front'], source_x = d2fit.srcx,
-                                       source_y = d2fit.srcy)
+            #halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
+            #                           mindis_back=chain_keys_run['mindis_back'],
+            #                           logmasscut_back=chain_keys_run['log_masscut_back'],
+            #                           logmasscut_front=chain_keys_run['log_masscut_front'], source_x = d2fit.srcx,
+            #                           source_y = d2fit.srcy)
 
             if chain_keys_run['multiplane']:
-                #print(samples)
-                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
-                                                           datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=1, n_particles=40, n_iterations=200, simplex_n_iter=500,
-                                                           pso_convergence_mean=15000, polar_grid=True,
-                                                           pso_compute_magnification=500, particle_swarm=True,
-                                                           re_optimize=True, verbose=False)
+
+                new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=350,
+                                       verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                       pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                        simplex_n_iter=400, polar_grid=False, grid_res=chain_keys_run['grid_res'],
+                                                             LOS_mass_sheet=7.7)
+
+
             else:
                 new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
                                                            datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
@@ -235,6 +236,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_8.5_mlow6/',1)
+#runABC(prefix+'data/WDM_run_7.7/',2)
 
 
