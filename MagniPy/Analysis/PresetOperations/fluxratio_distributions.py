@@ -10,12 +10,11 @@ from time import time
 def compute_fluxratio_distributions(halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
                                     start_macromodel=None, identifier=None, res=None, sigmas=None,
-                                    source_size_kpc=None, raytrace_with='lenstronomy', test_only=False, write_to_file=False,
-                                    filter_halo_positions=False, outfilepath=None, ray_trace=True, method='lenstronomy',
-                                    start_shear=0.05, mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
-                                    single_background=False,n_restart=1, pso_conv_mean = 100,
+                                    source_size_kpc=None, write_to_file=False, filter_halo_positions=False, outfilepath=None, method='lenstronomy',
+                                    mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
+                                    n_restart=1, pso_conv_mean = 100,
                                     srcx = 0, srcy = 0, use_source=True, hierarchical = True, grid_res = 0.002,
-                                    LOS_mass_sheet = None):
+                                    LOS_mass_sheet = None, **kwargs):
     tstart = time()
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=[srcx, srcy])
@@ -95,7 +94,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        restart=n_restart, grid_res=grid_res,
                                                                        min_mass=model_args['log_mlow'],
                                                                          m_break=model_args['log_m_break'],
-                                                                         LOS_mass_sheet = LOS_mass_sheet)
+                                                                         LOS_mass_sheet = LOS_mass_sheet, **kwargs)
 
             else:
 

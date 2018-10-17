@@ -23,7 +23,7 @@ class SolveRoutines(Magnipy):
                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func=0.01,
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
-                                  min_mass=6, m_break=0, particle_swarm_reopt=True,
+                                  min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
                                   reoptimize_scale=None,LOS_mass_sheet = True):
 
         if source_shape is None:
@@ -52,7 +52,8 @@ class SolveRoutines(Magnipy):
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
                         background_globalmin_masses = background_globalmin_masses,
                          background_aperture_masses = background_aperture_masses, background_filters = background_filters,
-                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt, LOS_mass_sheet = LOS_mass_sheet)
+                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt, LOS_mass_sheet = LOS_mass_sheet,
+                        optimize_iteration=optimize_iteration)
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,

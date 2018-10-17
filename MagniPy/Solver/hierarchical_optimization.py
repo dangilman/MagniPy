@@ -105,7 +105,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                         particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification,
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, solver_class,
                         background_globalmin_masses = None, background_aperture_masses = None, background_filters = None,
-                        reoptimize_scale = None, particle_swarm_reopt = None, LOS_mass_sheet = True):
+                        reoptimize_scale = None, optimize_iteration = None, particle_swarm_reopt = None, LOS_mass_sheet = True):
 
     if background_globalmin_masses is None or background_aperture_masses is None:
 
@@ -250,7 +250,7 @@ def background_mass_filters(m_ref):
     rung_1_mass = 7.5
     rung_2_mass = 6
     rung_3_mass = 0
-    rung_1_window = 0.1
+    rung_1_window = 0.2
     rung_2_window = 0.05
     rung_3_window = 0.025
 
@@ -259,14 +259,14 @@ def background_mass_filters(m_ref):
         background_globalmin_masses += [rung_0_mass, rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window, rung_3_window]
         reoptimize_scale += [0.5, 0.05, 0.05]
-        particle_swarm_reopt += [False, False, False]
+        particle_swarm_reopt += [True, False, False]
         optimize_iteration += [True, False, False]
 
     elif m_ref < 7.5:
-        background_aperture_masses += [rung_1_mass, rung_2_mass]
+        background_aperture_masses += [rung_1_mass, rung_3_mass]
         background_globalmin_masses += [rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window]
-        reoptimize_scale += [0.5, 0.05]
+        reoptimize_scale += [0.2, 0.05]
         particle_swarm_reopt += [True, False]
         optimize_iteration += [True, False]
 
