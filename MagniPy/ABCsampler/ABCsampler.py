@@ -87,7 +87,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
         print('running... ')
         #print(samples)
         while True:
-            print(chain_keys_run['mass_func_type'])
+
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             #halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
@@ -146,7 +146,7 @@ def runABC(chain_ID='',core_index=int):
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
-    chain_keys.update({'cone_opening_angle': 6*approx_theta_E(datatofit.x, datatofit.y)})
+    chain_keys.update({'cone_opening_angle': 5*approx_theta_E(datatofit.x, datatofit.y)})
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
@@ -163,7 +163,7 @@ def runABC(chain_ID='',core_index=int):
 
     prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1)
 
-    constructor = pyHalo(chain_keys['zlens'], chain_keys['zsrc'])
+    constructor = pyHalo(np.round(chain_keys['zlens'],2), np.round(chain_keys['zsrc'],2))
 
     if chain_keys['solve_method'] == 'lensmodel':
 
@@ -236,6 +236,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_7.7/',2)
+#runABC(prefix+'data/WDM_run_7.7/',10)
 
 
