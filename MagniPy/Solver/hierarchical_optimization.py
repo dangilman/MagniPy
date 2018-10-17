@@ -250,7 +250,7 @@ def background_mass_filters(m_ref):
     rung_1_mass = 7.5
     rung_2_mass = 6
     rung_3_mass = 0
-    rung_1_window = 0.25
+    rung_1_window = 0.1
     rung_2_window = 0.05
     rung_3_window = 0.025
 
@@ -259,7 +259,7 @@ def background_mass_filters(m_ref):
         background_globalmin_masses += [rung_0_mass, rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window, rung_3_window]
         reoptimize_scale += [0.5, 0.05, 0.05]
-        particle_swarm_reopt += [True, False, False]
+        particle_swarm_reopt += [False, False, False]
         optimize_iteration += [True, False, False]
 
     elif m_ref < 7.5:
