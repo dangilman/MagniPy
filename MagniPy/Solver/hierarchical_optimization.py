@@ -250,9 +250,9 @@ def background_mass_filters(m_ref):
     rung_1_mass = 7.5
     rung_2_mass = 6
     rung_3_mass = 0
-    rung_1_window = 0.25
-    rung_2_window = 0.05
-    rung_3_window = 0.03
+    rung_1_window = 0.3
+    rung_2_window = 0.075
+    rung_3_window = 0.05
 
     if m_ref < 6:
         background_aperture_masses += [rung_1_mass, rung_2_mass, rung_3_mass]
