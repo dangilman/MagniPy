@@ -247,7 +247,7 @@ def background_mass_filters(m_ref):
     particle_swarm_reopt = [True]
     optimize_iteration = [True]
 
-    rung_1_mass = 7.5
+    rung_1_mass = 7.4
     rung_2_mass = 6
     rung_3_mass = 0
     rung_1_window = 0.3
