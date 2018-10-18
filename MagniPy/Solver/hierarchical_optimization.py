@@ -243,7 +243,7 @@ def background_mass_filters(m_ref):
     background_aperture_masses = [rung_0_mass]
     background_globalmin_masses = [rung_0_mass]
     background_filters = [rung_0_window]
-    reoptimize_scale = [1]
+    reoptimize_scale = [0.5]
     particle_swarm_reopt = [True]
     optimize_iteration = [True]
 
@@ -266,7 +266,7 @@ def background_mass_filters(m_ref):
         background_aperture_masses += [rung_1_mass, rung_3_mass]
         background_globalmin_masses += [rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window]
-        reoptimize_scale += [1, 0.05]
+        reoptimize_scale += [0.5, 0.05]
         particle_swarm_reopt += [True, False]
         optimize_iteration += [True, False]
 
