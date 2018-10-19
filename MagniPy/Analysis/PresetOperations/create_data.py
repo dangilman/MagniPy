@@ -372,7 +372,7 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/mock_data/LOS_WDM_7.7/lens_'
+dpath_base = nav + '/mock_data/LOS_CDM/lens_'
 
 #import sys
 #start_idx=int(sys.argv[1])
