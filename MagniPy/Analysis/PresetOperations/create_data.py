@@ -117,7 +117,7 @@ def sample_from_strides(nsamples):
         return kde
 
     def cuts(imgsep, vdis, zlens, zsrc, imgsep_min=0.5,
-             vdis_min=230, zlens_min=0.2, zlens_max=0.8, zsrc_max=3):
+             vdis_min=230, zlens_min=0.2, zlens_max=0.8, zsrc_max=3.5):
 
         if imgsep > imgsep_min and vdis > vdis_min and zlens > zlens_min and zsrc < zsrc_max and zlens < zlens_max and zsrc > zlens + 0.2:
             return imgsep, vdis, zlens, zsrc
