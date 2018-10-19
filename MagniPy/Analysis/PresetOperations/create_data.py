@@ -363,7 +363,7 @@ multiplane = True
 
 fsub = 0.01
 M_halo = 10 ** 13
-logmhm = 0
+logmhm = 7.7
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
@@ -372,14 +372,14 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + 'mock_data/LOS_CDM/lens_'
+dpath_base = nav + '/mock_data/LOS_WDM_7.7/lens_'
 
 #import sys
 #start_idx=int(sys.argv[1])
 #cusps = np.arange(1,60,3)
 #folds = cusps + 1
 #crosses = cusps + 2
-#run(1,0,0, start_idx=1)
+#run(1,0,0, start_idx=43)
 #if start_idx in folds:
 #    run(0,1,0, start_idx=sys.argv[1])
 #if start_idx in crosses:
