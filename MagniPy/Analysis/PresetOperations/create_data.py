@@ -116,20 +116,20 @@ def sample_from_strides(nsamples):
         kde = gaussian_kde(data)
         return kde
 
-    def cuts(imgsep, vdis, zlens, zsrc, imgsep_min=0.5,
-             vdis_min=230, zlens_min=0.2, zlens_max=0.8, zsrc_max=3.5):
+    def cuts(imgsep, vdis, zlens, zsrc, imgsep_min=1,
+             vdis_min=230, vdis_max = 310, zlens_min=0.2, zlens_max=0.8, zsrc_max=3.5):
 
-        if imgsep > imgsep_min and vdis > vdis_min and zlens > zlens_min and zsrc < zsrc_max and zlens < zlens_max and zsrc > zlens + 0.2:
+        if imgsep > imgsep_min and vdis > vdis_min and vdis < vdis_max and zlens > zlens_min and zsrc < zsrc_max and zlens < zlens_max and zsrc > zlens + 0.2:
             return imgsep, vdis, zlens, zsrc
         else:
             return None, None, None, None
 
     def resample(KDE):
         samples = KDE.resample(1)
-        imgsep = samples[0][0]
-        vdis = samples[1][0]
-        zlens = samples[2][0]
-        zsrc = samples[3][0]
+        imgsep = np.round(samples[0][0], 2)
+        vdis = int(samples[1][0])
+        zlens = np.round(samples[2][0], 2)
+        zsrc = np.round(samples[3][0],2)
 
         return cuts(imgsep, vdis, zlens, zsrc)
 
@@ -206,13 +206,20 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
     if Ntotal_cross == 0:
         done_cross = True
 
+    lens_idx = int(start_idx) + n_computed
+    dpath = dpath_base + str(lens_idx)
+
+    if os.path.exists(dpath + '/lensdata.txt'):
+        return
+
     while continue_loop:
 
         if done_cusp and done_cross and done_fold:
             break
 
         rein, vdis, zlens, zsrc = sample_from_strides(1)
-        print('vdis, zlens, zsrc: ', str(vdis) + ' '+str(zlens) + ' '+str(zsrc))
+        print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
+
         ellip = draw_ellip()
         ellip_theta = draw_ellip_PA()
         shear = draw_shear()
@@ -329,13 +336,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
                 if n_cusp == Ntotal_cusp:
                     done_cusp = True
 
-            lens_idx = int(start_idx) + n_computed
             n_computed += 1
-
-            if zsrc <= 2.5:
-                dpath = dpath_base + str(lens_idx)
-            else:
-                dpath = dpath_base + str(lens_idx) + '_highz'
 
             create_directory(dpath)
 
@@ -381,6 +382,6 @@ dpath_base = nav + '/mock_data/LOS_WDM_7.7/lens_'
 #crosses = cusps + 2
 #run(1,0,0, start_idx=43)
 #if start_idx in folds:
-#    run(0,1,0, start_idx=sys.argv[1])
+#run(0,1,0, start_idx=32)
 #if start_idx in crosses:
 #    run(0,0,1, start_idx=sys.argv[1])
