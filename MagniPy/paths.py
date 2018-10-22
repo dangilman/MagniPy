@@ -2,7 +2,7 @@ import os
 import shutil
 
 homedir = os.getenv('HOME')+'/'
-print(homedir)
+
 if homedir == '/u/home/g/gilmanda/':
     prefix = '/u/flashscratch/g/gilmanda/'
 
@@ -23,10 +23,27 @@ elif homedir == '/Users/danielgilman/':
     path_2_lensmodel = homedir + '/Code/'
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
-if os.path.exists(path_2_lensmodel+'lensmodel'):
-    pass
-else:
-    shutil.copy2(lensmodel_location+'lensmodel',path_2_lensmodel)
+"""  
+elif homedir == 'Anna_homedir':
+    
+    # wherever the file storage directory is for the JPL cluster. 
+    prefix = 'path_to_storage_directory'
+    
+    # If the super computers at JPL 
+    IO_directory = prefix
+    
+    # don't need these ones
+    lensmodel_location = homedir + '/Code/lensmodel_folder/'
+    path_2_lensmodel = IO_directory
+    
+    # don't need this one either
+    gravlens_input_path = IO_directory + 'gravlens_input/'
+"""
+
+#if os.path.exists(path_2_lensmodel+'lensmodel'):
+#    pass
+#else:
+#    shutil.copy2(lensmodel_location+'lensmodel',path_2_lensmodel)
 
 kapmappath = gravlens_input_path+'gravlens_maps/'
 
@@ -38,6 +55,7 @@ data_path = prefix+'data/lensdata/SIE_data/data_4ABC/'
 
 gravlens_input_path_dump = gravlens_input_path + 'dump/'
 
+# Need to create the directories 'data' and 'data/ABC_chains/' in the storage directory
 chainpath = prefix + 'data/ABC_chains/'
 
 chainpath_out = prefix + 'data/sims/'
