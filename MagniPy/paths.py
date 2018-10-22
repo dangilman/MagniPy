@@ -29,7 +29,7 @@ elif homedir == 'Anna_homedir':
     # wherever the file storage directory is for the JPL cluster. 
     prefix = 'path_to_storage_directory'
     
-    # If the super computers at JPL 
+    # can make this the same as prefix 
     IO_directory = prefix
     
     # don't need these ones
