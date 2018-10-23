@@ -58,30 +58,15 @@ class SingleDensity:
 
     def _trim(self, ranges, xtrim, ytrim, N, pnames):
 
-        ranx = ranges[pnames[0]][1] - ranges[pnames[0]][0]
-        rany = ranges[pnames[1]][1] - ranges[pnames[1]][0]
-
-        dx_left = (xtrim[0] - ranges[pnames[0]][0])*ranx**-1
-
-        dx_right = (ranges[pnames[0]][1] - xtrim[1])*ranx**-1
-
-        dy_top = (ranges[pnames[1]][1] - ytrim[1])*rany**-1
-        dy_bottom = (ytrim[0] - ranges[pnames[1]][0])*rany**-1
-
-        start_xlow = N*dx_left
-        start_xhigh = N * (1 - dx_right)
-
-        start_ylow = N * dy_bottom
-        start_yhigh = N * (1 - dy_top)
+        xstart, xend = xtrim[0], xtrim[1]
+        ystart, yend = ytrim[0], ytrim[1]
 
         ranges[pnames[0]][0] = xtrim[0]
         ranges[pnames[0]][1] = xtrim[1]
         ranges[pnames[1]][0] = ytrim[0]
         ranges[pnames[1]][1] = ytrim[1]
 
-        return ranges, int(np.round(start_xlow)), int(np.round(start_ylow)), int(np.round(start_xhigh)), \
-               int(np.round(start_yhigh))
-
+        return ranges, xstart, ystart, xend, yend
 
     def __call__(self, xtrim = None, ytrim = None):
 
@@ -96,7 +81,7 @@ class SingleDensity:
                                                                   ytrim, len(self.X), self.param_names)
 
             X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
-
+            
         kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
                                self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
 
