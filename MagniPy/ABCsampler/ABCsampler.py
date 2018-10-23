@@ -19,25 +19,10 @@ def initialize_macro(solver,data,init):
 
 def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
-    macromodels_init = []
+    macromodels_init = [[solver.build_system(get_default_SIE(z=chain_keys_run['zlens']), multiplane=True)]]
 
-    if 'SIE_gamma' in keys_to_vary:
-        gamma_values = [1.9, 1.95, 2, 2.05, 2.1, 2.15, 2.2]
-        #gamma_values = [2]
-        for gi in gamma_values:
-            _macro = get_default_SIE(z=chain_keys_run['zlens'])
-            _macro.lenstronomy_args['gamma'] = gi
-            macro_i = initialize_macro(solver, data, _macro)
-            macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
-            macromodels_init.append(macro_i)
 
-    else:
-        _macro = get_default_SIE(z=chain_keys_run['zlens'])
-        macro_i = initialize_macro(solver, data, _macro)
-        macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
-        macromodels_init.append(initialize_macro(solver, data, _macro))
-
-    return macromodels_init, gamma_values
+    return macromodels_init, [2]
 
 def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
@@ -81,7 +66,11 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
         macromodel = deepcopy(base[0])
         macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
+
         halo_args = halo_model_args(chain_keys_run)
+        halo_args['log_m_break'] = 0
+        halo_args['LOS_normalization'] = 1
+
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
         print('running... ')
@@ -89,6 +78,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
         while True:
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
+            inds = np.where(halos[0].redshifts > chain_keys_run['zlens'])
+            print(len(halos[0].masses[inds]))
+            print(chain_keys_run['zlens'])
+            with open('mean_N_background.txt','a') as f:
+                f.write(str(int(str(LENS_NUMBER)))+' '+str(len(halos[0].masses[inds]))+'\n')
+            return
 
             #halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
             #                           mindis_back=chain_keys_run['mindis_back'],
@@ -171,8 +166,8 @@ def runABC(chain_ID='',core_index=int):
 
     else:
 
-        fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver)
-
+        run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver)
+        return
     write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False)
 
     if chain_keys['write_header']:
@@ -236,6 +231,8 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_7.7_timetest/',2)
+for LENS_NUMBER in range(1, 61):
+    print(LENS_NUMBER)
+    runABC(prefix+'data/sampler_test/',int(LENS_NUMBER))
 
 
