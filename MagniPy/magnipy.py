@@ -94,7 +94,13 @@ class Magnipy:
 
             lensModel = optimizer.lensModel
             optimizer_kwargs = {}
-            optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
+
+            if hasattr(optimizer._optimizer, '_mags'):
+                optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
+            else:
+                mags = optimizer._optimizer.lensModel.magnification(x_opt, y_opt, kwargs_lens)
+                optimizer_kwargs.update({'magnification_pointsrc': mags})
+
             optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
 
             if return_ray_path:
