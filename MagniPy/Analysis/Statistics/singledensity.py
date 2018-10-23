@@ -84,7 +84,7 @@ class SingleDensity:
 
 
     def __call__(self, xtrim = None, ytrim = None):
-        
+
         if xtrim is None and ytrim is None:
 
             param_ranges = self.pranges
