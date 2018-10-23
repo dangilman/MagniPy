@@ -41,25 +41,17 @@ class FullChains:
         else:
             self.pranges_trimmed = trimmed_ranges
 
-    def get_posteriors(self,tol=None):
+    def get_posteriors(self,tol=None, reject_pnames = None, keep_ranges = None):
 
         posteriors = []
 
         for lens in self.lenses:
 
-            if lens.posterior is None:
-
-                lens.draw(tol)
+            lens.draw(tol, reject_pnames, keep_ranges)
 
             posteriors.append(lens.posterior)
 
         return posteriors
-
-    def draw(self,tol):
-
-        for lens in self.lenses:
-
-            lens.draw(tol)
 
     def get_pranges(self,info):
 
@@ -129,7 +121,17 @@ class SingleLens:
         self.weights = weights
         self.posterior = None
 
-    def draw(self,tol):
+    def draw(self,tol, reject_pnames, keep_ranges):
+
+        if reject_pnames is not None:
+
+            for reject_pname, keep_range in zip(reject_pnames, keep_ranges):
+                samps = self.parameters[reject_pname]
+                indexes = np.where(np.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
+
+                for pname in self.parameters.keys():
+                    self.parameters[pname] = self.parameters[pname][indexes]
+            print('keeping ' + str(len(self.parameters[pname])) + ' samples')
 
         inds = np.argsort(self.statistic)[0:tol]
 
@@ -137,9 +139,9 @@ class SingleLens:
 
         for key in self.parameters.keys():
             values = self.parameters[key]
-            new_param_dic.update({key:values[inds]})
+            new_param_dic.update({key: values[inds]})
 
-        self.posterior = PosteriorSamples(new_param_dic,weights=None)
+        self.posterior = PosteriorSamples(new_param_dic, weights=None)
 
     def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 

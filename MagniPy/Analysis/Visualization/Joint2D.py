@@ -42,48 +42,12 @@ class Joint2D:
         self.fig = fig
         self.ax = ax
 
-    def _trim_density(self,density, x_left, y_left, x_right, y_right):
-
-        density = density[x_left:x_right,y_left:y_right]
-        return density
-
-    def _trim(self, ranges, xtrim, ytrim, N, pnames):
-
-        ranx = ranges[pnames[0]][1] - ranges[pnames[0]][0]
-        rany = ranges[pnames[1]][1] - ranges[pnames[1]][0]
-
-        dx_left = (xtrim[0] - ranges[pnames[0]][0])*ranx**-1
-
-        dx_right = (ranges[pnames[0]][1] - xtrim[1])*ranx**-1
-
-        dy_top = (ranges[pnames[1]][1] - ytrim[1])*rany**-1
-        dy_bottom = (ytrim[0] - ranges[pnames[1]][0])*rany**-1
-
-        start_xlow = N*dx_left
-        start_xhigh = N * (1 - dx_right)
-
-        start_ylow = N * dy_bottom
-        start_yhigh = N * (1 - dy_top)
-
-        ranges[pnames[0]][0] = xtrim[0]
-        ranges[pnames[0]][1] = xtrim[1]
-        ranges[pnames[1]][0] = ytrim[0]
-        ranges[pnames[1]][1] = ytrim[1]
-
-        return ranges, int(np.round(start_xlow)), int(np.round(start_ylow)), int(np.round(start_xhigh)), \
-               int(np.round(start_yhigh))
-
     def make_plot(self, xtick_labels=None, xticks=None, param_names = None,
                   param_ranges=None,ytick_labels=None, yticks=None,filled_contours=False, contour_colors=None, contour_alpha=0.6,
-                  tick_label_font=12, color_index = 1, x_trim = None, y_trim = None, **kwargs):
+                  tick_label_font=12, color_index = 1, levels=[0.05,0.22,1], **kwargs):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
-
-        if x_trim is not None and y_trim is not None:
-            param_ranges, x_left, y_left, x_right, y_right = \
-            self._trim(param_ranges, x_trim, y_trim,
-                       int(np.shape(self.simulation_densities[0])[0]), param_names)
 
         aspect = (param_ranges[param_names[0]][1] - param_ranges[param_names[0]][0]) * \
                  (param_ranges[param_names[1]][1] - param_ranges[param_names[1]][0]) ** -1
@@ -91,19 +55,11 @@ class Joint2D:
         extent = [param_ranges[param_names[0]][0],param_ranges[param_names[0]][1],param_ranges[param_names[1]][0],
                   param_ranges[param_names[1]][1]]
 
-        if x_trim is not None and y_trim is not None:
-            shape_array = self._trim_density(self.simulation_densities[0],
-                                                          x_left, y_left, x_right, y_right)
-
-            final_density = np.ones_like(shape_array)
-        else:
-            final_density = np.ones_like(self.simulation_densities[0])
+        final_density = np.ones_like(self.simulation_densities[0])
 
         for idx,densities in enumerate(self.simulation_densities):
 
             #final_density = np.ones_like(densities)
-            if x_trim is not None and y_trim is not None:
-                densities = self._trim_density(densities, x_left, y_left, x_right, y_right)
 
             final_density *= densities
 
@@ -119,7 +75,8 @@ class Joint2D:
 
             x,y = np.linspace(extent[0],extent[1],final_density.shape[1]),np.linspace(extent[2],extent[3],final_density.shape[0])
 
-            self.contours(x,y,final_density,contour_colors=contour_colors[color_index],contour_alpha=contour_alpha, extent=extent,aspect=aspect)
+            self.contours(x,y,final_density,contour_colors=contour_colors[color_index],
+                          contour_alpha=contour_alpha, extent=extent,aspect=aspect,levels=levels)
 
             self.ax.imshow(final_density, extent=extent,
                            aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
@@ -177,9 +134,8 @@ class Joint2D:
         return density*(np.sum(density)*density.shape[0]**2)**-1
 
     def contours(self, x,y,grid, linewidths=4, filled_contours=True,contour_colors='',
-                 contour_alpha=1,extent=None,aspect=None):
+                 contour_alpha=1,extent=None,aspect=None, levels=[0.05,0.22,1]):
 
-        levels = [0.05,0.22,1]
         levels = np.array(levels)*np.max(grid)
         X, Y = np.meshgrid(x, y)
 

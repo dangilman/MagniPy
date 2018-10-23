@@ -62,7 +62,7 @@ class KernelDensity:
         else:
             raise Exception('Kernel function not recognized.')
 
-    def _kernel(self, xsamples, ysamples, pranges=None, prior_weights=None):
+    def _kernel(self, xsamples, ysamples, pranges_true=None, prior_weights=None):
 
         h = self._scotts_factor(n=len(xsamples)) * self.bandwidth_scale
 
@@ -82,7 +82,7 @@ class KernelDensity:
             xi, yi = xsamples[i], ysamples[i]
 
             if self.reweight:
-                weight = prior_weights[i]*self.boundary.renormalize(xi, yi, hx, hy, pranges)
+                weight = prior_weights[i]*self.boundary.renormalize(xi, yi, hx, hy, pranges_true)
             else:
                 weight = prior_weights[i]
 
@@ -94,7 +94,7 @@ class KernelDensity:
 
         return n ** (-1. / (d + 4))
 
-    def __call__(self, data, xpoints, ypoints, pranges_training, prior_weights=None):
+    def __call__(self, data, xpoints, ypoints, pranges_true, prior_weights=None):
 
         assert len(xpoints) == len(ypoints)
 
@@ -103,7 +103,7 @@ class KernelDensity:
 
         self.boundary = Boundary(scale=self.scale)
 
-        functions = self._kernel(data[:, 0], data[:, 1], pranges_training, prior_weights)
+        functions = self._kernel(data[:, 0], data[:, 1], pranges_true, prior_weights)
 
         xy = list(zip(xx, yy))
 

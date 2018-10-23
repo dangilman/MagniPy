@@ -19,19 +19,21 @@ def sample_chain(chain_name='',which_lenses=None,
     #posteriors = full_chain.re_weight(posteriors,[prior_weights_global_srcsize],indexes=None)
 
     densities = []
+    param_ranges = []
 
     for i,posterior in enumerate(posteriors):
 
         single_density = SingleDensity(pnames=parameters,samples=posterior,pranges=full_chain.pranges,
                                        reweight=True,kernel_function='Gaussian',scale=5,bandwidth_scale=1)
 
-        density,coordsx,coordsy = single_density()
+        density,pranges = single_density()
 
         densities.append(density)
+        param_ranges = pranges
 
     joint = Joint2D(densities)
 
-    joint.make_plot(param_names=parameters,param_ranges=full_chain.pranges,truths=full_chain.truths,
+    joint.make_plot(param_names=parameters,param_ranges=param_ranges,truths=full_chain.truths,
                     filled_contours=True, color_index=0)
     if savename is not None:
         plt.savefig(savename)
