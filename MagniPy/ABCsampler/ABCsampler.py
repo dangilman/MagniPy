@@ -236,6 +236,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_7.7/',10)
+#runABC(prefix+'data/WDM_run_7.7_timetest/',2)
 
 

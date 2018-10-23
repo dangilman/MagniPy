@@ -259,5 +259,5 @@ def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
                            fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
 
-#for i in range(10, 11):
-#    process_chain_i('CDM_diverse', which_lens=int(i), errors= [0.04])
+#for i in range(1, 2):
+#    process_chain_i('WDM_run_7.7', which_lens=int(i), errors= [0])

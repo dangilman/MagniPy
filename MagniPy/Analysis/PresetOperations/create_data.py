@@ -373,7 +373,7 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/mock_data/LOS_WDM_7.7/lens_'
+dpath_base = nav + '/data/mock_data/LOS_WDM_7.7/lens_'
 
 #import sys
 #start_idx=int(sys.argv[1])
@@ -382,6 +382,6 @@ dpath_base = nav + '/mock_data/LOS_WDM_7.7/lens_'
 #crosses = cusps + 2
 #run(1,0,0, start_idx=43)
 #if start_idx in folds:
-#run(0,1,0, start_idx=32)
+run(1,0,0, start_idx=34)
 #if start_idx in crosses:
 #    run(0,0,1, start_idx=sys.argv[1])
