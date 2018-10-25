@@ -38,7 +38,6 @@ def run(outidx, identifier, zlens, zsrc, log_m_break):
     opt_full, mod_full, info = solver.hierarchical_optimization(macromodel=start, datatofit=dtofit[0],
                                                                 realizations=halos,
                                                                 multiplane=True, n_particles=20, n_iterations=350,
-                                                                mindis_front=0.25,
                                                                 verbose=True, re_optimize=True, restart=1,
                                                                 particle_swarm=True,
                                                                 pso_convergence_mean=20000,
