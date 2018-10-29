@@ -7,6 +7,8 @@ class FullChains:
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
+        if 'logmhm' in self.truths:
+            self.truths.update({'log_m_break':self.truths['logmhm']})
 
         self.pranges = self.get_pranges(self.prior_info)
 

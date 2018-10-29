@@ -82,25 +82,33 @@ class Sigmoid:
 
 class Boundary:
 
-    def __init__(self,scale=2,size=350):
+    def __init__(self,scale=2,size=400):
         self.size = size
         self.scale = scale
 
-    def outside_boundary(self,x,low,high):
+    def outside_boundary(self,x,dx,low,high):
 
-        return np.logical_or(x<low ,x>high)
+        close_to_boundary = np.logical_or(x + dx < low, x +dx > high)
+
+        if close_to_boundary is False:
+            return False
+
+        if x < low-dx:
+            return False
+        if x > high + dx:
+            return False
 
     def renormalize(self,xi,yi,kx,ky,pranges):
 
         cov = [[(kx) ** 2, 0], [0, (ky) ** 2]]
 
-        if self.outside_boundary(xi-kx*self.scale,pranges[0][0],pranges[0][1]):
+        if self.outside_boundary(xi,-kx*self.scale,pranges[0][0],pranges[0][1]):
             samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
-        elif self.outside_boundary(xi+kx*self.scale,pranges[0][0],pranges[0][1]):
+        elif self.outside_boundary(xi,kx*self.scale,pranges[0][0],pranges[0][1]):
             samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
-        elif self.outside_boundary(yi-ky*self.scale,pranges[1][0],pranges[1][1]):
+        elif self.outside_boundary(yi,-ky*self.scale,pranges[1][0],pranges[1][1]):
             samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
-        elif self.outside_boundary(yi+ky*self.scale,pranges[1][0],pranges[1][1]):
+        elif self.outside_boundary(yi,ky*self.scale,pranges[1][0],pranges[1][1]):
             samples = np.random.multivariate_normal([xi, yi], cov=cov, size=self.size)
         else:
             return 1
@@ -112,7 +120,7 @@ class Boundary:
 
         inside_inds = np.logical_and(inside_x,inside_y)
 
-        return self.size*float(np.sum(inside_inds))**-1
+        return self.size*float(np.sum(inside_inds)+1)**-1
 
 
 

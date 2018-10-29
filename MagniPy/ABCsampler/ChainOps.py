@@ -173,7 +173,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
-    chain_file_path = chainpath_out + chain_name + '/chain'
+    chain_file_path = chainpath_out + chain_name + '/lens'+str(which_lens) +'/chain'
 
     params_header = None
     order = None
@@ -191,14 +191,14 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
     init = True
     for i in range(start,end):
 
-        folder_name = chain_file_path + str(i+1) + '/'
+        folder_name = chain_file_path + str(i+1)
 
         try:
 
-            fluxes = np.loadtxt(folder_name + 'fluxes.txt')
+            fluxes = np.loadtxt(folder_name + '/fluxes.txt')
             #astrometric_errors = np.loadtxt(folder_name + 'astrometric_errors.txt')
 
-            obs_data = read_data(folder_name + 'lensdata.txt')
+            obs_data = read_data(folder_name + '/lensdata.txt')
             observed_fluxes = obs_data[0].m
 
             observed_pos_x = obs_data[0].x
@@ -217,14 +217,14 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
                 #    reference_x,reference_y = observed_pos_x[lens_R_index],observed_pos_y[lens_R_index]
                 #    order = find_closest_xy(observed_pos_x,observed_pos_y,reference_x,reference_y)
 
-            params = np.loadtxt(folder_name + 'parameters.txt', skiprows=1)
+            params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
 
         except:
             #print('didnt find a file...')
             continue
 
         if params_header is None:
-            with open(folder_name + 'parameters.txt', 'r') as f:
+            with open(folder_name + '/parameters.txt', 'r') as f:
                 lines = f.read().splitlines()
             head = lines[0].split(' ')
             params_header = ''
@@ -260,4 +260,4 @@ def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
                            fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
 
 #for i in range(1, 2):
-#    process_chain_i('WDM_run_7.7', which_lens=int(i), errors= [0])
+#    process_chain_i('WDM_run_7.7_tier2', which_lens=int(i), errors= [0])
