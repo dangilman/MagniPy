@@ -82,7 +82,7 @@ class Sigmoid:
 
 class Boundary:
 
-    def __init__(self,scale=2,size=400):
+    def __init__(self,scale=3,size=120):
         self.size = size
         self.scale = scale
 

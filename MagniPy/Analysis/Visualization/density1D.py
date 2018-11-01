@@ -13,7 +13,7 @@ class Density1D(Joint2D):
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
     def make_marginalized(self, marginalized_densities, param, param_ranges,
-                          contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None):
+                          contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None, rebin=20):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -23,7 +23,7 @@ class Density1D(Joint2D):
         for color_index, sim_density in enumerate(marginalized_densities):
 
             bar_centers, bar_width, bar_heights = self._bar_plot_heights(marginalized_densities[color_index],
-                                                    np.linspace(param_ranges[0],param_ranges[1], 10), None)
+                                                    np.linspace(param_ranges[0],param_ranges[1], 10), rebin)
 
             if max(bar_heights) > max_height:
                 max_height = max(bar_heights)
@@ -39,12 +39,14 @@ class Density1D(Joint2D):
             self.ax.set_yticks([])
 
             if xlabel_on:
-                self.ax.set_xlabel(param)
                 xticks = np.linspace(param_ranges[0], param_ranges[1], 6)
-                xtick_labels = [str(tick) for tick in xticks]
+                label_name, ticks, tick_labels = self._convert_param_names(param, xticks)
+
+                self.ax.set_xlabel(label_name, fontsize=16)
+
                 self.ax.set_xticks(xticks)
-                self.ax.set_xticklabels(xtick_labels, fontsize = 12)
-                self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=param)))
+                self.ax.set_xticklabels(tick_labels, fontsize = 12)
+                self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=label_name)))
             else:
                 self.ax.set_xticks([])
                 self.ax.set_xticklabels([])
@@ -66,14 +68,19 @@ class Density1D(Joint2D):
                 for i in range(0, len(bar_heights), fac):
                     new.append(np.mean(bar_heights[i:(i + fac)]))
 
-                bar_heights = new
+                bar_heights = np.array(new)
             else:
+                print('resampling: ')
+                print('length marginalized: ', len(bar_heights))
+                print('new length: ', rebin)
+                #raise ValueError('not yet implemented')
                 bar_heights = resample(bar_heights, rebin)
 
         bar_width = np.absolute(coords[-1] - coords[0]) * len(bar_heights) ** -1
         bar_centers = []
         for i in range(0, len(bar_heights)):
             bar_centers.append(coords[0] + bar_width * (0.5 + i))
+
 
         integral = np.sum(bar_heights) * bar_width * len(bar_centers) ** -1
 

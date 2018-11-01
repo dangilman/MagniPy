@@ -197,9 +197,14 @@ class PosteriorSamples:
             assert len(weights) == self.length
             self.weights = weights
 
+    def print_weights(self):
+
+        for weight in self.weights:
+            print(weight)
+
     def change_weights(self,weight_function):
 
-        self.weights = weight_function(self)
+        self.weights *= weight_function(self)
         assert len(self.weights) == self.length
 
 class WeightedSamples:
@@ -215,9 +220,14 @@ class WeightedSamples:
 
                     self.functions.update({param:Gaussian(weight_args[i]['mean'],weight_args[i]['sigma'],param)})
 
-                #elif weight_args[i]['type'] == 'step':
+                elif weight_args[i]['type'] == 'upper_limit':
 
-                    #self.functions.update({param: Step(weight_args[i]['step'], , param)})
+                    self.functions.update({param:StepUpperLimit(weight_args[i]['break'],weight_args[i]['sigma'],param)})
+
+                elif weight_args[i]['type'] == 'lower_limit':
+
+                    self.functions.update({param:StepLowerLimit(weight_args[i]['break'],weight_args[i]['sigma'],param)})
+
 
     def __call__(self,samples):
 
@@ -233,7 +243,7 @@ class WeightedSamples:
 
         return weight
 
-class Gaussian:
+class Gaussian(object):
 
     def __init__(self,mean,sigma,name):
 
@@ -242,7 +252,37 @@ class Gaussian:
         self.name = name
 
     def __call__(self, **kwargs):
-        return (2*np.pi*self.sigma**2)**-0.5*np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
+        #return (2*np.pi*self.sigma**2)**-0.5*np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
+        return np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
 
+class StepUpperLimit(object):
 
+    def __init__(self, break_value, sigma, name):
+
+        self.break_value = break_value
+        self.sigma = sigma
+        self.name = name
+
+    def __call__(self, **kwargs):
+
+        exponent = kwargs['x'] * self.break_value ** -1
+
+        exp = np.exp(-exponent)
+
+        return exp
+
+class StepLowerLimit(object):
+
+    def __init__(self, break_value, sigma, name):
+        self.break_value = break_value
+        self.sigma = sigma
+        self.name = name
+
+    def __call__(self, **kwargs):
+
+        exponent = self.break_value * kwargs['x'] ** -1
+
+        exp = np.exp(-exponent)
+
+        return exp
 

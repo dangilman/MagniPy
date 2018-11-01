@@ -3,7 +3,7 @@ from MagniPy.Analysis.KDE.kde import *
 class SingleDensity:
 
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
-                 steps=50,scale=5,reweight=True,kernel_function='Sigmoid',bandwidth_scale=1):
+                 steps=20,scale=3,reweight=True,kernel_function='Sigmoid',bandwidth_scale=1):
 
         self.reweight = reweight
         self.scale = scale

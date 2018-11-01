@@ -1,6 +1,7 @@
 from MagniPy.paths import *
 from MagniPy.Analysis.Statistics.summary_statistics import *
 import sys
+from copy import copy
 import numpy as np
 from MagniPy.util import *
 import ast
@@ -104,6 +105,12 @@ def add_flux_perturbations(chain_name='',errors=None,N_pert=1,which_lens = None,
     if ~os.path.exists(perturbed_path):
         create_directory(perturbed_path)
 
+    if ~os.path.exists(chain_file_path):
+        create_directory(chain_file_path)
+
+    if ~os.path.exists(perturbed_path):
+        create_directory(perturbed_path)
+
     np.savetxt(chain_file_path + 'modelfluxes' + '.txt', fluxes, fmt='%.6f')
     np.savetxt(chain_file_path + 'observedfluxes' + '.txt',fluxes_obs, fmt='%.6f')
     np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.6f',header=header)
@@ -173,7 +180,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 
     #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
-    chain_file_path = chainpath_out + chain_name + '/lens'+str(which_lens) +'/chain'
+    chain_file_path = chainpath_out + chain_name +'/chain'
 
     params_header = None
     order = None
@@ -189,10 +196,10 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
     start = int((which_lens-1)*cores_per_lens)
     end = int(start + cores_per_lens)
     init = True
-    for i in range(start,end):
-
-        folder_name = chain_file_path + str(i+1)
-
+    #for i in range(start,end):
+    for i in range(start, end):
+        folder_name = chain_file_path + str(i)+'/'
+        #print(folder_name)
         try:
 
             fluxes = np.loadtxt(folder_name + '/fluxes.txt')
@@ -220,7 +227,7 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
             params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
 
         except:
-            #print('didnt find a file...')
+            print('didnt find a file...')
             continue
 
         if params_header is None:
@@ -255,9 +262,125 @@ def extract_chain(chain_name='',which_lens = None, position_tol = 0.003):
 def process_chain_i(name=str,which_lens=int,N_pert=1,errors=None):
 
     fluxes,fluxes_obs,parameters,header,lens_config = extract_chain(name,which_lens)
-    
+
     add_flux_perturbations(name,errors=errors,N_pert=N_pert,which_lens=which_lens,parameters=parameters,
                            fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
 
-#for i in range(1, 2):
-#    process_chain_i('WDM_run_7.7_tier2', which_lens=int(i), errors= [0])
+def resample_chain(name=str, new_name = str, which_lens_indexes=int, N_pert=1, errors = None, parameters_new={}, SIE_gamma_mean = 2.08,
+                   SIE_gamma_sigma = 0.05):
+
+    new_gamma = []
+
+    for which_lens in which_lens_indexes:
+
+        fluxes, fluxes_obs, parameters, header, lens_config, newgamma = resample(name, which_lens, parameters_new, SIE_gamma_mean = SIE_gamma_mean,
+                                                                       SIE_gamma_sigma = SIE_gamma_sigma)
+
+        new_gamma.append(newgamma)
+        add_flux_perturbations(new_name, errors=errors, N_pert=N_pert,which_lens=which_lens,parameters=parameters,
+                               fluxes_obs=np.squeeze(fluxes_obs),fluxes=fluxes,header=header,lens_config=lens_config)
+
+    chain_info_path = chainpath_out + name + '/simulation_info.txt'
+    with open(chain_info_path, 'r') as f:
+        lines = f.readlines()
+
+    with open(chainpath_out + 'processed_chains/'+new_name + '/simulation_info.txt', 'w') as f:
+        for line in lines:
+            f.write(line)
+            if line == '# truths\n':
+                break
+
+        for pname in parameters_new.keys():
+            print(pname)
+            f.write(pname + ' '+str(parameters_new[pname][0])+'\n')
+
+        f.write('SIE_gamma '+str(SIE_gamma_mean)+'\n')
+        f.write('\n')
+        f.write('re-sampled gamma '+str(SIE_gamma_mean)+' +\- '+str(SIE_gamma_sigma)+'\n')
+        for g in new_gamma:
+            f.write(str(g)+' ')
+
+def resample(name, which_lens, parameter_vals_new, SIE_gamma_mean = 2.08,
+             SIE_gamma_sigma = 0.05):
+
+    fluxes, _, parameters, header, lens_config = extract_chain(name, which_lens)
+
+    params_new = copy(parameter_vals_new)
+    params_new.update({'SIE_gamma': [np.random.normal(SIE_gamma_mean, SIE_gamma_sigma), 0.02]})
+    parameter_names = filter(None, header.split(' '))
+
+    N = len(parameters)
+    metric_distance = np.zeros(N)
+
+    parameter_dictionary = {}
+
+    for i, pname in enumerate(parameter_names):
+        parameter_dictionary.update({pname:parameters[:,i]})
+
+    for i, name in enumerate(params_new.keys()):
+
+        delta = np.absolute(parameter_dictionary[name] - params_new[name][0]*np.ones(N))*params_new[name][1]**-1
+        metric_distance += delta
+
+    keep = np.argmin(metric_distance)
+    print(parameters[keep,:])
+
+    fluxes_obs = fluxes[keep]
+
+    return fluxes, fluxes_obs, parameters, header, lens_config, parameter_dictionary['SIE_gamma'][keep]
+
+if False:
+    process_chain_i('WDM_run_7.7_tier2', which_lens=7, errors=[0])
+
+if False:
+    fsub = 0.015
+    logmhm = 4.8
+    src_size = 0.04
+    LOS_norm = 1
+    new_name = 'CDM_run_tier2_src40'
+    which_lens_indexes = np.arange(1, 8)
+
+    resample_chain('WDM_run_7.7_tier2', new_name, which_lens_indexes=which_lens_indexes, errors= [0],
+                   parameters_new={'fsub': [fsub, 0.002], 'log_m_break': [logmhm, 0.1],
+                                            'source_size_kpc': [src_size, 0.0025],
+                                            'LOS_normalization': [LOS_norm, 0.02]},
+                   SIE_gamma_mean = 2.08, SIE_gamma_sigma = 0.04)
+
+    fsub = 0.0125
+    logmhm = 4.8
+    src_size = 0.03
+    LOS_norm = 1
+    new_name = 'CDM_run_tier2_src30'
+    which_lens_indexes = np.arange(1, 8)
+
+    resample_chain('WDM_run_7.7_tier2', new_name, which_lens_indexes=which_lens_indexes, errors= [0],
+                   parameters_new={'fsub': [fsub, 0.002], 'log_m_break': [logmhm, 0.1],
+                                            'source_size_kpc': [src_size, 0.0025],
+                                            'LOS_normalization': [LOS_norm, 0.02]},
+                   SIE_gamma_mean = 2.08, SIE_gamma_sigma = 0.04)
+
+    fsub = 0.015
+    logmhm = 7.4
+    src_size = 0.035
+    LOS_norm = 1
+    new_name = 'WDM_run_7.4_tier2_src35'
+    which_lens_indexes = np.arange(1, 8)
+
+    resample_chain('WDM_run_7.7_tier2', new_name, which_lens_indexes=which_lens_indexes, errors= [0],
+                   parameters_new={'fsub': [fsub, 0.002], 'log_m_break': [logmhm, 0.1],
+                                            'source_size_kpc': [src_size, 0.0025],
+                                            'LOS_normalization': [LOS_norm, 0.02]},
+                   SIE_gamma_mean = 2.08, SIE_gamma_sigma = 0.04)
+
+    fsub = 0.02
+    logmhm = 7.2
+    src_size = 0.035
+    LOS_norm = 1
+    new_name = 'WDM_run_7.2_tier2_src35'
+    which_lens_indexes = np.arange(1, 8)
+
+    resample_chain('WDM_run_7.7_tier2', new_name, which_lens_indexes=which_lens_indexes, errors= [0],
+                   parameters_new={'fsub': [fsub, 0.002], 'log_m_break': [logmhm, 0.1],
+                                            'source_size_kpc': [src_size, 0.0025],
+                                            'LOS_normalization': [LOS_norm, 0.02]},
+                   SIE_gamma_mean = 2.08, SIE_gamma_sigma = 0.04)

@@ -119,25 +119,38 @@ class Joint2D:
                 self.ax.scatter(truth1,truth2,color=self.truth_color,s=50)
 
         if xlabel_on:
-            self.ax.set_xlabel(param_names[0])
 
-            if xticks is None:
-                xticks = np.linspace(param_ranges[param_names[0]][0], param_ranges[param_names[0]][1], 6)
-                xtick_labels = [str(tick) for tick in xticks]
+            if param_names[0] == 'fsub':
+                nticks = 5
+            else:
+                nticks = 6
+
+            xticks = np.linspace(param_ranges[param_names[0]][0], param_ranges[param_names[0]][1], nticks)
+
+            xlabel_name, xticks, xtick_labels = self._convert_param_names(param_names[0], xticks)
+
+            self.ax.set_xlabel(xlabel_name, fontsize=16)
             self.ax.set_xticks(xticks)
             self.ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
-            self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=param_names[0])))
+            self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
 
 
         if ylabel_on:
-            if yticks is None:
-                yticks = np.linspace(param_ranges[param_names[1]][0],param_ranges[param_names[1]][1],6)
-                ytick_labels = [str(tick) for tick in yticks]
 
-            self.ax.set_ylabel(param_names[1])
+            if param_names[0] == 'fsub':
+                nticks = 5
+            else:
+                nticks = 6
+
+            yticks = np.linspace(param_ranges[param_names[1]][0],param_ranges[param_names[1]][1],nticks)
+                #ytick_labels = [str(tick) for tick in yticks]
+
+            ylabel_name, yticks, ytick_labels = self._convert_param_names(param_names[1], yticks)
+
+            self.ax.set_ylabel(ylabel_name, fontsize=16)
             self.ax.set_yticks(yticks)
             self.ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
-            self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=param_names[1])))
+            self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
 
         self.param_names = param_names
         self.param_ranges = param_ranges
@@ -145,6 +158,32 @@ class Joint2D:
         self.sim_density = sim_density
 
         return self.ax, (coordinates, final_densities, aspect, extent)
+
+    def _convert_param_names(self, pname, ticks):
+
+        if pname == 'fsub':
+            pname = r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$'
+
+            # convert between fsub and sigma sub [kpc ^ -2] with m_0 = 10^6
+            tick_labels = ticks*(0.8 / 0.01)
+
+        elif pname == 'log_m_break' or pname == 'logmhm':
+            pname = r'$\log_{10} \left(m_{\rm{hm}}\right)$'
+            tick_labels = ticks
+
+        elif pname == 'LOS_normalization':
+            pname = r'$\delta_{\rm{LOS}}$'
+            tick_labels = ticks
+
+        elif pname == 'source_size_kpc':
+            #pname = r'$\sigma_{\rm{source}}$'
+            pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
+            tick_labels = ticks*1000
+
+        else:
+            tick_labels = ticks
+
+        return pname, ticks, tick_labels
 
     def _norm_density(self,density):
 
@@ -216,7 +255,9 @@ class Joint2D:
 
         if pname == 'fsub':
             return '%.3f'
-        elif pname=='logmhm' or pname=='log_m_break':
+        elif pname == r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$':
+            return '%.2f'
+        elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
         elif pname == 'c_power':
             return '%.3f'
@@ -224,6 +265,10 @@ class Joint2D:
             return '%.2f'
         elif pname == 'source_size_kpc':
             return '%.3f'
+        elif pname == r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
+            return '%.1f'
+        elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':
+            return '%.2f'
         else:
             return '%.2f'
 
