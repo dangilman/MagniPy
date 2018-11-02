@@ -30,15 +30,22 @@ def min_img_sep(ximg,yimg):
 
     assert len(ximg) == len(yimg)
     dr = []
+
     if len(ximg) == 1:
         return 1
-    for i in range(0,int(len(ximg)-1)):
-        for j in range(i+1,int(len(ximg))):
-            dx = ximg[i] - ximg[j]
-            dy = yimg[i] - yimg[j]
-            dr.append((dx**2 + dy**2)**0.5)
+    elif len(ximg) == 0:
+        return 1
+    try:
+        for i in range(0,int(len(ximg)-1)):
+            for j in range(i+1,int(len(ximg))):
+                dx = ximg[i] - ximg[j]
+                dy = yimg[i] - yimg[j]
+                dr.append((dx**2 + dy**2)**0.5)
 
-    return min(dr)
+        return min(dr)
+    except:
+        print('problem with the fit...')
+        return 1
 
 def sort_image_index(ximg,yimg,xref,yref):
 
@@ -505,7 +512,6 @@ def convolve_image(image,kernel='Gaussian',scale=None):
         grid = sfilt.gaussian_filter(image, scale * (2.355) ** -1, mode='constant', cval=0)
 
     return grid
-
 
 def nfw_kr(X):
     def f(x):
