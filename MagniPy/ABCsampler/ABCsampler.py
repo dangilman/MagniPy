@@ -23,7 +23,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2]
+        gamma_values = [2]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -97,12 +97,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
             #                           source_y = d2fit.srcy)
 
             if chain_keys_run['multiplane']:
-                grid_res = 0.001
+
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=350,
                                        verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
-                                       pso_compute_magnification=700, source_size_kpc=0.0015,
-                                        simplex_n_iter=400, polar_grid=False, grid_res=grid_res,
+                                       pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                        simplex_n_iter=400, polar_grid=False, grid_res=0.0015,
                                                              LOS_mass_sheet=7.7)
 
 
