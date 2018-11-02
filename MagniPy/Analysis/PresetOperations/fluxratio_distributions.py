@@ -92,8 +92,6 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        re_optimize=False, particle_swarm=True,
                                                                          pso_compute_magnification=1000,
                                                                        restart=n_restart, grid_res=grid_res,
-                                                                       min_mass=model_args['log_mlow'],
-                                                                         m_break=model_args['log_m_break'],
                                                                          LOS_mass_sheet = LOS_mass_sheet, **kwargs)
 
             else:
