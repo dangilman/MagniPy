@@ -90,30 +90,21 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            #halos[0] = halos[0].filter(d2fit.x, d2fit.y, mindis_front=chain_keys_run['mindis_front'],
-            #                           mindis_back=chain_keys_run['mindis_back'],
-            #                           logmasscut_back=chain_keys_run['log_masscut_back'],
-            #                           logmasscut_front=chain_keys_run['log_masscut_front'], source_x = d2fit.srcx,
-            #                           source_y = d2fit.srcy)
-
-            if chain_keys_run['multiplane']:
-
+            try:
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=350,
-                                       verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
-                                       pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                        simplex_n_iter=400, polar_grid=False, grid_res=0.0015,
-                                                             LOS_mass_sheet=7.7)
+                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=350,
+                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                    simplex_n_iter=400, polar_grid=False, grid_res=0.0015,
+                                                         LOS_mass_sheet=7.7)
 
+                xfit, yfit = new[0].x, new[0].y
 
-            else:
-                new, _ = solver.optimize_4imgs_lenstronomy(macromodel=macromodel.lens_components[0], realizations=halos,
-                                                           datatofit=d2fit, multiplane=chain_keys_run['multiplane'],
-                                                           source_size_kpc=chain_keys_run['source_size_kpc'],
-                                                           restart=1, particle_swarm=True, re_optimize=True, verbose=False,
-                                                           polar_grid=False)
+            except:
+                print('error in fitting positions...')
+                xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
 
-            if chi_square_img(d2fit.x,d2fit.y,new[0].x,new[0].y,0.003) < 1:
+            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 break
 
         N_computed += 1
@@ -236,6 +227,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/test_routine/',1)
+#runABC(prefix+'data/WDM_run_7.7_tier2/',12085)
 
 
