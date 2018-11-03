@@ -142,6 +142,10 @@ def runABC(chain_ID='',core_index=int):
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
+    print('lens redshift: ', chain_keys['zlens'])
+    print('source redshift: ', chain_keys['zsrc'])
+    print('opening angle: ', 5*approx_theta_E(datatofit.x, datatofit.y))
+
     if run is False:
         return
 
