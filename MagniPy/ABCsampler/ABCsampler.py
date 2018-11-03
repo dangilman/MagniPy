@@ -55,6 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
     N_computed = 0
     init_macro = False
     t0 = time.time()
+
     while N_computed < keys['Nsamples']:
 
         samples = prior.sample(scale_by='Nsamples')[0]
@@ -92,7 +93,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
 
             try:
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=350,
+                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.0015,
