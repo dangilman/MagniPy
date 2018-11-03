@@ -192,6 +192,7 @@ def initialize(chain_ID, core_index):
 
     inputfile_path = get_inputfile_path(chain_ID, core_index)
 
+    print('reading input file: ', inputfile_path)
     all_keys = read_paraminput(inputfile_path)
 
     chain_keys = all_keys['main_keys']
