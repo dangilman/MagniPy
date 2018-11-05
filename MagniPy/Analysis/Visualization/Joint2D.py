@@ -106,24 +106,32 @@ class Joint2D:
 
             truth1,truth2 = truths[param_names[0]],truths[param_names[1]]
 
-            inside1 = truth1 >= param_ranges[param_names[0]][0] and \
-                              truth1 <= param_ranges[param_names[0]][1]
-            inside2 = truth2 >= param_ranges[param_names[1]][0] and \
-                              truth2 <= param_ranges[param_names[1]][1]
+            #inside1 = truth1 >= param_ranges[param_names[0]][0] and \
+            #                  truth1 <= param_ranges[param_names[0]][1]
+            #inside2 = truth2 >= param_ranges[param_names[1]][0] and \
+            #                  truth2 <= param_ranges[param_names[1]][1]
 
-            if inside1:
-                self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
-            if inside2:
-                self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
-            if inside1 and inside2:
-                self.ax.scatter(truth1,truth2,color=self.truth_color,s=50)
+            #if inside1:
+
+            if truth1 <= param_ranges[param_names[0]][0]:
+                truth1 = param_ranges[param_names[0]][0]*1.025
+            elif truth1 >= param_ranges[param_names[0]][1]:
+                truth1 = param_ranges[param_names[0]][1]*0.98
+
+            if truth2 <= param_ranges[param_names[1]][0]:
+                truth2 = param_ranges[param_names[1]][0]*1.025
+            elif truth2 >= param_ranges[param_names[1]][1]:
+                truth2 = param_ranges[param_names[1]][1]*0.98
+
+            self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
+            #if inside2:
+            self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
+            #if inside1 and inside2:
+            self.ax.scatter(truth1,truth2,color=self.truth_color,s=50)
 
         if xlabel_on:
 
-            if param_names[0] == 'fsub':
-                nticks = 5
-            else:
-                nticks = 6
+            nticks = 5
 
             xticks = np.linspace(param_ranges[param_names[0]][0], param_ranges[param_names[0]][1], nticks)
 
@@ -137,10 +145,7 @@ class Joint2D:
 
         if ylabel_on:
 
-            if param_names[0] == 'fsub':
-                nticks = 5
-            else:
-                nticks = 6
+            nticks = 5
 
             yticks = np.linspace(param_ranges[param_names[1]][0],param_ranges[param_names[1]][1],nticks)
                 #ytick_labels = [str(tick) for tick in yticks]
@@ -266,9 +271,9 @@ class Joint2D:
         elif pname == 'source_size_kpc':
             return '%.3f'
         elif pname == r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
-            return '%.1f'
-        elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':
             return '%.2f'
+        elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':
+            return '%.1f'
         else:
             return '%.2f'
 

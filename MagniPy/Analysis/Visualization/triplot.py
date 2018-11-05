@@ -53,7 +53,7 @@ class TriPlot(object):
         return col * row + col + 1
 
     def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6,
-                 spacing = [0.1, 0.1, 0.05, 0.05, 0.15, 0.11], rebin=20):
+                 spacing = [0.1, 0.1, 0.05, 0.05, 0.2, 0.11], rebin=20):
 
         self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
                        rebin = rebin)

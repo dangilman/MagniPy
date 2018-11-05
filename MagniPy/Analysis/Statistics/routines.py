@@ -34,7 +34,7 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
                                            pranges=pranges,
                                            reweight=True,
                                            kernel_function='Gaussian',
-                                           scale=3,
+                                           scale=5,
                                            bandwidth_scale=bandwidth_scale)
 
             density, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)

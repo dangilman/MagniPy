@@ -55,7 +55,10 @@ class Density1D(Joint2D):
         self.ax.set_ylim(0, max_height*1.25)
 
         if truths is not None:
-            self.ax.axvline(truths[param], color='r', linestyle='--',linewidth=3)
+            if truths[param] < param_ranges[0]:
+                self.ax.axvline(param_ranges[0]*1.025, color='r', linestyle='--', linewidth=3)
+            else:
+                self.ax.axvline(truths[param], color='r', linestyle='--',linewidth=3)
 
         return
 
