@@ -13,6 +13,7 @@ def make_kappa_maps(realizations, zlens=0.5, zsource=1.5, Npix = 200, s = 1.3):
     analysis = Analysis(zlens, zsource)
 
     x, y = np.linspace(-s, s, Npix), np.linspace(-s, s, Npix)
+    deltaPix = 2*s * Npix ** -1
     xx, yy = np.meshgrid(x, y)
 
     macroargs_start = {'R_ein': 1, 'x': 0, 'y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.065, 'shear_theta': -30,
@@ -47,7 +48,7 @@ def make_kappa_maps(realizations, zlens=0.5, zsource=1.5, Npix = 200, s = 1.3):
         convergence_main_plane.append(convergencemain_halos)
         convergence_halos_nonlinear.append(convergence_full - convergence_main)
 
-    return convergence_macromodel, convergence_main_plane, convergence_halos_born, convergence_halos_nonlinear
+    return convergence_macromodel, convergence_main_plane, convergence_halos_born, convergence_halos_nonlinear, (xx, yy, deltaPix)
 
 def kappa_plot(conv_map, conv_map_subtract = None, ax = None,
                color_range = 0.1, mask = 0.25, cmap = 'bwr',annotate_text = None,

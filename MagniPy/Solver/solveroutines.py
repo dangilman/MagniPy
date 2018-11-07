@@ -12,7 +12,7 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def hierarchical_optimization(self, datatofit=None, macromodel=None, realizations=None, multiplane=None,
+    def hierarchical_optimization(self, datatofit=None, macromodel=None, realizations=None, multiplane=True,
                                   source_shape='GAUSSIAN',
                                   source_size_kpc=None, grid_res=None, tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                   centroid_0=[0, 0],
@@ -32,6 +32,8 @@ class SolveRoutines(Magnipy):
             source_size_kpc = default_source_size_kpc
         if grid_res is None:
             grid_res = default_res(source_size_kpc)
+
+        assert multiplane is True
 
         assert isinstance(source_size_kpc, float) or isinstance(source_size_kpc, int)
         m_ref = max(m_break, min_mass)

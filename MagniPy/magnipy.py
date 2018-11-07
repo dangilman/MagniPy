@@ -93,24 +93,28 @@ class Magnipy:
                               simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs)
 
             lensModel = optimizer.lensModel
-            optimizer_kwargs = {}
 
-            if hasattr(optimizer._optimizer, '_mags'):
-                optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
-            else:
-                mags = lensModel.magnification(x_opt, y_opt, kwargs_lens)
-                optimizer_kwargs.update({'magnification_pointsrc': mags})
+            if system.multiplane:
+                optimizer_kwargs = {}
 
-            optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
+                if hasattr(optimizer._optimizer, '_mags'):
+                    optimizer_kwargs.update({'magnification_pointsrc': optimizer._optimizer._mags})
+                else:
+                    mags = lensModel.magnification(x_opt, y_opt, kwargs_lens)
+                    optimizer_kwargs.update({'magnification_pointsrc': mags})
 
-            if return_ray_path:
+                optimizer_kwargs.update({'precomputed_rays': optimizer.lensModel._foreground._rays})
 
-                x_path, y_path, redshifts, Tzlist = lensModel._ray_shooting_steps(kwargs_lens)
+                if return_ray_path:
 
-                optimizer_kwargs.update({'path_x': x_path})
-                optimizer_kwargs.update({'path_y': y_path})
-                optimizer_kwargs.update({'path_Tzlist': Tzlist})
-                optimizer_kwargs.update({'path_redshifts': redshifts})
+                    x_path, y_path, redshifts, Tzlist = lensModel._ray_shooting_steps(kwargs_lens)
+
+                    optimizer_kwargs.update({'path_x': x_path})
+                    optimizer_kwargs.update({'path_y': y_path})
+                    optimizer_kwargs.update({'path_Tzlist': Tzlist})
+                    optimizer_kwargs.update({'path_redshifts': redshifts})
+                else:
+                    optimizer_kwargs = None
 
             if finite_source_magnification:
                 fluxes = self._ray_trace_finite(x_opt, y_opt, xsrc, ysrc, system.multiplane, lensModel, kwargs_lens, res,
