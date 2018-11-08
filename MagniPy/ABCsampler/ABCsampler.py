@@ -96,7 +96,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=400, polar_grid=False, grid_res=0.0015,
+                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
                                                          LOS_mass_sheet=7.7)
 
                 xfit, yfit = new[0].x, new[0].y
@@ -232,6 +232,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_7.7_tier2/',12085)
+#runABC(prefix+'data/WDM_run_7.7_beingrun/',14085)
 
 

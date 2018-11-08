@@ -23,22 +23,20 @@ elif homedir == '/Users/danielgilman/':
     path_2_lensmodel = homedir + '/Code/'
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
-"""  
-elif homedir == 'Anna_homedir':
-    
-    # wherever the file storage directory is for the JPL cluster. 
-    prefix = 'path_to_storage_directory'
-    
-    # can make this the same as prefix 
+elif homedir == '/home/nierenbe/':
+
+    # wherever the file storage directory is for the JPL cluster.
+    prefix = '/aurora_nobackup/abclens/'
+
+    # can make this the same as prefix
     IO_directory = prefix
-    
+
     # don't need these ones
     lensmodel_location = homedir + '/Code/lensmodel_folder/'
     path_2_lensmodel = IO_directory
-    
+
     # don't need this one either
     gravlens_input_path = IO_directory + 'gravlens_input/'
-"""
 
 #if os.path.exists(path_2_lensmodel+'lensmodel'):
 #    pass
