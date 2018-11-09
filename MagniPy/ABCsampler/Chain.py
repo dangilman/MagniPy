@@ -43,6 +43,11 @@ class FullChains:
         else:
             self.pranges_trimmed = trimmed_ranges
 
+    def add_derived_parameters(self, new_param_name, transformation_function, pnames_input):
+
+        for lens in self.lenses:
+            lens.add_derived_parameter(new_param_name, transformation_function, pnames_input)
+
     def get_posteriors(self,tol=None, reject_pnames = None, keep_ranges = None):
 
         posteriors = []
@@ -144,6 +149,15 @@ class SingleLens:
             new_param_dic.update({key: values[inds]})
 
         self.posterior = PosteriorSamples(new_param_dic, weights=None)
+
+    def add_derived_parameter(self, new_pname, transformation_function, pnames):
+
+        args = {}
+        for name in pnames:
+            args.update({name: self.parameters[name]})
+        kwargs = [self.zlens, self.zsrouce]
+
+        self.parameters.update({new_pname:transformation_function(**args, **kwargs)})
 
     def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 
