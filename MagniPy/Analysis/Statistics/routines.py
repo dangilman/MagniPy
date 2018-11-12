@@ -74,7 +74,7 @@ def duplicate_with_cuts(full_chain, tol, pnames_reject_list, keep_ranges_list):
     return posteriors, prange_list
 
 def reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
-                                     index_lists, post_to_reweight):
+                                     index_lists, post_to_reweight, weight_type = 'Gaussian'):
 
     weighted_posteriors = []
 
@@ -84,8 +84,23 @@ def reweight_posteriors_individually(posteriors, weight_param, weight_means, wei
 
     for j, idx in enumerate(index_lists):
 
-        w = WeightedSamples(params_to_weight=[weight_param],
+        if weight_type == 'Gaussian':
+            w = WeightedSamples(params_to_weight=[weight_param],
                             weight_args=[{'type': 'Gaussian', 'mean': weight_means[j], 'sigma': weight_sigmas[j]}])
+        elif weight_type == 'lower_limit':
+            w = WeightedSamples(params_to_weight=[weight_param],
+                                weight_args= [{'type': 'lower_limit', 'break': weight_means[j], 'sigma': weight_sigmas[j]}])
+        elif weight_type == 'upper_limit':
+            w = WeightedSamples(params_to_weight=[weight_param],
+                                weight_args=[{'type': 'upper_limit', 'break': weight_means[j], 'sigma': weight_sigmas[j]}])
+        elif weight_type == 'binary_upper':
+            w = WeightedSamples(params_to_weight=[weight_param],
+                                weight_args=[{'type': 'BinaryUpper', 'break': weight_means[j], 'sigma': weight_sigmas[j]}])
+        elif weight_type == 'binary_lower':
+            w = WeightedSamples(params_to_weight=[weight_param],
+                                weight_args=[{'type': 'BinaryLower', 'break': weight_means[j], 'sigma': weight_sigmas[j]}])
+
+
         weight_list.append(w)
 
     for i, post in enumerate(posteriors):

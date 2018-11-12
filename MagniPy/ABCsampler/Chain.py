@@ -3,7 +3,13 @@ from MagniPy.ABCsampler.ChainOps import *
 
 class FullChains:
 
-    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None):
+    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None,
+                 zlens_src_file = chainpath_out + '/processed_chains/simulation_zRein.txt'):
+
+        if zlens_src_file is None:
+            zd = [None] * len(which_lens), [None] * len(which_lens)
+        else:
+            zd, zs, _ = np.loadtxt(zlens_src_file, unpack = True)
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -18,7 +24,7 @@ class FullChains:
         else:
             self.Nlenses = Nlenses
 
-        self.chain_file_path = chainpath_out + 'processed_chains/' + chain_name +'/'
+        self.chain_file_path = chainpath_out + 'chain_stats/' + chain_name +'/'
 
         self.lenses = []
 
@@ -27,14 +33,14 @@ class FullChains:
 
         for ind in which_lens:
 
-            new_lens = SingleLens(Nparams=len(self.params_varied))
+            new_lens = SingleLens(zlens = zd[ind], zsource=zs[ind])
 
             fname = 'statistic_'+str(error)+'error_'+str(index)+'.txt'
-            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/fluxratios/'+fname)
+            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
 
             fname = 'params_' + str(error) + 'error_' + str(index) + '.txt'
             new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
-                                    fname=self.chain_file_path+'lens'+str(ind)+'/fluxratios/'+fname)
+                                    fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
 
             self.lenses.append(new_lens)
 
@@ -43,10 +49,12 @@ class FullChains:
         else:
             self.pranges_trimmed = trimmed_ranges
 
-    def add_derived_parameters(self, new_param_name, transformation_function, pnames_input):
+    def add_derived_parameters(self, new_param_name, transformation_function, pnames_input, new_param_ranges):
 
         for lens in self.lenses:
             lens.add_derived_parameter(new_param_name, transformation_function, pnames_input)
+
+        self.pranges.update({new_param_name: new_param_ranges})
 
     def get_posteriors(self,tol=None, reject_pnames = None, keep_ranges = None):
 
@@ -123,10 +131,11 @@ class FullChains:
 
 class SingleLens:
 
-    def __init__(self,Nparams=int,weights=None):
+    def __init__(self, zlens, zsource, weights=None):
 
         self.weights = weights
         self.posterior = None
+        self.zlens, self.zsource = zlens, zsource
 
     def draw(self,tol, reject_pnames, keep_ranges):
 
@@ -153,9 +162,14 @@ class SingleLens:
     def add_derived_parameter(self, new_pname, transformation_function, pnames):
 
         args = {}
+
+        if not isinstance(pnames, list):
+            pnames = [pnames]
+
         for name in pnames:
             args.update({name: self.parameters[name]})
-        kwargs = [self.zlens, self.zsrouce]
+
+        kwargs = {'zlens': self.zlens, 'zsrc': self.zsource}
 
         self.parameters.update({new_pname:transformation_function(**args, **kwargs)})
 
@@ -242,6 +256,14 @@ class WeightedSamples:
 
                     self.functions.update({param:StepLowerLimit(weight_args[i]['break'],weight_args[i]['sigma'],param)})
 
+                elif weight_args[i]['type'] == 'BinaryUpper':
+
+                    self.functions.update({param:BinaryUpper(weight_args[i]['break'],weight_args[i]['sigma'],param)})
+
+                elif weight_args[i]['type'] == 'BinaryLower':
+
+                    self.functions.update({param:BinaryLower(weight_args[i]['break'],weight_args[i]['sigma'],param)})
+
 
     def __call__(self,samples):
 
@@ -281,7 +303,7 @@ class StepUpperLimit(object):
 
         exponent = kwargs['x'] * self.break_value ** -1
 
-        exp = np.exp(-exponent)
+        exp = np.exp(-exponent * self.sigma)
 
         return exp
 
@@ -296,7 +318,36 @@ class StepLowerLimit(object):
 
         exponent = self.break_value * kwargs['x'] ** -1
 
-        exp = np.exp(-exponent)
+        exp = np.exp(-exponent * self.sigma)
 
         return exp
+
+class BinaryUpper(object):
+
+    def __init__(self, break_value, sigma, name):
+
+        self.break_value = break_value
+        #self.sigma = sigma
+        #self.name = name
+
+    def __call__(self, **kwargs):
+
+        weights = np.ones_like(kwargs['x'])
+        weights[np.where(weights >= self.break_value)] = 0
+
+        return weights
+
+
+class BinaryLower(object):
+
+    def __init__(self, break_value, sigma, name):
+        self.break_value = break_value
+        # self.sigma = sigma
+        # self.name = name
+
+    def __call__(self, **kwargs):
+        weights = np.ones_like(kwargs['x'])
+        weights[np.where(weights <= self.break_value)] = 0
+
+        return weights
 

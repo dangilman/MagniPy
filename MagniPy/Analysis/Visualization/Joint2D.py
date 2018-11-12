@@ -167,10 +167,11 @@ class Joint2D:
     def _convert_param_names(self, pname, ticks):
 
         if pname == 'fsub':
-            pname = r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$'
-
+            #pname = r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$'
+            pname = r'$f_{\rm{sub}}$'
             # convert between fsub and sigma sub [kpc ^ -2] with m_0 = 10^6
-            tick_labels = ticks*(0.8 / 0.01)
+            #tick_labels = ticks*(0.8 / 0.01)
+            tick_labels = ticks
 
         elif pname == 'log_m_break' or pname == 'logmhm':
             pname = r'$\log_{10} \left(m_{\rm{hm}}\right)$'
@@ -184,6 +185,11 @@ class Joint2D:
             #pname = r'$\sigma_{\rm{source}}$'
             pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
             tick_labels = ticks*1000
+
+        elif pname == 'sigma_sub':
+
+            pname = r'$\sigma_{\rm{sub}}$'
+            tick_labels = ticks
 
         else:
             tick_labels = ticks
@@ -242,7 +248,7 @@ class Joint2D:
         while summ < total * percentile:
             summ += heights[index]
             index += 1
-        return centers[index]
+        return centers[index-1]
 
     def confidence_interval(self,pname,density,pnames,percentile=[0.05,0.95]):
 
@@ -273,6 +279,8 @@ class Joint2D:
         elif pname == r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
             return '%.2f'
         elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':
+            return '%.1f'
+        elif pname == r'$\sigma_{\rm{sub}}' or pname == 'sigma_sub':
             return '%.1f'
         else:
             return '%.2f'

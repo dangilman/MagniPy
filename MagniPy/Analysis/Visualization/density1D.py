@@ -13,7 +13,7 @@ class Density1D(Joint2D):
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
     def make_marginalized(self, marginalized_densities, param, param_ranges,
-                          contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None, rebin=20):
+                          contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None, rebin=15):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -24,6 +24,9 @@ class Density1D(Joint2D):
 
             bar_centers, bar_width, bar_heights = self._bar_plot_heights(marginalized_densities[color_index],
                                                     np.linspace(param_ranges[0],param_ranges[1], 10), rebin)
+
+            high_95 = self._quick_confidence(bar_centers, bar_heights, 0.95)
+            low_95 = self._quick_confidence(bar_centers, bar_heights, 0.05)
 
             if max(bar_heights) > max_height:
                 max_height = max(bar_heights)
@@ -37,6 +40,9 @@ class Density1D(Joint2D):
 
             self.ax.set_yticklabels([])
             self.ax.set_yticks([])
+
+            self.ax.axvline(low_95, color=contour_colors[color_index][1], linestyle = '-.', linewidth = 3, alpha=0.8)
+            self.ax.axvline(high_95, color=contour_colors[color_index][1], linestyle='-.', linewidth=3, alpha = 0.8)
 
             if xlabel_on:
                 xticks = np.linspace(param_ranges[0], param_ranges[1], 6)
@@ -90,4 +96,7 @@ class Density1D(Joint2D):
         bar_heights = bar_heights * integral ** -1
 
         return bar_centers, bar_width, bar_heights
+
+
+
 
