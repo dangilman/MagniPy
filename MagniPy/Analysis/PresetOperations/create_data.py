@@ -224,7 +224,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
 
         if sigma < 1.8:
             continue
-        if sigma > 2.4:
+        if sigma > 2.2:
             continue
 
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
