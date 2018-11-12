@@ -208,6 +208,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
 
     lens_idx = int(start_idx) + n_computed
     dpath = dpath_base + str(lens_idx)
+    l = LensCosmo(0.5, 4)
 
     if os.path.exists(dpath + '/lensdata.txt'):
         return
@@ -218,6 +219,14 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
             break
 
         rein, vdis, zlens, zsrc = sample_from_strides(1)
+
+        sigma = l.sigmasub_from_fsub(0.045, zlens, zsrc)
+        
+        if sigma < 1.4:
+            continue
+        if sigma > 2.1:
+            continue
+
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
 
         ellip = draw_ellip()
@@ -373,15 +382,20 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/data/mock_data/LOS_WDM_7.7/lens_'
+#dpath_base = nav + '/data/mock_data/LOS_WDM_7.7/lens_'
+dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 
-#import sys
-#start_idx=int(sys.argv[1])
-#cusps = np.arange(1,60,3)
-#folds = cusps + 1
-#crosses = cusps + 2
+import sys
+start_idx=int(sys.argv[1])
+cusps = np.arange(1,60,3)
+folds = cusps + 1
+crosses = cusps + 2
 #run(1,0,0, start_idx=43)
 #if start_idx in folds:
-run(1,0,0, start_idx=34)
-#if start_idx in crosses:
-#    run(0,0,1, start_idx=sys.argv[1])
+#run(0,0,1, start_idx=1)
+if start_idx in crosses:
+    run(0,0,1, start_idx=sys.argv[1])
+elif start_idx in folds:
+    run(0, 1, 0, start_idx=sys.argv[1])
+else:
+    run(1, 0, 0, start_idx=sys.argv[1])
