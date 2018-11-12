@@ -222,9 +222,9 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
 
         sigma = l.sigmasub_from_fsub(0.045, zlens, zsrc)
 
-        if sigma < 1.4:
+        if sigma < 1.8:
             continue
-        if sigma > 2.1:
+        if sigma > 2.4:
             continue
 
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
@@ -382,7 +382,7 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/data/mock_data/LOS_WDM_7.7_replace_sigma/lens_'
+dpath_base = nav + '/mock_data/LOS_WDM_7.7_replace_sigma/lens_'
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 
 #import sys
