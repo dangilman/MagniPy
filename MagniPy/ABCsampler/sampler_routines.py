@@ -18,7 +18,7 @@ def perturb_data(data,delta_pos,delta_flux):
 def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
                    mindis_back=0.4, log_masscut_front=None, log_masscut_back=None, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
-                   mass_func_type=None,log_mL=None, log_mH=None, fsub=None, A0=None, logmhm=None,
+                   mass_func_type=None,log_mL=None, log_mH=None, a0_area=None, A0=None, logmhm=None,
                    zmin=None, zmax=None, params_to_vary={},chain_description='',
                    chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
                    position_sigma=None, flux_sigma=None, single_background=None,Nsamples_perlens=None,
@@ -81,12 +81,10 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
     chain_keys['log_mH'] = log_mH
     chain_keys['LOS_normalization'] = LOS_normalization
 
-    if fsub is not None:
+    if a0_area is not None:
         assert A0 is None
-        chain_keys['fsub'] = fsub
-    elif A0 is not None:
-        assert fsub is None
-        chain_keys['A0'] = fsub
+        chain_keys['a0_area'] = a0_area
+
     if logmhm is not None:
         chain_keys['logmhm'] = logmhm
 
@@ -153,10 +151,10 @@ def halo_model_args(params):
 
         args.update({'mass_func_type':mass_func_type})
 
-        if 'A0_perasec2' in params.keys():
-            args.update({'A0_perasec2': params['A0_perasec2']})
-        elif 'fsub' in params.keys():
-            args.update({'fsub': params['fsub']})
+        if 'a0_area' in params.keys():
+            args.update({'a0_area': params['a0_area']})
+        #elif 'fsub' in params.keys():
+        #    args.update({'fsub': params['fsub']})
 
         if 'zmin' in params.keys():
             args.update({'zmin':params['zmin']})

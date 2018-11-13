@@ -24,7 +24,7 @@ class SolveRoutines(Magnipy):
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
                                   min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
-                                  reoptimize_scale=None,LOS_mass_sheet = True):
+                                  reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8):
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -44,7 +44,7 @@ class SolveRoutines(Magnipy):
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
                           restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                            tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet)
+                            tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet_front, LOS_mass_sheet_back)
 
         print('optimizing background... ')
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
@@ -54,8 +54,9 @@ class SolveRoutines(Magnipy):
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
                         background_globalmin_masses = background_globalmin_masses,
                          background_aperture_masses = background_aperture_masses, background_filters = background_filters,
-                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt, LOS_mass_sheet = LOS_mass_sheet,
-                        optimize_iteration=optimize_iteration)
+                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt,
+                         LOS_mass_sheet_front = LOS_mass_sheet_front, LOS_mass_sheet_back = LOS_mass_sheet_back,
+                          optimize_iteration=optimize_iteration)
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
@@ -73,7 +74,7 @@ class SolveRoutines(Magnipy):
                                    particle_swarm = True, restart=1,
                                    constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func = 0.01,
-                                   simplex_n_iter=300, LOS_mass_sheet = 8):
+                                   simplex_n_iter=300, LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8):
 
 
         if source_shape is None:
@@ -94,14 +95,17 @@ class SolveRoutines(Magnipy):
                 assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
 
                 for macro,real in zip(macromodel,realizations):
-                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane,LOS_mass_sheet=LOS_mass_sheet))
+                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                          LOS_mass_sheet_back=LOS_mass_sheet_back))
             else:
                 if realizations is not None:
                     for real in realizations:
                         lens_systems.append(self.build_system(main=macromodel, realization=real,
-                                                              multiplane=multiplane,LOS_mass_sheet=LOS_mass_sheet))
+                                                              multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                          LOS_mass_sheet_back=LOS_mass_sheet_back))
                 else:
-                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet=LOS_mass_sheet))
+                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                          LOS_mass_sheet_back=LOS_mass_sheet_back))
 
 
         optimized_data, model, _, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,

@@ -19,10 +19,10 @@ def split_realization(datatofit, realization):
 
 def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations,
                  source_shape, source_size_kpc, polar_grid, optimizer_routine, re_optimize, verbose, particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet):
+                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back):
 
     foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
-    reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet)
+    reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
 
     for h in range(0, len(foreground_filters)):
 
@@ -66,7 +66,9 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
 
         if do_optimization:
 
-            lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered, multiplane=True, LOS_mass_sheet=LOS_mass_sheet)
+            lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered, multiplane=True,
+                                                    LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                    LOS_mass_sheet_back=LOS_mass_sheet_back)
 
             optimized_data, model, out_kwargs, keywords_lensmodel = solver_class._optimize_4imgs_lenstronomy([lens_system],
                                                                                              data2fit=datatofit,
@@ -105,12 +107,13 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                         particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification,
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, solver_class,
                         background_globalmin_masses = None, background_aperture_masses = None, background_filters = None,
-                        reoptimize_scale = None, optimize_iteration = None, particle_swarm_reopt = None, LOS_mass_sheet = True):
+                        reoptimize_scale = None, optimize_iteration = None, particle_swarm_reopt = None,
+                        LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8):
 
     if background_globalmin_masses is None or background_aperture_masses is None:
 
         background_aperture_masses, background_globalmin_masses, background_filters, \
-        reoptimize_scale, particle_swarm_reopt, optimize_iteration = background_mass_filters(m_ref, LOS_mass_sheet)
+        reoptimize_scale, particle_swarm_reopt, optimize_iteration = background_mass_filters(m_ref, LOS_mass_sheet_back)
     else:
         assert len(background_filters) == len(background_aperture_masses)
         assert len(background_globalmin_masses) == len(background_filters)
@@ -175,12 +178,12 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 
         if do_optimization:
             # print(macromodel.lenstronomy_args)
-            lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered, multiplane=True,
-                                                    LOS_mass_sheet = LOS_mass_sheet)
+            lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered,
+                                                    multiplane=True, LOS_mass_sheet_front = LOS_mass_sheet_front,
+                                                    LOS_mass_sheet_back = LOS_mass_sheet_back)
 
             optimized_data, model, out_kwargs, keywords_lensmodel = solver_class._optimize_4imgs_lenstronomy([lens_system],
-                                                                 data2fit=datatofit,
-                                                                                       tol_source=tol_source,
+                                                                 data2fit=datatofit,tol_source=tol_source,
                                                                                        tol_mag=tol_mag,
                                                                                        tol_centroid=tol_centroid,
                                                                                        centroid_0=centroid_0,

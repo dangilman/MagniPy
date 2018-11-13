@@ -14,7 +14,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
                                     n_restart=1, pso_conv_mean = 100,
                                     srcx = 0, srcy = 0, use_source=True, hierarchical = True, grid_res = 0.002,
-                                    LOS_mass_sheet = None, multiplane = None, **kwargs):
+                                    LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, multiplane = None, **kwargs):
     tstart = time()
 
     data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=[srcx, srcy])
@@ -95,7 +95,9 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        re_optimize=False, particle_swarm=True,
                                                                          pso_compute_magnification=1000,
                                                                        restart=n_restart, grid_res=grid_res,
-                                                                         LOS_mass_sheet = LOS_mass_sheet, **kwargs)
+                                                                         LOS_mass_sheet_front = LOS_mass_sheet_front,
+                                                                         LOS_mass_sheet_back = LOS_mass_sheet_back,
+                                                                         **kwargs)
 
             else:
 

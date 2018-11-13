@@ -94,10 +94,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
             try:
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.002,
-                                                         LOS_mass_sheet=7.7)
+                                    LOS_mass_sheet_back=8, LOS_mass_sheet_front=7.7)
 
                 xfit, yfit = new[0].x, new[0].y
 
@@ -232,6 +232,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run_7.7_beingrun/',14085)
+#runABC(prefix+'data/sim_a0sub/',1)
 
 

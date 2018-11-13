@@ -7,17 +7,15 @@ class LensSystem:
     This class is a single, complete lens model with a main deflector and halos in the lens plane and along LOS.
     """
 
-    def __init__(self, main_deflector, realization=None, multiplane=False, LOS_mass_sheet = True):
+    def __init__(self, main_deflector, realization=None, multiplane=False,
+                 LOS_mass_sheet_front=7.7, LOS_mass_sheet_back = 8):
 
         self.lens_components = []
         self.redshift_list = []
         self.multiplane = multiplane
 
-        if LOS_mass_sheet is False:
-            self._LOS_mass_sheet = LOS_mass_sheet
-        else:
-            assert isinstance(LOS_mass_sheet, float) or isinstance(LOS_mass_sheet, int)
-            self._LOS_mass_sheet = LOS_mass_sheet
+        self._LOS_mass_sheet_front = LOS_mass_sheet_front
+        self._LOS_mass_sheet_back = LOS_mass_sheet_back
 
         self.main_lens(main_deflector)
         self.realization = realization
@@ -27,7 +25,8 @@ class LensSystem:
         if not hasattr(self, '_halo_names'):
             if self.realization is not None:
                 self._halo_names, self._halo_redshifts, self._halo_kwargs = \
-                    self.realization.lensing_quantities(mass_sheet_correction=self._LOS_mass_sheet)
+                    self.realization.lensing_quantities(mass_sheet_correction_front=self._LOS_mass_sheet_front,
+                                                        mass_sheet_correction_back=self._LOS_mass_sheet_back)
             else:
                 self._halo_names, self._halo_redshifts, self._halo_kwargs = [], [], []
 
