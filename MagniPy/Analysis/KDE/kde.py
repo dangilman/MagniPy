@@ -42,6 +42,48 @@ class KDE_scipy:
 
             return kernel(positions)
 
+class KernelDensity1D(object):
+
+    def __init__(self, scale = 1, bandwidth_scale=1,kernel='Gaussian'):
+
+        self._kernel_function = Gaussian1d
+        self.scale = scale
+        self.bandwidth_scale = bandwidth_scale
+
+    def _kernel(self, samples, pranges, prior_weights):
+
+        h = self._scotts_factor(n=len(samples)) * self.bandwidth_scale
+        sigma = h * np.cov(samples) ** 0.5
+        functions = []
+
+        if prior_weights is None:
+            prior_weights = np.ones(len(samples))
+
+        for i in range(0, len(samples)):
+
+            functions.append(self._kernel_function(samples[i], weight=prior_weights[i], width=sigma))
+
+        return functions
+
+    def _scotts_factor(self, n, d=1):
+
+        return n ** (-1. / (d + 4))
+
+    def __call__(self, data, xpoints, pranges_true, prior_weights=None):
+
+        self.boundary = Boundary(scale=self.scale)
+
+        functions = self._kernel(data, pranges_true, prior_weights)
+
+        estimate = np.zeros(len(xpoints))
+
+        for i, coord in enumerate(xpoints):
+
+            for func in functions:
+                estimate[i] += func(coord)
+
+        return estimate, xpoints
+
 class KernelDensity:
 
     def __init__(self,reweight=False,scale=1,bandwidth_scale=1,kernel='Gaussian'):
@@ -115,3 +157,4 @@ class KernelDensity:
                 estimate[i] += func(*xy[i])
 
         return estimate, xx, yy
+

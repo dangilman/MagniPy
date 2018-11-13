@@ -31,9 +31,11 @@ class TriPlot(object):
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
                  fig_size = 7, bandwidth_scale = 1, truths=None):
 
-        simulations, simulation_pranges = self._get_sims(posteriors, parameter_names, pranges, parameter_trim, bandwidth_scale)
+        simulations, simulation_pranges, marginal_densities, marginal_ranges = self._get_sims(posteriors, parameter_names, pranges, parameter_trim, bandwidth_scale)
 
         self.simulation_densities = simulations
+        self.marginal_densities = marginal_densities
+        self.marginal_pranges = marginal_ranges
 
         self.parameter_names, self.parameter_ranges = parameter_names, pranges
 
@@ -112,24 +114,17 @@ class TriPlot(object):
 
         for i in range(0, len(densities) + 1):
 
+            oneD = Density1D(ax = marginal_axes[i], fig = self.fig)
+
             if i < len(densities):
-                di = densities[i]
-                coordinates, den_i, aspect, extent = di[0], di[1], di[2], di[3]
 
-                oneD = Density1D(ax = marginal_axes[i], fig=self.fig)
-
-                marginalized = []
-                for den in den_i:
-                    marginalized.append(np.sum(den, axis = 0))
                 xlabel_on = False
 
             else:
 
-                oneD = Density1D(ax = marginal_axes[i], fig=self.fig)
                 xlabel_on = True
-                marginalized = []
-                for den in den_i:
-                    marginalized.append(np.sum(den, axis = 1))
+
+            marginalized = self.marginal_densities[marginal_names[i]]
 
             oneD.make_marginalized(marginalized, marginal_names[i], marginal_ranges[i],
                                    xlabel_on = xlabel_on, truths=self._truths, rebin=rebin)
@@ -158,10 +153,18 @@ class TriPlot(object):
         L = len(pnames)
         simulations = []
         simulation_pranges = []
+        marginal_densities = {}
+        marginal_ranges = {}
 
         if L < 2:
             raise Exception('must have at least 2 parameters.')
-        elif L == 2:
+
+        for k, name in enumerate(pnames):
+            marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]}, xtrim=param_trim[name])
+            marginal_densities.update({name:marg})
+            marginal_ranges.update({name:marg_range})
+
+        if L == 2:
 
             parameters = [pnames[0], pnames[1]]
             pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
@@ -312,4 +315,142 @@ class TriPlot(object):
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
-        return simulations, simulation_pranges
+        elif L == 5:
+
+            parameters = [pnames[0], pnames[1]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[0], pnames[2]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[0], pnames[3]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[0], pnames[4]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[1], pnames[2]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[1], pnames[3]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[1], pnames[4]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[2], pnames[3]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[2], pnames[4]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+            parameters = [pnames[3], pnames[4]]
+            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+            if param_trim is None:
+                xtrim, ytrim = None, None
+            else:
+                xtrim = param_trim[parameters[0]]
+                ytrim = param_trim[parameters[1]]
+            sims, sim_pranges = build_densities(posteriors, parameters,
+                                                pranges, bandwidth_scale=bandwidth_scale,
+                                                xtrim=xtrim, ytrim=ytrim)
+            simulations.append(sims)
+            simulation_pranges.append(sim_pranges)
+
+        return simulations, simulation_pranges, marginal_densities, marginal_ranges

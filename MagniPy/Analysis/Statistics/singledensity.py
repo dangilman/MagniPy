@@ -5,6 +5,7 @@ class SingleDensity:
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
                  steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1):
 
+        assert isinstance(pnames, list)
         self.reweight = reweight
         self.scale = scale
         self.steps = steps
@@ -24,7 +25,9 @@ class SingleDensity:
         self.posteriorsamples = {x: samples.samples[x] for x in pnames}
 
         self.pranges = {x: pranges[x] for x in pnames}
+
         self.dimension = len(self.posteriorsamples.keys())
+
         assert self.dimension in [1, 2], 'Data dimension must be 1 or 2.'
 
         self.kde = self._set_kde(kde_class)
@@ -32,6 +35,7 @@ class SingleDensity:
         self.kde_class = kde_class
 
         if self.dimension == 1:
+
             self.X = np.linspace(self.pranges[self.param_names[0]][0],self.pranges[self.param_names[0]][1],self.steps)
             self.data = samples.samples[self.param_names[0]]
 
@@ -49,12 +53,21 @@ class SingleDensity:
                 return KernelDensity(reweight=self.reweight,scale=self.scale,
                                      bandwidth_scale=self.bandwidth_scale,kernel=self.kernel_function)
         else:
-            raise Exception('not yet implemented')
+
+            return KernelDensity1D(scale = self.scale, bandwidth_scale=self.bandwidth_scale)
 
     def _trim_density(self, density, x_left, y_left, x_right, y_right):
 
         density = density[x_left:x_right,y_left:y_right]
         return density
+
+    def _trim1d(self, ranges, xtrim, N, pnames):
+
+        xstart, xend = xtrim[0], xtrim[1]
+        ranges[pnames[0]][0] = xtrim[0]
+        ranges[pnames[0]][1] = xtrim[1]
+
+        return ranges, xstart, xend
 
     def _trim(self, ranges, xtrim, ytrim, N, pnames):
 
@@ -70,24 +83,41 @@ class SingleDensity:
 
     def __call__(self, xtrim = None, ytrim = None):
 
-        if xtrim is None and ytrim is None:
+        if self.dimension == 1:
 
-            param_ranges = self.pranges
-            X, Y = self.X, self.Y
+            if xtrim is None:
+                param_ranges = self.pranges
+                X = self.X
+            else:
+                param_ranges, xstart, xend = self._trim1d(self.pranges, xtrim, len(self.X), self.param_names)
+                X = np.linspace(xstart, xend, self.steps)
 
-        else:
+            kde, xx = self.kde(self.data, X, self.pranges, prior_weights=self.prior_weights)
 
-            param_ranges, xstart, ystart, xend, yend = self._trim(self.pranges, xtrim,
-                                                                  ytrim, len(self.X), self.param_names)
+            density = np.histogram(xx, bins = len(X), density=True, weights=kde.ravel())[0]
 
-            X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
-            
-        kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
-                               self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
+            return density, param_ranges
 
-        density = np.histogram2d(xx, yy, bins=len(X), normed=True, weights=kde.ravel())[0]
+        elif self.dimension == 2:
 
-        return density.T, param_ranges
+            if xtrim is None and ytrim is None:
+
+                param_ranges = self.pranges
+                X, Y = self.X, self.Y
+
+            else:
+
+                param_ranges, xstart, ystart, xend, yend = self._trim(self.pranges, xtrim,
+                                                                      ytrim, len(self.X), self.param_names)
+
+                X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
+
+            kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
+                                   self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
+
+            density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
+
+            return density.T, param_ranges
 
 def scotts_factor(n,d=2):
 

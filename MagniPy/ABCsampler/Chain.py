@@ -4,7 +4,7 @@ from MagniPy.ABCsampler.ChainOps import *
 class FullChains:
 
     def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None,
-                 zlens_src_file = chainpath_out + '/processed_chains/simulation_zRein.txt'):
+                 zlens_src_file = chainpath_out + '/processed_chains/simulation_zRein.txt', deplete = False, deplete_fac = 0.5):
 
         if zlens_src_file is None:
             zd = [None] * len(which_lens), [None] * len(which_lens)
@@ -41,6 +41,17 @@ class FullChains:
             fname = 'params_' + str(error) + 'error_' + str(index) + '.txt'
             new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                     fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
+
+            if deplete:
+
+                L = int(len(new_lens.statistic))
+
+                keep = np.random.randint(0, L, int(L * deplete_fac))
+
+                for pname in new_lens.parameters.keys():
+
+                    new_lens.parameters[pname] = new_lens.parameters[pname][keep]
+                new_lens.statistic = new_lens.statistic[keep]
 
             self.lenses.append(new_lens)
 

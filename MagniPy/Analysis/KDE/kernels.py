@@ -1,5 +1,19 @@
 import numpy as np
 
+class Gaussian1d:
+
+    def __init__(self, mean, weight, width):
+
+        self.mean = mean
+        self.weight = weight
+        self.sigma = width
+
+    def __call__(self, x):
+
+        exponent = -0.5*(x - self.mean) ** 2 * self.sigma ** -2
+
+        return self.weight * np.exp(exponent)
+
 class Gaussian2d:
 
     def __init__(self, meanx, meany, weight,covmat=None):

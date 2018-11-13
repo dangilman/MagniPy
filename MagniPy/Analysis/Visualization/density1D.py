@@ -12,7 +12,7 @@ class Density1D(Joint2D):
                               (colors.cnames['coral'], 'r', 'k'),
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
-    def make_marginalized(self, marginalized_densities, param, param_ranges,
+    def make_marginalized(self, sim_densities, param, param_ranges,
                           contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None, rebin=15):
 
         if contour_colors is None:
@@ -20,9 +20,11 @@ class Density1D(Joint2D):
 
         max_height = 0
 
-        for color_index, sim_density in enumerate(marginalized_densities):
+        for color_index, sim_density in enumerate(sim_densities):
 
-            bar_centers, bar_width, bar_heights = self._bar_plot_heights(marginalized_densities[color_index],
+            marginalized_density = self._compute_single(sim_density)
+
+            bar_centers, bar_width, bar_heights = self._bar_plot_heights(marginalized_density,
                                                     np.linspace(param_ranges[0],param_ranges[1], 10), rebin)
 
             high_95 = self._quick_confidence(bar_centers, bar_heights, 0.95)
