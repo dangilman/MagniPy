@@ -111,7 +111,8 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        verbose=True, pso_convergence_mean=pso_conv_mean,
                                                                        re_optimize=False, particle_swarm=True,
                                                                        restart=n_restart, grid_res=grid_res,
-                                                                       LOS_mass_sheet=LOS_mass_sheet)
+                                                                       LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                                       LOS_mass_sheet_back=LOS_mass_sheet_front)
 
             for sys,dset in zip(system,model_data):
 
