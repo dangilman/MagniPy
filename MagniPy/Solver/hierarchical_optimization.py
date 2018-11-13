@@ -225,7 +225,7 @@ def foreground_mass_filters(m_ref, LOS_mass_sheet):
     if m_ref < 7:
         foreground_aperture_masses = [8, 7, 0]
         foreground_globalmin_masses = [LOS_mass_sheet, LOS_mass_sheet, LOS_mass_sheet]
-        foreground_filters = [10, 0.25, 0.05]
+        foreground_filters = [10, 0.3, 0.05]
         reoptimize_scale = [1, 0.5, 0.5]
         particle_swarm_reopt = [True, True, False]
     else:
