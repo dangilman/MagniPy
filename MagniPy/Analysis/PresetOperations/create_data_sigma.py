@@ -366,7 +366,7 @@ multiplane = True
 
 a0_area = 0.012
 M_halo = 10 ** 13
-logmhm = 0
+logmhm = 7.7
 r_core = '0.5Rs'
 src_size_mean = 0.04
 src_size_sigma = 0.0001
