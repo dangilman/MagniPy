@@ -22,7 +22,7 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
                 tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet):
 
     foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
-    reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref)
+    reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet)
 
     for h in range(0, len(foreground_filters)):
 
@@ -110,7 +110,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
     if background_globalmin_masses is None or background_aperture_masses is None:
 
         background_aperture_masses, background_globalmin_masses, background_filters, \
-        reoptimize_scale, particle_swarm_reopt, optimize_iteration = background_mass_filters(m_ref)
+        reoptimize_scale, particle_swarm_reopt, optimize_iteration = background_mass_filters(m_ref, LOS_mass_sheet)
     else:
         assert len(background_filters) == len(background_aperture_masses)
         assert len(background_globalmin_masses) == len(background_filters)
@@ -217,17 +217,17 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
     return optimized_data, model, \
            (backx, backy, background_Tzs, background_zs, reoptimized_realizations), keywords_lensmodel
 
-def foreground_mass_filters(m_ref):
+def foreground_mass_filters(m_ref, LOS_mass_sheet):
 
     if m_ref < 7:
         foreground_aperture_masses = [8, 7, 0]
-        foreground_globalmin_masses = [8, 8, 8]
+        foreground_globalmin_masses = [LOS_mass_sheet, LOS_mass_sheet, LOS_mass_sheet]
         foreground_filters = [10, 0.25, 0.05]
         reoptimize_scale = [1, 0.5, 0.5]
         particle_swarm_reopt = [True, True, False]
     else:
         foreground_aperture_masses = [0]
-        foreground_globalmin_masses = [8]
+        foreground_globalmin_masses = [LOS_mass_sheet]
         foreground_filters = [0.5]
         reoptimize_scale = [1]
         particle_swarm_reopt = [True]
@@ -235,9 +235,9 @@ def foreground_mass_filters(m_ref):
     return foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
            reoptimize_scale, particle_swarm_reopt
 
-def background_mass_filters(m_ref):
+def background_mass_filters(m_ref, LOS_mass_sheet):
 
-    rung_0_mass = 7.7
+    rung_0_mass = LOS_mass_sheet
     rung_0_window = 10
 
     background_aperture_masses = [rung_0_mass]
