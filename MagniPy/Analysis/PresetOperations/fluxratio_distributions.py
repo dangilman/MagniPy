@@ -93,7 +93,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        optimize_routine='fixed_powerlaw_shear',
                                                                        verbose=True, pso_convergence_mean=pso_conv_mean,
                                                                        re_optimize=False, particle_swarm=True,
-                                                                         pso_compute_magnification=1000,
+                                                                         pso_compute_magnification=700,
                                                                        restart=n_restart, grid_res=grid_res,
                                                                          LOS_mass_sheet_front = LOS_mass_sheet_front,
                                                                          LOS_mass_sheet_back = LOS_mass_sheet_back,
@@ -105,14 +105,14 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                                                        realizations=use_real,
                                                                        multiplane=multiplane, n_particles=20,
                                                                        simplex_n_iter=400, n_iterations=300,
-                                                                       pso_compute_magnification=1000,
+                                                                       pso_compute_magnification=700,
                                                                        source_size_kpc=source_size_kpc,
                                                                        optimize_routine='fixed_powerlaw_shear',
                                                                        verbose=True, pso_convergence_mean=pso_conv_mean,
                                                                        re_optimize=False, particle_swarm=True,
                                                                        restart=n_restart, grid_res=grid_res,
                                                                        LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                                       LOS_mass_sheet_back=LOS_mass_sheet_front)
+                                                                       LOS_mass_sheet_back=LOS_mass_sheet_back)
 
             for sys,dset in zip(system,model_data):
 

@@ -6,6 +6,36 @@ import numpy as np
 from MagniPy.util import *
 import ast
 
+def rerun_setup():
+    def round_down(num, divisor):
+        return num - (num % divisor)
+
+    chain_name = 'WDM_run_7.7_tier2'
+    new_chain_name = 'WDM_run'
+
+    max_sigma = 0.05
+    path_2_max = prefix + 'data/sims/raw_chains/sigma_sub_max.txt'
+    sigma_sub_max = np.loadtxt(path_2_max)[0:17]
+    Nsamples = np.round(600000 * np.absolute(1 - sigma_sub_max * 0.05 ** -1))
+
+    Nsamples = round_down(Nsamples, 500)
+
+    sigma_sub_low, sigma_sub_high = [], []
+    for s in sigma_sub_max[0:17]:
+        if 1 - s * 0.05 ** -1 < 0:
+            sigma_sub_low.append(0)
+            sigma_sub_high.append(0.05)
+        else:
+            sigma_sub_low.append((1 - s * 0.05 ** -1))
+            sigma_sub_high.append(0.05)
+    lens_id = np.arange(1, 18)
+    priors = np.column_stack((sigma_sub_low, sigma_sub_high))
+    run_info = np.column_stack((lens_id, Nsamples))
+    run_info = np.column_stack((run_info, priors))
+    np.savetxt('rerun_info.txt', X=run_info)
+    print(run_info)
+    print(priors)
+
 def read_chain_info(fname):
 
     with open(fname,'r') as f:

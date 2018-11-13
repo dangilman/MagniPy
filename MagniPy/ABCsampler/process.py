@@ -143,6 +143,7 @@ def resample_chain_sigma():
                    parameters_new=params_new, SIE_gamma_mean = 2.08,
                        SIE_gamma_sigma = 0.05, transform_fsub = False, sigma_sub = sigma_sub)
 
+
 #process_raw('WDM_run_7.7_tier2', which_lenses=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
 #process_samples('CDM_fsub0.015_srcsize35', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
 #resample_chain()
@@ -151,4 +152,4 @@ def resample_chain_sigma():
 #process_samples('WDM_7.7_sigma', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
 
 #resample_chain_sigma()
-process_samples('WDM_7.7_sigma0.3_srcsize35', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
+#process_samples('WDM_7.7_sigma0.3_srcsize35', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
