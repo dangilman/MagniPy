@@ -375,7 +375,7 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/mock_data/LOS_WDM_7.7_replace_sigma/lens_'
+dpath_base = nav + '/mock_data/WDM_7.7_sigmanorm/lens_'
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 #run(1,0,0,1)
 #import sys
