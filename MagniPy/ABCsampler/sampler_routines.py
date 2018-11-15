@@ -180,6 +180,8 @@ def get_inputfile_path(chain_ID, core_index):
 
     data_id = []
 
+    Nlens = int(np.round(Nlens))
+
     for d in range(0, int(Nlens)):
         data_id += [d + 1] * cores_per_lens
 
