@@ -137,9 +137,14 @@ def write_fluxes(filename='',fluxes = [], mode='append',summed_in_quad=True):
 
     fluxes = np.array(fluxes)
 
+    if mode == 'append':
+        m = 'a'
+    else:
+        m = 'w'
+
     if fluxes.ndim == 1:
 
-        with open(filename, 'a') as f:
+        with open(filename, m) as f:
 
             for val in fluxes:
                 f.write(str(val) + ' ')
@@ -148,7 +153,7 @@ def write_fluxes(filename='',fluxes = [], mode='append',summed_in_quad=True):
 
         N = int(np.shape(fluxes)[0])
 
-        with open(filename,'a') as f:
+        with open(filename,m) as f:
             for n in range(0,N):
                 for val in fluxes[n,:]:
                     f.write(str(val)+' ')

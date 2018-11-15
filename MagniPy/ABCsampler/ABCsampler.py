@@ -170,22 +170,27 @@ def runABC(chain_ID='',core_index=int):
 
         fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver)
 
-    write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False)
+    write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='write')
 
     if chain_keys['write_header']:
         header_string = ''
         for name in param_names_tovary:
             header_string += name + ' '
-        write_params(parameters, output_path + 'parameters.txt', header_string)
+        write_params(parameters, output_path + 'parameters.txt', header_string, mode='write')
 
     else:
         write_fluxes(output_path+'fluxes.txt',fluxes=fluxes,summed_in_quad=False)
 
-        write_params(parameters,output_path + 'parameters.txt')
+        write_params(parameters,output_path + 'parameters.txt', mode='write')
 
-def write_params(params,fname,header):
+def write_params(params,fname,header, mode='append'):
 
-    with open(fname, 'a') as f:
+    if mode == 'append':
+        m = 'a'
+    else:
+        m = 'w'
+
+    with open(fname, m) as f:
 
         f.write(header+'\n')
 
