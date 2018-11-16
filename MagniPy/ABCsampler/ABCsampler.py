@@ -93,13 +93,21 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
+
+                if chain_keys_run['zsrc'] > 2.5 and chain_keys_run['zlens'] < 0.5:
+                    LOS_mass_sheet_back = 7.5
+                    LOS_mass_sheet_front = 7.5
+                else:
+                    LOS_mass_sheet_back = chain_keys_run['LOS_mass_sheet_back']
+                    LOS_mass_sheet_front = chain_keys_run['LOS_mass_sheet_front']
+
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.002,
-                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
+                                    LOS_mass_sheet_back=LOS_mass_sheet_back,
+                                     LOS_mass_sheet_front=LOS_mass_sheet_front)
 
                 xfit, yfit = new[0].x, new[0].y
 
@@ -236,6 +244,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/test_routine/',1)
+#runABC(prefix+'data/test_routine/',2)
 
 
