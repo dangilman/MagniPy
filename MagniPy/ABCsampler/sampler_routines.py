@@ -170,6 +170,43 @@ def halo_model_args(params):
 
     return args
 
+def write_params(params,fname,header, mode):
+
+    if mode == 'append':
+        m = 'a'
+    else:
+        m = 'w'
+
+    with open(fname, m) as f:
+
+        if header is not None:
+            f.write(header+'\n')
+
+        if np.shape(params)[0] == 1:
+                for p in range(0,len(params)):
+                    f.write(str(float(params[p])+' '))
+        else:
+
+            for r in  range(0,np.shape(params)[0]):
+                row = params[r,:]
+                for p in range(0,len(row)):
+                    f.write(str(float(row[p]))+' ')
+                f.write('\n')
+
+
+def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
+
+    if write_header:
+        header_string = ''
+        for name in param_names_tovary:
+            header_string += name + ' '
+        write_params(parameters, output_path + 'parameters.txt', header_string, mode='write')
+        write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='write')
+
+    else:
+
+        write_params(parameters,output_path + 'parameters.txt', None, mode='append')
+        write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='append')
 
 def get_inputfile_path(chain_ID, core_index):
     info_file = chain_ID + '/paramdictionary_1.txt'
@@ -212,9 +249,11 @@ def initialize(chain_ID, core_index):
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
     chain_keys['write_header'] = True
+
     if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
         values = np.loadtxt(output_path + 'fluxes.txt')
         N_lines = int(np.shape(values)[0])
+
         if N_lines >= chain_keys['Nsamples']:
             return False, False, False, False
         else:

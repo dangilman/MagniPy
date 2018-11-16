@@ -47,7 +47,7 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
+def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, output_path, write_header):
 
     chaindata = []
     parameters = []
@@ -55,6 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
     N_computed = 0
     init_macro = False
     t0 = time.time()
+    readout_steps = 100
 
     while N_computed < keys['Nsamples']:
 
@@ -124,7 +125,15 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver):
             chaindata = np.vstack((chaindata,new[0].m))
             parameters = np.vstack((parameters,np.array(samples_array)))
 
-        start = False
+        if N_computed%readout_steps == 0:
+
+            readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
+            start = True
+            write_header = False
+
+        else:
+            start = False
+
     print('time elapsed: ', time.time() - t0)
     return chaindata, parameters
 
@@ -168,20 +177,8 @@ def runABC(chain_ID='',core_index=int):
 
     else:
 
-        fluxes,parameters = run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver)
-
-    write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='write')
-
-    if chain_keys['write_header']:
-        header_string = ''
-        for name in param_names_tovary:
-            header_string += name + ' '
-        write_params(parameters, output_path + 'parameters.txt', header_string, mode='write')
-
-    else:
-        write_fluxes(output_path+'fluxes.txt',fluxes=fluxes,summed_in_quad=False)
-
-        write_params(parameters,output_path + 'parameters.txt', mode='write')
+        run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
+                        chain_keys['write_header'])
 
 def write_params(params,fname,header, mode='append'):
 
@@ -192,7 +189,8 @@ def write_params(params,fname,header, mode='append'):
 
     with open(fname, m) as f:
 
-        f.write(header+'\n')
+        if header is not None:
+            f.write(header+'\n')
 
         if np.shape(params)[0] == 1:
                 for p in range(0,len(params)):
@@ -238,6 +236,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/rerun_8/',1)
+#runABC(prefix+'data/test_routine/',1)
 
 
