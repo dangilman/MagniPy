@@ -186,7 +186,7 @@ class Joint2D:
             pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
             tick_labels = ticks*1000
 
-        elif pname == 'sigma_sub':
+        elif pname == 'a0_area':
 
             pname = r'$\sigma_{\rm{sub}}$'
             tick_labels = ticks
@@ -267,7 +267,7 @@ class Joint2D:
         if pname == 'fsub':
             return '%.3f'
         elif pname == r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$':
-            return '%.2f'
+            return '%.3f'
         elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
         elif pname == 'c_power':

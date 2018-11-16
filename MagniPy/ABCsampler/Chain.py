@@ -4,12 +4,13 @@ from MagniPy.ABCsampler.ChainOps import *
 class FullChains:
 
     def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None,
-                 zlens_src_file = chainpath_out + '/processed_chains/simulation_zRein.txt', deplete = False, deplete_fac = 0.5):
+                 zlens_src_file = chainpath_out + '/processed_chains/',
+                 deplete = False, deplete_fac = 0.5):
 
         if zlens_src_file is None:
             zd = [None] * len(which_lens), [None] * len(which_lens)
         else:
-            zd, zs, _ = np.loadtxt(zlens_src_file, unpack = True)
+            zd, zs, _ = np.loadtxt(zlens_src_file+'/'+chain_name+'/simulation_zRein.txt', unpack = True)
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -33,7 +34,7 @@ class FullChains:
 
         for ind in which_lens:
 
-            new_lens = SingleLens(zlens = zd[ind], zsource=zs[ind])
+            new_lens = SingleLens(zlens = zd[ind-1], zsource=zs[ind-1])
 
             fname = 'statistic_'+str(error)+'error_'+str(index)+'.txt'
             finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
@@ -314,7 +315,7 @@ class StepUpperLimit(object):
 
         exponent = kwargs['x'] * self.break_value ** -1
 
-        exp = np.exp(-exponent * self.sigma)
+        exp = np.exp(-exponent**2 * self.sigma)
 
         return exp
 
@@ -329,7 +330,7 @@ class StepLowerLimit(object):
 
         exponent = self.break_value * kwargs['x'] ** -1
 
-        exp = np.exp(-exponent * self.sigma)
+        exp = np.exp(-exponent**2 * self.sigma)
 
         return exp
 
