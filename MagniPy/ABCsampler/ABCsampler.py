@@ -55,7 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 100
+    readout_steps = 300
 
     while N_computed < keys['Nsamples']:
 
