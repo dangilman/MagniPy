@@ -91,7 +91,8 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
 
         data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
                                                     multiplane=True, method='lenstronomy',
-                                                    polar_grid=False, brightimg=True, res=0.002)
+                                                    polar_grid=False, brightimg=True, res=0.002, LOS_mass_sheet_back = 6,
+                                                    LOS_mass_sheet_front = 6)
 
         if xcrit is None:
             xcrit, ycrit, xcaus, ycaus = analysis.critical_cruves_caustics(main=startmod,
@@ -375,9 +376,9 @@ break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/mock_data/WDM_7.7_sigmanorm/lens_'
+dpath_base = nav + '/mock_data/WDM_7.7_sigmanorm_replace/lens_'
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
-#run(1,0,0,1)
+#run(0,1,0,1)
 #import sys
 #start_idx=int(sys.argv[1])
 #cusps = np.arange(1,60,3)

@@ -126,7 +126,7 @@ class SolveRoutines(Magnipy):
                             ray_trace=True, identifier=None, srcx=None, srcy=None,  res=None,
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=False, shr_coords=1,
-                            brightimg=True):
+                            brightimg=True, LOS_mass_sheet_back = 6, LOS_mass_sheet_front = 6):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -152,9 +152,11 @@ class SolveRoutines(Magnipy):
             assert macromodel is not None
             if realizations is not None:
                 for real in realizations:
-                    lens_systems.append(self.build_system(main=macromodel, realization=real, multiplane=multiplane))
+                    lens_systems.append(self.build_system(main=macromodel, realization=real, multiplane=multiplane, LOS_mass_sheet_back = LOS_mass_sheet_back,
+                                                    LOS_mass_sheet_front = LOS_mass_sheet_front))
             else:
-                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=None, multiplane=multiplane))
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=None, multiplane=multiplane,LOS_mass_sheet_back = LOS_mass_sheet_back,
+                                                    LOS_mass_sheet_front = LOS_mass_sheet_front))
 
         else:
 
