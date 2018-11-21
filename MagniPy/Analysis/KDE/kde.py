@@ -44,11 +44,12 @@ class KDE_scipy:
 
 class KernelDensity1D(object):
 
-    def __init__(self, scale = 1, bandwidth_scale=1,kernel='Gaussian'):
+    def __init__(self, scale = 1, bandwidth_scale=1,kernel='Gaussian', reweight = True):
 
         self._kernel_function = Gaussian1d
         self.scale = scale
         self.bandwidth_scale = bandwidth_scale
+        self.reweight = reweight
 
     def _kernel(self, samples, pranges, prior_weights):
 
@@ -61,7 +62,14 @@ class KernelDensity1D(object):
 
         for i in range(0, len(samples)):
 
-            functions.append(self._kernel_function(samples[i], weight=prior_weights[i], width=sigma))
+            if self.reweight:
+
+                boundary_weight = self.boundary_1d.renormalize(samples[i], sigma, pranges)
+            else:
+                boundary_weight = 1
+
+            functions.append(self._kernel_function(samples[i], weight=boundary_weight*prior_weights[i],
+                                                   width=sigma))
 
         return functions
 
@@ -71,7 +79,7 @@ class KernelDensity1D(object):
 
     def __call__(self, data, xpoints, pranges_true, prior_weights=None):
 
-        self.boundary = Boundary(scale=self.scale)
+        self.boundary_1d = Boundary1D(scale=self.scale)
 
         functions = self._kernel(data, pranges_true, prior_weights)
 
@@ -84,9 +92,9 @@ class KernelDensity1D(object):
 
         return estimate, xpoints
 
-class KernelDensity:
+class KernelDensity2D(object):
 
-    def __init__(self,reweight=False,scale=1,bandwidth_scale=1,kernel='Gaussian'):
+    def __init__(self,reweight=False,scale=5,bandwidth_scale=1,kernel='Gaussian'):
 
         self.reweight = reweight
         self.scale = scale
@@ -124,7 +132,9 @@ class KernelDensity:
             xi, yi = xsamples[i], ysamples[i]
 
             if self.reweight:
-                weight = prior_weights[i]*self.boundary.renormalize(xi, yi, hx, hy, pranges_true)
+                boundary_weight = self.boundary.renormalize(xi, yi, hx, hy, pranges_true)
+
+                weight = prior_weights[i]*boundary_weight
             else:
                 weight = prior_weights[i]
 
@@ -143,7 +153,7 @@ class KernelDensity:
         xx, yy = np.meshgrid(xpoints, ypoints)
         xx, yy = xx.ravel(), yy.ravel()
 
-        self.boundary = Boundary(scale=self.scale)
+        self.boundary = Boundary2D(scale=self.scale)
 
         functions = self._kernel(data[:, 0], data[:, 1], pranges_true, prior_weights)
 

@@ -22,7 +22,8 @@ def duplicate_with_subset(full_chain, lens_indicies):
 
     return new_chains
 
-def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandwidth_scale = 1):
+def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandwidth_scale = 1, use_kde_joint = True,
+                    use_kde_marginal=False, steps=None, reweight = True):
 
     sim_densities, sim_pranges = [], []
     pranges_list = [pranges] * len(sim_list)
@@ -30,12 +31,19 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
         densities = []
 
         for i, posterior in enumerate(sim):
+
+            if len(parameters) == 1:
+                kde_flag = use_kde_marginal
+            else:
+                kde_flag = use_kde_joint
+
             single_density = SingleDensity(pnames=parameters, samples=posterior,
                                            pranges=pranges,
-                                           reweight=True,
+                                           reweight=reweight,
                                            kernel_function='Gaussian',
                                            scale=5,
-                                           bandwidth_scale=bandwidth_scale)
+                                           bandwidth_scale=bandwidth_scale, use_kde=kde_flag,
+                                           steps=steps)
 
             density, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
 

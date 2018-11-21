@@ -9,7 +9,7 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.01,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
                                                  tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
                                                  simplex_n_iter=400, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -55,7 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 100
+    readout_steps = 2
 
     while N_computed < keys['Nsamples']:
 
@@ -93,16 +93,17 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
-
+                #print('source size: ',chain_keys_run['source_size_kpc'])
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.002,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
                 xfit, yfit = new[0].x, new[0].y
+                #print(new[0].m)
 
             except:
                 print('error in fitting positions...')
@@ -150,7 +151,7 @@ def runABC(chain_ID='',core_index=int):
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
     chain_keys.update({'cone_opening_angle': 5*approx_theta_E(datatofit.x, datatofit.y)})
-
+    print(chain_keys['cone_opening_angle'])
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
     print('lens redshift: ', chain_keys['zlens'])
@@ -216,6 +217,7 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         for key in keys_to_vary.keys():
 
             f.write(key+'\n')
+
         f.write('\n\n')
         for pname in keys_to_vary.keys():
 
@@ -224,6 +226,7 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
             for key in keys_to_vary[pname].keys():
 
                 f.write(key+' '+str(keys_to_vary[pname][key])+'\n')
+
             f.write('\n')
 
         f.write('\n')
@@ -237,6 +240,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/test_routine/',2)
-
-
+#runABC(prefix+'data/WDM_a0area0.012_7.7/',1)

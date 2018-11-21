@@ -17,7 +17,7 @@ class Joint2D:
     plt.rcParams['ytick.major.size'] = 6
     plt.rcParams['ytick.minor.size'] = 2
 
-    cmap = 'gist_heat'
+    cmap = 'bone'
 
     #default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
     default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),

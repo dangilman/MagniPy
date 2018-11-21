@@ -1,16 +1,17 @@
-from MagniPy.Analysis.Statistics.summary_statistics import *
+import pandas
 from MagniPy.ABCsampler.ChainOps import *
+import numpy as numpy
 
 class FullChains:
 
     def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None,
-                 zlens_src_file = chainpath_out + '/processed_chains/',
+                 zlens_src_file = None,
                  deplete = False, deplete_fac = 0.5):
 
         if zlens_src_file is None:
-            zd = [None] * len(which_lens), [None] * len(which_lens)
+            zd, zs = [None] * len(which_lens), [None] * len(which_lens)
         else:
-            zd, zs, _ = np.loadtxt(zlens_src_file+'/'+chain_name+'/simulation_zRein.txt', unpack = True)
+            zd, zs, _ = numpy.loadtxt(zlens_src_file+'/'+chain_name+'/simulation_zRein.txt', unpack = True)
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -30,7 +31,7 @@ class FullChains:
         self.lenses = []
 
         if which_lens is None:
-            which_lens = np.arange(1,self.Nlenses+1)
+            which_lens = numpy.arange(1,self.Nlenses+1)
 
         for ind in which_lens:
 
@@ -47,7 +48,7 @@ class FullChains:
 
                 L = int(len(new_lens.statistic))
 
-                keep = np.random.randint(0, L, int(L * deplete_fac))
+                keep = numpy.random.randint(0, L, int(L * deplete_fac))
 
                 for pname in new_lens.parameters.keys():
 
@@ -109,14 +110,14 @@ class FullChains:
 
         fname = self.chain_file_path+'lens'+str(ind)+'/fluxratios/'+'observed_'+ str(int(error * 100)) + 'error_'+ str(index)+'.txt'
 
-        return np.loadtxt(fname)
+        return numpy.loadtxt(fname)
 
     def import_model(self,ind,error=0,index=1):
 
         fname = self.chain_file_path + 'lens' + str(ind) + '/fluxratios/' + 'model_' + str(
             int(error * 100)) + 'error_' + str(index) + '.txt'
 
-        return np.loadtxt(fname)
+        return numpy.loadtxt(fname)
 
     def re_weight(self,posteriors,weight_function,indexes=None):
 
@@ -155,13 +156,13 @@ class SingleLens:
 
             for reject_pname, keep_range in zip(reject_pnames, keep_ranges):
                 samps = self.parameters[reject_pname]
-                indexes = np.where(np.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
+                indexes = numpy.where(numpy.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
 
                 for pname in self.parameters.keys():
                     self.parameters[pname] = self.parameters[pname][indexes]
             print('keeping ' + str(len(self.parameters[pname])) + ' samples')
 
-        inds = np.argsort(self.statistic)[0:tol]
+        inds = numpy.argsort(self.statistic)[0:tol]
 
         new_param_dic = {}
 
@@ -187,9 +188,11 @@ class SingleLens:
 
     def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 
-        params = np.loadtxt(fname)
+        #params = numpy.loadtxt(fname)
+        #t0 = time.time()
+        params = numpy.squeeze(pandas.read_csv(fname,header=None,sep=" ",index_col=None)).astype(numpy.ndarray)
 
-        params = params[finite_inds]
+        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))[1:]
 
         new_dictionary = {}
 
@@ -197,7 +200,7 @@ class SingleLens:
 
             newparams = params[:,i]
 
-            new_dictionary.update({pname:newparams})
+            new_dictionary.update({pname:newparams.astype(float)})
 
         self.parameters = new_dictionary
 
@@ -212,11 +215,11 @@ class SingleLens:
 
     def add_statistic(self,fname):
 
-        statistic = np.loadtxt(fname)
+        statistic = numpy.squeeze(pandas.read_csv(fname,header=None,sep=" ",index_col=None))
 
-        finite = np.where(np.isfinite(statistic))
+        finite = numpy.where(numpy.isfinite(statistic))[0]
 
-        self.statistic = statistic[finite]
+        self.statistic = statistic[finite].astype(float)[1:]
 
         return finite
 
@@ -232,7 +235,7 @@ class PosteriorSamples:
             break
 
         if weights is None:
-            self.weights = np.ones(self.length)
+            self.weights = numpy.ones(self.length)
         else:
             assert len(weights) == self.length
             self.weights = weights
@@ -276,7 +279,6 @@ class WeightedSamples:
 
                     self.functions.update({param:BinaryLower(weight_args[i]['break'],weight_args[i]['sigma'],param)})
 
-
     def __call__(self,samples):
 
         pnames = samples.pnames
@@ -300,8 +302,9 @@ class Gaussian(object):
         self.name = name
 
     def __call__(self, **kwargs):
-        #return (2*np.pi*self.sigma**2)**-0.5*np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
-        return np.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
+        #return (2*numpy.pi*self.sigma**2)**-0.5*numpy.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
+
+        return numpy.exp(-0.5*(self.mean-kwargs['x'])**2*self.sigma**-2)
 
 class StepUpperLimit(object):
 
@@ -315,7 +318,7 @@ class StepUpperLimit(object):
 
         exponent = kwargs['x'] * self.break_value ** -1
 
-        exp = np.exp(-exponent**2 * self.sigma)
+        exp = numpy.exp(-exponent**2 * self.sigma)
 
         return exp
 
@@ -330,7 +333,7 @@ class StepLowerLimit(object):
 
         exponent = self.break_value * kwargs['x'] ** -1
 
-        exp = np.exp(-exponent**2 * self.sigma)
+        exp = numpy.exp(-exponent**2 * self.sigma)
 
         return exp
 
@@ -344,8 +347,8 @@ class BinaryUpper(object):
 
     def __call__(self, **kwargs):
 
-        weights = np.ones_like(kwargs['x'])
-        weights[np.where(weights >= self.break_value)] = 0
+        weights = numpy.ones_like(kwargs['x'])
+        weights[numpy.where(weights >= self.break_value)] = 0
 
         return weights
 
@@ -358,8 +361,8 @@ class BinaryLower(object):
         # self.name = name
 
     def __call__(self, **kwargs):
-        weights = np.ones_like(kwargs['x'])
-        weights[np.where(weights <= self.break_value)] = 0
+        weights = numpy.ones_like(kwargs['x'])
+        weights[numpy.where(weights <= self.break_value)] = 0
 
         return weights
 

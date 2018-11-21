@@ -3,9 +3,10 @@ from MagniPy.Analysis.KDE.kde import *
 class SingleDensity:
 
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
-                 steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1):
+                 steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
+        self._use_kde = use_kde
         self.reweight = reweight
         self.scale = scale
         self.steps = steps
@@ -50,8 +51,8 @@ class SingleDensity:
             if kde_class=='scipy':
                 return KDE_scipy(dim=2)
             else:
-                return KernelDensity(reweight=self.reweight,scale=self.scale,
-                                     bandwidth_scale=self.bandwidth_scale,kernel=self.kernel_function)
+                return KernelDensity2D(reweight=self.reweight, scale=self.scale,
+                                       bandwidth_scale=self.bandwidth_scale, kernel=self.kernel_function)
         else:
 
             return KernelDensity1D(scale = self.scale, bandwidth_scale=self.bandwidth_scale)
@@ -92,12 +93,6 @@ class SingleDensity:
                 param_ranges, xstart, xend = self._trim1d(self.pranges, xtrim, len(self.X), self.param_names)
                 X = np.linspace(xstart, xend, self.steps)
 
-            kde, xx = self.kde(self.data, X, self.pranges, prior_weights=self.prior_weights)
-
-            density = np.histogram(xx, bins = len(X), density=True, weights=kde.ravel())[0]
-
-            return density, param_ranges
-
         elif self.dimension == 2:
 
             if xtrim is None and ytrim is None:
@@ -110,18 +105,41 @@ class SingleDensity:
                 param_ranges, xstart, ystart, xend, yend = self._trim(self.pranges, xtrim,
                                                                       ytrim, len(self.X), self.param_names)
 
+        if self._use_kde:
+
+            if self.dimension == 1:
+
+                kde, xx = self.kde(self.data, X, pranges_true=[self.kde_train_ranges[self.param_names[0]]], prior_weights=self.prior_weights)
+
+                density = np.histogram(xx, bins=len(X), density=True, weights=kde.ravel())[0]
+
+
+            else:
                 X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
 
-            kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
-                                   self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
+                kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
+                                       self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
 
-            density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
+                density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
 
             return density.T, param_ranges
+
+        else:
+
+            if self.dimension == 1:
+
+                density = np.histogram(self.posteriorsamples[self.param_names[0]], bins=len(self.prior_weights),range=[xstart, xend], weights=self.prior_weights, density=True)[0]
+
+            elif self.dimension == 2:
+
+                density = np.histogram2d(self.posteriorsamples[self.param_names[0]], self.posteriorsamples[self.param_names[1]],
+                                         bins=[np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)], density=True)[0]
+
+
+            return density.T, param_ranges
+
 
 def scotts_factor(n,d=2):
 
     return n ** (-1. / (d + 4))
-
-
 

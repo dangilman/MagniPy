@@ -117,15 +117,16 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
 
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
-def resample_chain():
+def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors = [0, 0.04]):
 
     name = 'WDM_run_7.7_a0sub'
-    new_name = 'CDM_sigma0.02_srcsize35'
 
-    a0_area = 0.02
-    logmhm = 4.8
-    src_size = 0.035
-    LOS_norm = 1
+    if logmhm > 6:
+        new_name = 'WDM_'+str(logmhm)+'_'
+    else:
+        new_name = 'CDM_'
+
+    new_name += 'sigma'+str(a0_area)+'_srcsize'+str(src_size)
 
     which_lens_indexes = [1,2,3,4,5,6,7,8,9,10,11]
     params_new = {'a0_area': [a0_area, 0.001], 'log_m_break': [logmhm, 0.1],
@@ -136,10 +137,15 @@ def resample_chain():
                    parameters_new=params_new, SIE_gamma_mean = 2.08,
                        SIE_gamma_sigma = 0.05)
 
+    process_samples(new_name, which_lens_indexes, errors = errors)
 
-#resample_chain()
-process_samples('CDM_sigma0.02_srcsize35', [1,2,3,4,5,6,7,8,9,10,11])
-#process_samples('WDM_7.7_sigma0.3_srcsize35', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
+
+resample_chain(a0_area=0.015, logmhm=7.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+resample_chain(a0_area=0.015, logmhm=4.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+resample_chain(a0_area=0.005, logmhm=4.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+#for i in [1,2,3,4,6,7,8,9,11,13,16]:
+#    process_raw('rerun_'+str(i), [1])
+#process_samples('WDM_7.7_sigma0.015_srcsize0.033', [1,2,3,4,5,6,7,8,9,10,11], errors=[0.02, 0.04])
 #new_chains_withsigma('WDM_run_7.7_tier2', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17], 'WDM_7.7_sigma')
 #process_samples('WDM_7.7_sigma', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
 #new_chains_withsigma('WDM_run_7.7_tier2', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17], 'WDM_run_7.7_a0sub')

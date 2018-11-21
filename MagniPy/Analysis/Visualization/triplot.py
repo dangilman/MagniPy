@@ -29,7 +29,12 @@ class TriPlot(object):
     tick_font = 12
 
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
-                 fig_size = 7, bandwidth_scale = 1, truths=None):
+                 fig_size = 7, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
+                 kde_marginal = True, reweight = True):
+
+        self._steps = steps
+        self._reweight = reweight
+        self._kde_joint, self._kde_marginal = kde_joint, kde_marginal
 
         simulations, simulation_pranges, marginal_densities, marginal_ranges = self._get_sims(posteriors, parameter_names, pranges, parameter_trim, bandwidth_scale)
 
@@ -160,7 +165,8 @@ class TriPlot(object):
             raise Exception('must have at least 2 parameters.')
 
         for k, name in enumerate(pnames):
-            marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]}, xtrim=param_trim[name])
+            marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]}, xtrim=param_trim[name],
+                                               steps=self._steps, use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             marginal_densities.update({name:marg})
             marginal_ranges.update({name:marg_range})
 
@@ -177,7 +183,8 @@ class TriPlot(object):
 
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps, 
+                                                use_kde_joint=self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
 
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
@@ -195,7 +202,8 @@ class TriPlot(object):
 
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
 
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
@@ -211,7 +219,8 @@ class TriPlot(object):
 
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
 
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
@@ -226,7 +235,9 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim,
+                                                steps=self._steps, use_kde_joint = self._kde_joint,
+                                                use_kde_marginal=self._kde_marginal, reweight = self._reweight)
 
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
@@ -243,7 +254,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -257,7 +269,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -271,7 +284,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -284,7 +298,9 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -298,7 +314,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -311,7 +328,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -327,7 +345,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -341,7 +360,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -355,7 +375,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -369,7 +390,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -382,7 +404,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -396,7 +419,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -410,7 +434,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -423,7 +448,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -436,7 +462,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 
@@ -449,7 +476,8 @@ class TriPlot(object):
                 ytrim = param_trim[parameters[1]]
             sims, sim_pranges = build_densities(posteriors, parameters,
                                                 pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim)
+                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
             simulations.append(sims)
             simulation_pranges.append(sim_pranges)
 

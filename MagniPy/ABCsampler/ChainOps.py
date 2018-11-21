@@ -212,7 +212,7 @@ def extract_chain_fromprocessed(chain_name = '', which_lens = None):
             params_header += word + ' '
 
     parameters = np.loadtxt(route + '/samples.txt')
-
+    assert np.shape(parameters)[0] == np.shape(fluxes)[0]
     observed_fluxes = np.squeeze(np.loadtxt(route + 'observedfluxes.txt'))
 
     return fluxes, observed_fluxes, parameters, params_header
@@ -241,7 +241,7 @@ def extract_chain(chain_name='',which_lens = None):
     end = int(start + cores_per_lens)
     init = True
     #for i in range(start,end):
-    for i in range(start, end):
+    for i in range(start, end+1):
         folder_name = chain_file_path + str(i)+'/'
         #print(folder_name)
         try:

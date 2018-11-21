@@ -99,12 +99,12 @@ class RayTrace:
         for i in range(0,len(xpos)):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
-            #n = int(np.sqrt(len(image)))
 
+            #n = int(np.sqrt(len(image)))
             #plt.imshow(image.reshape(n,n))
             #plt.show()
-
             #a=input('continue')
+
             flux.append(np.sum(image*self.res**2))
 
         return np.array(flux)
