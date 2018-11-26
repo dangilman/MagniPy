@@ -1,6 +1,6 @@
 from MagniPy.Analysis.KDE.kde import *
 
-class SingleDensity:
+class SingleDensity(object):
 
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
                  steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
@@ -115,6 +115,7 @@ class SingleDensity:
 
 
             else:
+
                 X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
 
                 kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],

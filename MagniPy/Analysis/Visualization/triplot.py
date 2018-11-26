@@ -62,10 +62,13 @@ class TriPlot(object):
     def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6,
                  spacing = [0.1, 0.1, 0.05, 0.05, 0.2, 0.11], rebin=20):
 
-        self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
+        axis = self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
                        rebin = rebin)
+
         plt.subplots_adjust(left=spacing[0], bottom=spacing[1], right=1-spacing[2], top=1-spacing[3],
                             wspace=spacing[4], hspace=spacing[5])
+
+        return axis, self.default_contour_colors
 
     def _makeplot(self, levels = None, filled_contours=None, contour_alpha = None, rebin=15):
 
@@ -77,10 +80,14 @@ class TriPlot(object):
         marginal_names = []
         marginal_ranges = []
 
+        axis = []
+
         for row in range(0, self._nparams):
             for col in range(0, self._nparams):
 
                 ax = plt.subplot(self._nparams, self._nparams, plot_index)
+                axis.append(ax)
+
                 pnames = self._grid[row, col]
 
                 if pnames is None:
@@ -133,6 +140,8 @@ class TriPlot(object):
 
             oneD.make_marginalized(marginalized, marginal_names[i], marginal_ranges[i],
                                    xlabel_on = xlabel_on, truths=self._truths, rebin=rebin)
+
+        return axis
 
     def _init_grid(self, nparams, param_names):
 

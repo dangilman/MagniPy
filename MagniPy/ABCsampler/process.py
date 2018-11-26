@@ -1,7 +1,75 @@
 from MagniPy.ABCsampler.ChainOps import *
+from MagniPy.ABCsampler.Chain import ChainFromChain, ChainFromSamples
+from MagniPy.Analysis.Statistics.routines import build_densities, barplothist
+from MagniPy.Analysis.Statistics.routines import reweight_posteriors_individually
+
+def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, errors,
+                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=20):
+
+    if not isinstance(Nlenses, list):
+        Nlenses = [Nlenses]
+
+    chain_master = ChainFromSamples(chain_name, which_lens = which_lenses, error=0, index=1)
+
+    low95_interval, low68_interval = [], []
+    high95_interval, high68_interval = [], []
+
+    for nlens in Nlenses:
+
+        low95, high95 = [], []
+        low68, high68 = [], []
+
+        for i in range(0, Nbootstraps):
+
+            lens_list = np.random.randint(1, len(which_lenses), nlens)
+
+            chain = ChainFromChain(chain_master, lens_list)
+
+            posteriors = chain.get_posteriors(tol)
+
+            if param_weights_individual is not None:
+
+                weight_param = param_weights_individual['param']
+                weight_means = param_weights_individual['means']
+                weight_sigmas = param_weights_individual['sigma']
+
+                posteriors = reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
+                                                              lens_list, post_to_reweight=[0])[0]
+
+            sims, sim_pranges = build_densities([posteriors], [parameter],
+                                                chain.pranges, bandwidth_scale=1,
+                                                xtrim=xtrim, ytrim=ytrim, steps=bins,
+                                                use_kde_joint=False, use_kde_marginal=True,
+                                                reweight=True)
+
+            density = np.ones_like(sims[0][0])
+
+            for di in sims[0]:
+                density *= di
+
+            bar_centers, bar_width, bar_heights = barplothist(density,
+                              np.linspace(sim_pranges[0][parameter][0],
+                                          sim_pranges[0][parameter][1], bins), None)
+
+
+            h95 = quick_confidence(bar_centers, bar_heights, 0.95)
+            l95 = quick_confidence(bar_centers, bar_heights, 0.05)
+
+            h68, l68 = quick_confidence(bar_centers, bar_heights, 0.68), quick_confidence(bar_centers, bar_heights, 0.22)
+
+            low95.append(l95)
+            high95.append(h95)
+            low68.append(l68)
+            high68.append(h68)
+
+        low95_interval.append(low95)
+        high95_interval.append(high95)
+        low68_interval.append(low68)
+        high68_interval.append(high68)
+
+    return Nlenses, low95_interval, high95_interval, low68_interval, high68_interval
 
 def new_chains_withsigma(chain_name, which_lenses, new_chain_name, cut_sigma = 0.05):
-
 
     compute_sigma_chains(chain_name, which_lenses, new_chain_name, cut_sigma)
 
@@ -119,7 +187,7 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors = [0, 0.04]):
 
-    name = 'WDM_run_7.7_a0sub'
+    name = 'WDM_sim_7.7_.012'
 
     if logmhm > 6:
         new_name = 'WDM_'+str(logmhm)+'_'
@@ -128,7 +196,7 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
 
     new_name += 'sigma'+str(a0_area)+'_srcsize'+str(src_size)
 
-    which_lens_indexes = [1,2,3,4,5,6,7,8,9,10,11]
+    which_lens_indexes = np.arange(1,27)
     params_new = {'a0_area': [a0_area, 0.001], 'log_m_break': [logmhm, 0.1],
                                 'source_size_kpc': [src_size, 0.004],
                                 'LOS_normalization': [LOS_norm, 0.05]}
@@ -140,14 +208,7 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
     process_samples(new_name, which_lens_indexes, errors = errors)
 
 
-resample_chain(a0_area=0.015, logmhm=7.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
-resample_chain(a0_area=0.015, logmhm=4.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
-resample_chain(a0_area=0.005, logmhm=4.8, src_size=0.035, LOS_norm=1, errors=[0,0.04])
-#for i in [1,2,3,4,6,7,8,9,11,13,16]:
-#    process_raw('rerun_'+str(i), [1])
-#process_samples('WDM_7.7_sigma0.015_srcsize0.033', [1,2,3,4,5,6,7,8,9,10,11], errors=[0.02, 0.04])
-#new_chains_withsigma('WDM_run_7.7_tier2', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17], 'WDM_7.7_sigma')
-#process_samples('WDM_7.7_sigma', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
-#new_chains_withsigma('WDM_run_7.7_tier2', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17], 'WDM_run_7.7_a0sub')
-#resample_chain_sigma()
-#process_samples('WDM_7.7_sigma0.3_srcsize35', [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
+#resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+#process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])
+resample_chain(a0_area=0.015, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+process_samples('WDM_7.3_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])

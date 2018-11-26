@@ -269,18 +269,22 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         continue_findimg_loop = True
 
         while continue_findimg_loop:
-
+            
             if xcaus is not None:
-                xs_init, ys_init = guess_source(xcaus, ycaus)
+
+                try:
+                    xs_init, ys_init = guess_source(xcaus, ycaus)
+                except:
+                    xs_init, ys_init = 0.1, -0.005
             else:
-                xs_init, ys_init = np.random.uniform(-0.1, 0.1), np.random.uniform(-0.1, 0.1)
+                xs_init, ys_init = 0.06, -0.01
 
             data_withhalos, xcaus, ycaus = imgFinder(start, real, xs_init, ys_init, True, solver, analysis)
             lens_config = identify(data_withhalos[0].x, data_withhalos[0].y, c.vdis_to_Rein(zlens, zsrc, vdis))
             min_sep = min_img_sep(data_withhalos[0].x, data_withhalos[0].y)
             #print('minimum image separation: ', min_sep)
 
-            if min_sep < rein * 0.2:
+            if min_sep < rein * 0.1:
                 continue
 
             if lens_config == 0:
@@ -369,24 +373,34 @@ a0_area = 0.012
 M_halo = 10 ** 13
 logmhm = 7.7
 r_core = '0.5Rs'
-src_size_mean = 0.04
+src_size_mean = 0.035
 src_size_sigma = 0.0001
 log_ml, log_mh = 6, 10
 break_index = -1.3
 
 nav = prefix
 
-dpath_base = nav + '/mock_data/WDM_7.7_sigmanorm_replace/lens_'
+dpath_base = nav + 'data/mock_data/WDM_7.7_sigmanorm_replace/lens_'
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 #run(0,1,0,1)
 #import sys
 #start_idx=int(sys.argv[1])
-#cusps = np.arange(1,60,3)
-#folds = cusps + 1
-#crosses = cusps + 2
+cusps = np.arange(1,60,3)
+folds = cusps + 1
+crosses = cusps + 2
+start_idx = 13
+if start_idx in cusps:
+    print('cusp')
+    run(1, 0, 0, start_idx)
+elif start_idx in folds:
+    print('fold')
+    run(0, 1, 0, start_idx)
+else:
+    print('cross')
+    run(0, 0, 1, start_idx)
 #run(1,0,0, start_idx=43)
 #if start_idx in folds:
-#run(0,0,1, start_idx=1)
+#run(0,1,0, start_idx=9)
 #if start_idx in crosses:
 #    run(0,0,1, start_idx=sys.argv[1])
 #elif start_idx in folds:

@@ -2,16 +2,69 @@ import pandas
 from MagniPy.ABCsampler.ChainOps import *
 import numpy as numpy
 
-class FullChains:
+class ChainFromChain(object):
 
-    def __init__(self,chain_name='',Nlenses=None,which_lens=None,index=1,error=0, trimmed_ranges=None,
-                 zlens_src_file = None,
-                 deplete = False, deplete_fac = 0.5):
+    def __init__(self, chain, indicies):
 
-        if zlens_src_file is None:
-            zd, zs = [None] * len(which_lens), [None] * len(which_lens)
-        else:
-            zd, zs, _ = numpy.loadtxt(zlens_src_file+'/'+chain_name+'/simulation_zRein.txt', unpack = True)
+        self._chain_parent = chain
+        self.params_varied = chain.params_varied
+        self.truths = chain.truths
+        self.prior_info = chain.prior_info
+        self.pranges = chain.pranges
+        self.Nlenses = chain.Nlenses
+        self.pranges_trimmed = chain.pranges_trimmed
+
+        self.lenses = []
+
+        self._add_lenses(indicies)
+
+    def _add_lenses(self, indicies):
+
+        for ind in indicies:
+
+            new_lens = self._chain_parent.lenses[ind]
+
+            if not hasattr(new_lens, 'fluxes'):
+                new_lens.get_fluxes(ind)
+
+            self.lenses.append(new_lens)
+
+    def get_posteriors(self,tol=None, reject_pnames = None, keep_ranges = None):
+
+        posteriors = []
+
+        for lens in self.lenses:
+
+            lens.draw(tol, reject_pnames, keep_ranges)
+
+            posteriors.append(lens.posterior)
+
+        return posteriors
+
+    def _add_perturbations(self, error):
+
+        for lens in self.lenses:
+
+            if error == 0:
+
+                new_statistic = lens.statistic
+
+            else:
+
+                new_obs = lens.obs + np.random.normal(0, float(error)*lens.obs)
+                new_fluxes = lens.fluxes + np.random.normal(0, float(error)*lens.fluxes)
+
+                new_obs_ratio = new_obs*new_obs[0]**-1
+                new_fluxes_ratio = new_fluxes * new_fluxes[0,:]**-1
+
+                new_statistic = np.sqrt(np.sum(new_obs_ratio**2 - new_fluxes_ratio**2, axis=1))
+
+            lens.statistic = new_statistic
+
+class ChainFromSamples(object):
+
+    def __init__(self,chain_name='',which_lens=None,index=1,error=0, trimmed_ranges=None,
+                 zlens_src_file = None, deplete = False, deplete_fac = 0.5, Nlenses = None):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -20,11 +73,8 @@ class FullChains:
 
         self.pranges = self.get_pranges(self.prior_info)
 
-        if Nlenses is None:
-            Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
+        Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
                                                                     chain_name + '/simulation_info.txt')
-        else:
-            self.Nlenses = Nlenses
 
         self.chain_file_path = chainpath_out + 'chain_stats/' + chain_name +'/'
 
@@ -35,7 +85,8 @@ class FullChains:
 
         for ind in which_lens:
 
-            new_lens = SingleLens(zlens = zd[ind-1], zsource=zs[ind-1])
+            new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
+                                                                    chain_name+'/')
 
             fname = 'statistic_'+str(error)+'error_'+str(index)+'.txt'
             finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
@@ -48,7 +99,9 @@ class FullChains:
 
                 L = int(len(new_lens.statistic))
 
-                keep = numpy.random.randint(0, L, int(L * deplete_fac))
+                keep = np.arange(0, L)
+                u = np.random.rand(L)
+                keep = keep[np.where(u <= deplete_fac)]
 
                 for pname in new_lens.parameters.keys():
 
@@ -144,11 +197,18 @@ class FullChains:
 
 class SingleLens:
 
-    def __init__(self, zlens, zsource, weights=None):
+    def __init__(self, zlens, zsource, weights=None, flux_path=''):
 
         self.weights = weights
         self.posterior = None
         self.zlens, self.zsource = zlens, zsource
+        self.flux_path = flux_path
+
+    def get_fluxes(self, idx):
+
+        self.fluxes = numpy.squeeze(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
+                                   header=None,sep=" ",index_col=None)).astype(float)[1:]
+        self.fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
 
     def draw(self,tol, reject_pnames, keep_ranges):
 
@@ -365,4 +425,3 @@ class BinaryLower(object):
         weights[numpy.where(weights <= self.break_value)] = 0
 
         return weights
-

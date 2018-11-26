@@ -92,7 +92,6 @@ class Density1D(Joint2D):
         for i in range(0, len(bar_heights)):
             bar_centers.append(coords[0] + bar_width * (0.5 + i))
 
-
         integral = np.sum(bar_heights) * bar_width * len(bar_centers) ** -1
 
         bar_heights = bar_heights * integral ** -1

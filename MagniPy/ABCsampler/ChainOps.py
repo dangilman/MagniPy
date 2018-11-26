@@ -1,10 +1,9 @@
 from MagniPy.paths import *
-from MagniPy.Analysis.Statistics.summary_statistics import *
+from MagniPy.Analysis.Statistics.singledensity import SingleDensity
 import sys
 from copy import copy
 import numpy as np
 from MagniPy.util import *
-import ast
 
 def rerun_setup():
     def round_down(num, divisor):
@@ -44,63 +43,6 @@ def rerun_setup():
     np.savetxt('rerun_info_new.txt', X=run_info)
     print(run_info)
     print(priors)
-
-def read_chain_info(fname):
-
-    with open(fname,'r') as f:
-        lines = f.read().splitlines()
-
-    params_varied = []
-    varyparams_info = {}
-    nextline = False
-
-    for line in lines:
-
-        if line == '# params_varied':
-            nextline = True
-            continue
-
-        if nextline:
-            if len(line)==0:
-                nextline=False
-                break
-            params_varied.append(line)
-
-    for pname in params_varied:
-
-        args = {}
-
-        for line in lines:
-
-            if line == pname+':':
-                nextline=True
-                continue
-
-            if nextline:
-
-                if len(line)==0:
-                    nextline=False
-                    break
-                args[line.split(' ')[0]] = line.split(' ')[1]
-
-            varyparams_info[pname] = args
-
-    truth_dic = {}
-    for line in lines:
-
-        if line == '# truths':
-            nextline = True
-            continue
-
-        if nextline:
-            if len(line)==0:
-                nextline=False
-                break
-
-            truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
-
-    return params_varied,truth_dic,varyparams_info
-
 
 def read_run_partition(fname):
 
@@ -361,6 +303,64 @@ def compute_sigma_chains(chain_name, which_lenses, new_chain_name, sigma_max_cut
         copy_directory(f_to_copy, loc)
         np.savetxt(chainpath_out + '/processed_chains/'+new_chain_name+'/lens' + str(which_lens) + '/samples.txt',
                    X = new_parameters, header=params_header)
+
+def read_chain_info(fname):
+
+    with open(fname,'r') as f:
+        lines = f.read().splitlines()
+
+    params_varied = []
+    varyparams_info = {}
+    nextline = False
+
+    for line in lines:
+
+        if line == '# params_varied':
+            nextline = True
+            continue
+
+        if nextline:
+            if len(line)==0:
+                nextline=False
+                break
+            params_varied.append(line)
+
+    for pname in params_varied:
+
+        args = {}
+
+        for line in lines:
+
+            if line == pname+':':
+                nextline=True
+                continue
+
+            if nextline:
+
+                if len(line)==0:
+                    nextline=False
+                    break
+                args[line.split(' ')[0]] = line.split(' ')[1]
+
+            varyparams_info[pname] = args
+
+    truth_dic = {}
+    for line in lines:
+
+        if line == '# truths':
+            nextline = True
+            continue
+
+        if nextline:
+            if len(line)==0:
+                nextline=False
+                break
+
+            truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
+
+    return params_varied,truth_dic,varyparams_info
+
+
 
 #new_chains_withsigma('WDM_run_7.7_tier2',[1,2],'WDM_run_7.7_sigma')
 

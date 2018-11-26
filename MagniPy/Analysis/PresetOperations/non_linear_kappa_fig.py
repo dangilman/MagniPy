@@ -88,7 +88,7 @@ def kappa_plot(conv_map, conv_map_subtract = None, ax = None,
         conv += -np.mean(conv)
     radial = np.where(r > rmax)
     mask = np.where(r < mask * 0.4 * L)
-    conv[radial] = 0
+    conv[radial] = np.nan
     conv[mask] = 0
     theta = np.linspace(0, 2 * np.pi, 100)
     rmax_line = rmax * 0.99

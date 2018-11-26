@@ -27,6 +27,9 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
 
     sim_densities, sim_pranges = [], []
     pranges_list = [pranges] * len(sim_list)
+
+    print('computing density: ', parameters)
+
     for sim, pranges in zip(sim_list, pranges_list):
         densities = []
 
@@ -175,6 +178,30 @@ def reweight_posteriors(posteriors, weight_classes, index_lists=None):
         weighted_posteriors.append(new_post)
 
     return weighted_posteriors
+
+def barplothist(bar_heights, coords, rebin):
+
+    if rebin is not None:
+        new = []
+        if len(bar_heights) % rebin == 0:
+            fac = int(len(bar_heights) / rebin)
+            for i in range(0, len(bar_heights), fac):
+                new.append(np.mean(bar_heights[i:(i + fac)]))
+
+            bar_heights = np.array(new)
+        else:
+            raise Exception('not implemented here.')
+
+    bar_width = np.absolute(coords[-1] - coords[0]) * len(bar_heights) ** -1
+    bar_centers = []
+    for i in range(0, len(bar_heights)):
+        bar_centers.append(coords[0] + bar_width * (0.5 + i))
+
+    integral = np.sum(bar_heights) * bar_width * len(bar_centers) ** -1
+
+    bar_heights = bar_heights * integral ** -1
+
+    return bar_centers, bar_width, bar_heights
 
 
 
