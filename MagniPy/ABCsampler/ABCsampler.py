@@ -55,7 +55,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 2
+    readout_steps = 50
 
     while N_computed < keys['Nsamples']:
 
@@ -240,4 +240,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_a0area0.012_7.7/',1)
+#runABC(prefix+'data/WDM_run/',14001)

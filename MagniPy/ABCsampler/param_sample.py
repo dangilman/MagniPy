@@ -4,7 +4,7 @@ from MagniPy.ABCsampler.probability_distributions import ProbabilityDistribution
 class ParamSample:
 
     recognized_param_precision = {}
-    recognized_param_precision['fsub'] = 5
+    recognized_param_precision['a0_area'] = 4
     recognized_param_precision['logmhm'] = 2
     recognized_param_precision['SIE_gamma'] = 3
     recognized_param_precision['SIE_shear'] = 4

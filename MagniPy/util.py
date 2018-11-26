@@ -93,6 +93,15 @@ def confidence_interval(percentile,data):
 
     return value
 
+def quick_confidence(centers, heights, percentile):
+
+    total = np.sum(heights)
+    summ, index = 0, 0
+    while summ < total * percentile:
+        summ += heights[index]
+        index += 1
+    return centers[index-1]
+
 def read_data(filename='',N=None):
 
     with open(filename,'r') as f:
