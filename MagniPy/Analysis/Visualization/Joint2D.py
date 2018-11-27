@@ -78,7 +78,8 @@ class Joint2D:
 
     def make_plot(self, xtick_labels=None, xticks=None, param_names = None,
                   param_ranges=None,ytick_labels=None, yticks=None,filled_contours=False, contour_colors=None, contour_alpha=0.6,
-                  tick_label_font=12, color_index = 1, levels=[0.05,0.22,1], truths = None, xlabel_on = True, ylabel_on = True):
+                  tick_label_font=12, color_index = 1, levels=[0.05,0.22,1],
+                  truths = None, xlabel_on = True, ylabel_on = True, label_size=18):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -137,11 +138,15 @@ class Joint2D:
 
             xlabel_name, xticks, xtick_labels = self._convert_param_names(param_names[0], xticks)
 
-            self.ax.set_xlabel(xlabel_name, fontsize=16)
+            self.ax.set_xlabel(xlabel_name, fontsize=label_size)
             self.ax.set_xticks(xticks)
+            if param_names[0] == 'source_size_kpc':
+                self.ax.set_xticklabels(xticks*1000, fontsize=tick_label_font)
+            else:
+                self.ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
             self.ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
             self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
-
+            self.ax.set_xlim(xticks[0], xticks[-1])
 
         if ylabel_on:
 
@@ -152,10 +157,14 @@ class Joint2D:
 
             ylabel_name, yticks, ytick_labels = self._convert_param_names(param_names[1], yticks)
 
-            self.ax.set_ylabel(ylabel_name, fontsize=16)
+            self.ax.set_ylabel(ylabel_name, fontsize=label_size)
             self.ax.set_yticks(yticks)
-            self.ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
+            if param_names[1] == 'source_size_kpc':
+                self.ax.set_yticklabels(yticks*1000, fontsize=tick_label_font)
+            else:
+                self.ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
             self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
+            self.ax.set_ylim(yticks[0], yticks[-1])
 
         self.param_names = param_names
         self.param_ranges = param_ranges
@@ -184,11 +193,15 @@ class Joint2D:
         elif pname == 'source_size_kpc':
             #pname = r'$\sigma_{\rm{source}}$'
             pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
-            tick_labels = ticks*1000
+            tick_labels = np.array(ticks)*1000
 
         elif pname == 'a0_area':
 
             pname = r'$\sigma_{\rm{sub}}$'
+            tick_labels = ticks
+
+        elif pname == 'SIE_gamma':
+            pname = r'$\gamma_{\rm{macro}}$'
             tick_labels = ticks
 
         else:
@@ -272,7 +285,7 @@ class Joint2D:
             return '%.1f'
         elif pname == 'c_power':
             return '%.3f'
-        elif pname=='SIE_gamma':
+        elif pname=='SIE_gamma' or pname == r'$\gamma_{\rm{macro}}$':
             return '%.2f'
         elif pname == 'source_size_kpc':
             return '%.3f'

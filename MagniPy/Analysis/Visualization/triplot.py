@@ -8,16 +8,6 @@ from scipy.misc import comb
 
 class TriPlot(object):
 
-    plt.rcParams['axes.linewidth'] = 2.5
-
-    plt.rcParams['xtick.major.width'] = 2.5
-    plt.rcParams['xtick.major.size'] = 6
-    plt.rcParams['xtick.minor.size'] = 2
-
-    plt.rcParams['ytick.major.width'] = 2.5
-    plt.rcParams['ytick.major.size'] = 6
-    plt.rcParams['ytick.minor.size'] = 2
-
     cmap = 'gist_heat'
 
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
@@ -26,12 +16,12 @@ class TriPlot(object):
                               (colors.cnames['coral'], 'r', 'k'),
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
     truth_color = 'r'
-    tick_font = 12
 
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
-                 fig_size = 7, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
+                 fig_size = 8, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
                  kde_marginal = True, reweight = True):
 
+        self._init(fig_size)
         self._steps = steps
         self._reweight = reweight
         self._kde_joint, self._kde_marginal = kde_joint, kde_marginal
@@ -54,6 +44,20 @@ class TriPlot(object):
         N = len(parameter_names)
         size_scale = N * 0.1 + 1
         self.fig.set_size_inches(fig_size * size_scale, fig_size * size_scale)
+
+    def _init(self, fig_size):
+
+        self._tick_lab_font = 12 * fig_size * 7**-1
+
+        plt.rcParams['axes.linewidth'] = 2.5*fig_size*7**-1
+
+        plt.rcParams['xtick.major.width'] = 2.5*fig_size*7**-1
+        plt.rcParams['xtick.major.size'] = 6*fig_size*7**-1
+        plt.rcParams['xtick.minor.size'] = 2*fig_size*7**-1
+
+        plt.rcParams['ytick.major.width'] = 2.5*fig_size*7**-1
+        plt.rcParams['ytick.major.size'] = 6*fig_size*7**-1
+        plt.rcParams['ytick.minor.size'] = 2*fig_size*7**-1
 
     def _subplot_index(self, col, row):
 
@@ -106,7 +110,7 @@ class TriPlot(object):
 
                     joint = Joint2D(self.simulation_densities[joint_k], ax=ax, fig=self.fig)
                     _, joint_info = joint.make_plot(param_ranges=param_ranges, param_names=pnames, filled_contours=filled_contours,
-                                    contour_alpha=contour_alpha, levels=levels, truths=self._truths)
+                                    contour_alpha=contour_alpha, levels=levels, truths=self._truths, tick_label_font=self._tick_lab_font)
                     joint_k += 1
 
                     if row != self._nparams-1:

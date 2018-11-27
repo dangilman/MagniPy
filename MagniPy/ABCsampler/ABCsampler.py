@@ -86,7 +86,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         halo_args = halo_model_args(chain_keys_run)
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
-        print('running... ')
+        #print('running... ')
         #print(samples)
         while True:
 
@@ -113,7 +113,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                 break
 
         N_computed += 1
-        print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
+        if N_computed%readout_steps == 0:
+            print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
 
         samples_array = []
 

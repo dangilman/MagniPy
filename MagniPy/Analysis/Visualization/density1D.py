@@ -13,7 +13,8 @@ class Density1D(Joint2D):
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
     def make_marginalized(self, sim_densities, param, param_ranges,
-                          contour_colors=None, contour_alpha=0.6, xlabel_on=False, truths=None, rebin=15):
+                          contour_colors=None, contour_alpha=0.6, xlabel_on=False,
+                          truths=None, rebin=15, label_size=18):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -50,10 +51,11 @@ class Density1D(Joint2D):
                 xticks = np.linspace(param_ranges[0], param_ranges[1], 6)
                 label_name, ticks, tick_labels = self._convert_param_names(param, xticks)
 
-                self.ax.set_xlabel(label_name, fontsize=16)
+                self.ax.set_xticklabels(tick_labels)
+                self.ax.set_xlabel(label_name, fontsize=label_size)
 
                 self.ax.set_xticks(xticks)
-                self.ax.set_xticklabels(tick_labels, fontsize = 12)
+
                 self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=label_name)))
             else:
                 self.ax.set_xticks([])
@@ -64,7 +66,7 @@ class Density1D(Joint2D):
 
         if truths is not None:
             if truths[param] < param_ranges[0]:
-                self.ax.axvline(param_ranges[0]*1.025, color='r', linestyle='--', linewidth=3)
+                self.ax.axvline(param_ranges[0]*1.075, color='r', linestyle='--', linewidth=3)
             else:
                 self.ax.axvline(truths[param], color='r', linestyle='--',linewidth=3)
 
