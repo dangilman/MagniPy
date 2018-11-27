@@ -57,7 +57,7 @@ class RayTrace:
 
         if img_sep is None:
             img_sep = 10000
-        print(size_asec)
+
         if size_asec < 0.0005:
             s = 0.03
         elif size_asec < 0.001:

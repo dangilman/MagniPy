@@ -241,4 +241,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-runABC(prefix+'data/WDM_run/',6001)
+runABC(prefix+'data/jpl_sim1/',4501)
