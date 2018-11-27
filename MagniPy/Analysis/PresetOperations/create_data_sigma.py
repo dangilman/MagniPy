@@ -170,7 +170,7 @@ def draw_ellip_PA(low = -90, high = 90):
 
     return np.random.uniform(low, high)
 
-def draw_shear(mean = 0.05, sigma = 0.02, low = 0.01, high = 0.1):
+def draw_shear(mean = 0.05, sigma = 0.02, low = 0.035, high = 0.1):
 
     while True:
         shear = np.random.normal(mean, sigma)
