@@ -22,8 +22,8 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
     macromodels_init = []
 
     if 'SIE_gamma' in keys_to_vary:
-        gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2]
+        #gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
+        gamma_values = [2.0]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -93,10 +93,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
-                #print('source size: ',chain_keys_run['source_size_kpc'])
+                print('source size: ',chain_keys_run['source_size_kpc'])
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.002,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
@@ -241,4 +241,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/WDM_run/',3001)
+runABC(prefix+'data/WDM_run/',6001)
