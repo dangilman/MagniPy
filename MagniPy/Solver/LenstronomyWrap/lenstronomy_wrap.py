@@ -25,15 +25,16 @@ class LenstronomyWrap:
 
     def assemble(self,system):
 
-        zlist, lens_list, arg_list = system.lenstronomy_lists()
+        zlist, lens_list, arg_list, lensmodel_kwargs = system.lenstronomy_lists()
 
-        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,'redshift_list':zlist}
+        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,
+                'redshift_list':zlist,'kwargs_lensmodel':lensmodel_kwargs}
 
-    def get_lensmodel(self,lens_system):
+    def get_lensmodel(self,lens_system,lensmodel_kwargs):
 
         lists = self.assemble(lens_system)
         lensmodel = LensModel(lens_model_list=lists['lens_model_list'],redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
-                         multi_plane=lens_system.multiplane)
+                         multi_plane=lens_system.multiplane, lensmodel_kwargs = lensmodel_kwargs)
 
         return lensmodel,lists['kwargs_lens']
 

@@ -24,19 +24,21 @@ class LensSystem:
 
         if not hasattr(self, '_halo_names'):
             if self.realization is not None:
-                self._halo_names, self._halo_redshifts, self._halo_kwargs = \
+                self._halo_names, self._halo_redshifts, self._halo_kwargs, self._lensmodel_kwargs = \
                     self.realization.lensing_quantities(mass_sheet_correction_front=self._LOS_mass_sheet_front,
                                                         mass_sheet_correction_back=self._LOS_mass_sheet_back)
             else:
-                self._halo_names, self._halo_redshifts, self._halo_kwargs = [], [], []
+                self._halo_names, self._halo_redshifts, self._halo_kwargs, self._lensmodel_kwargs = [],\
+                                                              [], [], []
 
-        main_names, main_redshift, main_args = self._unpack_main(self.main)
+        main_names, main_redshift, main_args, main_lensmodel_kwargs = self._unpack_main(self.main)
 
         lens_model_names = main_names + self._halo_names
         lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)
-        lens_model_kwargs = main_args + self._halo_kwargs
+        kwargs_lens = main_args + self._halo_kwargs
+        lensmodel_kwargs = main_lensmodel_kwargs + self._lensmodel_kwargs
 
-        return lens_model_names, lens_model_redshifts, lens_model_kwargs
+        return lens_model_names, lens_model_redshifts, kwargs_lens, lensmodel_kwargs
 
     def _unpack_main(self, main):
 
@@ -50,6 +52,7 @@ class LensSystem:
             shear_e1, shear_e2 = polar_to_cart(main.shear, main.shear_theta)
             kwargs = [main.lenstronomy_args]
             kwargs.append({'e1': shear_e1, 'e2': shear_e2})
+            lensmodel_kwargs = {}
 
         if main.parameterization == 'SERSIC_NFW':
 
@@ -59,8 +62,9 @@ class LensSystem:
             kwargs = main.lenstronomy_args['SERSIC']
             kwargs.append({'e1': shear_e1, 'e2': shear_e2})
             kwargs.append(main.lenstronomy_args['NFW'])
+            lensmodel_kwargs = {}
 
-        return names, zlist, kwargs
+        return names, zlist, kwargs, lensmodel_kwargs
 
     def main_lens(self, deflector_main):
 
@@ -73,6 +77,6 @@ class LensSystem:
 
     def lenstronomy_lists(self):
 
-        lens_list, zlist, arg_list = self._build()
+        lens_list, zlist, arg_list, lensmodel_kwargs = self._build()
 
-        return zlist,lens_list,arg_list
+        return zlist,lens_list,arg_list,lensmodel_kwargs

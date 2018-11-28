@@ -333,9 +333,9 @@ class Magnipy:
 
             for i, system in enumerate(lens_systems):
 
-                redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
+                redshift_list, lens_list, lensmodel_params, lensmodel_kwargs = system.lenstronomy_lists()
 
-                lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(system)
+                lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(system, lensmodel_kwargs)
 
                 x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,lensmodel_params,brightimg)
 
