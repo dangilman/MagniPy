@@ -170,7 +170,7 @@ def draw_ellip_PA(low = -90, high = 90):
 
     return np.random.uniform(low, high)
 
-def draw_shear(mean = 0.05, sigma = 0.02, low = 0.03, high = 0.1):
+def draw_shear(mean = 0.05, sigma = 0.02, low = 0.035, high = 0.1):
 
     while True:
         shear = np.random.normal(mean, sigma)
@@ -381,10 +381,12 @@ break_index = -1.3
 nav = prefix
 
 dpath_base = nav + 'data/mock_data/jpl_sim1/lens_'
+
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 #run(0,1,0,1)
 #import sys
 #start_idx=int(sys.argv[1])
+
 cusps = np.arange(1,60,3)
 folds = cusps + 1
 crosses = cusps + 2
@@ -398,6 +400,21 @@ elif start_idx in folds:
 else:
     print('cross')
     run(0, 0, 1, start_idx)
+
+#cusps = np.arange(1,60,3)
+#folds = cusps + 1
+#crosses = cusps + 2
+#start_idx = 13
+#if start_idx in cusps:
+#    print('cusp')
+#    run(1, 0, 0, start_idx)
+#elif start_idx in folds:
+#    print('fold')
+#    run(0, 1, 0, start_idx)
+#else:
+#    print('cross')
+#    run(0, 0, 1, start_idx)
+
 #run(1,0,0, start_idx=43)
 #if start_idx in folds:
 #run(0,1,0, start_idx=9)
