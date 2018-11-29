@@ -241,4 +241,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/jpl_sim2/',4801)
+#runABC(prefix+'data/hoffman_run_2/',4801)
