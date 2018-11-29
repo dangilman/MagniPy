@@ -203,12 +203,15 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
 
     _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
                    parameters_new=params_new, SIE_gamma_mean = 2.08,
-                       SIE_gamma_sigma = 0.05)
+                       SIE_gamma_sigma = 0.1)
 
     process_samples(new_name, which_lens_indexes, errors = errors)
 
 
 #resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04])
 #process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])
-resample_chain(a0_area=0.015, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04])
-process_samples('WDM_7.3_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])
+#resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#resample_chain(a0_area=0.015, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#resample_chain(a0_area=0.015, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+resample_chain(a0_area=0.015, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04,0.08])
