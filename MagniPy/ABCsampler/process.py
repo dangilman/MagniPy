@@ -112,15 +112,6 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
 
     for which_lens in which_lens_indexes:
 
-        #if transform_fsub:
-
-            #new_fsub = l.fsub_from_sigmasub(sigma_sub, zd[which_lens-1], zs[which_lens-1])
-            #parameters_new.update({'a0_area': [new_fsub, parameters_new['fsub'][1]]})
-
-            #parameters_new.update({'sigma_sub': [sigma_sub, parameters_new['fsub'][1]]})
-
-            #print(l.sigmasub_from_fsub(new_fsub, zd[which_lens-1], zs[which_lens-1]))
-
         fluxes, fluxes_obs, parameters, header, newgamma = resample(name, which_lens, parameters_new,
                                                                     SIE_gamma_mean=SIE_gamma_mean,
                                                                     SIE_gamma_sigma=SIE_gamma_sigma)
@@ -185,7 +176,7 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
 
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
-def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors = [0, 0.04]):
+def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors = [0, 0.04],N_pert=1):
 
     name = 'WDM_sim_7.7_.012'
 
@@ -205,13 +196,16 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
                    parameters_new=params_new, SIE_gamma_mean = 2.08,
                        SIE_gamma_sigma = 0.1)
 
-    process_samples(new_name, which_lens_indexes, errors = errors)
+    process_samples(new_name, which_lens_indexes, errors = errors, N_pert=N_pert)
 
 
-#resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04])
+#resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04, 0.08])
 #process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])
-#resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
-#resample_chain(a0_area=0.015, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
-#resample_chain(a0_area=0.015, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
-resample_chain(a0_area=0.015, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#resample_chain(a0_area=0.03, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#process_samples('CDM_sigma0.015_srcsize0.035', np.arange(1,27), N_pert=10, errors=[0.04])
+process_samples('WDM_7.3_sigma0.03_srcsize0.035', np.arange(1,27), errors=[.04,.08],N_pert=25)
+if False:
+    resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08], N_pert=25)
+    resample_chain(a0_area=0.03, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+    resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
 #process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04,0.08])

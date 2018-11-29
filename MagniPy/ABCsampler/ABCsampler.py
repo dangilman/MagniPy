@@ -97,7 +97,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
-                                   pso_compute_magnification=700, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                   pso_compute_magnification=1500, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=400, polar_grid=False, grid_res=0.002,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
