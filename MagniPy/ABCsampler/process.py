@@ -205,10 +205,10 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
 
 #resample_chain(a0_area=0.03, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
 #process_samples('CDM_sigma0.015_srcsize0.035', np.arange(1,27), N_pert=10, errors=[0.04])
-process_samples('WDM_7.3_sigma0.03_srcsize0.035', np.arange(1,27), errors=[.04,.08],N_pert=25)
-if False:
-    resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08], N_pert=25)
-    resample_chain(a0_area=0.03, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
-    resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#process_samples('WDM_7.3_sigma0.03_srcsize0.035', np.arange(1,27), errors=[.04,.08],N_pert=25)
+resample_chain(a0_area=0.03, logmhm=5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08], N_pert=30)
+#resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08], N_pert=25)
+#resample_chain(a0_area=0.03, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
+#resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
 #process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04,0.08])
 
