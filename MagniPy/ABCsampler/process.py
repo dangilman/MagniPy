@@ -188,8 +188,8 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
     new_name += 'sigma'+str(a0_area)+'_srcsize'+str(src_size)
 
     which_lens_indexes = np.arange(1,27)
-    params_new = {'a0_area': [a0_area, 0.001], 'log_m_break': [logmhm, 0.1],
-                                'source_size_kpc': [src_size, 0.004],
+    params_new = {'a0_area': [a0_area, 0.001], 'log_m_break': [logmhm, 0.05],
+                                'source_size_kpc': [src_size, 0.006],
                                 'LOS_normalization': [LOS_norm, 0.05]}
 
     _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
@@ -203,7 +203,8 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1, errors 
 #process_samples('WDM_7.7_sigma0.015_srcsize0.035', np.arange(1,27),errors=[0,0.04])
 #resample_chain(a0_area=0.03, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])
 #process_samples('CDM_sigma0.015_srcsize0.035', np.arange(1,27), N_pert=10, errors=[0.04])
-process_samples('WDM_7.3_sigma0.03_srcsize0.035', np.arange(1,27), errors=[.04,.08],N_pert=25)
+#resample_chain(a0_area=0.03, logmhm=5, src_size=0.035, LOS_norm=1, errors=[0,0.001,0.05], N_pert=50)
+process_samples('CDM_sigma0.03_srcsize0.035', np.arange(1,27), errors=[0.001,0.04], N_pert=30)
 if False:
     resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08], N_pert=25)
     resample_chain(a0_area=0.03, logmhm=6.5, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08])

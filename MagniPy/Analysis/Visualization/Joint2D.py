@@ -76,10 +76,9 @@ class Joint2D:
 
         return final_densities, coordinates, aspect, extent
 
-    def make_plot(self, xtick_labels=None, xticks=None, param_names = None,
-                  param_ranges=None,ytick_labels=None, yticks=None,filled_contours=False, contour_colors=None, contour_alpha=0.6,
-                  tick_label_font=12, color_index = 1, levels=[0.05,0.22,1],
-                  truths = None, xlabel_on = True, ylabel_on = True, label_size=18):
+    def make_plot(self, param_names = None, param_ranges=None,filled_contours=False, contour_colors=None, contour_alpha=0.6,
+                  tick_label_font=12, levels=[0.05,0.22,1], truths = None, xlabel_on = True,
+                  ylabel_on = True, label_size=18):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -97,6 +96,9 @@ class Joint2D:
 
                 self.ax.imshow(sim_density, extent=extent,
                                aspect=aspect, origin='lower', cmap=self.cmap, alpha=0)
+                self.ax.set_xticklabels([])
+                self.ax.set_yticklabels([])
+
 
             else:
 
@@ -106,23 +108,6 @@ class Joint2D:
         if truths is not None:
 
             truth1,truth2 = truths[param_names[0]],truths[param_names[1]]
-
-            #inside1 = truth1 >= param_ranges[param_names[0]][0] and \
-            #                  truth1 <= param_ranges[param_names[0]][1]
-            #inside2 = truth2 >= param_ranges[param_names[1]][0] and \
-            #                  truth2 <= param_ranges[param_names[1]][1]
-
-            #if inside1:
-
-            if truth1 <= param_ranges[param_names[0]][0]:
-                truth1 = param_ranges[param_names[0]][0]*1.025
-            elif truth1 >= param_ranges[param_names[0]][1]:
-                truth1 = param_ranges[param_names[0]][1]*0.98
-
-            if truth2 <= param_ranges[param_names[1]][0]:
-                truth2 = param_ranges[param_names[1]][0]*1.025
-            elif truth2 >= param_ranges[param_names[1]][1]:
-                truth2 = param_ranges[param_names[1]][1]*0.98
 
             self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
             #if inside2:
@@ -141,11 +126,12 @@ class Joint2D:
             self.ax.set_xlabel(xlabel_name, fontsize=label_size)
             self.ax.set_xticks(xticks)
             if param_names[0] == 'source_size_kpc':
-                self.ax.set_xticklabels(xticks*1000, fontsize=tick_label_font)
+                self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
             else:
-                self.ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
-            self.ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
-            self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
+                self.ax.set_xticklabels(np.array(xtick_labels), fontsize=tick_label_font)
+                self.ax.set_ylabel(xlabel_name, fontsize=label_size)
+                self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
+
             self.ax.set_xlim(xticks[0], xticks[-1])
 
         if ylabel_on:
@@ -156,14 +142,16 @@ class Joint2D:
                 #ytick_labels = [str(tick) for tick in yticks]
 
             ylabel_name, yticks, ytick_labels = self._convert_param_names(param_names[1], yticks)
-
-            self.ax.set_ylabel(ylabel_name, fontsize=label_size)
             self.ax.set_yticks(yticks)
+
             if param_names[1] == 'source_size_kpc':
-                self.ax.set_yticklabels(yticks*1000, fontsize=tick_label_font)
+                self.ax.set_yticklabels(np.array(ytick_labels).astype(int), fontsize=tick_label_font)
             else:
-                self.ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
-            self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
+                self.ax.set_yticklabels(np.array(ytick_labels), fontsize=tick_label_font)
+                self.ax.set_ylabel(ylabel_name, fontsize=label_size)
+                self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
+            self.ax.set_ylabel(ylabel_name, fontsize=label_size)
+
             self.ax.set_ylim(yticks[0], yticks[-1])
 
         self.param_names = param_names
@@ -197,7 +185,7 @@ class Joint2D:
 
         elif pname == 'a0_area':
 
-            pname = r'$\sigma_{\rm{sub}}$'
+            pname = r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$'
             tick_labels = ticks
 
         elif pname == 'SIE_gamma':
@@ -287,8 +275,8 @@ class Joint2D:
             return '%.3f'
         elif pname=='SIE_gamma' or pname == r'$\gamma_{\rm{macro}}$':
             return '%.2f'
-        elif pname == 'source_size_kpc':
-            return '%.3f'
+        elif pname == 'source_size_kpc' or pname ==  r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
+            return '%d'
         elif pname == r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
             return '%.2f'
         elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':

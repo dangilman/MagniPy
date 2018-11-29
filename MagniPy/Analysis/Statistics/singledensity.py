@@ -89,6 +89,7 @@ class SingleDensity(object):
             if xtrim is None:
                 param_ranges = self.pranges
                 X = self.X
+                xstart, xend = self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1]
             else:
                 param_ranges, xstart, xend = self._trim1d(self.pranges, xtrim, len(self.X), self.param_names)
                 X = np.linspace(xstart, xend, self.steps)
@@ -99,6 +100,8 @@ class SingleDensity(object):
 
                 param_ranges = self.pranges
                 X, Y = self.X, self.Y
+                xstart, xend = self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1]
+                ystart, yend = self.pranges[self.param_names[1]][0], self.pranges[self.param_names[1]][1]
 
             else:
 

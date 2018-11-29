@@ -63,8 +63,8 @@ class ChainFromChain(object):
 
 class ChainFromSamples(object):
 
-    def __init__(self,chain_name='',which_lens=None,index=1,error=0, trimmed_ranges=None,
-                 zlens_src_file = None, deplete = False, deplete_fac = 0.5, Nlenses = None):
+    def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
+                 deplete = False, deplete_fac = 0.5, n_pert = 1):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -83,16 +83,21 @@ class ChainFromSamples(object):
         if which_lens is None:
             which_lens = numpy.arange(1,self.Nlenses+1)
 
+        #if n_pert > 1 and error == 0:
+        #    raise Exception('cannot average together identical posteriors.')
+
         for ind in which_lens:
 
             new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
                                                                     chain_name+'/')
 
-            fname = 'statistic_'+str(error)+'error_'+str(index)+'.txt'
-            finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
+            for ni in range(0,n_pert):
+                #print('loading '+str(ni+1)+'...')
+                fname = 'statistic_'+str(error)+'error_'+str(ni+1)+'.txt'
+                finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
 
-            fname = 'params_' + str(error) + 'error_' + str(index) + '.txt'
-            new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
+                fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
+                new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                     fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
 
             if deplete:
@@ -248,21 +253,26 @@ class SingleLens:
 
     def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 
-        #params = numpy.loadtxt(fname)
-        #t0 = time.time()
-        params = numpy.squeeze(pandas.read_csv(fname,header=None,sep=" ",index_col=None)).astype(numpy.ndarray)
+        params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
 
         params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))[1:]
 
-        new_dictionary = {}
+        if hasattr(self, 'parameters'):
 
-        for i,pname in enumerate(pnames):
+            for i, pname in enumerate(pnames):
 
-            newparams = params[:,i]
+                self.parameters[pname] = np.append(self.parameters[pname],
+                                                   params[:,i].astype(float))
 
-            new_dictionary.update({pname:newparams.astype(float)})
+        else:
 
-        self.parameters = new_dictionary
+            new_dictionary = {}
+
+            for i,pname in enumerate(pnames):
+
+                new_dictionary.update({pname:params[:,i].astype(float)})
+
+            self.parameters = new_dictionary
 
     def add_weights(self,params,weight_function):
         """
@@ -275,11 +285,19 @@ class SingleLens:
 
     def add_statistic(self,fname):
 
-        statistic = numpy.squeeze(pandas.read_csv(fname,header=None,sep=" ",index_col=None))
+        statistic = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None))
 
         finite = numpy.where(numpy.isfinite(statistic))[0]
 
-        self.statistic = statistic[finite].astype(float)[1:]
+        new_stat = statistic[finite].astype(float)[1:]
+
+        if hasattr(self, 'statistic'):
+
+            self.statistic = np.append(self.statistic, new_stat)
+
+        else:
+
+            self.statistic = statistic[finite].astype(float)[1:]
 
         return finite
 

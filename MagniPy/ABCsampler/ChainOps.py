@@ -77,7 +77,8 @@ def stack_chain(chain_name='', which_lens = None, parameters=None,fluxes_obs=Non
     np.savetxt(chain_file_path + 'observedfluxes' + '.txt',fluxes_obs, fmt='%.6f')
     np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.6f',header=header)
 
-def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, errors = None, N_pert = 1):
+def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, errors = None, N_pert = 1,
+                           keep_n=5000):
 
     if errors is None:
         errors = []
@@ -129,7 +130,7 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
             #elif stat == 'R':
             #    summary_statistic = R(perturbed_fluxes,perturbed_obs,config=lens_config)
 
-            ordered_inds = np.argsort(summary_statistic)
+            ordered_inds = np.argsort(summary_statistic)[0:keep_n]
 
             np.savetxt(perturbed_path + 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic[ordered_inds])
             np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds])

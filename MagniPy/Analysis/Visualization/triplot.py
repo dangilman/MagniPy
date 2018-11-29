@@ -25,6 +25,13 @@ class TriPlot(object):
         self._steps = steps
         self._reweight = reweight
         self._kde_joint, self._kde_marginal = kde_joint, kde_marginal
+        if parameter_trim is None:
+            parameter_trim = {}
+            for pname in parameter_names:
+                parameter_trim.update({pname: None})
+
+        self._nparams = len(parameter_names)
+        self._grid = self._init_grid(self._nparams, parameter_names)
 
         simulations, simulation_pranges, marginal_densities, marginal_ranges = self._get_sims(posteriors, parameter_names, pranges, parameter_trim, bandwidth_scale)
 
@@ -34,9 +41,6 @@ class TriPlot(object):
 
         self.parameter_names, self.parameter_ranges = parameter_names, pranges
 
-        # initialize grid
-        self._nparams = len(parameter_names)
-        self._grid = self._init_grid(self._nparams, parameter_names)
         self._truths = truths
 
         self.fig = plt.figure(1)
@@ -143,7 +147,8 @@ class TriPlot(object):
             marginalized = self.marginal_densities[marginal_names[i]]
 
             oneD.make_marginalized(marginalized, marginal_names[i], marginal_ranges[i],
-                                   xlabel_on = xlabel_on, truths=self._truths, rebin=rebin)
+                                   xlabel_on = xlabel_on, truths=self._truths, rebin=rebin,
+                                   tick_label_font = self._tick_lab_font)
 
         return axis
 

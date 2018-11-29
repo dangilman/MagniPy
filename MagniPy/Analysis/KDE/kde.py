@@ -45,7 +45,7 @@ class KDE_scipy:
 
 class KernelDensity1D(object):
 
-    def __init__(self, scale = 1, bandwidth_scale=1,kernel='Gaussian', reweight = True):
+    def __init__(self, scale = 1, bandwidth_scale=1, kernel='Gaussian', reweight = True):
 
         self._kernel_function = Gaussian1d
         self.scale = scale
