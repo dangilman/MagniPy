@@ -33,11 +33,8 @@ class TriPlot(object):
         self._nparams = len(parameter_names)
         self._grid = self._init_grid(self._nparams, parameter_names)
 
-        simulations, simulation_pranges, marginal_densities, marginal_ranges = self._get_sims(posteriors, parameter_names, pranges, parameter_trim, bandwidth_scale)
-
-        self.simulation_densities = simulations
-        self.marginal_densities = marginal_densities
-        self.marginal_pranges = marginal_ranges
+        self._posterior_grid = self._get_sims(posteriors,
+                   self._grid, parameter_names, pranges, parameter_trim, bandwidth_scale)
 
         self.parameter_names, self.parameter_ranges = parameter_names, pranges
 
@@ -81,12 +78,8 @@ class TriPlot(object):
     def _makeplot(self, levels = None, filled_contours=None, contour_alpha = None, rebin=15):
 
         plot_index = 1
-        joint_k = 0
-        marginal_indexes = []
+
         densities = []
-        marginal_axes = []
-        marginal_names = []
-        marginal_ranges = []
 
         axis = []
 
@@ -96,26 +89,30 @@ class TriPlot(object):
                 ax = plt.subplot(self._nparams, self._nparams, plot_index)
                 axis.append(ax)
 
-                pnames = self._grid[row, col]
+                cell = self._posterior_grid[row, col]
 
-                if pnames is None:
+                if cell is None:
                     ax.axis('off')
 
-                elif pnames[-1]=='marginal':
-                    marginal_axes.append(ax)
-                    marginal_indexes.append(plot_index)
-                    marginal_names.append(pnames[0])
-                    marginal_ranges.append(self.parameter_ranges[pnames[0]])
+                elif cell.type == 'marginal':
+
+                    if col < self._nparams-1:
+                        xlabel_on = False
+                    else:
+                        xlabel_on = True
+
+                    oneD = Density1D(ax=ax, fig=self.fig)
+
+                    oneD.make_marginalized(cell.posterior, cell.pnames[0],
+                                           cell.ranges[0][cell.pnames[0]],
+                            xlabel_on=xlabel_on, truths=self._truths, rebin=rebin,
+                                           tick_label_font=self._tick_lab_font)
 
                 else:
 
-                    param_ranges = {pnames[0]:self.parameter_ranges[pnames[0]],
-                                    pnames[1]:self.parameter_ranges[pnames[1]]}
-
-                    joint = Joint2D(self.simulation_densities[joint_k], ax=ax, fig=self.fig)
-                    _, joint_info = joint.make_plot(param_ranges=param_ranges, param_names=pnames, filled_contours=filled_contours,
+                    joint = Joint2D(cell.posterior, ax=ax, fig=self.fig)
+                    _, joint_info = joint.make_plot(param_ranges=cell.ranges[0], param_names=cell.pnames, filled_contours=filled_contours,
                                     contour_alpha=contour_alpha, levels=levels, truths=self._truths, tick_label_font=self._tick_lab_font)
-                    joint_k += 1
 
                     if row != self._nparams-1:
                         ax.set_xticklabels([])
@@ -131,24 +128,6 @@ class TriPlot(object):
                         densities.append(joint_info)
 
                 plot_index += 1
-
-        for i in range(0, len(densities) + 1):
-
-            oneD = Density1D(ax = marginal_axes[i], fig = self.fig)
-
-            if i < len(densities):
-
-                xlabel_on = False
-
-            else:
-
-                xlabel_on = True
-
-            marginalized = self.marginal_densities[marginal_names[i]]
-
-            oneD.make_marginalized(marginalized, marginal_names[i], marginal_ranges[i],
-                                   xlabel_on = xlabel_on, truths=self._truths, rebin=rebin,
-                                   tick_label_font = self._tick_lab_font)
 
         return axis
 
@@ -171,13 +150,14 @@ class TriPlot(object):
 
         return grid
 
-    def _get_sims(self, posteriors, pnames, param_ranges, param_trim, bandwidth_scale):
+    def _get_sims(self, posteriors, grid, pnames, param_ranges, param_trim, bandwidth_scale):
 
-        L = len(pnames)
-        simulations = []
-        simulation_pranges = []
+        L = np.shape(grid)[0]
+
         marginal_densities = {}
         marginal_ranges = {}
+
+        grid_post = np.zeros_like(grid, dtype=object)
 
         if L < 2:
             raise Exception('must have at least 2 parameters.')
@@ -188,315 +168,48 @@ class TriPlot(object):
             marginal_densities.update({name:marg})
             marginal_ranges.update({name:marg_range})
 
-        if L == 2:
+        for col in range(0, L):
+            for row in range(0, L):
 
-            parameters = [pnames[0], pnames[1]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+                cell = grid[row, col]
 
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
+                if cell is None:
+                    grid_post[row, col] = None
+                    continue
+                if cell[-1]=='marginal':
+                    name = cell[0]
+                    marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]},
+                                                       xtrim=param_trim[name],
+                                                       steps=self._steps, use_kde_joint=self._kde_joint,
+                                                       use_kde_marginal=self._kde_marginal, reweight=self._reweight)
+                    grid_post[row, col] = GridCell(marg, marg_range, [name], type='marginal')
 
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps, 
-                                                use_kde_joint=self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
+                else:
+                    parameters = [cell[0], cell[1]]
+                    pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+                    if param_trim is None:
+                        xtrim, ytrim = None, None
+                    else:
+                        xtrim = param_trim[parameters[0]]
+                        ytrim = param_trim[parameters[1]]
+                    sims, sim_pranges = build_densities(posteriors, parameters,
+                                                        pranges, bandwidth_scale=bandwidth_scale,
+                                                        xtrim=xtrim, ytrim=ytrim, steps=self._steps,
+                                                        use_kde_joint=self._kde_joint,
+                                                        use_kde_marginal=self._kde_marginal, reweight=self._reweight)
+                    grid_post[row, col] = GridCell(sims, sim_pranges, parameters, type='joint')
 
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
+        return grid_post
 
-        elif L == 3:
+class GridCell(object):
 
-            parameters = [pnames[0], pnames[1]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
+    def __init__(self, posterior, ranges, pnames, type):
 
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
+        self.posterior = posterior
+        self.ranges = ranges
+        self.pnames = pnames
 
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
+        self.type = type
 
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
 
-            parameters = [pnames[0], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
 
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim,
-                                                steps=self._steps, use_kde_joint = self._kde_joint,
-                                                use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-        elif L == 4:
-
-            parameters = [pnames[0], pnames[1]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[0], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[0], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[2], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-        elif L == 5:
-
-            parameters = [pnames[0], pnames[1]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[0], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[0], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[0], pnames[4]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[2]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[1], pnames[4]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[2], pnames[3]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[2], pnames[4]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-            parameters = [pnames[3], pnames[4]]
-            pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-            if param_trim is None:
-                xtrim, ytrim = None, None
-            else:
-                xtrim = param_trim[parameters[0]]
-                ytrim = param_trim[parameters[1]]
-            sims, sim_pranges = build_densities(posteriors, parameters,
-                                                pranges, bandwidth_scale=bandwidth_scale,
-                                                xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            simulations.append(sims)
-            simulation_pranges.append(sim_pranges)
-
-        return simulations, simulation_pranges, marginal_densities, marginal_ranges
