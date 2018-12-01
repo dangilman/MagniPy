@@ -4,7 +4,7 @@ import numpy as numpy
 
 class ChainFromChain(object):
 
-    def __init__(self, chain, indicies):
+    def __init__(self, chain, indicies, load_flux = False):
 
         self._chain_parent = chain
         self.params_varied = chain.params_varied
@@ -15,16 +15,15 @@ class ChainFromChain(object):
         self.pranges_trimmed = chain.pranges_trimmed
 
         self.lenses = []
+        self._add_lenses(indicies, load_flux)
 
-        self._add_lenses(indicies)
-
-    def _add_lenses(self, indicies):
+    def _add_lenses(self, indicies, load_flux):
 
         for ind in indicies:
 
             new_lens = self._chain_parent.lenses[ind]
 
-            if not hasattr(new_lens, 'fluxes'):
+            if not hasattr(new_lens, 'fluxes') and load_flux:
                 new_lens.get_fluxes(ind)
 
             self.lenses.append(new_lens)
@@ -211,8 +210,8 @@ class SingleLens:
 
     def get_fluxes(self, idx):
 
-        self.fluxes = numpy.squeeze(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
-                                   header=None,sep=" ",index_col=None)).astype(float)[1:]
+        self.fluxes = np.array(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
+                                   header=None,sep=" ",index_col=None).values.astype(float))
         self.fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
 
     def draw(self,tol, reject_pnames, keep_ranges):

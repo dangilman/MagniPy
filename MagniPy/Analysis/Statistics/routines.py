@@ -2,6 +2,121 @@ from MagniPy.Analysis.Statistics.singledensity import SingleDensity
 from MagniPy.ABCsampler.Chain import WeightedSamples
 from copy import deepcopy, copy
 import numpy as np
+from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+
+def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=None, scale_scale = 1):
+
+    def build_latex(mean, sigma):
+        string = "$\sim$"+' '+"$\mathcal{N} \ $"+'('+str(mean)+', '+str(sigma)+')'
+        return string
+
+    if len(params) == 2:
+        ax_idx = 1
+        xbox = 0
+        ybox = 0.3
+        delta = 0.6*scale_scale
+        nsamp_scale = 0
+
+    elif len(params) == 3:
+        ax_idx = 1
+        xbox = 1.1
+        ybox = -0.1
+        delta = 0.75*scale_scale
+        nsamp_scale = 0
+
+    elif len(params) == 4:
+        ax_idx = 3
+        xbox = -1.1
+        ybox = -0.35
+        delta = 1.1*scale_scale
+        nsamp_scale = 0
+
+    elif len(params) == 5:
+        ax_idx = 4
+        xbox = -1.1
+        ybox = -0.85
+        delta = 1.3*scale_scale
+        nsamp_scale = 0
+
+    nlens_string = str(int(Nlenses)) + ' lenses'
+    flux_strings = []
+    weight_lines = []
+    if weighted[0] or weighted[1]:
+        weight_string = ['Parameter weights:']
+        nsamp_scale += 0
+    else:
+        weight_string = []
+        nsamp_scale += -0.2
+    weight_lines.append(Line2D([0], [0], color='k', lw=0))
+    do_weight = True
+
+    for i, ei in enumerate(errors):
+        if ei == 0:
+            flux_strings.append('pefect flux\nmeasurements')
+        else:
+            flux_strings.append(str(int(ei))+'% flux\nmeasurement errors')
+        if weighted[i]:
+            flux_strings[-1] += '\n(with re-weighted\nsamples)'
+
+        if do_weight and weighted[i]:
+            do_weight = False
+
+            for keyi in weight_params.keys():
+
+                mean, sigma = weight_params[keyi]['mean'][0], weight_params[keyi]['sigma'][0]
+
+                if keyi=='SIE_gamma':
+                    mean = r'$\gamma_{i}$'
+                    keyi = r'$\gamma_{\rm{macro}}$' + ' ' + build_latex(mean, sigma)
+                elif keyi == 'a0_area':
+                    keyi = r'$\sigma_{\rm{sub}}$'+ ' ' + build_latex(mean, sigma)
+                elif keyi == 'log_m_break':
+                    keyi = r'$\log_{10} \left(m_{\rm{hm}}\right)$' + ' ' + build_latex(mean, sigma)
+                elif keyi == 'source_size_kpc':
+                    sigma, mean = int(sigma*1000), int(mean*1000)
+                    keyi = 'source size' + ' ' + build_latex(mean, sigma)
+                elif keyi == 'LOS_normalization':
+                    keyi = r'$\delta_{\rm{LOS}}$' + ' ' + build_latex(mean, sigma)
+                weight_string += [keyi]
+                weight_lines.append(Line2D([0], [0], color='k', lw=0))
+
+    custom_lines = []
+    for col in range(0,len(errors)):
+        custom_lines.append(Line2D([0], [0], color=colors[col][1], lw=8))
+
+    legend1 = axes[ax_idx].legend(custom_lines, flux_strings, loc = 'lower left',
+                                  bbox_to_anchor = (xbox, ybox), fontsize=14, frameon = False,
+                                  labelspacing=1.5)
+
+    legend2 = axes[ax_idx].legend(weight_lines, weight_string, loc = 'lower left',
+                                  bbox_to_anchor = (xbox-0.35*delta, ybox-0.6*delta), fontsize=15, frameon = False)
+
+    axes[ax_idx].add_artist(legend1)
+
+    #axes[ax_idx].legend(custom_lines, flux_strings, loc = loc, fontsize=14)
+    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+1*delta+nsamp_scale), xycoords='axes fraction', fontsize=16)
+
+
+
+def weight_posteriors(params_to_reweight, posteriors_to_reweight, which_lenses):
+
+    weighted = False
+    for param in params_to_reweight.keys():
+        p = params_to_reweight[param]
+
+        if weighted:
+            weighted_posteriors = reweight_posteriors_individually(weighted_posteriors, param, p['mean'], p['sigma'],
+                                                                   np.array(which_lenses) - 1,
+                                                                   post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
+
+        else:
+            weighted_posteriors = reweight_posteriors_individually(posteriors_to_reweight, param, p['mean'], p['sigma'],
+                                                                   np.array(which_lenses) - 1,
+                                                                   post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
+            weighted = True
+
+    return weighted_posteriors
 
 def duplicate_with_subset(full_chain, lens_indicies):
 

@@ -11,10 +11,11 @@ class TriPlot(object):
     cmap = 'gist_heat'
 
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
-    default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),
+    default_contour_colors = [(colors.cnames['lightgreen'],colors.cnames['green'], 'k'),
+                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
+                              (colors.cnames['grey'], colors.cnames['black'], 'k'),
                               (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
-                              (colors.cnames['coral'], 'r', 'k'),
-                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
+                              (colors.cnames['coral'], 'r', 'k')]
     truth_color = 'r'
 
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
@@ -49,7 +50,7 @@ class TriPlot(object):
     def _init(self, fig_size):
 
         self._tick_lab_font = 12 * fig_size * 7**-1
-
+        self._label_font = 15 * fig_size * 7**-1
         plt.rcParams['axes.linewidth'] = 2.5*fig_size*7**-1
 
         plt.rcParams['xtick.major.width'] = 2.5*fig_size*7**-1
@@ -65,23 +66,25 @@ class TriPlot(object):
         return col * row + col + 1
 
     def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6,
-                 spacing = [0.1, 0.1, 0.05, 0.05, 0.2, 0.11], rebin=20):
+                 spacing = [0.1, 0.1, 0.05, 0.05, 0.2, 0.11], rebin=20, compute_bayes_factor = False):
 
-        axis = self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
-                       rebin = rebin)
+        axis, bayes_factor = self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
+                       rebin = rebin, compute_bayes_factor = compute_bayes_factor)
 
         plt.subplots_adjust(left=spacing[0], bottom=spacing[1], right=1-spacing[2], top=1-spacing[3],
                             wspace=spacing[4], hspace=spacing[5])
 
-        return axis, self.default_contour_colors
+        return axis, self.default_contour_colors, bayes_factor
 
-    def _makeplot(self, levels = None, filled_contours=None, contour_alpha = None, rebin=15):
+    def _makeplot(self, levels = None, filled_contours=None, contour_alpha = None, rebin=15,
+                  compute_bayes_factor = False):
 
         plot_index = 1
 
         densities = []
 
         axis = []
+        bayes_factor = {}
 
         for row in range(0, self._nparams):
             for col in range(0, self._nparams):
@@ -102,17 +105,28 @@ class TriPlot(object):
                         xlabel_on = True
 
                     oneD = Density1D(ax=ax, fig=self.fig)
+                    oneD.default_contour_colors = self.default_contour_colors
 
                     oneD.make_marginalized(cell.posterior, cell.pnames[0],
                                            cell.ranges[0][cell.pnames[0]],
                             xlabel_on=xlabel_on, truths=self._truths, rebin=rebin,
-                                           tick_label_font=self._tick_lab_font)
+                                           tick_label_font=self._tick_lab_font,
+                                           label_size=self._label_font)
+                    if compute_bayes_factor is not False:
+                        if cell.pnames[0] in compute_bayes_factor.keys():
+
+                            cut = compute_bayes_factor[cell.pnames[0]]
+                            _bayes_factor = oneD._compute_bayes_factor(cell.posterior,
+                                                       cell.ranges[0][cell.pnames[0]], cut, rebin)
+                            bayes_factor.update({cell.pnames[0]: _bayes_factor})
 
                 else:
 
-                    joint = Joint2D(cell.posterior, ax=ax, fig=self.fig)
+                    joint = Joint2D(cell.posterior, ax=ax, fig=self.fig, cmap=self.cmap)
+                    joint.default_contour_colors = self.default_contour_colors
                     _, joint_info = joint.make_plot(param_ranges=cell.ranges[0], param_names=cell.pnames, filled_contours=filled_contours,
-                                    contour_alpha=contour_alpha, levels=levels, truths=self._truths, tick_label_font=self._tick_lab_font)
+                                    contour_alpha=contour_alpha, levels=levels, truths=self._truths,
+                                                    tick_label_font=self._tick_lab_font, label_size=self._label_font)
 
                     if row != self._nparams-1:
                         ax.set_xticklabels([])
@@ -129,7 +143,7 @@ class TriPlot(object):
 
                 plot_index += 1
 
-        return axis
+        return axis, bayes_factor
 
     def _init_grid(self, nparams, param_names):
 

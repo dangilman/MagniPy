@@ -5,7 +5,7 @@ from matplotlib.ticker import FormatStrFormatter
 from MagniPy.util import confidence_interval
 from MagniPy.Analysis.Visualization.barplot import bar_plot
 
-class Joint2D:
+class Joint2D(object):
 
     plt.rcParams['axes.linewidth'] = 2.5
 
@@ -18,16 +18,15 @@ class Joint2D:
     plt.rcParams['ytick.minor.size'] = 2
 
     cmap = 'bone'
-
-    #default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
-    default_contour_colors = [(colors.cnames['grey'], colors.cnames['black'], 'k'),
-                                (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
-                              (colors.cnames['coral'], 'r', 'k'),
-                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
+    default_contour_colors = [(colors.cnames['lightgreen'], colors.cnames['green'], 'k'),
+                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
+                              (colors.cnames['grey'], colors.cnames['black'], 'k'),
+                              (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
+                              (colors.cnames['coral'], 'r', 'k')]
     truth_color = 'r'
     tick_font = 12
 
-    def __init__(self,simulations=[],ax=None,fig=None):
+    def __init__(self,simulations=[],ax=None,fig=None, cmap=None):
 
         self.simulation_densities = simulations
 
@@ -38,6 +37,8 @@ class Joint2D:
 
         self.fig = fig
         self.ax = ax
+        if cmap is not None:
+            self.cmap = cmap
 
     def _compute_single(self, densities):
 
@@ -99,11 +100,12 @@ class Joint2D:
                 self.ax.set_xticklabels([])
                 self.ax.set_yticklabels([])
 
-
             else:
 
                 self.ax.imshow(sim_density, extent=extent,
                                aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(sim_density))
+                #self.contours(x, y, sim_density, contour_colors=contour_colors[color_index],
+                #              contour_alpha=contour_alpha, extent=extent, aspect=aspect, levels=levels)
 
         if truths is not None:
 
@@ -127,8 +129,14 @@ class Joint2D:
             self.ax.set_xticks(xticks)
             if param_names[0] == 'source_size_kpc':
                 self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
+            elif param_names[0] == 'a0_area':
+                self.ax.set_xticklabels(np.round(np.array(xtick_labels),1), fontsize=tick_label_font)
             else:
-                self.ax.set_xticklabels(np.array(xtick_labels), fontsize=tick_label_font)
+                if param_names[0] == 'SIE_gamma':
+                    rotation = 45
+                else:
+                    rotation = 0
+                self.ax.set_xticklabels(np.array(xtick_labels), fontsize=tick_label_font, rotation=rotation)
                 self.ax.set_ylabel(xlabel_name, fontsize=label_size)
                 self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
 
@@ -146,7 +154,10 @@ class Joint2D:
 
             if param_names[1] == 'source_size_kpc':
                 self.ax.set_yticklabels(np.array(ytick_labels).astype(int), fontsize=tick_label_font)
+            elif param_names[1] == 'a0_area':
+                self.ax.set_yticklabels(np.round(np.array(ytick_labels),1), fontsize=tick_label_font)
             else:
+
                 self.ax.set_yticklabels(np.array(ytick_labels), fontsize=tick_label_font)
                 self.ax.set_ylabel(ylabel_name, fontsize=label_size)
                 self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
@@ -185,8 +196,8 @@ class Joint2D:
 
         elif pname == 'a0_area':
 
-            pname = r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$'
-            tick_labels = ticks
+            pname = r'$\sigma_{\rm{sub}}\times 10^{-2} \ \left[kpc^{-2}\right]$'
+            tick_labels = ticks*100
 
         elif pname == 'SIE_gamma':
             pname = r'$\gamma_{\rm{macro}}$'
@@ -267,8 +278,8 @@ class Joint2D:
 
         if pname == 'fsub':
             return '%.3f'
-        elif pname == r'$\sigma_{\rm{sub}} \ \left[kpc^{-2}\right]$':
-            return '%.3f'
+        elif pname == r'$\sigma_{\rm{sub}}\times 10^{-2} \ \left[kpc^{-2}\right]$':
+            return '%.1f'
         elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
         elif pname == 'c_power':

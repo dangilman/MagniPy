@@ -4,6 +4,7 @@ import sys
 from copy import copy
 import numpy as np
 from MagniPy.util import *
+import pandas
 
 def rerun_setup():
     def round_down(num, divisor):
@@ -86,24 +87,9 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
     if isinstance(errors,int) or isinstance(errors,float):
         errors = [errors]
 
-    errors = [0]+errors
-
     for error in errors:
 
         for k in range(1, N_pert + 1):
-
-            if error != 0:
-                flux_perturbations_obs = np.random.normal(0, error * fluxes_obs)
-            else:
-                flux_perturbations_obs = np.zeros_like(fluxes_obs)
-
-            perturbed_obs = fluxes_obs + flux_perturbations_obs
-
-            perturbed_ratios_obs = perturbed_obs*perturbed_obs[0]**-1
-
-            #np.savetxt(perturbed_fname_obs, perturbed_ratios_obs.reshape(1, 3), fmt='%.6f')
-
-            ############################################################################
 
             perturbed_path = chainpath_out + 'chain_stats/' + name + '/lens' + str(which_lens) + '/'
 
@@ -115,20 +101,25 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
 
             if error == 0:
 
-                flux_perturbations = np.zeros_like(fluxes)
+                perturbed_ratios_obs = fluxes_obs[1:]
+                perturbed_ratios = fluxes[:,1:]
 
             else:
-                sigma = float(error) * fluxes
-                flux_perturbations = np.random.normal(0, sigma)
+                flux_perturbations_obs = np.random.normal(0, float(error)*fluxes_obs)
+                flux_perturbations = np.random.normal(0, float(error)*fluxes)
 
-            perturbed_fluxes = fluxes + flux_perturbations
+                perturbed_fluxes_obs = fluxes_obs + flux_perturbations_obs
+                perturbed_fluxes = fluxes + flux_perturbations
 
-            for i in range(0,int(np.shape(perturbed_fluxes)[0])):
-                perturbed_fluxes[i,:] = perturbed_fluxes[i,:]*perturbed_fluxes[i,0]**-1
+                perturbed_ratios_obs = perturbed_fluxes_obs[1:]*perturbed_fluxes_obs[0]**-1
+                norm = perturbed_fluxes[:,0]
+                for col in range(0,4):
+                    perturbed_fluxes[:,col] *= norm ** -1
 
-            summary_statistic = np.sqrt(np.sum((perturbed_fluxes-perturbed_ratios_obs)**2,axis=1))
-            #elif stat == 'R':
-            #    summary_statistic = R(perturbed_fluxes,perturbed_obs,config=lens_config)
+                perturbed_ratios = perturbed_fluxes[:,1:]
+
+            diff = np.array((perturbed_ratios - perturbed_ratios_obs)**2)
+            summary_statistic = np.sqrt(np.sum(diff, 1))
 
             ordered_inds = np.argsort(summary_statistic)[0:keep_n]
 
@@ -144,7 +135,9 @@ def extract_chain_fromprocessed(chain_name = '', which_lens = None):
 
     #lens_config, _ = read_R_index(chainpath_out + chain_name + '/R_index_config.txt', 0)
 
-    fluxes = np.loadtxt(route+'modelfluxes.txt')
+    #fluxes = np.loadtxt(route+'modelfluxes.txt')
+    fluxes = np.squeeze(pandas.read_csv(route+'modelfluxes.txt',header=None,
+                                        sep=" ", index_col=None)).values
 
     with open(route + '/samples.txt', 'r') as f:
         lines = f.read().splitlines()

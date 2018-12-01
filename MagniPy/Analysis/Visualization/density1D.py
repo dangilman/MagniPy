@@ -49,13 +49,21 @@ class Density1D(Joint2D):
 
             if xlabel_on:
 
-                xticks = np.linspace(param_ranges[0], param_ranges[1], 6)
+                xticks = np.linspace(param_ranges[0], param_ranges[1], 5)
                 label_name, ticks, tick_labels = self._convert_param_names(param, xticks)
                 self.ax.set_xticks(xticks)
+
                 if param == 'source_size_kpc':
                     self.ax.set_xticklabels(tick_labels.astype(int), fontsize = tick_label_font)
+                elif param == 'a0_area':
+
+                    self.ax.set_yticklabels(np.round(np.array(tick_labels), 1), fontsize=tick_label_font)
                 else:
-                    self.ax.set_xticklabels(tick_labels, fontsize=tick_label_font)
+                    if param == 'a0_area':
+                        rotation = 0
+                    else:
+                        rotation = 0
+                    self.ax.set_xticklabels(tick_labels, fontsize=tick_label_font, rotation = rotation)
                     self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=label_name)))
 
                 self.ax.set_xlabel(label_name, fontsize=label_size)
@@ -74,6 +82,32 @@ class Density1D(Joint2D):
                 self.ax.axvline(truths[param], color='r', linestyle='--',linewidth=3)
 
         return
+
+    def _compute_bayes_factor(self, posterior, param_ranges, cut, rebin):
+
+        bayes_factors = []
+        for color_index, sim_density in enumerate(posterior):
+
+            marginalized_density = self._compute_single(sim_density)
+            bar_centers, bar_width, bar_heights = self._bar_plot_heights(marginalized_density,
+                                 np.linspace(param_ranges[0], param_ranges[1],10), rebin)
+            bar_heights = np.array(bar_heights)
+            bar_centers = np.array(bar_centers)
+            total = np.sum(bar_heights)
+            volume_low = cut - param_ranges[0]
+            volume_high = (param_ranges[1] - param_ranges[0]) - volume_low
+
+            summ = 0
+            center_cut = np.argmin(np.absolute(bar_centers - cut))
+            for i in range(0, center_cut):
+                summ += bar_heights[i]
+
+            prob_low = summ
+            prob_high = (total - summ)
+
+            bayes_factors.append(prob_high / prob_low)
+
+        return bayes_factors
 
     def _bar_plot_heights(self, bar_heights, coords, rebin):
 
