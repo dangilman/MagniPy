@@ -82,9 +82,6 @@ class ChainFromSamples(object):
         if which_lens is None:
             which_lens = numpy.arange(1,self.Nlenses+1)
 
-        #if n_pert > 1 and error == 0:
-        #    raise Exception('cannot average together identical posteriors.')
-
         for ind in which_lens:
 
             new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
@@ -199,7 +196,7 @@ class ChainFromSamples(object):
 
             return posteriors
 
-class SingleLens:
+class SingleLens(object):
 
     def __init__(self, zlens, zsource, weights=None, flux_path=''):
 
@@ -207,14 +204,20 @@ class SingleLens:
         self.posterior = None
         self.zlens, self.zsource = zlens, zsource
         self.flux_path = flux_path
+        self.parameters, self.statistic = [], []
+        self.fluxes = []
 
     def get_fluxes(self, idx):
 
-        self.fluxes = np.array(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
+        fluxes = np.array(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
                                    header=None,sep=" ",index_col=None).values.astype(float))
-        self.fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
+        self.fluxes.append(fluxes)
+        fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
+        self.fluxes_obs.append(fluxes_obs)
 
     def draw(self,tol, reject_pnames, keep_ranges):
+
+        self.posterior = []
 
         if reject_pnames is not None:
 
@@ -226,52 +229,30 @@ class SingleLens:
                     self.parameters[pname] = self.parameters[pname][indexes]
             print('keeping ' + str(len(self.parameters[pname])) + ' samples')
 
-        inds = numpy.argsort(self.statistic)[0:tol]
+        for i in range(0, len(self.statistic)):
+            inds = numpy.argsort(self.statistic[i])[0:tol]
 
-        new_param_dic = {}
+            new_param_dic = {}
 
-        for key in self.parameters.keys():
-            values = self.parameters[key]
-            new_param_dic.update({key: values[inds]})
+            for key in self.parameters[i].keys():
+                values = self.parameters[i][key]
+                new_param_dic.update({key: values[inds]})
 
-        self.posterior = PosteriorSamples(new_param_dic, weights=None)
-
-    def add_derived_parameter(self, new_pname, transformation_function, pnames):
-
-        args = {}
-
-        if not isinstance(pnames, list):
-            pnames = [pnames]
-
-        for name in pnames:
-            args.update({name: self.parameters[name]})
-
-        kwargs = {'zlens': self.zlens, 'zsrc': self.zsource}
-
-        self.parameters.update({new_pname:transformation_function(**args, **kwargs)})
+            self.posterior.append(PosteriorSamples(new_param_dic, weights=None))
 
     def add_parameters(self,pnames=None,fname=None,finite_inds=None):
 
         params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
 
-        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))[1:]
+        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
 
-        if hasattr(self, 'parameters'):
+        new_dictionary = {}
 
-            for i, pname in enumerate(pnames):
+        for i,pname in enumerate(pnames):
 
-                self.parameters[pname] = np.append(self.parameters[pname],
-                                                   params[:,i].astype(float))
+            new_dictionary.update({pname:params[:,i].astype(float)})
 
-        else:
-
-            new_dictionary = {}
-
-            for i,pname in enumerate(pnames):
-
-                new_dictionary.update({pname:params[:,i].astype(float)})
-
-            self.parameters = new_dictionary
+        self.parameters.append(new_dictionary)
 
     def add_weights(self,params,weight_function):
         """
@@ -288,15 +269,9 @@ class SingleLens:
 
         finite = numpy.where(numpy.isfinite(statistic))[0]
 
-        new_stat = statistic[finite].astype(float)[1:]
+        new_stat = statistic[finite].astype(float)
 
-        if hasattr(self, 'statistic'):
-
-            self.statistic = np.append(self.statistic, new_stat)
-
-        else:
-
-            self.statistic = statistic[finite].astype(float)[1:]
+        self.statistic.append(new_stat)
 
         return finite
 

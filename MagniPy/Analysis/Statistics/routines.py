@@ -101,20 +101,24 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
 
 def weight_posteriors(params_to_reweight, posteriors_to_reweight, which_lenses):
 
-    weighted = False
-    for param in params_to_reweight.keys():
-        p = params_to_reweight[param]
+    weighted_posteriors = []
+    for post_i in posteriors_to_reweight:
+        weighted = False
+        for param in params_to_reweight.keys():
+            p = params_to_reweight[param]
 
-        if weighted:
-            weighted_posteriors = reweight_posteriors_individually(weighted_posteriors, param, p['mean'], p['sigma'],
-                                                                   np.array(which_lenses) - 1,
-                                                                   post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
+            if weighted:
+                weighted_i = reweight_posteriors_individually(weighted_i, param, p['mean'], p['sigma'],
+                                                                       np.array(which_lenses) - 1,
+                                                                       post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
 
-        else:
-            weighted_posteriors = reweight_posteriors_individually(posteriors_to_reweight, param, p['mean'], p['sigma'],
-                                                                   np.array(which_lenses) - 1,
-                                                                   post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
-            weighted = True
+            else:
+                weighted_i = reweight_posteriors_individually(post_i, param, p['mean'], p['sigma'],
+                                                                       np.array(which_lenses) - 1,
+                                                                       post_to_reweight=np.arange(0, len(posteriors_to_reweight)))
+                weighted = True
+
+        weighted_posteriors.append(weighted_i)
 
     return weighted_posteriors
 
@@ -155,7 +159,9 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
             else:
                 kde_flag = use_kde_joint
 
-            single_density = SingleDensity(pnames=parameters, samples=posterior,
+            L = len(posterior)
+            for i, post in enumerate(posterior):
+                single_density = SingleDensity(pnames=parameters, samples=post,
                                            pranges=pranges,
                                            reweight=reweight,
                                            kernel_function='Gaussian',
@@ -163,9 +169,13 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
                                            bandwidth_scale=bandwidth_scale, use_kde=kde_flag,
                                            steps=steps)
 
-            density, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
+                den, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
+                if i == 0:
+                    density = den
+                else:
+                    density += den
 
-            densities.append(density)
+            densities.append(density*L**-1)
 
         sim_densities.append(densities)
         sim_pranges.append(param_ranges)
