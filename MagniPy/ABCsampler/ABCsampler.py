@@ -241,4 +241,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-runABC(prefix+'data/hoffman_run_2/',1)
+runABC(prefix+'data/hoffman_run_3/',4801)
