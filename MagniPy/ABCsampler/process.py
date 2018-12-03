@@ -177,8 +177,8 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
-                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.075, logmhm_sigma = 0.05,
-                   src_size_sigma = 0.005, a0_area_sigma = 0.001, LOS_norm_sigma = 0.05):
+                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.07, logmhm_sigma = 0.05,
+                   src_size_sigma = 0.003, a0_area_sigma = 0.002, LOS_norm_sigma = 0.05):
 
     name = 'WDM_sim_7.7_.012'
 
@@ -206,30 +206,33 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
     process_samples(new_name, which_lens_indexes, errors = errors, N_pert=N_pert)
 
 def resample_sys(num, process_only):
-
+    num = int(num)
+    errors = [0, 0.03, 0.04, 0.06]
     if num == 1:
-        resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.02,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.03, logmhm=8, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 2:
-        resample_chain(a0_area=0.03, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 3:
-        resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 4:
-        resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.015, logmhm=8, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 5:
-        resample_chain(a0_area=0.015, logmhm=7.3, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 6:
-        resample_chain(a0_area=0.015, logmhm=4.9, src_size=0.035, LOS_norm=1, errors=[0,0.04,0.08],
-                       N_pert=30, process_only=process_only)
+        resample_chain(a0_area=0.015, logmhm=4.9, src_size=0.0325, LOS_norm=1, errors=errors,
+                       N_pert=20, process_only=process_only)
     elif num == 7:
-        resample_chain(a0_area=0.025, logmhm=8, src_size=0.033, LOS_norm=1.1, errors=[0],
+        resample_chain(a0_area=0.025, logmhm=8, src_size=0.0325, LOS_norm=1.1, errors=[0],
                        N_pert=1, process_only=False)
+    elif num == 8:
+        resample_chain(a0_area=0.025, logmhm=8, src_size=0.0325, LOS_norm=1.0, errors=[0, 0.03, 0.06],
+                       N_pert=10, process_only=False)
 
-
-resample_sys(1, False)
-#if __name__ == '__main__':
-#    resample_sys(sys.argv[1], True)
+#resample_sys(1, False)
+import sys
+resample_sys(sys.argv[1], False)
