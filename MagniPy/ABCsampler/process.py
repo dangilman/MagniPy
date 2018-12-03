@@ -207,31 +207,28 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
 def resample_sys(num, process_only):
     num = int(num)
-    errors = [0, 0.03, 0.04, 0.06]
+    errors = [0, 0.03, 0.04, 0.06, 0.08]
+    src_mean = 0.035
+    
     if num == 1:
-        resample_chain(a0_area=0.03, logmhm=8, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.03, logmhm=8, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
     elif num == 2:
-        resample_chain(a0_area=0.03, logmhm=7.3, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.03, logmhm=7.3, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
     elif num == 3:
-        resample_chain(a0_area=0.03, logmhm=4.9, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.03, logmhm=4.9, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
     elif num == 4:
-        resample_chain(a0_area=0.015, logmhm=8, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.015, logmhm=8, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
     elif num == 5:
-        resample_chain(a0_area=0.015, logmhm=7.7, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.015, logmhm=7.7, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
     elif num == 6:
-        resample_chain(a0_area=0.015, logmhm=4.9, src_size=0.0325, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.015, logmhm=4.9, src_size = src_mean, LOS_norm=1, errors=errors,
                        N_pert=20, process_only=process_only)
-    elif num == 7:
-        resample_chain(a0_area=0.025, logmhm=8, src_size=0.0325, LOS_norm=1.1, errors=[0],
-                       N_pert=1, process_only=False)
-    elif num == 8:
-        resample_chain(a0_area=0.025, logmhm=8, src_size=0.0325, LOS_norm=1.0, errors=[0, 0.03, 0.06],
-                       N_pert=10, process_only=False)
+
 
 #resample_sys(1, False)
 import sys
