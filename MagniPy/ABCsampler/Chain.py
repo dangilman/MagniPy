@@ -23,7 +23,7 @@ class ChainFromChain(object):
 
             new_lens = self._chain_parent.lenses[ind]
 
-            if not hasattr(new_lens, 'fluxes') and load_flux:
+            if len(new_lens.fluxes) == 0 and load_flux:
                 new_lens.get_fluxes(ind)
 
             self.lenses.append(new_lens)
@@ -50,15 +50,15 @@ class ChainFromChain(object):
 
             else:
 
-                new_obs = lens.obs + np.random.normal(0, float(error)*lens.obs)
+                new_obs = lens.fluxes_obs + np.random.normal(0, float(error)*lens.fluxes_obs)
                 new_fluxes = lens.fluxes + np.random.normal(0, float(error)*lens.fluxes)
 
                 new_obs_ratio = new_obs*new_obs[0]**-1
                 new_fluxes_ratio = new_fluxes * new_fluxes[0,:]**-1
 
-                new_statistic = np.sqrt(np.sum(new_obs_ratio**2 - new_fluxes_ratio**2, axis=1))
+                new_statistic = np.sqrt(np.sum((new_obs_ratio - new_fluxes_ratio)**2, axis=1))
 
-            lens.statistic = new_statistic
+            lens.statistic[0] = new_statistic
 
 class ChainFromSamples(object):
 
@@ -206,14 +206,17 @@ class SingleLens(object):
         self.flux_path = flux_path
         self.parameters, self.statistic = [], []
         self.fluxes = []
+        self.fluxes_obs = []
 
     def get_fluxes(self, idx):
 
         fluxes = np.array(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
                                    header=None,sep=" ",index_col=None).values.astype(float))
+
         self.fluxes.append(fluxes)
         fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
         self.fluxes_obs.append(fluxes_obs)
+
 
     def draw(self,tol, reject_pnames, keep_ranges):
 

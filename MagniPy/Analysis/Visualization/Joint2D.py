@@ -110,12 +110,14 @@ class Joint2D(object):
         if truths is not None:
 
             truth1,truth2 = truths[param_names[0]],truths[param_names[1]]
-
-            self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
-            #if inside2:
-            self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
-            #if inside1 and inside2:
-            self.ax.scatter(truth1,truth2,color=self.truth_color,s=50)
+            if truth1 is None or truth2 is None:
+                pass
+            else:
+                self.ax.axvline(truth1,color=self.truth_color,linestyle='--',linewidth=3)
+                #if inside2:
+                self.ax.axhline(truth2,color=self.truth_color,linestyle='--',linewidth=3)
+                #if inside1 and inside2:
+                self.ax.scatter(truth1,truth2,color=self.truth_color,s=50)
 
         if xlabel_on:
 
