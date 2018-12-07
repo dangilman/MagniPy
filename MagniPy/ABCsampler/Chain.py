@@ -21,7 +21,7 @@ class ChainFromChain(object):
 
         for ind in indicies:
 
-            new_lens = self._chain_parent.lenses[ind]
+            new_lens = deepcopy(self._chain_parent.lenses[ind])
 
             if len(new_lens._fluxes) == 0 and load_flux:
                 new_lens._load_sim(ind, self._chain_parent.params_varied)

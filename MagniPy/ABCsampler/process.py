@@ -28,10 +28,10 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
         for i in range(0, Nbootstraps):
 
             lens_list = np.random.randint(1, len(which_lenses), nlens)
-
+            print(lens_list)
             chain = ChainFromChain(chain_master, lens_list, load_flux=True)
 
-            chain._add_perturbations(error, 5000)
+            chain._add_perturbations(error, 2000)
 
             posteriors = chain.get_posteriors(tol)
 
@@ -166,7 +166,7 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
-                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.1, logmhm_sigma = 0.025,
+                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.1, logmhm_sigma = 0.015,
                    src_size_sigma = 0.006, a0_area_sigma = 0.001, LOS_norm_sigma = 0.025,
                    name='WDM_sim_7.7_.012', which_lens_indexes = None):
 
@@ -195,11 +195,11 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
 def resample_sys(num, process_only):
     num = int(num)
-    errors = [0, 0.04, 0.08]
+    errors = [0, 0.08]
     src_mean = 0.03
 
     if num == 1:
-        resample_chain(a0_area=0.0125, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.012, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
                    which_lens_indexes=np.arange(1, 47))
     elif num == 2:
@@ -217,12 +217,12 @@ def resample_sys(num, process_only):
                    which_lens_indexes=np.arange(1, 47))
     elif num == 5:
         resample_chain(a0_area=0.015, logmhm=7.7, src_size=src_mean, LOS_norm=1, errors=errors,
-                       N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
+                       N_pert=15, process_only=process_only, name='WDM_sim_7.7_.012',
                        which_lens_indexes=np.arange(1, 47))
 
 #process_raw('jpl_sim1', np.arange(1,6))
 
-#resample_sys(5, False)
+#resample_sys(5, True)
 #resample_sys(5, False)
 #resample_sys(5, False)
 #resample_sys(7, False)

@@ -32,6 +32,9 @@ class Density1D(Joint2D):
             low_95 = self._quick_confidence(bar_centers, bar_heights, 0.05)
             print(high_95)
             print(low_95)
+            if param == 'log_m_break' and truths[param]>5:
+                info = zip(bar_centers, bar_heights)
+                print('likelihoods: '+str(list(info)))
             if max(bar_heights) > max_height:
                 max_height = max(bar_heights)
 
