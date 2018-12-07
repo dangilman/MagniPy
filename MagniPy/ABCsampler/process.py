@@ -10,7 +10,7 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
     if not isinstance(Nlenses, list):
         Nlenses = [Nlenses]
 
-    chain_master = ChainFromSamples(chain_name, which_lens = which_lenses, error=0, n_pert=1)
+    chain_master = ChainFromSamples(chain_name, which_lens = which_lenses, error=0, n_pert=1, load=False)
     #params_reject = ['a0_area', 'log_m_break']
     #reject_ranges = [[0, 0.045], [4.8, 10]]
 

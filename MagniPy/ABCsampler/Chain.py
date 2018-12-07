@@ -75,7 +75,7 @@ class ChainFromChain(object):
 class ChainFromSamples(object):
 
     def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
-                 deplete = False, deplete_fac = 0.5, n_pert = 1):
+                 deplete = False, deplete_fac = 0.5, n_pert = 1, load = True):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -101,27 +101,28 @@ class ChainFromSamples(object):
             new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
                                                                     chain_name+'/')
 
-            for ni in range(0,n_pert):
-                #print('loading '+str(ni+1)+'...')
-                fname = 'statistic_'+str(error)+'error_'+str(ni+1)+'.txt'
-                finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
+            if load:
+                for ni in range(0,n_pert):
+                    #print('loading '+str(ni+1)+'...')
+                    fname = 'statistic_'+str(error)+'error_'+str(ni+1)+'.txt'
+                    finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
 
-                fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
-                new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
-                                    fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
+                    fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
+                    new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
+                                        fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
 
-            if deplete:
+                if deplete:
 
-                L = int(len(new_lens.statistic))
+                    L = int(len(new_lens.statistic))
 
-                keep = np.arange(0, L)
-                u = np.random.rand(L)
-                keep = keep[np.where(u <= deplete_fac)]
+                    keep = np.arange(0, L)
+                    u = np.random.rand(L)
+                    keep = keep[np.where(u <= deplete_fac)]
 
-                for pname in new_lens.parameters.keys():
+                    for pname in new_lens.parameters.keys():
 
-                    new_lens.parameters[pname] = new_lens.parameters[pname][keep]
-                new_lens.statistic = new_lens.statistic[keep]
+                        new_lens.parameters[pname] = new_lens.parameters[pname][keep]
+                    new_lens.statistic = new_lens.statistic[keep]
 
             self.lenses.append(new_lens)
 
