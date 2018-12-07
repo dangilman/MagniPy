@@ -55,7 +55,7 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
         if ei == 0:
             flux_strings.append('pefect flux\nmeasurements')
         else:
-            flux_strings.append(str(int(ei))+'% flux\nmeasurement errors')
+            flux_strings.append(str(int(ei))+'% flux\nuncertainties')
         if weighted[i]:
             flux_strings[-1] += '\n(with re-weighted\nsamples)'
 
@@ -188,26 +188,19 @@ def duplicate_with_cuts(full_chain, tol, pnames_reject_list, keep_ranges_list):
 
     assert len(pnames_reject_list) == len(keep_ranges_list)
 
-    posteriors, prange_list = [], []
+    posterior = chain.get_posteriors(tol, reject_pnames=pnames_reject_list,
+                                     keep_ranges=keep_ranges_list)
 
-    for pnames_reject, keep_ranges in zip(pnames_reject_list, keep_ranges_list):
+    if keep_ranges_list is None:
+        pranges_new = chain.pranges
+    else:
 
-        posterior = chain.get_posteriors(tol, reject_pnames=pnames_reject,
-                                         keep_ranges=keep_ranges)
-        posteriors.append(posterior)
+        pranges_new = copy(chain.pranges)
 
-        if keep_ranges is None:
-            prange_list.append(chain.pranges)
-        else:
+        for k, name in enumerate(pnames_reject_list):
+            pranges_new.update({name:keep_ranges_list[k]})
 
-            range_copy = copy(chain.pranges)
-
-            for k, name in enumerate(pnames_reject):
-                range_copy.update({name:keep_ranges[k]})
-
-            prange_list.append(range_copy)
-
-    return posteriors, prange_list
+    return posterior, pranges_new
 
 def reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
                                      index_lists, post_to_reweight, weight_type = 'Gaussian'):

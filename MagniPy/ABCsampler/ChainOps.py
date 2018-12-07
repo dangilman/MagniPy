@@ -1,7 +1,7 @@
 from MagniPy.paths import *
 from MagniPy.Analysis.Statistics.singledensity import SingleDensity
 import sys
-from copy import copy
+from copy import deepcopy, copy
 import numpy as np
 from MagniPy.util import *
 import pandas
@@ -109,11 +109,15 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
                 flux_perturbations = np.random.normal(0, float(error)*fluxes)
 
                 perturbed_fluxes_obs = fluxes_obs + flux_perturbations_obs
+
                 perturbed_fluxes = fluxes + flux_perturbations
 
                 perturbed_ratios_obs = perturbed_fluxes_obs[1:]*perturbed_fluxes_obs[0]**-1
-                norm = perturbed_fluxes[:,0]
+
+                norm = deepcopy(perturbed_fluxes[:,0])
+
                 for col in range(0,4):
+
                     perturbed_fluxes[:,col] *= norm ** -1
 
                 perturbed_ratios = perturbed_fluxes[:,1:]
@@ -124,7 +128,7 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
             ordered_inds = np.argsort(summary_statistic)[0:keep_n]
 
             np.savetxt(perturbed_path + 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',X=summary_statistic[ordered_inds])
-            np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds])
+            np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds,:])
 
             if error == 0:
                 break

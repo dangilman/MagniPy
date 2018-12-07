@@ -3,7 +3,7 @@ from MagniPy.Analysis.KDE.kde import *
 class SingleDensity(object):
 
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
-                 steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
+                 steps=50,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
         self._use_kde = use_kde

@@ -26,9 +26,9 @@ class Joint2D(object):
     truth_color = 'r'
     tick_font = 12
 
-    def __init__(self,simulations=[],ax=None,fig=None, cmap=None):
+    def __init__(self, posterior=[], ax=None, fig=None, cmap=None):
 
-        self.simulation_densities = simulations
+        self.simulation_densities = posterior
 
         if fig is None:
             fig = plt.figure(1)
@@ -132,7 +132,8 @@ class Joint2D(object):
             if param_names[0] == 'source_size_kpc':
                 self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
             elif param_names[0] == 'a0_area':
-                self.ax.set_xticklabels(np.round(np.array(xtick_labels),1), fontsize=tick_label_font)
+
+                self.ax.set_xticklabels(np.round(np.array(xtick_labels),2), fontsize=tick_label_font, rotation = 45)
             else:
                 if param_names[0] == 'SIE_gamma':
                     rotation = 45
@@ -223,14 +224,19 @@ class Joint2D(object):
         if filled_contours:
 
             plt.contour(X, Y, grid, levels, extent=extent,
-                              colors=contour_colors, linewidths=linewidths, zorder=1)
-            plt.contourf(X, Y, grid, levels, colors=contour_colors, alpha=contour_alpha, zorder=1,
+                              colors=contour_colors, linewidths=linewidths, zorder=1, linestyles=['dashed', 'solid'])
+
+            plt.contourf(X, Y, grid, [levels[0], levels[1]], colors=[contour_colors[0],contour_colors[1]], alpha=contour_alpha*0.5, zorder=1,
+                         extent=extent, aspect=aspect)
+
+            plt.contourf(X, Y, grid, [levels[1], levels[2]], colors=[contour_colors[1],contour_colors[2]], alpha=contour_alpha, zorder=1,
                          extent=extent, aspect=aspect)
 
 
         else:
             plt.contour(X, Y, grid, extent=extent, colors=contour_colors,
-                                  levels=np.array(levels) * np.max(grid), linewidths=linewidths)
+                                  levels=np.array(levels) * np.max(grid),
+                        linewidths=linewidths)
 
     def _get_1d(self,pname,density,pnames):
 
@@ -281,7 +287,7 @@ class Joint2D(object):
         if pname == 'fsub':
             return '%.3f'
         elif pname == r'$\sigma_{\rm{sub}}\times 10^{-2} \ \left[kpc^{-2}\right]$':
-            return '%.1f'
+            return '%.2f'
         elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
         elif pname == 'c_power':

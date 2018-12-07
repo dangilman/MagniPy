@@ -2,14 +2,20 @@ from MagniPy.ABCsampler.ChainOps import *
 from MagniPy.ABCsampler.Chain import ChainFromChain, ChainFromSamples
 from MagniPy.Analysis.Statistics.routines import build_densities, barplothist
 from MagniPy.Analysis.Statistics.routines import reweight_posteriors_individually
+from MagniPy.Analysis.Statistics.routines import duplicate_with_cuts
 
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, error,
-                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=20):
+                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=40):
 
     if not isinstance(Nlenses, list):
         Nlenses = [Nlenses]
 
     chain_master = ChainFromSamples(chain_name, which_lens = which_lenses, error=0, n_pert=1)
+    #params_reject = ['a0_area', 'log_m_break']
+    #reject_ranges = [[0, 0.045], [4.8, 10]]
+
+    #chain_master, pranges = duplicate_with_cuts(chain_master, tol, pnames_reject_list=params_reject,
+    #                                          keep_ranges_list=reject_ranges)
 
     low95_interval, low68_interval = [], []
     high95_interval, high68_interval = [], []
@@ -23,9 +29,9 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
 
             lens_list = np.random.randint(1, len(which_lenses), nlens)
 
-            chain = ChainFromChain(chain_master, lens_list)
+            chain = ChainFromChain(chain_master, lens_list, load_flux=True)
 
-            chain._add_perturbations(error)
+            chain._add_perturbations(error, 5000)
 
             posteriors = chain.get_posteriors(tol)
 
@@ -57,17 +63,11 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
             h95 = quick_confidence(bar_centers, bar_heights, 0.95)
             l95 = quick_confidence(bar_centers, bar_heights, 0.05)
 
-            l68, h68 = quick_confidence(bar_centers, bar_heights, 0.68), quick_confidence(bar_centers, bar_heights, 0.22)
-
             low95.append(l95)
             high95.append(h95)
-            low68.append(l68)
-            high68.append(h68)
 
-        low95_interval.append(low95)
-        high95_interval.append(high95)
-        low68_interval.append(low68)
-        high68_interval.append(high68)
+        low95_interval.append(np.mean(low95))
+        high95_interval.append(np.mean(high95))
 
     return {'Nlenses':Nlenses, 'low_95':low95_interval, 'high_95':high95_interval}
 
@@ -166,10 +166,11 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
-                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.1, logmhm_sigma = 0.05,
-                   src_size_sigma = 0.004, a0_area_sigma = 0.002, LOS_norm_sigma = 0.035):
+                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.1, logmhm_sigma = 0.025,
+                   src_size_sigma = 0.006, a0_area_sigma = 0.001, LOS_norm_sigma = 0.025,
+                   name='WDM_sim_7.7_.012', which_lens_indexes = None):
 
-    name = 'WDM_sim_7.7_.012'
+    #name = 'WDM_sim_7.7_.012'
 
     if logmhm > 6:
         new_name = 'WDM_'+str(logmhm)+'_'
@@ -180,8 +181,6 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
     if LOS_norm != 1:
         new_name += '_LOS'+str(LOS_norm)
-
-    which_lens_indexes = np.arange(1,27)
 
     if process_only is False:
         params_new = {'a0_area': [a0_area, a0_area_sigma], 'log_m_break': [logmhm, logmhm_sigma],
@@ -198,33 +197,35 @@ def resample_sys(num, process_only):
     num = int(num)
     errors = [0, 0.04, 0.08]
     src_mean = 0.03
-    
+
     if num == 1:
-        resample_chain(a0_area=0.03, logmhm=8, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
+        resample_chain(a0_area=0.0125, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+                   N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
+                   which_lens_indexes=np.arange(1, 47))
     elif num == 2:
-        resample_chain(a0_area=0.03, logmhm=7.5, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
+        resample_chain(a0_area=0.023, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+                   N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
+                   which_lens_indexes=np.arange(1, 47))
     elif num == 3:
-        resample_chain(a0_area=0.03, logmhm=4.9, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
+        resample_chain(a0_area=0.0125, logmhm=7.7, src_size=src_mean, LOS_norm=1, errors=errors,
+                   N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
+                   which_lens_indexes=np.arange(1, 42))
+
     elif num == 4:
-        resample_chain(a0_area=0.012, logmhm=8, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
+        resample_chain(a0_area=0.02, logmhm=7.8, src_size=src_mean, LOS_norm=1, errors=errors,
+                   N_pert=15, process_only=process_only, name='WDM_sim_7.7_.012',
+                   which_lens_indexes=np.arange(1, 47))
     elif num == 5:
-        resample_chain(a0_area=0.012, logmhm=7.5, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
-    elif num == 6:
-        resample_chain(a0_area=0.012, logmhm=4.9, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
-    elif num == 7:
-        resample_chain(a0_area=0.02, logmhm=7.7, src_size = src_mean, LOS_norm=1, errors=errors,
-                       N_pert=20, process_only=process_only)
+        resample_chain(a0_area=0.015, logmhm=7.7, src_size=src_mean, LOS_norm=1, errors=errors,
+                       N_pert=10, process_only=process_only, name='WDM_sim_7.7_.012',
+                       which_lens_indexes=np.arange(1, 47))
+
+#process_raw('jpl_sim1', np.arange(1,6))
 
 #resample_sys(5, False)
-#print(bootstrap_intervals('WDM_8_sigma0.015_srcsize0.03', 26, np.arange(1,27), 'log_m_break', 2, 0.04,
-#                        2000, param_weights_individual=None, xtrim=None, ytrim=None, bins=30))
+#resample_sys(5, False)
+#resample_sys(5, False)
 #resample_sys(7, False)
 #import sys
 #resample_sys(sys.argv[1], False)
-process_samples('WDM_sim_7.7_.012', np.arange(1,27), N_pert=10, errors=[0,0.04,0.08])
+#process_samples('WDM_sim_7.7_.012', np.arange(1,27), N_pert=10, errors=[0,0.04,0.08])

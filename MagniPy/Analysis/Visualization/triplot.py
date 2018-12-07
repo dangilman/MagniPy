@@ -18,6 +18,9 @@ class TriPlot(object):
                               (colors.cnames['coral'], 'r', 'k')]
     truth_color = 'r'
 
+    spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
+    spacing_scale = 1
+
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
                  fig_size = 8, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
                  kde_marginal = True, reweight = True):
@@ -65,14 +68,14 @@ class TriPlot(object):
 
         return col * row + col + 1
 
-    def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6,
-                 spacing = [0.1, 0.1, 0.05, 0.05, 0.2, 0.11], rebin=20, compute_bayes_factor = False):
+    def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6, rebin=20, compute_bayes_factor = False):
 
         axis, bayes_factor = self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
                        rebin = rebin, compute_bayes_factor = compute_bayes_factor)
 
-        plt.subplots_adjust(left=spacing[0], bottom=spacing[1], right=1-spacing[2], top=1-spacing[3],
-                            wspace=spacing[4], hspace=spacing[5])
+        plt.subplots_adjust(left=self.spacing[0]*self.spacing_scale, bottom=self.spacing[1]*self.spacing_scale,
+                            right=1-self.spacing[2]*self.spacing_scale, top=1-self.spacing[3]*self.spacing_scale,
+                            wspace=self.spacing[4]*self.spacing_scale, hspace=self.spacing[5]*self.spacing_scale)
 
         return axis, self.default_contour_colors, bayes_factor
 
@@ -107,11 +110,11 @@ class TriPlot(object):
                     oneD = Density1D(ax=ax, fig=self.fig)
                     oneD.default_contour_colors = self.default_contour_colors
 
-                    oneD.make_marginalized(cell.posterior, cell.pnames[0],
-                                           cell.ranges[0][cell.pnames[0]],
-                            xlabel_on=xlabel_on, truths=self._truths, rebin=rebin,
-                                           tick_label_font=self._tick_lab_font,
-                                           label_size=self._label_font)
+                    oneD.make_plot_1D(cell.posterior, cell.pnames[0],
+                                      cell.ranges[0][cell.pnames[0]],
+                                      xlabel_on=xlabel_on, truths=self._truths, rebin=rebin,
+                                      tick_label_font=self._tick_lab_font,
+                                      label_size=self._label_font)
                     if compute_bayes_factor is not False:
                         if cell.pnames[0] in compute_bayes_factor.keys():
 

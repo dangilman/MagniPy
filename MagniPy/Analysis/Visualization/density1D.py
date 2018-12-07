@@ -12,9 +12,9 @@ class Density1D(Joint2D):
                               (colors.cnames['coral'], 'r', 'k'),
                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')]
 
-    def make_marginalized(self, sim_densities, param, param_ranges,
-                          contour_colors=None, contour_alpha=0.6, xlabel_on=False,
-                          truths=None, rebin=15, label_size=18, tick_label_font=12):
+    def make_plot_1D(self, sim_densities, param, param_ranges,
+                     contour_colors=None, contour_alpha=0.6, xlabel_on=False,
+                     truths=None, rebin=15, label_size=18, tick_label_font=12):
 
         if contour_colors is None:
             contour_colors = self.default_contour_colors
@@ -30,7 +30,8 @@ class Density1D(Joint2D):
 
             high_95 = self._quick_confidence(bar_centers, bar_heights, 0.95)
             low_95 = self._quick_confidence(bar_centers, bar_heights, 0.05)
-
+            print(high_95)
+            print(low_95)
             if max(bar_heights) > max_height:
                 max_height = max(bar_heights)
 
@@ -44,7 +45,10 @@ class Density1D(Joint2D):
             self.ax.set_yticklabels([])
             self.ax.set_yticks([])
 
-            self.ax.axvline(low_95, color=contour_colors[color_index][1], linestyle = '-.', linewidth = 3, alpha=0.8)
+            if np.absolute(low_95 - truths[param]) < 0.4 and param == 'log_m_break' and truths[param]<5.5:
+                pass
+            else:
+                self.ax.axvline(low_95, color=contour_colors[color_index][1], linestyle = '-.', linewidth = 3, alpha=0.8)
             self.ax.axvline(high_95, color=contour_colors[color_index][1], linestyle='-.', linewidth=3, alpha = 0.8)
 
             if xlabel_on:
@@ -81,6 +85,8 @@ class Density1D(Joint2D):
                     self.ax.axvline(param_ranges[0]*1.05, color='r', linestyle='--', linewidth=3)
                 else:
                     self.ax.axvline(truths[param], color='r', linestyle='--',linewidth=3)
+
+        self.ax.set_aspect((bar_centers[-1] - bar_centers[0])*(max_height*1.15)**-1)
 
         return
 

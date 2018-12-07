@@ -23,8 +23,8 @@ class ChainFromChain(object):
 
             new_lens = self._chain_parent.lenses[ind]
 
-            if len(new_lens.fluxes) == 0 and load_flux:
-                new_lens.get_fluxes(ind)
+            if len(new_lens._fluxes) == 0 and load_flux:
+                new_lens._load_sim(ind, self._chain_parent.params_varied)
 
             self.lenses.append(new_lens)
 
@@ -40,7 +40,7 @@ class ChainFromChain(object):
 
         return posteriors
 
-    def _add_perturbations(self, error):
+    def _add_perturbations(self, error, L):
 
         for lens in self.lenses:
 
@@ -50,13 +50,25 @@ class ChainFromChain(object):
 
             else:
 
-                new_obs = lens.fluxes_obs + np.random.normal(0, float(error)*lens.fluxes_obs)
-                new_fluxes = lens.fluxes + np.random.normal(0, float(error)*lens.fluxes)
+                new_obs = lens._fluxes_obs[0] + np.random.normal(0, float(error)*lens._fluxes_obs[0])
+                new_fluxes = lens._fluxes[0] + np.random.normal(0, float(error)*lens._fluxes[0])
 
                 new_obs_ratio = new_obs*new_obs[0]**-1
-                new_fluxes_ratio = new_fluxes * new_fluxes[0,:]**-1
 
-                new_statistic = np.sqrt(np.sum((new_obs_ratio - new_fluxes_ratio)**2, axis=1))
+                norm = deepcopy(new_fluxes[:, 0])
+
+                for col in range(0, 4):
+                    new_fluxes[:, col] *= norm ** -1
+
+                perturbed_ratios = new_fluxes[:, 1:]
+                diff = np.array((perturbed_ratios - new_obs_ratio[1:]) ** 2)
+                summary_statistic = np.sqrt(np.sum(diff, 1))
+
+                ordered_inds = np.argsort(summary_statistic)[0:L]
+
+                new_statistic = summary_statistic[ordered_inds]
+                for pname in lens._parameters[0].keys():
+                    lens.parameters[0][pname] = lens._parameters[0][pname][ordered_inds]
 
             lens.statistic[0] = new_statistic
 
@@ -83,6 +95,8 @@ class ChainFromSamples(object):
             which_lens = numpy.arange(1,self.Nlenses+1)
 
         for ind in which_lens:
+
+            #print('loading '+str(ind)+'...')
 
             new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
                                                                     chain_name+'/')
@@ -205,18 +219,27 @@ class SingleLens(object):
         self.zlens, self.zsource = zlens, zsource
         self.flux_path = flux_path
         self.parameters, self.statistic = [], []
-        self.fluxes = []
-        self.fluxes_obs = []
+        self._fluxes = []
+        self._fluxes_obs = []
+        self._parameters = []
 
-    def get_fluxes(self, idx):
+    def _load_sim(self, idx, pnames):
 
         fluxes = np.array(pandas.read_csv(self.flux_path+'lens'+str(idx)+'/modelfluxes.txt',
                                    header=None,sep=" ",index_col=None).values.astype(float))
 
-        self.fluxes.append(fluxes)
+        self._fluxes.append(fluxes)
         fluxes_obs = np.loadtxt(self.flux_path+'lens'+str(idx)+'/observedfluxes.txt')
-        self.fluxes_obs.append(fluxes_obs)
+        self._fluxes_obs.append(fluxes_obs)
 
+        parameters = np.loadtxt(self.flux_path+'lens'+str(idx)+'/samples.txt')
+        new_dictionary = {}
+
+        for i,pname in enumerate(pnames):
+
+            new_dictionary.update({pname:parameters[:,i].astype(float)})
+
+        self._parameters.append(new_dictionary)
 
     def draw(self,tol, reject_pnames, keep_ranges):
 
@@ -224,13 +247,15 @@ class SingleLens(object):
 
         if reject_pnames is not None:
 
-            for reject_pname, keep_range in zip(reject_pnames, keep_ranges):
-                samps = self.parameters[reject_pname]
-                indexes = numpy.where(numpy.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
+            for i in range(0, len(self.statistic)):
 
-                for pname in self.parameters.keys():
-                    self.parameters[pname] = self.parameters[pname][indexes]
-            print('keeping ' + str(len(self.parameters[pname])) + ' samples')
+                for reject_pname, keep_range in zip(reject_pnames, keep_ranges):
+                    samps = self.parameters[i][reject_pname]
+                    indexes = numpy.where(numpy.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
+
+                    for pname in self.parameters[i].keys():
+                        self.parameters[i][pname] = self.parameters[i][pname][indexes]
+                #print('keeping ' + str(len(self.parameters[i][pname])) + ' samples')
 
         for i in range(0, len(self.statistic)):
             inds = numpy.argsort(self.statistic[i])[0:tol]
