@@ -42,7 +42,7 @@ class ChainFromChain(object):
 
     def _add_perturbations(self, error, L):
 
-        for lens in self.lenses:
+        for i, lens in enumerate(self.lenses):
 
             if error == 0:
 
@@ -67,6 +67,11 @@ class ChainFromChain(object):
                 ordered_inds = np.argsort(summary_statistic)[0:L]
 
                 new_statistic = summary_statistic[ordered_inds]
+
+                lens.add_parameters(pnames=self.params_varied,fname=chainpath_out+'processed_chains/'+
+                                  self._chain_name+'/lens'+str(i+1)+'/samples.txt',
+                                    finite_inds=np.arange(0,len(summary_statistic)))
+
                 for pname in lens._parameters[0].keys():
                     lens.parameters[0][pname] = lens._parameters[0][pname][ordered_inds]
 
@@ -83,6 +88,7 @@ class ChainFromSamples(object):
             self.truths.update({'log_m_break':self.truths['logmhm']})
 
         self.pranges = self.get_pranges(self.prior_info)
+        self._chain_name = chain_name
 
         Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
                                                                     chain_name + '/simulation_info.txt')
