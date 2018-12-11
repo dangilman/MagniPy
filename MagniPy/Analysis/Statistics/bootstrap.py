@@ -16,9 +16,9 @@ def bootstrap(chain_name, Nlenses, error, which_lenses, Nbootstraps, fname_prefi
 
 def run():
 
-    for error in [0.08]:
-        for rep in range(0, 1):
-            chain_names = ['CDM_sigma0.023_srcsize0.035','CDM_sigma0.0125_srcsize0.03']
+    for error in [0.04,0.08]:
+        for rep in range(0, 2):
+            chain_names = ['CDM_sigma0.023_srcsize0.035','CDM_sigma0.012_srcsize0.03']
             path_prefix = ['highnorm', 'lownorm']
             for i, chain in enumerate(chain_names):
                 N_lenses = [10, 15, 20, 25, 30, 35, 40, 45]
