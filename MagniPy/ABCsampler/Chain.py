@@ -69,13 +69,12 @@ class ChainFromChain(object):
                 new_statistic = summary_statistic[ordered_inds]
 
                 lens.add_parameters(pnames=self.params_varied,fname=chainpath_out+'processed_chains/'+
-                                  self._chain_name+'/lens'+str(i+1)+'/samples.txt',
-                                    finite_inds=np.arange(0,len(summary_statistic)))
+                                  self._chain_parent._chain_name+'/lens'+str(i+1)+'/samples.txt',use_pandas=False)
 
                 for pname in lens._parameters[0].keys():
                     lens.parameters[0][pname] = lens._parameters[0][pname][ordered_inds]
 
-            lens.statistic[0] = new_statistic
+            lens.statistic = [new_statistic]
 
 class ChainFromSamples(object):
 
@@ -275,11 +274,15 @@ class SingleLens(object):
 
             self.posterior.append(PosteriorSamples(new_param_dic, weights=None))
 
-    def add_parameters(self,pnames=None,fname=None,finite_inds=None):
+    def add_parameters(self,pnames=None,fname=None,finite_inds=None,use_pandas=True):
 
-        params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
+        if use_pandas:
+            params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
+        else:
+            params = numpy.squeeze(np.loadtxt(fname))
 
-        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
+        if finite_inds is not None:
+            params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
 
         new_dictionary = {}
 
