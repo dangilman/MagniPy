@@ -95,7 +95,7 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
     axes[ax_idx].add_artist(legend1)
 
     #axes[ax_idx].legend(custom_lines, flux_strings, loc = loc, fontsize=14)
-    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+1*delta+nsamp_scale), xycoords='axes fraction', fontsize=16)
+    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+2.5*delta+nsamp_scale), xycoords='axes fraction', fontsize=16)
 
 
 

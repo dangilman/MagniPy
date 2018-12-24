@@ -43,7 +43,7 @@ class ChainFromChain(object):
     def _add_perturbations(self, error, L):
 
         for i, lens in enumerate(self.lenses):
-
+            #print('computing lens '+str(i)+'.... ')
             if error == 0:
 
                 new_statistic = lens.statistic
@@ -116,18 +116,20 @@ class ChainFromSamples(object):
                     new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                         fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
 
-                if deplete:
+                    if deplete:
 
-                    L = int(len(new_lens.statistic))
+                        L = int(len(new_lens.statistic[ni]))
 
-                    keep = np.arange(0, L)
-                    u = np.random.rand(L)
-                    keep = keep[np.where(u <= deplete_fac)]
+                        keep = np.arange(0, L)
 
-                    for pname in new_lens.parameters.keys():
+                        u = np.random.rand(L)
 
-                        new_lens.parameters[pname] = new_lens.parameters[pname][keep]
-                    new_lens.statistic = new_lens.statistic[keep]
+                        keep = keep[np.where(u <= deplete_fac)]
+
+                        for pname in new_lens.parameters[ni].keys():
+
+                            new_lens.parameters[ni][pname] = new_lens.parameters[ni][pname][keep]
+                        new_lens.statistic[ni] = new_lens.statistic[ni][keep]
 
             self.lenses.append(new_lens)
 

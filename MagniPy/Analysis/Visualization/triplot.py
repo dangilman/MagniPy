@@ -1,8 +1,7 @@
 from matplotlib import colors
 import matplotlib.pyplot as plt
 import numpy as np
-from MagniPy.Analysis.Visualization.Joint2D import Joint2D
-from MagniPy.Analysis.Visualization.density1D import Density1D
+from MagniPy.Analysis.Visualization.posterior_plots import _Joint2D, Density1D
 from MagniPy.Analysis.Statistics.routines import *
 from scipy.misc import comb
 
@@ -125,7 +124,7 @@ class TriPlot(object):
 
                 else:
 
-                    joint = Joint2D(cell.posterior, ax=ax, fig=self.fig, cmap=self.cmap)
+                    joint = _Joint2D(cell.posterior, ax=ax, fig=self.fig, cmap=self.cmap)
                     joint.default_contour_colors = self.default_contour_colors
                     _, joint_info = joint.make_plot(param_ranges=cell.ranges[0], param_names=cell.pnames, filled_contours=filled_contours,
                                     contour_alpha=contour_alpha, levels=levels, truths=self._truths,

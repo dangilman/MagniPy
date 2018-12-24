@@ -16,12 +16,22 @@ def bootstrap(chain_name, Nlenses, error, which_lenses, Nbootstraps, fname_prefi
 
 def run():
 
-    for error in [0.04,0.08]:
-        for rep in range(0, 2):
-            chain_names = ['CDM_sigma0.023_srcsize0.035','CDM_sigma0.012_srcsize0.03']
-            path_prefix = ['highnorm', 'lownorm']
-            for i, chain in enumerate(chain_names):
-                N_lenses = [10, 15, 20, 25, 30, 35, 40, 45]
-                bootstrap(chain, N_lenses, error, np.arange(1, 47), Nbootstraps=1, fname_prefix=path_prefix[i])
+    for k in range(1, 10):
+        for error in [0.02]:
+            for rep in range(0, 1):
+                chain_names = ['CDM_sigma0.01_srcsize0.033','CDM_sigma0.025_srcsize0.033']
+                path_prefix = ['lownorm', 'highnorm']
+                for i, chain in enumerate(chain_names):
+                    N_lenses = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+                    bootstrap(chain, N_lenses, error, np.arange(1, 51), Nbootstraps=1, fname_prefix=path_prefix[i])
+
+        for error in [0.08]:
+            for rep in range(0, 1):
+                chain_names = ['CDM_sigma0.01_srcsize0.033','CDM_sigma0.025_srcsize0.033']
+                path_prefix = ['lownorm', 'highnorm']
+                for i, chain in enumerate(chain_names):
+                    N_lenses = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+                    bootstrap(chain, N_lenses, error, np.arange(1, 51), Nbootstraps=1, fname_prefix=path_prefix[i])
+
 
 run()
