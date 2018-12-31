@@ -52,7 +52,7 @@ class SingleDensity(object):
             if kde_class=='scipy':
                 return KDE_scipy(dim=2)
             else:
-                return KernelDensity2D_old(reweight=self.reweight, scale=self.scale,
+                return KernelDensity2D(reweight=self.reweight, scale=self.scale,
                                        bandwidth_scale=self.bandwidth_scale, kernel=self.kernel_function)
         else:
             if kde_class == 'scipy':

@@ -10,7 +10,7 @@ def compute_joint_kde(chain_name, lens_index, nbins, error, n_pert = 15):
     which_lenses = np.arange(lens_index, lens_index + 1)
     chain_master = ChainFromSamples(chain_name, which_lens=which_lenses,
                   error=error, n_pert=n_pert, load=True)
-    posteriors = chain_master.get_posteriors(100)
+    posteriors = chain_master.get_posteriors(2500)
 
     group1 = ['a0_area','log_m_break']
     group2 = ['a0_area', 'LOS_normalization']
@@ -37,7 +37,8 @@ def compute_joint_kde(chain_name, lens_index, nbins, error, n_pert = 15):
                                         reweight=True)
         if not os.path.exists(output_path_base+ '/lens' + str(lens_index) + '/'):
             create_directory(output_path_base+ '/lens' + str(lens_index) + '/')
-        np.savetxt(output_path_base+ '/lens' + str(lens_index) + '/'+pnames[0]+'_'+pnames[1]+'.txt',X = np.array(sims[0][0]))
+        np.savetxt(output_path_base+ '/lens' + str(lens_index) + '/'+pnames[0]+'_'+pnames[1]+'_error_'+str(error)+'.txt',
+                   X = np.array(sims[0][0]))
 
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, error,
                         tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=40):
@@ -262,6 +263,9 @@ def resample_sys(num, process_only):
         resample_chain(a0_area=0.025, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                        N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                        which_lens_indexes=np.arange(1, 51))
+
+
+
 
 #process_raw('jpl_sim2', np.arange(1,6))
 #process_raw('jpl_sim3', np.arange(1,6))
