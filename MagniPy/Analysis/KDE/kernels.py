@@ -96,7 +96,7 @@ class Sigmoid:
 
 class Boundary2D(object):
 
-    def __init__(self,scale=3,size=150):
+    def __init__(self,scale=3,size=100):
         self.size = size
         self.scale = scale
 
@@ -162,7 +162,7 @@ class Boundary2D(object):
 
 class Boundary1D(object):
 
-    def __init__(self,scale=3,size=150):
+    def __init__(self,scale=3,size=50):
         self.size = size
         self.scale = scale
 

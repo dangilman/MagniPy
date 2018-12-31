@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 
+
 def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=None, scale_scale = 1):
 
     def build_latex(mean, sigma):
@@ -142,7 +143,7 @@ def duplicate_with_subset(full_chain, lens_indicies):
     return new_chains
 
 def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandwidth_scale = 1, use_kde_joint = True,
-                    use_kde_marginal=False, steps=None, reweight = True):
+                    use_kde_marginal=True, steps=None, reweight = True):
 
     sim_densities, sim_pranges = [], []
     pranges_list = [pranges] * len(sim_list)
@@ -175,7 +176,8 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
                 else:
                     density += den
 
-            densities.append(density*L**-1)
+            norm=np.sum(density*L**-1) * np.shape(density)[0]**-2
+            densities.append(density*L**-1 * norm ** -1)
 
         sim_densities.append(densities)
         sim_pranges.append(param_ranges)

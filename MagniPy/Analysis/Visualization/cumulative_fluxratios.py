@@ -196,7 +196,7 @@ class FluxRatioCumulative:
         if color is None:
             color = default_colors
         if xlabel is None:
-            xlabel = r'$\sqrt{\sum_{i=1}^{3} \left( \frac{F_{\rm{smooth(i)}} - F_{\rm{clumpy(i)}}}{F_{\rm{clumpy(i)}}} \right)^2}$'
+            xlabel = r'$\sqrt{\sum_{i=1}^{3} \left({f_i}^{\prime} - {f_i} \right)^2}$'
         if ylabel is None:
             ylabel = 'Percent\n'+r'$ > x$'
         if linestyle is None:

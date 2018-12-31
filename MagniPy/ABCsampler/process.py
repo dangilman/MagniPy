@@ -4,6 +4,41 @@ from MagniPy.Analysis.Statistics.routines import build_densities, barplothist
 from MagniPy.Analysis.Statistics.routines import reweight_posteriors_individually
 from MagniPy.Analysis.Statistics.routines import duplicate_with_cuts
 
+
+def compute_joint_kde(chain_name, lens_index, nbins, error, n_pert = 15):
+
+    which_lenses = np.arange(lens_index, lens_index + 1)
+    chain_master = ChainFromSamples(chain_name, which_lens=which_lenses,
+                  error=error, n_pert=n_pert, load=True)
+    posteriors = chain_master.get_posteriors(100)
+
+    group1 = ['a0_area','log_m_break']
+    group2 = ['a0_area', 'LOS_normalization']
+    group3 = ['a0_area', 'source_size_kpc']
+    group4 = ['a0_area', 'SIE_gamma']
+    group5 = ['log_m_break', 'LOS_normalization']
+    group6 = ['log_m_break', 'source_size_kpc']
+    group7 = ['log_m_break', 'SIE_gamma']
+    group8 = ['LOS_normalization', 'source_size_kpc']
+    group9 = ['LOS_normalization', 'SIE_gamma']
+    group10 = ['source_size_kpc','SIE_gamma']
+
+    param_names = [group1, group2, group3, group4, group5, group6, group7,
+                   group8, group9, group10]
+
+    output = {}
+    output_path_base = prefix + 'data/sims/densities/' + chain_name
+
+    for pnames in param_names:
+        sims, sim_pranges = build_densities([posteriors], pnames,
+                                        chain_master.pranges, bandwidth_scale=1,
+                                        xtrim=None, ytrim=None, steps=nbins,
+                                        use_kde_joint=True, use_kde_marginal=True,
+                                        reweight=True)
+        if not os.path.exists(output_path_base+ '/lens' + str(lens_index) + '/'):
+            create_directory(output_path_base+ '/lens' + str(lens_index) + '/')
+        np.savetxt(output_path_base+ '/lens' + str(lens_index) + '/'+pnames[0]+'_'+pnames[1]+'.txt',X = np.array(sims[0][0]))
+
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, error,
                         tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=40):
 
@@ -169,7 +204,7 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
-                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.12, logmhm_sigma = 0.02,
+                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.12, logmhm_sigma = 0.05,
                    src_size_sigma = 0.007, a0_area_sigma = 0.001, LOS_norm_sigma = 0.02,
                    name='WDM_sim_7.7_.012', which_lens_indexes = None):
 
@@ -202,7 +237,7 @@ def resample_sys(num, process_only):
     src_mean = 0.033
 
     if num == 1:
-        resample_chain(a0_area=0.025, logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=[0.06],
+        resample_chain(a0_area=0.005, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
     elif num == 2:
@@ -215,7 +250,7 @@ def resample_sys(num, process_only):
                        which_lens_indexes=np.arange(1, 51))
 
     elif num == 4:
-        resample_chain(a0_area=0.025,logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.022,logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
 
@@ -232,8 +267,8 @@ def resample_sys(num, process_only):
 #process_raw('jpl_sim3', np.arange(1,6))
 
 #process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 50, [0,0.02,0.04,0.06,0.08])
-#resample_sys(1, False)
 #resample_sys(2, False)
+#resample_sys(1, False)
 #resample_sys(2, False)
 #resample_sys(2, False)
 #resample_sys(4, False)

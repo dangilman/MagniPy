@@ -79,7 +79,7 @@ class ChainFromChain(object):
 class ChainFromSamples(object):
 
     def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
-                 deplete = False, deplete_fac = 0.5, n_pert = 1, load = True):
+        deplete = False, deplete_fac = 0.5, n_pert = 1, load = True, statistics=None, parameters = None):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -110,11 +110,22 @@ class ChainFromSamples(object):
                 for ni in range(0,n_pert):
                     #print('loading '+str(ni+1)+'...')
                     fname = 'statistic_'+str(error)+'error_'+str(ni+1)+'.txt'
-                    finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
 
-                    fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
-                    new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
+                    if statistics is None:
+                        finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
+                    else:
+                        new_lens.statistic.append(statistics[ind-1])
+
+                    if parameters is None:
+                        fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
+                        new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                         fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
+                    else:
+                        new_dictionary = {}
+                        for i, pname in enumerate(self.params_varied):
+                            new_dictionary.update({pname: parameters[ind-1][:, i].astype(float)})
+
+                        new_lens.parameters.append(new_dictionary)
 
                     if deplete:
 

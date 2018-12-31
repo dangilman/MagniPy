@@ -55,7 +55,7 @@ class Joint2D1D(object):
         marg_kwargs.update({'contour_alpha': kwargs['contour_alpha']})
         marg_kwargs.update({'xlabel_on': True})
         marg_kwargs.update({'truths': kwargs['truths']})
-        marg_kwargs.update({'rebin': 20})
+        marg_kwargs.update({'rebin': kwargs['rebin']})
         marg_kwargs.update({'label_size': kwargs['label_size']})
         marg_kwargs.update({'tick_label_font': kwargs['tick_label_font']})
 
@@ -229,8 +229,10 @@ class _Joint2D(object):
             if param_names[0] == 'source_size_kpc':
                 self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
             elif param_names[0] == 'a0_area':
+                self.ax.set_xticks([0, 0.009, 0.018, 0.027, 0.036, 0.045])
+                self.ax.set_xticklabels([0, 0.9, 1.8, 2.7, 3.6, 4.5], fontsize=tick_label_font, rotation = 45)
 
-                self.ax.set_xticklabels(np.round(np.array(xtick_labels),3), fontsize=tick_label_font, rotation = 45)
+                #self.ax.set_xticklabels(np.round(np.array(xtick_labels),3), fontsize=tick_label_font, rotation = 45)
             else:
                 if param_names[0] == 'SIE_gamma':
                     rotation = 45
@@ -296,7 +298,7 @@ class _Joint2D(object):
 
         elif pname == 'a0_area':
 
-            pname = r'$\sigma_{\rm{sub}}\times 10^{-2} \ \left[kpc^{-2}\right]$'
+            pname = r'$\sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             tick_labels = ticks*100
 
         elif pname == 'SIE_gamma':
@@ -383,7 +385,7 @@ class _Joint2D(object):
 
         if pname == 'fsub':
             return '%.3f'
-        elif pname == r'$\sigma_{\rm{sub}}\times 10^{-2} \ \left[kpc^{-2}\right]$':
+        elif pname == r'$\sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$':
             return '%.3f'
         elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
@@ -430,23 +432,24 @@ class Density1D(_Joint2D):
             low_95 = self._quick_confidence(bar_centers, bar_heights, 0.05)
             print(high_95)
             print(low_95)
-            if param == 'log_m_break' and truths[param]>5:
+            if param == 'log_m_break':
                 info = zip(bar_centers, bar_heights)
                 print('likelihoods: '+str(list(info)))
             if max(bar_heights) > max_height:
                 max_height = max(bar_heights)
-
+            else:
+                max_height = max(bar_heights)
             for i, h in enumerate(bar_heights):
                 x1, x2, y = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5, h
-                self.ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1])
+                self.ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1], alpha = contour_alpha)
                 self.ax.fill_between([x1, x2], y, color=contour_colors[color_index][1], alpha=contour_alpha)
-                self.ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1])
-                self.ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1])
+                self.ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1], alpha = contour_alpha)
+                self.ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1], alpha = contour_alpha)
 
             self.ax.set_yticklabels([])
             self.ax.set_yticks([])
 
-            if np.absolute(low_95 - truths[param]) < 0.4 and param == 'log_m_break' and truths[param]<5.5:
+            if truths[param]<5.5 and param == 'log_m_break':
                 pass
             else:
                 self.ax.axvline(low_95, color=contour_colors[color_index][1], linestyle = '-.', linewidth = 3, alpha=0.8)
@@ -462,7 +465,8 @@ class Density1D(_Joint2D):
                     self.ax.set_xticklabels(tick_labels.astype(int), fontsize = tick_label_font)
                 elif param == 'a0_area':
 
-                    self.ax.set_yticklabels(np.round(np.array(tick_labels), 1), fontsize=tick_label_font)
+                    self.ax.set_xticks([0, 0.009, 0.018, 0.027, 0.036, 0.045])
+                    self.ax.set_xticklabels([0, 0.9, 1.8, 2.7, 3.6, 4.5], fontsize=tick_label_font, rotaton = 45)
                 else:
                     if param == 'a0_area':
                         rotation = 0
@@ -478,7 +482,7 @@ class Density1D(_Joint2D):
                 self.ax.set_xticklabels([])
 
         self.ax.set_xlim(param_ranges[0], param_ranges[1])
-        self.ax.set_ylim(0, max_height*1.25)
+        self.ax.set_ylim(0, max_height*1.1)
 
         if truths is not None:
             if truths[param] is not None:
