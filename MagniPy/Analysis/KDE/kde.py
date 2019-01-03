@@ -6,6 +6,24 @@ from numpy.linalg import inv
 from copy import deepcopy
 from numpy.fft import fftshift, fft2, ifft2
 from fastkde import fastKDE
+from MagniPy.Analysis.KDE.getdist_kde import GetDistWrap
+
+class KDE_getdist(object):
+
+    def __init__(self, bandwidth_scale=1):
+
+        self.bandwidth_scale = bandwidth_scale
+
+        self.gdwrap = GetDistWrap()
+
+    def __call__(self, data, pnames):
+
+        kwargs = {'samples': data}
+
+        estimate, xx, yy = self.gdwrap(param_names = pnames, kwargs=kwargs)
+
+        return estimate, xx, yy
+
 
 class KDE_fast(object):
 
@@ -212,92 +230,68 @@ class KernelDensity1D_old(object):
 
         return estimate, xpoints
 
+
 class KernelDensity2D(object):
 
-    def __init__(self,reweight=False,scale=5,bandwidth_scale=1,kernel='Gaussian'):
-
-        self.reweight = reweight
-        self.scale = scale
+    def __init__(self, bandwidth_scale=1):
         self.bandwidth_scale = bandwidth_scale
 
-        if kernel == 'Gaussian':
-            self._kernel_function = Gaussian2d
-        elif kernel == 'Silverman':
-            self._kernel_function = Silverman2d
-        elif kernel == 'Epanechnikov':
-            self._kernel_function = Epanechnikov
-            self.bandwidth_scale = 2.5
-        elif kernel == 'Sigmoid':
-            self._kernel_function = Sigmoid
-        else:
-            raise Exception('Kernel function not recognized.')
-
     def _scotts_factor(self, n, d=2):
-
         return n ** (-1. / (d + 4))
 
-    def _convolve_2d(self, data, nbins, xx, yy, xc, yc, prior_weights):
+    def _boundary_kernel(self, xx, nbins):
+        B = np.ones_like(xx)
+        return B
+        return np.pad(B, 0, mode='constant')
 
-        hb, _, _ = np.histogram2d(data[:,0], data[:,1], bins=nbins, weights=prior_weights)
+    def _gaussian_kernel(self, hx, hy, xx, xc, yy, yc):
+        r = -0.5 * ((xx - xc) ** 2 * hx ** -2 + (yy - yc) ** 2 * hy ** -2)
+
+        return np.exp(r)
+
+    def _convolve_2d(self, data, nbins, xpoints, ypoints, xc, yc, prior_weights, boundary_correction):
+
+        #xmin, xmax = xpoints[0], xpoints[-1]
+        #ymin, ymax = ypoints[0], ypoints[-1]
+        xbins, ybins = np.linspace(xpoints[0], xpoints[-1], nbins), np.linspace(ypoints[0], ypoints[-1], nbins)
+        dx, dy = (xbins[1] - xbins[0]), (ybins[1] - ybins[0])
+        #dx, dy = 0, 0
+
+        hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins = (xbins - dx, ybins+dy),weights=prior_weights)
+
+        xbins = np.linspace(xpoints[0], xpoints[-1], len(hb))
+        ybins = np.linspace(ypoints[0], ypoints[-1], len(hb))
+
+        xx, yy = np.meshgrid(xbins, ybins)
 
         h = self._scotts_factor(n=nbins) * self.bandwidth_scale
-        data_cov = np.cov(np.array([data[:,0], data[:,1]]))
+        data_cov = np.cov(np.array([data[:, 0], data[:, 1]]))
 
         hx = h * data_cov[0][0] ** 0.5
         hy = h * data_cov[1][1] ** 0.5
 
-        def _boundary_func():
+        density = fftconvolve(hb.T, self._gaussian_kernel(hx, hy, xx, xc, yy, yc), mode='same')
 
-            B = np.ones_like(xx)
-            return np.pad(B, nbins, mode='constant')
+        #density = density.reshape(L,L)
 
-        def _kernel_func():
+        if boundary_correction:
+            boundary_norm = fftconvolve(self._gaussian_kernel(hx, hy, xx, xc, yy, yc),
+                                        self._boundary_kernel(xx, nbins), mode='same')
+            #boundary_norm = boundary_norm[0:50,0:50]
+            #boundary_norm.reshape(L,L)
+            density *= boundary_norm ** -1
 
-            r = -0.5*((xx-xc)**2*hx**-2 + (yy-yc)**2*hy**-2)
+        return density
 
-            return np.exp(r).T
-
-        def _kernel_func_xi():
-
-            r = -0.5*((xx-xc)**2*hx**-2 + (yy-yc)**2*hy**-2)
-
-            return xx*np.exp(r).T
-
-        def _kernel_func_yi():
-
-            r = -0.5*((xx-xc)**2*hx**-2 + (yy-yc)**2*hy**-2)
-
-            return yy*np.exp(r).T
-
-        def _kernel_func_xyi():
-
-            r = -0.5*((xx-xc)**2*hx**-2 + (yy-yc)**2*hy**-2)
-
-            return xx*yy*np.exp(r).T
-
-        W0 = fftconvolve(_kernel_func(), _boundary_func(), mode='same').reshape(nbins, nbins)
-        #W1i = fftconvolve(_kernel_func_xi(), _boundary_func(), mode='same').reshape(nbins, nbins)
-        #W1j = fftconvolve(_kernel_func_yi(), _boundary_func(), mode='same').reshape(nbins, nbins)
-        #W2ij = fftconvolve(_kernel_func_xyi(), _boundary_func(), mode='same').reshape(nbins, nbins)
-        #W2_inv = inv(W2ij)
-
-        #A0 = (W0 - W1i*W2ij*W1j)**-1
-        #A1 = (-W2_inv*W1j) * A0
-
-        fx = fftconvolve(hb.T, _kernel_func(), mode='same').reshape(nbins, nbins)
-        #norm = (W0*A0 + A1 * W1i) ** -1
-        return fx*W0**-1
-
-    def __call__(self, data, xpoints, ypoints, pranges_true, prior_weights=None):
+    def __call__(self, data, xpoints, ypoints, pranges, prior_weights, boundary_correction=True):
 
         assert len(xpoints) == len(ypoints)
 
         xx, yy = np.meshgrid(xpoints, ypoints)
 
-        self.boundary = Boundary2D(scale=self.scale)
-
-        estimate = self._convolve_2d(data, len(xpoints), xx, yy,
-                                     np.mean(pranges_true[0]), np.mean(pranges_true[1]), prior_weights)
+        x_center, y_center = np.mean(pranges[0]), np.mean(pranges[1])
+        estimate = self._convolve_2d(data, len(xpoints), xpoints, ypoints,
+                                     x_center, y_center, prior_weights, boundary_correction)
 
         return estimate, xx.ravel(), yy.ravel()
 

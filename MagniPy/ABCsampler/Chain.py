@@ -294,14 +294,28 @@ class SingleLens(object):
         else:
             params = numpy.squeeze(np.loadtxt(fname))
 
-        if finite_inds is not None:
-            params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
+        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
 
         new_dictionary = {}
 
+        rounding = {'a0_area': 0.009, 'log_m_break': 0.104, 'SIE_gamma': 0.004,
+                    'source_size_kpc': 0.005, 'LOS_normalization': 0.012}
+
+        rounding_dec = {'a0_area': 4, 'log_m_break': 2, 'SIE_gamma': 2,
+                    'source_size_kpc': 4, 'LOS_normalization': 2}
+
+        def round_to(n, precision):
+
+            correction = 0.5*np.ones_like(n)
+            return (n / precision + correction).astype(int) * precision
+
         for i,pname in enumerate(pnames):
 
-            new_dictionary.update({pname:params[:,i].astype(float)})
+            new_params = np.round(params[:,i].astype(float), rounding_dec[pname]).astype(float)
+            #new_params = params[:,i].astype(float)
+            #new_params = round_to(params[:,i].astype(float), 1*rounding[pname])
+
+            new_dictionary.update({pname: new_params})
 
         self.parameters.append(new_dictionary)
 

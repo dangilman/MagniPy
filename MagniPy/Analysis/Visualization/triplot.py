@@ -22,7 +22,12 @@ class TriPlot(object):
 
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
                  fig_size = 8, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
-                 kde_marginal = True, reweight = True):
+                 kde_marginal = True, reweight = True, pre_computed = False, chain_name = None,
+                 errors = None):
+
+        self._pre_computed = pre_computed
+        self._chain_name = chain_name
+        self._errors = errors
 
         self._init(fig_size)
         self._steps = steps
@@ -212,7 +217,10 @@ class TriPlot(object):
                                                         pranges, bandwidth_scale=bandwidth_scale,
                                                         xtrim=xtrim, ytrim=ytrim, steps=self._steps,
                                                         use_kde_joint=self._kde_joint,
-                                                        use_kde_marginal=self._kde_marginal, reweight=self._reweight)
+                                                        use_kde_marginal=self._kde_marginal, reweight=self._reweight,
+                                                        pre_computed=self._pre_computed,
+                                                        chain_name = self._chain_name, errors = self._errors)
+
                     grid_post[row, col] = GridCell(sims, sim_pranges, parameters, type='joint')
 
         return grid_post

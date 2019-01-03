@@ -4,6 +4,7 @@ from copy import deepcopy, copy
 import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
+from MagniPy.paths import *
 
 
 def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=None, scale_scale = 1):
@@ -142,47 +143,82 @@ def duplicate_with_subset(full_chain, lens_indicies):
 
     return new_chains
 
+def build_densities_precomputed(sim_list, chain_name, Nlenses, parameters):
+
+    densities = []
+    for sim in sim_list:
+        for lens in range(1, Nlenses+1):
+            fname = prefix + 'data/sims/densities/' + chain_name + 'lens' + str(lens) + '/'
+            fname += str(parameters[0]) + '_' + str(parameters[1]) + '.txt'
+            density = np.loadtxt(fname)
+            norm = np.sum(density) * np.shape(density)[0] ** -2
+            density *= norm
+            densities.append(density)
+
+
 def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandwidth_scale = 1, use_kde_joint = True,
-                    use_kde_marginal=True, steps=None, reweight = True):
+                    use_kde_marginal=True, steps=None, reweight = True, pre_computed = False, chain_name = None,
+                    errors = None):
 
     sim_densities, sim_pranges = [], []
     pranges_list = [pranges] * len(sim_list)
 
-    print('computing density: ', parameters)
+    if pre_computed:
+        for k, (sim, pranges) in enumerate(zip(sim_list, pranges_list)):
 
-    for sim, pranges in zip(sim_list, pranges_list):
-        densities = []
+            densities = []
+            for lens in range(1, 51):
+                try:
+                    fname = prefix + 'data/sims/densities/' + chain_name + '/lens' + str(lens) + '/'
+                    fname += str(parameters[0]) + '_' + str(parameters[1]) + '_error_'+str(errors[k])+'.txt'
+                    density = np.loadtxt(fname)
+                except:
+                    fname = prefix + 'data/sims/densities/' + chain_name + '/lens' + str(lens) + '/'
+                    fname += str(parameters[1]) + '_' + str(parameters[0]) + '_error_' + str(errors[k]) + '.txt'
+                    density = np.loadtxt(fname)
+                norm = np.sum(density) * np.shape(density)[0] ** -2
+                density *= norm
+                densities.append(density)
 
-        for i, posterior in enumerate(sim):
+            sim_densities.append(densities)
+            sim_pranges.append(pranges)
 
-            if len(parameters) == 1:
-                kde_flag = use_kde_marginal
-            else:
-                kde_flag = use_kde_joint
+        return sim_densities, sim_pranges
 
-            L = len(posterior)
-            for i, post in enumerate(posterior):
-                single_density = SingleDensity(pnames=parameters, samples=post,
-                                           pranges=pranges,
-                                           reweight=reweight,
-                                           kernel_function='Gaussian',
-                                           scale=5,
-                                           bandwidth_scale=bandwidth_scale, use_kde=kde_flag,
-                                           steps=steps)
+    else:
+        for sim, pranges in zip(sim_list, pranges_list):
+            densities = []
 
-                den, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
-                if i == 0:
-                    density = den
+            for i, posterior in enumerate(sim):
+
+                if len(parameters) == 1:
+                    kde_flag = use_kde_marginal
                 else:
-                    density += den
+                    kde_flag = use_kde_joint
 
-            norm=np.sum(density*L**-1) * np.shape(density)[0]**-2
-            densities.append(density*L**-1 * norm ** -1)
+                L = len(posterior)
+                for i, post in enumerate(posterior):
+                    single_density = SingleDensity(pnames=parameters, samples=post,
+                                               pranges=pranges,
+                                               reweight=reweight,
+                                               kernel_function='Gaussian',
+                                               scale=5,
+                                               bandwidth_scale=bandwidth_scale, use_kde=kde_flag,
+                                               steps=steps)
 
-        sim_densities.append(densities)
-        sim_pranges.append(param_ranges)
+                    den, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
+                    if i == 0:
+                        density = den
+                    else:
+                        density += den
 
-    return sim_densities, sim_pranges
+                norm=np.sum(density*L**-1) * np.shape(density)[0]**-2
+                densities.append(density*L**-1 * norm ** -1)
+
+            sim_densities.append(densities)
+            sim_pranges.append(param_ranges)
+
+        return sim_densities, sim_pranges
 
 def duplicate_with_cuts(full_chain, tol, pnames_reject_list, keep_ranges_list):
 

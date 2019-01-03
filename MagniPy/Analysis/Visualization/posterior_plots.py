@@ -65,9 +65,9 @@ class Joint2D1D(object):
 
     def make_plot2d(self, kwargs):
 
-        self._joint.make_plot(**kwargs)
+        out = self._joint.make_plot(**kwargs)
 
-        return self._joint.ax
+        return self._joint.ax, out
 
 class Joint2D(object):
 
@@ -146,6 +146,7 @@ class _Joint2D(object):
             #final_density = np.ones_like(densities)
 
             final *= density
+            final *= (np.sum(final) * np.shape(final)[0] ** 2) ** -1
 
         return self._norm_density(final)
 
@@ -166,8 +167,8 @@ class _Joint2D(object):
             sim_density = self._compute_single(sim)
             posterior_density.append(sim_density)
 
-            x, y = np.linspace(extent[0], extent[1], sim_density.shape[1]), \
-                   np.linspace(extent[2], extent[3], sim_density.shape[0])
+            x, y = np.linspace(extent[0], extent[1], sim_density.shape[0]), \
+                   np.linspace(extent[2], extent[3], sim_density.shape[1])
 
             final_densities.append(sim_density)
             coordinates.append([x, y])
@@ -185,11 +186,9 @@ class _Joint2D(object):
 
         for color_index, sim_density in enumerate(final_densities):
 
-            x, y = coordinates[color_index][0], coordinates[color_index][1]
-
             if filled_contours:
 
-                self.contours(x,y,sim_density,contour_colors=contour_colors[color_index],
+                self.contours(coordinates[color_index][0],coordinates[color_index][1],sim_density,contour_colors=contour_colors[color_index],
                               contour_alpha=contour_alpha, extent=extent,aspect=aspect,levels=levels)
 
                 self.ax.imshow(sim_density, extent=extent,
@@ -200,7 +199,8 @@ class _Joint2D(object):
             else:
 
                 self.ax.imshow(sim_density, extent=extent,
-                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,vmax=np.max(sim_density))
+                               aspect=aspect, origin='lower', cmap=self.cmap, alpha=1,vmin=0,
+                               vmax=np.max(sim_density),interpolation='nearest')
                 #self.contours(x, y, sim_density, contour_colors=contour_colors[color_index],
                 #              contour_alpha=contour_alpha, extent=extent, aspect=aspect, levels=levels)
 
@@ -259,7 +259,6 @@ class _Joint2D(object):
             elif param_names[1] == 'a0_area':
                 self.ax.set_yticklabels(np.round(np.array(ytick_labels),3), fontsize=tick_label_font)
             else:
-
                 self.ax.set_yticklabels(np.array(ytick_labels), fontsize=tick_label_font)
                 self.ax.set_ylabel(ylabel_name, fontsize=label_size)
                 self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
@@ -272,7 +271,7 @@ class _Joint2D(object):
 
         self.sim_density = sim_density
 
-        return self.ax, (coordinates, final_densities, aspect, extent)
+        return self.ax, final_densities
 
     def _convert_param_names(self, pname, ticks):
 

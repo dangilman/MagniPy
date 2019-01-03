@@ -238,11 +238,11 @@ def resample_sys(num, process_only):
     src_mean = 0.033
 
     if num == 1:
-        resample_chain(a0_area=0.005, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.02, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
     elif num == 2:
-        resample_chain(a0_area=0.02, logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0.0175, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
     elif num == 3:
@@ -271,7 +271,8 @@ def resample_sys(num, process_only):
 #process_raw('jpl_sim3', np.arange(1,6))
 
 #process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 50, [0,0.02,0.04,0.06,0.08])
-#resample_sys(2, False)
+#resample_sys(1, False)
+resample_sys(2, False)
 #resample_sys(1, False)
 #resample_sys(2, False)
 #resample_sys(2, False)
