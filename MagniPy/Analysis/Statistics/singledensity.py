@@ -6,7 +6,7 @@ class SingleDensity(object):
                  steps=50,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
-        kde_class = 'getdist'
+        kde_class = 'mine'
         self._use_kde = use_kde
         self.reweight = reweight
         self.scale = scale

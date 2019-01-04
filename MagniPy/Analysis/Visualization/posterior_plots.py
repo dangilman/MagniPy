@@ -229,7 +229,8 @@ class _Joint2D(object):
             if param_names[0] == 'source_size_kpc':
                 self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
             elif param_names[0] == 'a0_area':
-                self.ax.set_xticks([0, 0.009, 0.018, 0.027, 0.036, 0.045])
+                tic = np.array([0, 0.009, 0.018, 0.027, 0.036, 0.045]) * 100
+                self.ax.set_xticks(tic)
                 self.ax.set_xticklabels([0, 0.9, 1.8, 2.7, 3.6, 4.5], fontsize=tick_label_font, rotation = 45)
 
                 #self.ax.set_xticklabels(np.round(np.array(xtick_labels),3), fontsize=tick_label_font, rotation = 45)
@@ -293,7 +294,7 @@ class _Joint2D(object):
         elif pname == 'source_size_kpc':
             #pname = r'$\sigma_{\rm{source}}$'
             pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
-            tick_labels = np.array(ticks)*1000
+            tick_labels = np.array(ticks)
 
         elif pname == 'a0_area':
 
@@ -463,14 +464,11 @@ class Density1D(_Joint2D):
                 if param == 'source_size_kpc':
                     self.ax.set_xticklabels(tick_labels.astype(int), fontsize = tick_label_font)
                 elif param == 'a0_area':
-
-                    self.ax.set_xticks([0, 0.009, 0.018, 0.027, 0.036, 0.045])
-                    self.ax.set_xticklabels([0, 0.9, 1.8, 2.7, 3.6, 4.5], fontsize=tick_label_font, rotaton = 45)
+                    tic = np.array([0, 0.009, 0.018, 0.027, 0.036, 0.045]) * 100
+                    self.ax.set_xticks(tic)
+                    self.ax.set_xticklabels(tic, fontsize=tick_label_font, rotaton = 45)
                 else:
-                    if param == 'a0_area':
-                        rotation = 0
-                    else:
-                        rotation = 0
+                    rotation = 0
                     self.ax.set_xticklabels(tick_labels, fontsize=tick_label_font, rotation = rotation)
                     self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=label_name)))
 

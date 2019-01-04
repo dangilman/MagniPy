@@ -79,10 +79,13 @@ class ChainFromChain(object):
 class ChainFromSamples(object):
 
     def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
-        deplete = False, deplete_fac = 0.5, n_pert = 1, load = True, statistics=None, parameters = None):
+        deplete = False, deplete_fac = 0.5, n_pert = 1, load = True, statistics=None, parameters = None,
+                 overwrite_ranges = {}):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
+
+        self.overwrite_ranges = overwrite_ranges
         if 'logmhm' in self.truths:
             self.truths.update({'log_m_break':self.truths['logmhm']})
 
@@ -168,16 +171,20 @@ class ChainFromSamples(object):
 
         return posteriors
 
-    def get_pranges(self,info):
+    def get_pranges(self, info):
 
         pranges = {}
 
         for keys in info.keys():
             pname = info[keys]
-            if pname['prior_type'] == 'Gaussian':
-                pranges[keys] = [float(pname['mean']) - float(pname['sigma'])*2,float(pname['mean'])+float(pname['sigma'])*2]
-            elif pname['prior_type'] == 'Uniform':
-                pranges[keys] = [float(pname['low']),float(pname['high'])]
+
+            if keys in list(self.overwrite_ranges.keys()):
+                pranges[keys] = self.overwrite_ranges[keys]
+            else:
+                if pname['prior_type'] == 'Gaussian':
+                    pranges[keys] = [float(pname['mean']) - float(pname['sigma'])*2,float(pname['mean'])+float(pname['sigma'])*2]
+                elif pname['prior_type'] == 'Uniform':
+                    pranges[keys] = [float(pname['low']),float(pname['high'])]
 
         return pranges
 
@@ -301,8 +308,8 @@ class SingleLens(object):
         rounding = {'a0_area': 0.009, 'log_m_break': 0.104, 'SIE_gamma': 0.004,
                     'source_size_kpc': 0.005, 'LOS_normalization': 0.012}
 
-        rounding_dec = {'a0_area': 4, 'log_m_break': 2, 'SIE_gamma': 2,
-                    'source_size_kpc': 4, 'LOS_normalization': 2}
+        rounding_dec = {'a0_area': 5, 'log_m_break': 3, 'SIE_gamma': 3,
+                    'source_size_kpc': 5, 'LOS_normalization': 3}
 
         def round_to(n, precision):
 
@@ -311,9 +318,12 @@ class SingleLens(object):
 
         for i,pname in enumerate(pnames):
 
-            new_params = np.round(params[:,i].astype(float), rounding_dec[pname]).astype(float)
-            #new_params = params[:,i].astype(float)
-            #new_params = round_to(params[:,i].astype(float), 1*rounding[pname])
+            new_params = params[:, i].astype(float)
+            #if pname == 'a0_area':
+            #    new_params *= 100
+            #elif pname == 'source_size_kpc':
+            #    new_params *= 1000
+            new_params = np.round(new_params, rounding_dec[pname]).astype(float)
 
             new_dictionary.update({pname: new_params})
 
