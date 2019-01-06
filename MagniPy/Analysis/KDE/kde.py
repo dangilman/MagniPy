@@ -2,11 +2,38 @@ import numpy as np
 from MagniPy.Analysis.KDE.kernels import *
 from scipy.stats import gaussian_kde
 from scipy.signal import fftconvolve
-from numpy.linalg import inv
 from copy import deepcopy
 from numpy.fft import fftshift, fft2, ifft2
-from fastkde import fastKDE
-from MagniPy.Analysis.KDE.getdist_kde import GetDistWrap
+from getdist import plots, MCSamples
+from KDEpy import FFTKDE
+
+class KDEpy(object):
+
+    def __init__(self, bandwidth_scale=1):
+
+        self.bandwidth_scale = bandwidth_scale
+        self.estimator = FFTKDE(kernel='gaussian')
+
+    def __call__(self, data, kde_bins=20):
+
+        dim = int(np.shape(data[1])[0])
+
+        estimator = self.estimator.fit(data, weights=None)
+
+        coords, den = estimator.evaluate((kde_bins, kde_bins, kde_bins))
+
+        if dim == 2:
+            density = den.reshape(kde_bins, kde_bins)
+        elif dim == 3:
+            density = den.reshape(kde_bins, kde_bins, kde_bins)
+        den = []
+        for di in range(dim):
+            proj = np.sum(density, axis=di)
+
+            den.append(proj)
+
+        return den
+
 
 class KDE_getdist(object):
 
@@ -14,39 +41,22 @@ class KDE_getdist(object):
 
         self.bandwidth_scale = bandwidth_scale
 
-        self.gdwrap = GetDistWrap()
+    def _scotts_factor(self, n, d=2):
 
-    def __call__(self, data, pnames):
+        return n ** (-1. / (d + 4))
 
-        kwargs = {'samples': data}
+    def __call__(self, data, xpoints, ypoints, pranges):
 
-        estimate, xx, yy = self.gdwrap(param_names = pnames, kwargs=kwargs)
+        mcsamples = MCSamples(samples=data, names = ['x1', 'x2'], ranges=pranges)
 
-        return estimate, xx, yy
+        #bandwidth = self._scotts_factor(50, 2) * self.bandwidth_scale
+        density = mcsamples.get2DDensity(x='x1', y='x2',
+                      fine_bins_2D = len(xpoints), boundary_correction_order = 1,
+                      mult_bias_correction_order = False)
 
+        xx, yy = np.meshgrid(xpoints, ypoints)
 
-class KDE_fast(object):
-
-    def __init__(self, dim):
-
-        self.dimension = dim
-
-    def __call__(self, data,X=None,Y=None,**kwargs):
-
-        if self.dimension == 1:
-
-            pdf, _ = fastKDE.pdf(data, axes = X, numPoints = len(X))
-
-            return pdf
-
-        elif self.dimension == 2:
-
-            pdf, _ = fastKDE.pdf(data[:, 0], data[:, 1], numPoints = len(X), axes = [X, Y])
-
-            xx, yy = np.meshgrid(X, Y)
-
-            return pdf, xx.ravel(), yy.ravel()
-
+        return density.Prob(xx, yy)
 
 class KDE_scipy(object):
 
@@ -139,12 +149,9 @@ class KDE_scipy(object):
 
 class KernelDensity1D(object):
 
-    def __init__(self, scale = 1, bandwidth_scale=1, kernel='Gaussian', reweight = True):
+    def __init__(self, bandwidth_scale=1):
 
-        self._kernel_function = Gaussian1d
-        self.scale = scale
         self.bandwidth_scale = bandwidth_scale
-        self.reweight = reweight
 
     def _scotts_factor(self, n, d=1):
 
@@ -152,14 +159,15 @@ class KernelDensity1D(object):
 
     def _convolve_1d(self, data, nbins, xx, xc, prior_weights):
 
-        hb, _ = np.histogram(data, bins=nbins, weights=prior_weights)
+        xpoints = np.linspace(xx[0], xx[-1], nbins+1)
+        hb, _ = np.histogram(data, bins=xpoints, weights=prior_weights)
 
         h = self._scotts_factor(n=nbins) * self.bandwidth_scale
         sigma = h * np.cov(data) ** 0.5
 
         def _boundary_func():
             B = np.ones_like(xx)
-            return np.pad(B, nbins, mode='constant')
+            return np.pad(B, nbins, mode='constant', constant_values=0)
 
         def _kernel_func():
 
@@ -171,12 +179,12 @@ class KernelDensity1D(object):
 
         fft2 = fftconvolve(_kernel_func(), _boundary_func(), mode='same')
 
-        return fft1 * (fft2) ** -1
+        return fft1 * fft2 ** -1
 
-    def __call__(self, data, xpoints, pranges_true, prior_weights=None):
+    def __call__(self, data, xpoints, prange, prior_weights=None):
 
         xx = xpoints
-        estimate = self._convolve_1d(data, len(xx), xx, np.mean(pranges_true[0]), prior_weights)
+        estimate = self._convolve_1d(data, len(xx), xx, np.mean(prange), prior_weights)
 
         return estimate
 
@@ -241,28 +249,22 @@ class KernelDensity2D(object):
 
     def _boundary_kernel(self, xx, nbins):
         B = np.ones_like(xx)
-        return B
-        return np.pad(B, 0, mode='constant')
+        #return B
+        return np.pad(B, 2*nbins, mode='constant', constant_values=0)
 
     def _gaussian_kernel(self, hx, hy, xx, xc, yy, yc):
         r = -0.5 * ((xx - xc) ** 2 * hx ** -2 + (yy - yc) ** 2 * hy ** -2)
 
         return np.exp(r)
 
-    def _convolve_2d(self, data, nbins, xpoints, ypoints, xc, yc, prior_weights, boundary_correction):
+    def _convolve_2d(self, data, nbins, xpoints, ypoints, xc, yc, prior_weights = None):
 
-        #xmin, xmax = xpoints[0], xpoints[-1]
-        #ymin, ymax = ypoints[0], ypoints[-1]
-        xbins, ybins = np.linspace(xpoints[0], xpoints[-1], nbins), np.linspace(ypoints[0], ypoints[-1], nbins)
-        dx, dy = (xbins[1] - xbins[0]), (ybins[1] - ybins[0])
-        #dx, dy = 0, 0
+        xbins, ybins = np.linspace(xpoints[0], xpoints[-1], nbins+1), np.linspace(ypoints[0], ypoints[-1], nbins+1)
 
-        hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins = (xbins - dx, ybins+dy),weights=prior_weights)
-
-        xbins = np.linspace(xpoints[0], xpoints[-1], len(hb))
-        ybins = np.linspace(ypoints[0], ypoints[-1], len(hb))
-
-        xx, yy = np.meshgrid(xbins, ybins)
+        hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins = (xbins, ybins),weights=prior_weights)
+        #dx = 0.5*(xpoints[1] - xpoints[0])
+        #dy = 0.5*(ypoints[1] - ypoints[0])
+        xx, yy = np.meshgrid(xpoints, ypoints)
 
         h = self._scotts_factor(n=nbins) * self.bandwidth_scale
         data_cov = np.cov(np.array([data[:, 0], data[:, 1]]))
@@ -272,18 +274,14 @@ class KernelDensity2D(object):
 
         density = fftconvolve(hb.T, self._gaussian_kernel(hx, hy, xx, xc, yy, yc), mode='same')
 
-        #density = density.reshape(L,L)
-
-        if boundary_correction:
-            boundary_norm = fftconvolve(self._gaussian_kernel(hx, hy, xx, xc, yy, yc),
+        boundary_norm = fftconvolve(self._gaussian_kernel(hx, hy, xx, xc, yy, yc),
                                         self._boundary_kernel(xx, nbins), mode='same')
-            #boundary_norm = boundary_norm[0:50,0:50]
-            #boundary_norm.reshape(L,L)
-            density *= boundary_norm ** -1
+
+        density *= boundary_norm ** -1
 
         return density
 
-    def __call__(self, data, xpoints, ypoints, pranges, prior_weights, boundary_correction=True):
+    def __call__(self, data, xpoints, ypoints, pranges):
 
         assert len(xpoints) == len(ypoints)
 
@@ -291,9 +289,9 @@ class KernelDensity2D(object):
 
         x_center, y_center = np.mean(pranges[0]), np.mean(pranges[1])
         estimate = self._convolve_2d(data, len(xpoints), xpoints, ypoints,
-                                     x_center, y_center, prior_weights, boundary_correction)
+                                     x_center, y_center)
 
-        return estimate, xx.ravel(), yy.ravel()
+        return estimate
 
 
 class KernelDensity2D_old(object):

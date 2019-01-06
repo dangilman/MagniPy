@@ -68,8 +68,9 @@ class ChainFromChain(object):
 
                 new_statistic = summary_statistic[ordered_inds]
 
-                lens.add_parameters(pnames=self.params_varied,fname=chainpath_out+'processed_chains/'+
-                                  self._chain_parent._chain_name+'/lens'+str(i+1)+'/samples.txt',use_pandas=False)
+                lens.add_parameters(fname=chainpath_out+'processed_chains/'+
+                                  self._chain_parent._chain_name+'/lens'+str(i+1)+'/samples.txt',
+                                    use_pandas=False)
 
                 for pname in lens._parameters[0].keys():
                     lens.parameters[0][pname] = lens._parameters[0][pname][ordered_inds]
@@ -78,8 +79,8 @@ class ChainFromChain(object):
 
 class ChainFromSamples(object):
 
-    def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
-        deplete = False, deplete_fac = 0.5, n_pert = 1, load = True, statistics=None, parameters = None):
+    def __init__(self,chain_name='',which_lens=None, error=0,
+                deplete = False, deplete_fac = 0.5, n_pert = 1, load = True):
 
         self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
                                                                            chain_name + '/simulation_info.txt')
@@ -87,6 +88,8 @@ class ChainFromSamples(object):
             self.truths.update({'log_m_break':self.truths['logmhm']})
 
         self.pranges = self.get_pranges(self.prior_info)
+        self.pranges_trimmed = self.pranges
+
         self._chain_name = chain_name
 
         Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
@@ -96,77 +99,51 @@ class ChainFromSamples(object):
 
         self.lenses = []
 
-        if which_lens is None:
-            which_lens = numpy.arange(1,self.Nlenses+1)
-
         for ind in which_lens:
-
-            #print('loading '+str(ind)+'...')
 
             new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
                                                                     chain_name+'/')
-
             if load:
                 for ni in range(0,n_pert):
                     #print('loading '+str(ni+1)+'...')
                     fname = 'statistic_'+str(error)+'error_'+str(ni+1)+'.txt'
 
-                    if statistics is None:
-                        finite = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
-                    else:
-                        new_lens.statistic.append(statistics[ind-1])
+                    _ = new_lens.add_statistic(fname=self.chain_file_path + 'lens' + str(ind) + '/'+fname)
 
-                    if parameters is None:
-                        fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
-                        new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
-                                        fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
-                    else:
-                        new_dictionary = {}
-                        for i, pname in enumerate(self.params_varied):
-                            new_dictionary.update({pname: parameters[ind-1][:, i].astype(float)})
+                    fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
 
-                        new_lens.parameters.append(new_dictionary)
+                    new_lens.add_parameters(fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
 
                     if deplete:
 
                         L = int(len(new_lens.statistic[ni]))
-
                         keep = np.arange(0, L)
-
                         u = np.random.rand(L)
-
                         keep = keep[np.where(u <= deplete_fac)]
-
                         for pname in new_lens.parameters[ni].keys():
-
                             new_lens.parameters[ni][pname] = new_lens.parameters[ni][pname][keep]
                         new_lens.statistic[ni] = new_lens.statistic[ni][keep]
 
             self.lenses.append(new_lens)
 
-        if trimmed_ranges is None:
-            self.pranges_trimmed = self.pranges
+    def get_samples(self,tol=None, reject_pnames = None, keep_ranges = None):
+
+        if len(self.lenses) == 1:
+            samples = self.lenses[0].draw(tol)
+            samples = samples[:, :, :, np.newaxis]
+
         else:
-            self.pranges_trimmed = trimmed_ranges
 
-    def add_derived_parameters(self, new_param_name, transformation_function, pnames_input, new_param_ranges):
+            L = len(self.lenses)
+            temp = self.lenses[0].draw(tol)
+            shape = temp.shape
+            samples = np.empty(shape=(shape[0], shape[1], shape[2], L))
 
-        for lens in self.lenses:
-            lens.add_derived_parameter(new_param_name, transformation_function, pnames_input)
+            for l, lens in enumerate(self.lenses):
+                samps = lens.draw(tol)
+                samples[:,:,:,l] = samps
 
-        self.pranges.update({new_param_name: new_param_ranges})
-
-    def get_posteriors(self,tol=None, reject_pnames = None, keep_ranges = None):
-
-        posteriors = []
-
-        for lens in self.lenses:
-
-            lens.draw(tol, reject_pnames, keep_ranges)
-
-            posteriors.append(lens.posterior)
-
-        return posteriors
+        return samples
 
     def get_pranges(self,info):
 
@@ -237,7 +214,7 @@ class SingleLens(object):
         self.posterior = None
         self.zlens, self.zsource = zlens, zsource
         self.flux_path = flux_path
-        self.parameters, self.statistic = [], []
+        self.parameters, self.statistic = None, []
         self._fluxes = []
         self._fluxes_obs = []
         self._parameters = []
@@ -260,64 +237,23 @@ class SingleLens(object):
 
         self._parameters.append(new_dictionary)
 
-    def draw(self,tol, reject_pnames, keep_ranges):
+    def draw(self, tol):
 
-        self.posterior = []
+        return self.parameters[0:tol]
 
-        if reject_pnames is not None:
-
-            for i in range(0, len(self.statistic)):
-
-                for reject_pname, keep_range in zip(reject_pnames, keep_ranges):
-                    samps = self.parameters[i][reject_pname]
-                    indexes = numpy.where(numpy.logical_and(samps >= keep_range[0], samps <= keep_range[1]))[0]
-
-                    for pname in self.parameters[i].keys():
-                        self.parameters[i][pname] = self.parameters[i][pname][indexes]
-                #print('keeping ' + str(len(self.parameters[i][pname])) + ' samples')
-
-        for i in range(0, len(self.statistic)):
-            inds = numpy.argsort(self.statistic[i])[0:tol]
-
-            new_param_dic = {}
-
-            for key in self.parameters[i].keys():
-                values = self.parameters[i][key]
-                new_param_dic.update({key: values[inds]})
-
-            self.posterior.append(PosteriorSamples(new_param_dic, weights=None))
-
-    def add_parameters(self,pnames=None,fname=None,finite_inds=None,use_pandas=True):
+    def add_parameters(self,fname=None,use_pandas=False):
 
         if use_pandas:
             params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
         else:
             params = numpy.squeeze(np.loadtxt(fname))
 
-        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
+        if self.parameters is None:
+            self.parameters = params
+            self.parameters = self.parameters[:, :, np.newaxis]
 
-        new_dictionary = {}
-
-        rounding = {'a0_area': 0.009, 'log_m_break': 0.104, 'SIE_gamma': 0.004,
-                    'source_size_kpc': 0.005, 'LOS_normalization': 0.012}
-
-        rounding_dec = {'a0_area': 4, 'log_m_break': 2, 'SIE_gamma': 2,
-                    'source_size_kpc': 4, 'LOS_normalization': 2}
-
-        def round_to(n, precision):
-
-            correction = 0.5*np.ones_like(n)
-            return (n / precision + correction).astype(int) * precision
-
-        for i,pname in enumerate(pnames):
-
-            new_params = np.round(params[:,i].astype(float), rounding_dec[pname]).astype(float)
-            #new_params = params[:,i].astype(float)
-            #new_params = round_to(params[:,i].astype(float), 1*rounding[pname])
-
-            new_dictionary.update({pname: new_params})
-
-        self.parameters.append(new_dictionary)
+        else:
+            self.parameters = np.dstack((self.parameters, params))
 
     def add_weights(self,params,weight_function):
         """
@@ -339,33 +275,6 @@ class SingleLens(object):
         self.statistic.append(new_stat)
 
         return finite
-
-class PosteriorSamples:
-
-    def __init__(self,samples,weights=None):
-
-        self.samples = samples
-        self.pnames = samples.keys()
-
-        for ki in samples.keys():
-            self.length = int(len(samples[ki]))
-            break
-
-        if weights is None:
-            self.weights = numpy.ones(self.length)
-        else:
-            assert len(weights) == self.length
-            self.weights = weights
-
-    def print_weights(self):
-
-        for weight in self.weights:
-            print(weight)
-
-    def change_weights(self,weight_function):
-
-        self.weights *= weight_function(self)
-        assert len(self.weights) == self.length
 
 class WeightedSamples:
 

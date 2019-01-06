@@ -110,29 +110,6 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
 
     return {'Nlenses':Nlenses, 'low_95':low95_interval, 'high_95':high95_interval}
 
-def new_chains_withsigma(chain_name, which_lenses, new_chain_name, cut_sigma = 0.05):
-
-    compute_sigma_chains(chain_name, which_lenses, new_chain_name, cut_sigma)
-
-def resample_chain_sigma():
-
-    name = 'WDM_7.7_sigma'
-    new_name = 'WDM_7.7_sigma0.3_srcsize35'
-
-    sigma_sub = 0.3
-    logmhm = 7.7
-    src_size = 0.035
-    LOS_norm = 1
-
-    which_lens_indexes = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
-    params_new = {'sigma_sub': [sigma_sub, 0.01], 'log_m_break': [logmhm, 0.1],
-                                'source_size_kpc': [src_size, 0.006],
-                                'LOS_normalization': [LOS_norm, 0.05]}
-
-    _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
-                   parameters_new=params_new, SIE_gamma_mean = 2.08,
-                       SIE_gamma_sigma = 0.05, transform_fsub = False, sigma_sub = sigma_sub)
-
 def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters_new={}, SIE_gamma_mean = 2.08,
                    SIE_gamma_sigma = 0.05, transform_fsub = False, sigma_sub = None):
 
@@ -159,7 +136,7 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
 
         new_gamma.append(newgamma)
 
-        stack_chain(new_name, which_lens, parameters, fluxes_obs, fluxes, header)
+        stack_chain(new_name, which_lens, parameters, fluxes_obs, fluxes, header, counter_start=0)
 
     chain_info_path = chainpath_out + 'processed_chains/'+name + '/simulation_info.txt'
 
@@ -184,7 +161,7 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
         for g in new_gamma:
             f.write(str(g)+'\n')
 
-def process_raw(name=str,which_lenses=[]):
+def process_raw(name=str,which_lenses=[], counter_start = 0):
 
     """
     coverts output from cluster into single files for each lens
@@ -194,7 +171,7 @@ def process_raw(name=str,which_lenses=[]):
 
         fluxes,fluxes_obs,parameters,header = extract_chain(name,which_lens)
 
-        stack_chain(name, which_lens, parameters, np.squeeze(fluxes_obs), fluxes, header)
+        stack_chain(name, which_lens, parameters, np.squeeze(fluxes_obs), fluxes, header, counter_start)
 
 def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
 
@@ -205,9 +182,10 @@ def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
-                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_sigma=0.12, logmhm_sigma = 0.05,
+                   process_only = False, SIE_gamma_mean=2.08, SIE_gamma_variance = 0.05,
+                   SIE_gamma_sigma=0.03, logmhm_sigma = 0.05,
                    src_size_sigma = 0.007, a0_area_sigma = 0.001, LOS_norm_sigma = 0.02,
-                   name='WDM_sim_7.7_.012', which_lens_indexes = None):
+                   name='WDM_sim_7.7_.012', which_lens_indexes = None, ending = ''):
 
     #name = 'WDM_sim_7.7_.012'
 
@@ -216,15 +194,19 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
     else:
         new_name = 'CDM_'
 
-    new_name += 'sigma'+str(a0_area)+'_srcsize'+str(src_size)
+    new_name += 'sigma'+str(a0_area)+'_srcsize'+str(src_size) + ending
 
     if LOS_norm != 1:
         new_name += '_LOS'+str(LOS_norm)
 
     if process_only is False:
+
+        SIE_mean = np.random.normal(SIE_gamma_mean, SIE_gamma_variance)
+
         params_new = {'a0_area': [a0_area, a0_area_sigma], 'log_m_break': [logmhm, logmhm_sigma],
                                     'source_size_kpc': [src_size, src_size_sigma],
-                                    'LOS_normalization': [LOS_norm, LOS_norm_sigma]}
+                                    'LOS_normalization': [LOS_norm, LOS_norm_sigma],
+                                    'SIE_gamma': [SIE_mean, SIE_gamma_sigma]}
 
         _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
                        parameters_new=params_new, SIE_gamma_mean = SIE_gamma_mean,
@@ -235,46 +217,52 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 def resample_sys(num, process_only):
     num = int(num)
     errors = [0, 0.02, 0.04, 0.06, 0.08]
-    src_mean = 0.033
+    src_mean = 35
 
     if num == 1:
-        resample_chain(a0_area=0.02, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.6, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                   which_lens_indexes=np.arange(1, 51))
+                   which_lens_indexes=np.arange(1, 51), ending = '_exact', SIE_gamma_variance=0.001)
     elif num == 2:
-        resample_chain(a0_area=0.0175, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.6, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                   which_lens_indexes=np.arange(1, 51))
+                   which_lens_indexes=np.arange(1, 51), ending = '')
     elif num == 3:
-        resample_chain(a0_area=0.023, logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.8, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                        N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                       which_lens_indexes=np.arange(1, 51))
+                       which_lens_indexes=np.arange(1, 51), ending = '_exact', SIE_gamma_variance=0.001)
 
     elif num == 4:
-        resample_chain(a0_area=0.022,logmhm=4.9, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.8,logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                   which_lens_indexes=np.arange(1, 51))
+                   which_lens_indexes=np.arange(1, 51), ending = '')
 
     elif num == 5:
-        resample_chain(a0_area=0.0075, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.25, logmhm=7.7, src_size=src_mean, LOS_norm=1., errors=errors,
                        N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                       which_lens_indexes=np.arange(1, 51))
+                       which_lens_indexes=np.arange(1, 51), ending = '_exact', SIE_gamma_variance=0.001)
     elif num == 6:
-        resample_chain(a0_area=0.025, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=1.5, logmhm=7.7, src_size=src_mean, LOS_norm=1, errors=errors,
                        N_pert=15, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                       which_lens_indexes=np.arange(1, 51))
+                       which_lens_indexes=np.arange(1, 51), ending = '')
 
 
-
-
-#process_raw('jpl_sim2', np.arange(1,6))
-#process_raw('jpl_sim3', np.arange(1,6))
-
-#process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 50, [0,0.02,0.04,0.06,0.08])
-#resample_sys(1, False)
-resample_sys(2, False)
+#process_raw('hoffman_run1', np.arange(1,6), counter_start=0)
+#process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
+#process_raw('hoffman_run3', np.arange(1,6), counter_start=15)
+#process_raw('hoffman_run4', np.arange(1,6), counter_start = 20)
+#process_raw('hoffman_run5', np.arange(1,11), counter_start = 25)
+#process_raw('jpl_sim1', np.arange(1,6), counter_start = 35)
+#process_raw('jpl_sim2', np.arange(1,6), counter_start = 40)
+#process_raw('jpl_sim3', np.arange(1,6), counter_start = 45)
+#exit(1)
+#process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 15, [0,0.02,0.04,0.06,0.08])
 #resample_sys(1, False)
 #resample_sys(2, False)
+#resample_sys(3, False)
+#resample_sys(4, False)
+#resample_sys(5, False)
+#resample_sys(6, False)
 #resample_sys(2, False)
 #resample_sys(4, False)
 #resample_sys(5, False)

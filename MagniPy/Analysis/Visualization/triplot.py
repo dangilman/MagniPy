@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from MagniPy.Analysis.Visualization.posterior_plots import _Joint2D, Density1D
 from MagniPy.Analysis.Statistics.routines import *
-from scipy.misc import comb
 
 class TriPlot(object):
 

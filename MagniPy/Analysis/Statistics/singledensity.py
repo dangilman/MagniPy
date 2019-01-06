@@ -6,7 +6,7 @@ class SingleDensity(object):
                  steps=50,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
-        kde_class = 'getdist'
+        kde_class = 'custom'
         self._use_kde = use_kde
         self.reweight = reweight
         self.scale = scale
@@ -59,7 +59,7 @@ class SingleDensity(object):
             if kde_class == 'scipy':
                 return KDE_scipy(dim=1)
             else:
-                return KernelDensity1D(scale = self.scale, bandwidth_scale=self.bandwidth_scale)
+                return KernelDensity1D(bandwidth_scale=self.bandwidth_scale)
 
     def _trim_density(self, density, x_left, y_left, x_right, y_right):
 
@@ -116,7 +116,7 @@ class SingleDensity(object):
 
             if self.dimension == 1:
 
-                kde = self.kde(self.data, X, pranges_true=[self.kde_train_ranges[self.param_names[0]]], prior_weights=self.prior_weights)
+                kde = self.kde(self.data, X, prange=[self.kde_train_ranges[self.param_names[0]]], prior_weights=self.prior_weights)
 
                 density = np.histogram(X, bins=len(X), density=True, weights=kde.ravel())[0]
 
@@ -127,15 +127,18 @@ class SingleDensity(object):
 
                 if self.kde_class == 'getdist':
 
-                    kde, xx, yy = self.kde(self.data, self.param_names)
+                    kde = self.kde(self.data, self.param_names)
                 else:
-                    kde, xx, yy = self.kde(self.data, X, Y, pranges=[self.kde_train_ranges[self.param_names[0]],
-                                          self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
-                density = kde
-                #L = len(kde) **
-                #density = kde.reshape()
-                norm = np.sum(density) * len(X) ** 2
-                density *= norm ** -1
+                    kde = self.kde(self.data, X, Y, pranges=[self.kde_train_ranges[self.param_names[0]],
+                                          self.kde_train_ranges[self.param_names[1]]])
+
+                xx, yy = np.meshgrid(X, Y)
+                density, x, y = np.histogram2d(xx.ravel(), yy.ravel(), bins = len(X),weights = kde.ravel())
+                density = density.T
+                #density = kde
+
+                #norm = np.sum(density) * len(X) ** 2
+                #density = norm
                 #density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
 
             return density, self.pranges

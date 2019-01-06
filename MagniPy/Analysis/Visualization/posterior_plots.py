@@ -218,7 +218,7 @@ class _Joint2D(object):
 
         if xlabel_on:
 
-            nticks = 5
+            nticks = 6
 
             xticks = np.linspace(param_ranges[param_names[0]][0], param_ranges[param_names[0]][1], nticks)
 
@@ -226,27 +226,21 @@ class _Joint2D(object):
 
             self.ax.set_xlabel(xlabel_name, fontsize=label_size)
             self.ax.set_xticks(xticks)
-            if param_names[0] == 'source_size_kpc':
-                self.ax.set_xticklabels(np.array(xtick_labels).astype(int), fontsize=tick_label_font)
-            elif param_names[0] == 'a0_area':
-                self.ax.set_xticks([0, 0.009, 0.018, 0.027, 0.036, 0.045])
-                self.ax.set_xticklabels([0, 0.9, 1.8, 2.7, 3.6, 4.5], fontsize=tick_label_font, rotation = 45)
 
-                #self.ax.set_xticklabels(np.round(np.array(xtick_labels),3), fontsize=tick_label_font, rotation = 45)
+            if param_names[0] == 'SIE_gamma':
+                rotation = 45
             else:
-                if param_names[0] == 'SIE_gamma':
-                    rotation = 45
-                else:
-                    rotation = 0
-                self.ax.set_xticklabels(np.array(xtick_labels), fontsize=tick_label_font, rotation=rotation)
-                self.ax.set_ylabel(xlabel_name, fontsize=label_size)
-                self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
+                rotation = 0
+
+            self.ax.set_xticklabels(np.array(xtick_labels), fontsize=tick_label_font, rotation=rotation)
+            self.ax.set_ylabel(xlabel_name, fontsize=label_size)
+            self.ax.xaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=xlabel_name)))
 
             self.ax.set_xlim(xticks[0], xticks[-1])
 
         if ylabel_on:
 
-            nticks = 5
+            nticks = 6
 
             yticks = np.linspace(param_ranges[param_names[1]][0],param_ranges[param_names[1]][1],nticks)
                 #ytick_labels = [str(tick) for tick in yticks]
@@ -254,14 +248,10 @@ class _Joint2D(object):
             ylabel_name, yticks, ytick_labels = self._convert_param_names(param_names[1], yticks)
             self.ax.set_yticks(yticks)
 
-            if param_names[1] == 'source_size_kpc':
-                self.ax.set_yticklabels(np.array(ytick_labels).astype(int), fontsize=tick_label_font)
-            elif param_names[1] == 'a0_area':
-                self.ax.set_yticklabels(np.round(np.array(ytick_labels),3), fontsize=tick_label_font)
-            else:
-                self.ax.set_yticklabels(np.array(ytick_labels), fontsize=tick_label_font)
-                self.ax.set_ylabel(ylabel_name, fontsize=label_size)
-                self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
+
+            self.ax.set_yticklabels(np.array(ytick_labels), fontsize=tick_label_font)
+            self.ax.set_ylabel(ylabel_name, fontsize=label_size)
+            self.ax.yaxis.set_major_formatter(FormatStrFormatter(self._tick_formatter(pname=ylabel_name)))
             self.ax.set_ylabel(ylabel_name, fontsize=label_size)
 
             self.ax.set_ylim(yticks[0], yticks[-1])
@@ -293,12 +283,12 @@ class _Joint2D(object):
         elif pname == 'source_size_kpc':
             #pname = r'$\sigma_{\rm{source}}$'
             pname = r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$'
-            tick_labels = np.array(ticks)*1000
+            tick_labels = np.array(ticks)
 
         elif pname == 'a0_area':
 
             pname = r'$\sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
-            tick_labels = ticks*100
+            tick_labels = ticks
 
         elif pname == 'SIE_gamma':
             pname = r'$\gamma_{\rm{macro}}$'
@@ -385,7 +375,7 @@ class _Joint2D(object):
         if pname == 'fsub':
             return '%.3f'
         elif pname == r'$\sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$':
-            return '%.3f'
+            return '%.1f'
         elif pname=='logmhm' or pname=='log_m_break' or pname == r'$\log_{10} \left(m_{\rm{hm}}\right)$':
             return '%.1f'
         elif pname == 'c_power':
@@ -394,12 +384,8 @@ class _Joint2D(object):
             return '%.2f'
         elif pname == 'source_size_kpc' or pname ==  r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
             return '%d'
-        elif pname == r'$\rm{source} \ \rm{size} \ \left[\rm{pc}\right]}$':
-            return '%.2f'
         elif pname == r'$\delta_{\rm{LOS}}$' or pname == 'LOS_normalization':
             return '%.1f'
-        elif pname == r'$\sigma_{\rm{sub}}' or pname == 'sigma_sub':
-            return '%.3f'
         else:
             return '%.2f'
 
