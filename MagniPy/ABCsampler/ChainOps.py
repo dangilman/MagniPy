@@ -40,7 +40,7 @@ def stack_chain(chain_name='', which_lens = None, parameters=None,fluxes_obs=Non
     np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.3f',header=header)
 
 def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, errors = None, N_pert = 1,
-                           keep_n=5000):
+                           keep_n=10000):
 
     if errors is None:
         errors = []
@@ -87,6 +87,8 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
             diff = np.array((perturbed_ratios - perturbed_ratios_obs)**2)
             summary_statistic = np.sqrt(np.sum(diff, 1))
 
+            #print('not sorting summary statistics!! ')
+            #ordered_inds = np.arange(0,len(summary_statistic))
             ordered_inds = np.argsort(summary_statistic)[0:keep_n]
 
             np.savetxt(perturbed_path + 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',

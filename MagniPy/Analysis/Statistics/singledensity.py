@@ -6,7 +6,7 @@ class SingleDensity(object):
                  steps=50,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
-        kde_class = 'custom'
+
         self._use_kde = use_kde
         self.reweight = reweight
         self.scale = scale
@@ -125,21 +125,13 @@ class SingleDensity(object):
                 X, Y = np.linspace(self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1], self.steps), \
                        np.linspace(self.pranges[self.param_names[1]][0], self.pranges[self.param_names[1]][1], self.steps)
 
-                if self.kde_class == 'getdist':
-
-                    kde = self.kde(self.data, self.param_names)
-                else:
-                    kde = self.kde(self.data, X, Y, pranges=[self.kde_train_ranges[self.param_names[0]],
+                kde = self.kde(self.data, X, Y, pranges=[self.kde_train_ranges[self.param_names[0]],
                                           self.kde_train_ranges[self.param_names[1]]])
 
-                xx, yy = np.meshgrid(X, Y)
-                density, x, y = np.histogram2d(xx.ravel(), yy.ravel(), bins = len(X),weights = kde.ravel())
-                density = density.T
-                #density = kde
-
-                #norm = np.sum(density) * len(X) ** 2
-                #density = norm
-                #density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
+                #xx, yy = np.meshgrid(X, Y)
+                #density, x, y = np.histogram2d(xx.ravel(), yy.ravel(), bins = len(X),weights = kde.ravel())
+                #density = density.T
+                density = kde
 
             return density, self.pranges
 
@@ -151,8 +143,16 @@ class SingleDensity(object):
 
             elif self.dimension == 2:
 
-                density = np.histogram2d(self.posteriorsamples[self.param_names[0]], self.posteriorsamples[self.param_names[1]],
-                                         bins=[np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)], density=True)[0]
+                datax, datay = self.posteriorsamples[self.param_names[0]], self.posteriorsamples[self.param_names[1]]
+                data = np.column_stack((datax, datay))
+                xbins, ybins = np.linspace(X[0], X[-1], self.steps + 1), np.linspace(Y[0], Y[-1],
+                                                                                            self.steps + 1)
+                dx, dy = xbins[1] - xbins[0], ybins[1] - ybins[0]
+                xbincen, ybincen = xbins[0:-1] + dx, ybins[0:-1] + dy
+                ranges = [[xbins[0], xbins[-1]], [ybins[0], ybins[-1]]]
+                data = snap_to_bins(data, xbincen, dx, ybincen, dy, ranges)
+
+                density = np.histogram2d(data[:,0], data[:,1],bins=(xbins, ybins))[0]
 
 
             return density.T, param_ranges

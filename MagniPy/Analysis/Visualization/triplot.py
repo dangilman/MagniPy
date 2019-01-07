@@ -22,7 +22,7 @@ class TriPlot(object):
     def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
                  fig_size = 8, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
                  kde_marginal = True, reweight = True, pre_computed = False, chain_name = None,
-                 errors = None):
+                 errors = None, kde_class= 'custom'):
 
         self._pre_computed = pre_computed
         self._chain_name = chain_name
@@ -41,7 +41,8 @@ class TriPlot(object):
         self._grid = self._init_grid(self._nparams, parameter_names)
 
         self._posterior_grid = self._get_sims(posteriors,
-                   self._grid, parameter_names, pranges, parameter_trim, bandwidth_scale)
+                   self._grid, parameter_names, pranges, parameter_trim, bandwidth_scale,
+                                              kde_class)
 
         self.parameter_names, self.parameter_ranges = parameter_names, pranges
 
@@ -170,7 +171,8 @@ class TriPlot(object):
 
         return grid
 
-    def _get_sims(self, posteriors, grid, pnames, param_ranges, param_trim, bandwidth_scale):
+    def _get_sims(self, posteriors, grid, pnames, param_ranges, param_trim,
+                  bandwidth_scale, kde_method):
 
         L = np.shape(grid)[0]
 
@@ -218,7 +220,8 @@ class TriPlot(object):
                                                         use_kde_joint=self._kde_joint,
                                                         use_kde_marginal=self._kde_marginal, reweight=self._reweight,
                                                         pre_computed=self._pre_computed,
-                                                        chain_name = self._chain_name, errors = self._errors)
+                                                        chain_name = self._chain_name, errors = self._errors,
+                                                        kde_class=kde_method)
 
                     grid_post[row, col] = GridCell(sims, sim_pranges, parameters, type='joint')
 
@@ -233,6 +236,8 @@ class GridCell(object):
         self.pnames = pnames
 
         self.type = type
+
+
 
 
 

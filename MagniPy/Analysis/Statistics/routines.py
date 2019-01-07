@@ -158,7 +158,7 @@ def build_densities_precomputed(sim_list, chain_name, Nlenses, parameters):
 
 def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandwidth_scale = 1, use_kde_joint = True,
                     use_kde_marginal=True, steps=None, reweight = True, pre_computed = False, chain_name = None,
-                    errors = None):
+                    errors = None, kde_class = 'custom'):
 
     sim_densities, sim_pranges = [], []
     pranges_list = [pranges] * len(sim_list)
@@ -204,7 +204,7 @@ def build_densities(sim_list, parameters, pranges, xtrim=None, ytrim=None, bandw
                                                kernel_function='Gaussian',
                                                scale=5,
                                                bandwidth_scale=bandwidth_scale, use_kde=kde_flag,
-                                               steps=steps)
+                                               steps=steps, kde_class = kde_class)
 
                     den, param_ranges = single_density(xtrim=xtrim, ytrim=ytrim)
                     if i == 0:

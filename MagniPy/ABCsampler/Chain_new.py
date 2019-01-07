@@ -129,6 +129,7 @@ class ChainFromSamples(object):
     def get_samples(self,tol=None, reject_pnames = None, keep_ranges = None):
 
         if len(self.lenses) == 1:
+
             samples = self.lenses[0].draw(tol)
             samples = samples[:, :, :, np.newaxis]
 
@@ -248,12 +249,23 @@ class SingleLens(object):
         else:
             params = numpy.squeeze(np.loadtxt(fname))
 
+        params = self._rescale(params)
+
         if self.parameters is None:
             self.parameters = params
             self.parameters = self.parameters[:, :, np.newaxis]
 
         else:
             self.parameters = np.dstack((self.parameters, params))
+
+    def _rescale(self, params):
+
+        if np.min(params[:,0]) < 25:
+            params[:,0] *= 1000
+        if np.min(params[:,-1]) < 0.045:
+            params[:,-1] *= 100
+
+        return params
 
     def add_weights(self,params,weight_function):
         """

@@ -6,34 +6,7 @@ from copy import deepcopy
 from numpy.fft import fftshift, fft2, ifft2
 from getdist import plots, MCSamples
 from KDEpy import FFTKDE
-
-class KDEpy(object):
-
-    def __init__(self, bandwidth_scale=1):
-
-        self.bandwidth_scale = bandwidth_scale
-        self.estimator = FFTKDE(kernel='gaussian')
-
-    def __call__(self, data, kde_bins=20):
-
-        dim = int(np.shape(data[1])[0])
-
-        estimator = self.estimator.fit(data, weights=None)
-
-        coords, den = estimator.evaluate((kde_bins, kde_bins, kde_bins))
-
-        if dim == 2:
-            density = den.reshape(kde_bins, kde_bins)
-        elif dim == 3:
-            density = den.reshape(kde_bins, kde_bins, kde_bins)
-        den = []
-        for di in range(dim):
-            proj = np.sum(density, axis=di)
-
-            den.append(proj)
-
-        return den
-
+from MagniPy.util import snap_to_bins
 
 class KDE_getdist(object):
 
@@ -45,9 +18,9 @@ class KDE_getdist(object):
 
         return n ** (-1. / (d + 4))
 
-    def __call__(self, data, xpoints, ypoints, pranges):
+    def __call__(self, data, xpoints, ypoints, pranges, weights):
 
-        mcsamples = MCSamples(samples=data, names = ['x1', 'x2'], ranges=pranges)
+        mcsamples = MCSamples(samples=data, names = ['x1', 'x2'], ranges=pranges, weights=weights)
 
         #bandwidth = self._scotts_factor(50, 2) * self.bandwidth_scale
         density = mcsamples.get2DDensity(x='x1', y='x2',
@@ -257,13 +230,35 @@ class KernelDensity2D(object):
 
         return np.exp(r)
 
-    def _convolve_2d(self, data, nbins, xpoints, ypoints, xc, yc, prior_weights = None):
+    def _linear_boundary(self, d0, d_normed, a00, prior_mask,winx,
+                         winy,y,indexes,histbins):
+
+        a10 = fftconvolve(prior_mask, winx, mode='same')
+        a01 = fftconvolve(prior_mask, winy, mode='same')
+        a20 = \
+            fftconvolve(prior_mask, winx * indexes, mode='same')
+        a02 = fftconvolve(prior_mask, winy * y, mode='same')
+        a11 = \
+            fftconvolve(prior_mask, winy * indexes, mode='same')
+        xP = fftconvolve(histbins, winx,mode='same')
+        yP = fftconvolve(histbins, winy, mode='same')
+        denom = (a20 * a01 ** 2 + a10 ** 2 * a02 - a00 * a02 * a20 + a11 ** 2 * a00 - 2 * a01 * a10 * a11)
+        A = a11 ** 2 - a02 * a20
+        Ax = a10 * a02 - a01 * a11
+        Ay = a01 * a20 - a10 * a11
+
+        corrected = (d0 * A + xP * Ax + yP * Ay) / denom
+        density = d_normed * np.exp(np.minimum(corrected / d_normed, 4) - 1)
+
+        return density
+
+    def _convolve_2d(self, data, nbins, xpoints, ypoints, xc, yc, weights = None):
 
         xbins, ybins = np.linspace(xpoints[0], xpoints[-1], nbins+1), np.linspace(ypoints[0], ypoints[-1], nbins+1)
 
-        hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins = (xbins, ybins),weights=prior_weights)
-        #dx = 0.5*(xpoints[1] - xpoints[0])
-        #dy = 0.5*(ypoints[1] - ypoints[0])
+        hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins=(xbins, ybins))
+        #hb, _, _ = np.histogram2d(data[:, 0], data[:, 1], bins = (xbins, ybins),weights=weights)
+
         xx, yy = np.meshgrid(xpoints, ypoints)
 
         h = self._scotts_factor(n=nbins) * self.bandwidth_scale
@@ -277,11 +272,14 @@ class KernelDensity2D(object):
         boundary_norm = fftconvolve(self._gaussian_kernel(hx, hy, xx, xc, yy, yc),
                                         self._boundary_kernel(xx, nbins), mode='same')
 
+        #density = self._linear_boundary(self, density, density*boundary_norm**-1, boundary_norm,
+        #                                self._boundary_kernel(xx, nbins), winx, winy,y,indexes,histbins)
+
         density *= boundary_norm ** -1
 
         return density
 
-    def __call__(self, data, xpoints, ypoints, pranges):
+    def __call__(self, data, xpoints, ypoints, pranges, weights=None):
 
         assert len(xpoints) == len(ypoints)
 
@@ -289,7 +287,7 @@ class KernelDensity2D(object):
 
         x_center, y_center = np.mean(pranges[0]), np.mean(pranges[1])
         estimate = self._convolve_2d(data, len(xpoints), xpoints, ypoints,
-                                     x_center, y_center)
+                                     x_center, y_center, weights=weights)
 
         return estimate
 
