@@ -113,13 +113,6 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
     if not os.path.exists(chainpath_out + 'processed_chains/'+new_name):
         create_directory(chainpath_out + 'processed_chains/'+new_name)
 
-    zd, zs, _ = np.loadtxt(chainpath_out+'/raw_chains/simulation_zRein.txt', unpack = True)
-
-    if transform_fsub:
-
-        from pyHalo.Cosmology.lens_cosmo import LensCosmo
-        l = LensCosmo(0.5, 3)
-
     for which_lens in which_lens_indexes:
 
         fluxes, fluxes_obs, parameters, header, newgamma = resample(name, which_lens, parameters_new,

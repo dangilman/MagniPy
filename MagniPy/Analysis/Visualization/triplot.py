@@ -11,7 +11,7 @@ class TriPlot(object):
                                (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
                                (colors.cnames['darkslategrey'], colors.cnames['black'], 'k')]
 
-    truth_color = 'r'
+    truth_color = 'g'
 
     spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
     spacing_scale = 1
@@ -36,7 +36,7 @@ class TriPlot(object):
 
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
-                     fig_size=8, truths=None, load_from_file=True):
+                     fig_size=8, truths=None, load_from_file=True, transpose_idx = None):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -54,8 +54,7 @@ class TriPlot(object):
 
         for i, chain in enumerate(self.chains):
             self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
-                                 fig_size,
-                                 truths, load_from_file = load_from_file)
+                                 fig_size, truths, load_from_file = load_from_file, transpose_idx = transpose_idx)
 
         plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
                             right=1 - self.spacing[2] * self.spacing_scale,
@@ -64,7 +63,7 @@ class TriPlot(object):
 
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
-                        truths=None, labsize=14, tick_label_font=14, load_from_file = True):
+                        truths=None, labsize=14, tick_label_font=14, load_from_file = True, transpose_idx=None):
 
         if param_names is None:
             param_names = self.param_names
@@ -86,7 +85,10 @@ class TriPlot(object):
                     density = chain.get_projection([param_names[row], param_names[col]],
                                                    load_from_file=load_from_file)
 
-                    nticks = int(density.shape[0])
+                    if transpose_idx is not None and plot_index in transpose_idx:
+                        print(param_names[row],param_names[col])
+                        density = density.T
+
                     extent, aspect = self._extent_aspect([param_names[col], param_names[row]])
                     pmin1, pmax1 = extent[0], extent[1]
                     pmin2, pmax2 = extent[2], extent[3]
@@ -140,9 +142,9 @@ class TriPlot(object):
 
                     if truths is not None:
                         t1, t2 = truths[param_names[col]], truths[param_names[row]]
-                        axes[plot_index].scatter(t1, t2, color='r', s=50)
-                        axes[plot_index].axvline(t1, linestyle='--', color='r', linewidth=3)
-                        axes[plot_index].axhline(t2, linestyle='--', color='r', linewidth=3)
+                        axes[plot_index].scatter(t1, t2, color=self.truth_color, s=50)
+                        axes[plot_index].axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
+                        axes[plot_index].axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
 
                 elif marg_in_row == col and marg_done is False:
 
@@ -197,7 +199,7 @@ class TriPlot(object):
                         if t <= pmin:
                             t = pmin * 1.075
 
-                        axes[plot_index].axvline(t, linestyle='--', color='r', linewidth=3)
+                        axes[plot_index].axvline(t, linestyle='--', color=self.truth_color, linewidth=3)
 
                 else:
                     axes[plot_index].axis('off')
