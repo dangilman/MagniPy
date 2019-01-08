@@ -1,9 +1,6 @@
 from MagniPy.ABCsampler.ChainOps import *
 from MagniPy.ABCsampler.Chain import ChainFromChain, ChainFromSamples
 from MagniPy.Analysis.Statistics.routines import build_densities, barplothist
-from MagniPy.Analysis.Statistics.routines import reweight_posteriors_individually
-from MagniPy.Analysis.Statistics.routines import duplicate_with_cuts
-
 
 def compute_joint_kde(chain_name, lens_index, nbins, error, n_pert = 15):
 
@@ -261,7 +258,7 @@ def resample_sys(num, process_only):
 #resample_sys(4, False)
 #resample_sys(5, False)
 #resample_sys(6, False)
-resample_sys(7, False)
+#resample_sys(7, False)
 #resample_sys(4, False)
 #resample_sys(5, False)
 #resample_sys(5, False)
