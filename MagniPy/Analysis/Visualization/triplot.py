@@ -1,238 +1,350 @@
+import numpy as np
 from matplotlib import colors
 import matplotlib.pyplot as plt
-import numpy as np
-from MagniPy.Analysis.Visualization.posterior_plots import _Joint2D, Density1D
-from MagniPy.Analysis.Statistics.routines import *
+from copy import deepcopy
+from MagniPy.util import snap_to_bins
+from MagniPy.Analysis.KDE.kde import *
+from MagniPy.Analysis.KDE.ndhistogram import HistND
+
 
 class TriPlot(object):
-
     cmap = 'gist_heat'
 
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
-    default_contour_colors = [(colors.cnames['lightgreen'],colors.cnames['green'], 'k'),
-                              (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
-                              (colors.cnames['grey'], colors.cnames['black'], 'k'),
-                              (colors.cnames['skyblue'], colors.cnames['blue'], 'k'),
-                              (colors.cnames['coral'], 'r', 'k')]
+    _default_contour_colors = [(colors.cnames['dodgerblue'], colors.cnames['blue'], 'k'),
+                               (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
+                               (colors.cnames['darkslategrey'], colors.cnames['black'], 'k')]
+
     truth_color = 'r'
 
     spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
     spacing_scale = 1
 
-    def __init__(self, posteriors=[], parameter_names = [], pranges = [], parameter_trim = None,
-                 fig_size = 8, bandwidth_scale = 1, truths=None, steps = 10, kde_joint =True,
-                 kde_marginal = True, reweight = True, pre_computed = False, chain_name = None,
-                 errors = None):
+    def __init__(self, parameter_names, parameter_ranges, chains):
 
-        self._pre_computed = pre_computed
-        self._chain_name = chain_name
-        self._errors = errors
+        """
+        :param parameter_names: param names (dictionary)
+        :param parameter_ranges: parameter limits (dictionary)
+        :param samples: samples that form the probability distribution (numpy array)
 
-        self._init(fig_size)
-        self._steps = steps
-        self._reweight = reweight
-        self._kde_joint, self._kde_marginal = kde_joint, kde_marginal
-        if parameter_trim is None:
-            parameter_trim = {}
-            for pname in parameter_names:
-                parameter_trim.update({pname: None})
+        shape is (N_samples (tol), N_parameters (len(parameter_names)),
+        N_realizations (n_pert), N_posteriors (n_lenses))
 
-        self._nparams = len(parameter_names)
-        self._grid = self._init_grid(self._nparams, parameter_names)
+        """
+        self.param_names = parameter_names
+        self.parameter_ranges = parameter_ranges
 
-        self._posterior_grid = self._get_sims(posteriors,
-                   self._grid, parameter_names, pranges, parameter_trim, bandwidth_scale)
+        self.chains = chains
 
-        self.parameter_names, self.parameter_ranges = parameter_names, pranges
+        self._computed_densities = {}
 
-        self._truths = truths
+    def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
+                     filled_contours=True, contour_alpha=0.6, param_names=None,
+                     fig_size=8, truths=None, load_from_file=True):
 
         self.fig = plt.figure(1)
+        self._init(fig_size)
 
-        N = len(parameter_names)
-        size_scale = N * 0.1 + 1
+        axes = []
+        counter = 1
+        n_subplots = len(param_names)
+        for row in range(n_subplots):
+            for col in range(n_subplots):
+                axes.append(plt.subplot(n_subplots, n_subplots, counter))
+                counter += 1
+
+        if contour_colors is None:
+            contour_colors = self._default_contour_colors
+
+        for i, chain in enumerate(self.chains):
+            self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+                                 fig_size,
+                                 truths, load_from_file = load_from_file)
+
+        plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
+                            right=1 - self.spacing[2] * self.spacing_scale,
+                            top=1 - self.spacing[3] * self.spacing_scale,
+                            wspace=self.spacing[4] * self.spacing_scale, hspace=self.spacing[5] * self.spacing_scale)
+
+    def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+                        filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
+                        truths=None, labsize=14, tick_label_font=14, load_from_file = True):
+
+        if param_names is None:
+            param_names = self.param_names
+
+        size_scale = len(param_names) * 0.1 + 1
         self.fig.set_size_inches(fig_size * size_scale, fig_size * size_scale)
 
-    def _init(self, fig_size):
+        marg_in_row, plot_index = 0, 0
+        n_subplots = len(param_names)
+        self._reference_grid = None
 
-        self._tick_lab_font = 12 * fig_size * 7**-1
-        self._label_font = 15 * fig_size * 7**-1
-        plt.rcParams['axes.linewidth'] = 2.5*fig_size*7**-1
+        for row in range(n_subplots):
 
-        plt.rcParams['xtick.major.width'] = 2.5*fig_size*7**-1
-        plt.rcParams['xtick.major.size'] = 6*fig_size*7**-1
-        plt.rcParams['xtick.minor.size'] = 2*fig_size*7**-1
+            marg_done = False
+            for col in range(n_subplots):
 
-        plt.rcParams['ytick.major.width'] = 2.5*fig_size*7**-1
-        plt.rcParams['ytick.major.size'] = 6*fig_size*7**-1
-        plt.rcParams['ytick.minor.size'] = 2*fig_size*7**-1
+                if col < marg_in_row:
 
-    def _subplot_index(self, col, row):
+                    density = chain.get_projection([param_names[row], param_names[col]],
+                                                   load_from_file=load_from_file)
 
-        return col * row + col + 1
+                    nticks = int(density.shape[0])
+                    extent, aspect = self._extent_aspect([param_names[col], param_names[row]])
+                    pmin1, pmax1 = extent[0], extent[1]
+                    pmin2, pmax2 = extent[2], extent[3]
 
-    def makeplot(self, levels=[0.05,0.22,1], filled_contours=True, contour_alpha = 0.6, rebin=20, compute_bayes_factor = False):
+                    xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
+                    ytick_locs, ytick_labels, ylabel, _ = self._ticks_and_labels(param_names[row])
 
-        axis, bayes_factor = self._makeplot(levels = levels, filled_contours = filled_contours, contour_alpha = contour_alpha,
-                       rebin = rebin, compute_bayes_factor = compute_bayes_factor)
+                    if row == n_subplots - 1:
 
-        plt.subplots_adjust(left=self.spacing[0]*self.spacing_scale, bottom=self.spacing[1]*self.spacing_scale,
-                            right=1-self.spacing[2]*self.spacing_scale, top=1-self.spacing[3]*self.spacing_scale,
-                            wspace=self.spacing[4]*self.spacing_scale, hspace=self.spacing[5]*self.spacing_scale)
+                        axes[plot_index].set_xticks(xtick_locs)
+                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=rotation)
 
-        return axis, self.default_contour_colors, bayes_factor
+                        if col == 0:
+                            axes[plot_index].set_yticks(ytick_locs)
+                            axes[plot_index].set_yticklabels(ytick_labels, fontsize=tick_label_font)
+                            axes[plot_index].set_ylabel(ylabel, fontsize=labsize)
+                        else:
+                            axes[plot_index].set_yticks([])
+                            axes[plot_index].set_yticklabels([])
+                        axes[plot_index].set_xlabel(xlabel, fontsize=labsize)
 
-    def _makeplot(self, levels = None, filled_contours=None, contour_alpha = None, rebin=15,
-                  compute_bayes_factor = False):
 
-        plot_index = 1
+                    elif col == 0:
+                        axes[plot_index].set_yticks(ytick_locs)
+                        axes[plot_index].set_yticklabels(ytick_labels, fontsize=tick_label_font)
+                        axes[plot_index].set_xticks([])
+                        axes[plot_index].set_ylabel(ylabel, fontsize=labsize)
 
-        densities = []
-
-        axis = []
-        bayes_factor = {}
-
-        for row in range(0, self._nparams):
-            for col in range(0, self._nparams):
-
-                ax = plt.subplot(self._nparams, self._nparams, plot_index)
-                axis.append(ax)
-
-                cell = self._posterior_grid[row, col]
-
-                if cell is None:
-                    ax.axis('off')
-
-                elif cell.type == 'marginal':
-
-                    if col < self._nparams-1:
-                        xlabel_on = False
                     else:
-                        xlabel_on = True
+                        axes[plot_index].set_xticklabels([])
+                        axes[plot_index].set_yticklabels([])
 
-                    oneD = Density1D(ax=ax, fig=self.fig)
-                    oneD.default_contour_colors = self.default_contour_colors
+                    if filled_contours:
+                        coordsx = np.linspace(extent[0], extent[1], density.shape[0])
+                        coordsy = np.linspace(extent[2], extent[3], density.shape[1])
 
-                    oneD.make_plot_1D(cell.posterior, cell.pnames[0],
-                                      cell.ranges[0][cell.pnames[0]],
-                                      xlabel_on=xlabel_on, truths=self._truths, rebin=rebin,
-                                      tick_label_font=self._tick_lab_font,
-                                      label_size=self._label_font)
-                    if compute_bayes_factor is not False:
-                        if cell.pnames[0] in compute_bayes_factor.keys():
+                        axes[plot_index].imshow(density.T, extent=extent, aspect=aspect,
+                                                origin='lower', cmap=self.cmap, alpha=0)
+                        self._contours(coordsx, coordsy, density.T, axes[plot_index], extent=extent,
+                                       contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
+                                       levels=levels)
+                        axes[plot_index].set_xlim(pmin1, pmax1)
+                        axes[plot_index].set_ylim(pmin2, pmax2)
 
-                            cut = compute_bayes_factor[cell.pnames[0]]
-                            _bayes_factor = oneD._compute_bayes_factor(cell.posterior,
-                                                       cell.ranges[0][cell.pnames[0]], cut, rebin)
-                            bayes_factor.update({cell.pnames[0]: _bayes_factor})
+
+                    else:
+                        axes[plot_index].imshow(density.T, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
+                                                vmax=np.max(density), aspect=aspect, extent=extent)
+                        axes[plot_index].set_xlim(pmin1, pmax1)
+                        axes[plot_index].set_ylim(pmin2, pmax2)
+
+                    if truths is not None:
+                        t1, t2 = truths[param_names[col]], truths[param_names[row]]
+                        axes[plot_index].scatter(t1, t2, color='r', s=50)
+                        axes[plot_index].axvline(t1, linestyle='--', color='r', linewidth=3)
+                        axes[plot_index].axhline(t2, linestyle='--', color='r', linewidth=3)
+
+                elif marg_in_row == col and marg_done is False:
+
+                    marg_done = True
+                    marg_in_row += 1
+
+                    density = chain.get_projection([param_names[col]], load_from_file)
+
+                    xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
+                    pmin, pmax = self._get_param_minmax(param_names[col])
+                    coords = np.linspace(pmin, pmax, len(density))
+
+                    bar_centers, bar_width, bar_heights = self._bar_plot_heights(density, coords, None)
+
+                    bar_heights *= np.max(bar_heights) ** -1
+
+                    for i, y in enumerate(bar_heights):
+                        x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
+
+                        axes[plot_index].plot([x1, x2], [y, y], color=contour_colors[color_index][1],
+                                              alpha=contour_alpha)
+                        axes[plot_index].fill_between([x1, x2], y, color=contour_colors[color_index][1],
+                                                      alpha=contour_alpha)
+                        axes[plot_index].plot([x1, x1], [0, y], color=contour_colors[color_index][1],
+                                              alpha=contour_alpha)
+                        axes[plot_index].plot([x2, x2], [0, y], color=contour_colors[color_index][1],
+                                              alpha=contour_alpha)
+                    axes[plot_index].set_xlim(pmin, pmax)
+                    axes[plot_index].set_ylim(0, 1.1)
+                    axes[plot_index].set_yticks([])
+
+                    low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
+                    high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+
+                    if low95 is not None:
+                        axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
+                                                 alpha=0.8, linewidth=2.5, linestyle='-.')
+                    if high95 is not None:
+                        axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
+                                                 alpha=0.8, linewidth=2.5, linestyle='-.')
+
+                    if col != n_subplots - 1:
+                        axes[plot_index].set_xticks([])
+                    else:
+                        axes[plot_index].set_xticks(xtick_locs)
+                        axes[plot_index].set_xticklabels(xtick_labels)
+
+                    if truths is not None:
+
+                        t = deepcopy(truths[param_names[col]])
+                        pmin, pmax = self._get_param_minmax(param_names[col])
+                        if t <= pmin:
+                            t = pmin * 1.075
+
+                        axes[plot_index].axvline(t, linestyle='--', color='r', linewidth=3)
 
                 else:
-
-                    joint = _Joint2D(cell.posterior, ax=ax, fig=self.fig, cmap=self.cmap)
-                    joint.default_contour_colors = self.default_contour_colors
-                    _, joint_info = joint.make_plot(param_ranges=cell.ranges[0], param_names=cell.pnames, filled_contours=filled_contours,
-                                    contour_alpha=contour_alpha, levels=levels, truths=self._truths,
-                                                    tick_label_font=self._tick_lab_font, label_size=self._label_font)
-
-                    if row != self._nparams-1:
-                        ax.set_xticklabels([])
-                        ax.set_xticks([])
-                        ax.set_xlabel('')
-
-                    if col > 0:
-                        ax.set_yticklabels([])
-                        ax.set_yticks([])
-                        ax.set_ylabel('')
-
-                    if row == self._nparams - 1:
-                        densities.append(joint_info)
+                    axes[plot_index].axis('off')
 
                 plot_index += 1
 
-        return axis, bayes_factor
+    def _confidence_int(self, centers, heights, percentile):
 
-    def _init_grid(self, nparams, param_names):
+        total = np.sum(heights)
+        summ, index = 0, 0
+        while summ < total * percentile:
+            summ += heights[index]
+            index += 1
 
-        grid = np.zeros(shape=(nparams, nparams), dtype=object)
+        if index == len(centers) or index == 1:
+            return None
 
-        for col in range(0, nparams):
-            for row in range(0, nparams):
+        return centers[index - 1]
 
-                if row == col:
-                    if row == 0:
-                        grid[row, row] = [param_names[col], param_names[row+1], 'marginal']
-                    else:
-                        grid[row, row] = [param_names[col], param_names[0], 'marginal']
-                elif col > row:
-                    grid[row, col] = None
-                else:
-                    grid[row, col] = [param_names[col], param_names[row]]
+    def _extent_aspect(self, param_names):
 
-        return grid
+        aspect = (self.parameter_ranges[param_names[0]][1] - self.parameter_ranges[param_names[0]][0]) * \
+                 (self.parameter_ranges[param_names[1]][1] - self.parameter_ranges[param_names[1]][0]) ** -1
 
-    def _get_sims(self, posteriors, grid, pnames, param_ranges, param_trim, bandwidth_scale):
+        extent = [self.parameter_ranges[param_names[0]][0], self.parameter_ranges[param_names[0]][1],
+                  self.parameter_ranges[param_names[1]][0],
+                  self.parameter_ranges[param_names[1]][1]]
 
-        L = np.shape(grid)[0]
+        return extent, aspect
 
-        marginal_densities = {}
-        marginal_ranges = {}
+    def _init(self, fig_size):
 
-        grid_post = np.zeros_like(grid, dtype=object)
+        self._tick_lab_font = 12 * fig_size * 7 ** -1
+        self._label_font = 15 * fig_size * 7 ** -1
+        plt.rcParams['axes.linewidth'] = 2.5 * fig_size * 7 ** -1
 
-        if L < 2:
-            raise Exception('must have at least 2 parameters.')
+        plt.rcParams['xtick.major.width'] = 2.5 * fig_size * 7 ** -1
+        plt.rcParams['xtick.major.size'] = 6 * fig_size * 7 ** -1
+        plt.rcParams['xtick.minor.size'] = 2 * fig_size * 7 ** -1
 
-        for k, name in enumerate(pnames):
-            marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]}, xtrim=param_trim[name],
-                                               steps=self._steps, use_kde_joint = self._kde_joint, use_kde_marginal=self._kde_marginal, reweight = self._reweight)
-            marginal_densities.update({name:marg})
-            marginal_ranges.update({name:marg_range})
+        plt.rcParams['ytick.major.width'] = 2.5 * fig_size * 7 ** -1
+        plt.rcParams['ytick.major.size'] = 6 * fig_size * 7 ** -1
+        plt.rcParams['ytick.minor.size'] = 2 * fig_size * 7 ** -1
 
-        for col in range(0, L):
-            for row in range(0, L):
+    def _get_param_minmax(self, pname):
 
-                cell = grid[row, col]
+        ranges = self.parameter_ranges[pname]
+        return ranges[0], ranges[1]
 
-                if cell is None:
-                    grid_post[row, col] = None
-                    continue
-                if cell[-1]=='marginal':
-                    name = cell[0]
-                    marg, marg_range = build_densities(posteriors, [name], {name: param_ranges[name]},
-                                                       xtrim=param_trim[name],
-                                                       steps=self._steps, use_kde_joint=self._kde_joint,
-                                                       use_kde_marginal=self._kde_marginal, reweight=self._reweight)
-                    grid_post[row, col] = GridCell(marg, marg_range, [name], type='marginal')
+    def _get_param_inds(self, params):
 
-                else:
-                    parameters = [cell[0], cell[1]]
-                    pranges = {parameters[0]: param_ranges[parameters[0]], parameters[1]: param_ranges[parameters[1]]}
-                    if param_trim is None:
-                        xtrim, ytrim = None, None
-                    else:
-                        xtrim = param_trim[parameters[0]]
-                        ytrim = param_trim[parameters[1]]
-                    sims, sim_pranges = build_densities(posteriors, parameters,
-                                                        pranges, bandwidth_scale=bandwidth_scale,
-                                                        xtrim=xtrim, ytrim=ytrim, steps=self._steps,
-                                                        use_kde_joint=self._kde_joint,
-                                                        use_kde_marginal=self._kde_marginal, reweight=self._reweight,
-                                                        pre_computed=self._pre_computed,
-                                                        chain_name = self._chain_name, errors = self._errors)
+        inds = []
 
-                    grid_post[row, col] = GridCell(sims, sim_pranges, parameters, type='joint')
+        for pi in params:
 
-        return grid_post
+            for i, name in enumerate(self.param_names):
 
-class GridCell(object):
+                if pi == name:
+                    inds.append(i)
+                    break
 
-    def __init__(self, posterior, ranges, pnames, type):
+        return np.array(inds)
 
-        self.posterior = posterior
-        self.ranges = ranges
-        self.pnames = pnames
+    def _bar_plot_heights(self, bar_heights, coords, rebin):
 
-        self.type = type
+        if rebin is not None:
+            new = []
+            if len(bar_heights) % rebin == 0:
+                fac = int(len(bar_heights) / rebin)
+                for i in range(0, len(bar_heights), fac):
+                    new.append(np.mean(bar_heights[i:(i + fac)]))
+
+                bar_heights = np.array(new)
+            else:
+                raise ValueError('must be divisible by rebin.')
+
+        bar_width = np.absolute(coords[-1] - coords[0]) * len(bar_heights) ** -1
+        bar_centers = []
+        for i in range(0, len(bar_heights)):
+            bar_centers.append(coords[0] + bar_width * (0.5 + i))
+
+        integral = np.sum(bar_heights) * bar_width * len(bar_centers) ** -1
+
+        bar_heights = bar_heights * integral ** -1
+
+        return bar_centers, bar_width, bar_heights
+
+    def _contours(self, x, y, grid, ax, linewidths=4, filled_contours=True, contour_colors='',
+                  contour_alpha=1, extent=None, levels=[0.05, 0.22, 1]):
+
+        levels = np.array(levels) * np.max(grid)
+        X, Y = np.meshgrid(x, y)
+
+        if filled_contours:
+
+            ax.contour(X, Y, grid, levels, extent=extent,
+                       colors=contour_colors, linewidths=linewidths, zorder=1, linestyles=['dashed', 'solid'])
+
+            ax.contourf(X, Y, grid, [levels[0], levels[1]], colors=[contour_colors[0], contour_colors[1]],
+                        alpha=contour_alpha * 0.5, zorder=1,
+                        extent=extent)
+
+            ax.contourf(X, Y, grid, [levels[1], levels[2]], colors=[contour_colors[1], contour_colors[2]],
+                        alpha=contour_alpha, zorder=1,
+                        extent=extent)
 
 
+        else:
+            ax.contour(X, Y, grid, extent=extent, colors=contour_colors,
+                       levels=np.array(levels) * np.max(grid),
+                       linewidths=linewidths)
 
+    def _ID_joint_params(self, target_params, params):
+
+        if params[0] in target_params and params[1] in target_params:
+            return True
+        else:
+            return False
+
+    def _ticks_and_labels(self, pname):
+
+        rotation = 0
+        if pname == 'a0_area':
+            name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
+            tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
+            tick_locs = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
+            rotation = 45
+        elif pname == 'SIE_gamma':
+            name = r'$\gamma_{\rm{macro}}$'
+            tick_labels = [2, 2.05, 2.1, 2.15, 2.2]
+            tick_locs = [2, 2.05, 2.1, 2.15, 2.2]
+            rotation = 45
+        elif pname == 'source_size_kpc':
+            name = r'$\sigma_{\rm{src}}$'
+            tick_labels = [25, 30, 35, 40, 45, 50]
+            tick_locs = tick_labels
+        elif pname == 'log_m_break':
+            name = r'$\log_{10}{m_{\rm{hm}}}$'
+            tick_labels = [5, 6, 7, 8, 9, 10]
+            tick_locs = tick_labels
+        elif pname == 'LOS_normalization':
+            name = r'$\delta_{\rm{LOS}}$'
+            tick_labels = [0.7, 0.85, 1.0, 1.15, 1.3]
+            tick_locs = [0.7, 0.85, 1.0, 1.15, 1.3]
+
+        return tick_locs, tick_labels, name, rotation
