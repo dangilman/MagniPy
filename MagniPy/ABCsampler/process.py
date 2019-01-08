@@ -40,19 +40,26 @@ def compute_joint_kde(chain_name, lens_index, nbins, error, n_pert = 15):
         np.savetxt(output_path_base+ '/lens' + str(lens_index) + '/'+pnames[0]+'_'+pnames[1]+'_error_'+str(error)+'.txt',
                    X = np.array(sims[0][0]))
 
+
+def CI(centers, heights, percentile):
+    total = np.sum(heights)
+    summ, index = 0, 0
+    while summ < total * percentile:
+        summ += heights[index]
+        index += 1
+
+    if index == len(centers) or index == 1:
+        return None
+
+    return centers[index - 1]
+
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, error,
-                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=40):
+                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=20):
 
     if not isinstance(Nlenses, list):
         Nlenses = [Nlenses]
 
-    #print('loading master.... ')
     chain_master = ChainFromSamples(chain_name, which_lens = which_lenses, error=0, n_pert=1, load=False)
-    #params_reject = ['a0_area', 'log_m_break']
-    #reject_ranges = [[0, 0.045], [4.8, 10]]
-
-    #chain_master, pranges = duplicate_with_cuts(chain_master, tol, pnames_reject_list=params_reject,
-    #                                          keep_ranges_list=reject_ranges)
 
     low95_interval, low68_interval = [], []
     high95_interval, high68_interval = [], []
@@ -60,7 +67,6 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
     for nlens in Nlenses:
         print('computing '+str(nlens)+' lenses... ')
         low95, high95 = [], []
-        low68, high68 = [], []
 
         for i in range(0, Nbootstraps):
 
@@ -71,36 +77,25 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
             print('adding perturbations.... ')
             chain._add_perturbations(error, tol)
 
-            posteriors = chain.get_posteriors(tol)
+            #if param_weights_individual is not None:
+            #    weight_param = param_weights_individual['param']
+            #    weight_means = param_weights_individual['means']
+            #    weight_sigmas = param_weights_individual['sigma']
+            #    posteriors = reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
+            #                                                  lens_list, post_to_reweight=[0])[0]
 
-            if param_weights_individual is not None:
+            new_chain = ChainFromSamples(chain_name, np.arange(0,len(which_lenses)),
+                                         error=0, n_pert=1, load=False, from_parent = chain)
 
-                weight_param = param_weights_individual['param']
-                weight_means = param_weights_individual['means']
-                weight_sigmas = param_weights_individual['sigma']
+            new_chain.eval_KDE(tol = tol, nkde_bins=bins)
 
-                posteriors = reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
-                                                              lens_list, post_to_reweight=[0])[0]
+            marginalized = new_chain.get_projection(['log_m_break'], load_from_file=False)
 
+            coords = np.linspace(chain_master.pranges['log_m_break'][0], chain_master.pranges['log_m_break'][1], len(marginalized))
+            bar_centers, bar_width, bar_heights = barplothist(marginalized, coords, None)
 
-            sims, sim_pranges = build_densities([posteriors], [parameter],
-                                                chain.pranges, bandwidth_scale=1,
-                                                xtrim=xtrim, ytrim=ytrim, steps=bins,
-                                                use_kde_joint=False, use_kde_marginal=True,
-                                                reweight=True)
-
-            density = np.ones_like(sims[0][0])
-
-            for di in sims[0]:
-                density *= di
-
-            bar_centers, bar_width, bar_heights = barplothist(density,
-                              np.linspace(sim_pranges[0][parameter][0],
-                                          sim_pranges[0][parameter][1], bins), None)
-
-
-            h95 = quick_confidence(bar_centers, bar_heights, 0.95)
-            l95 = quick_confidence(bar_centers, bar_heights, 0.05)
+            h95 = CI(bar_centers, bar_heights, 0.95)
+            l95 = CI(bar_centers, bar_heights, 0.05)
 
             low95.append(l95)
             high95.append(h95)
