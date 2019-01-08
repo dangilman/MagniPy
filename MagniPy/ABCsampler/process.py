@@ -204,6 +204,8 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
     process_samples(new_name, which_lens_indexes, errors = errors, N_pert=N_pert)
 
+    return new_name
+
 def resample_sys(num, process_only):
     num = int(num)
     errors = [0, 0.02, 0.04, 0.06, 0.08]
