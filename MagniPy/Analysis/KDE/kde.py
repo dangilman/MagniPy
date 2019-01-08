@@ -4,8 +4,6 @@ from scipy.stats import gaussian_kde
 from scipy.signal import fftconvolve
 from copy import deepcopy
 from numpy.fft import fftshift, fft2, ifft2
-from getdist import plots, MCSamples
-from KDEpy import FFTKDE
 
 
 class KDE_nD(object):
@@ -125,57 +123,6 @@ class KDE_nD(object):
         density = self._compute_ND(data, points, ranges, weights)
 
         return density
-
-class KDE_getdist1D(object):
-
-    def __init__(self, bandwidth_scale=1):
-
-        self.bandwidth_scale = bandwidth_scale
-
-    def _scotts_factor(self, n, d=1):
-
-        return n ** (-1. / (d + 4))
-
-    def __call__(self, data, xpoints, pranges, weights=None):
-
-        if weights is not None:
-
-            mcsamples = MCSamples(samples=data, names = ['x1'], ranges=[pranges], weights = weights)
-        else:
-
-            mcsamples = MCSamples(samples=data, names = ['x1'], ranges=[pranges])
-
-        #bandwidth = self._scotts_factor(len(data), 1) * self.bandwidth_scale * np.cov(data)**0.5
-        density = mcsamples.get1DDensity('x1',
-                      fine_bins_2D = len(xpoints), boundary_correction_order = 1)
-
-        return density.Prob(xpoints)
-
-class KDE_getdist(object):
-
-    def __init__(self, bandwidth_scale=1):
-
-        self.bandwidth_scale = bandwidth_scale
-
-    def _scotts_factor(self, n, d=2):
-
-        return n ** (-1. / (d + 4))
-
-    def __call__(self, data, xpoints, ypoints, pranges, weights, **kwargs):
-
-        if weights is not None:
-
-            mcsamples = MCSamples(samples=data, names = ['x1', 'x2'], ranges=pranges)
-        else:
-            mcsamples = MCSamples(samples=data, names = ['x1', 'x2'], ranges=pranges, weights = weights)
-
-        #bandwidth = self._scotts_factor(50, 2) * self.bandwidth_scale
-        density = mcsamples.get2DDensity(x='x1', y='x2',
-                      fine_bins_2D = len(xpoints),**kwargs)
-
-        xx, yy = np.meshgrid(xpoints, ypoints)
-
-        return density.Prob(xx, yy)
 
 class KDE_scipy(object):
 

@@ -1,11 +1,7 @@
-import numpy as np
 from matplotlib import colors
 import matplotlib.pyplot as plt
-from copy import deepcopy
-from MagniPy.util import snap_to_bins
 from MagniPy.Analysis.KDE.kde import *
-from MagniPy.Analysis.KDE.ndhistogram import HistND
-
+import numpy as np
 
 class TriPlot(object):
     cmap = 'gist_heat'
