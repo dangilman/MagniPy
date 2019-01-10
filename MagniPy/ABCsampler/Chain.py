@@ -431,7 +431,7 @@ class ChainFromSamples(object):
             create_directory(self.chain_file_path + 'computed_densities/')
 
         string = str(len(self.lenses))+'lens_'+str(self.error)+'error_'
-        string += str(self.n_pert)+'avg_' + px + '__' + py  + '_'+bandwidth_scale+'.txt'
+        string += str(self.n_pert)+'avg_' + px + '__' + py  + '_'+ str(bandwidth_scale) +'.txt'
         return self.chain_file_path + 'computed_densities/' + string
 
     def _fnamemarginal(self, p, bandwidth_scale):
@@ -440,7 +440,7 @@ class ChainFromSamples(object):
             create_directory(self.chain_file_path + 'computed_densities/')
 
         string = str(len(self.lenses)) + 'lens_' + str(self.error) + 'error_'
-        string += str(self.n_pert) + 'avg_' + p + '_' + bandwidth_scale +'.txt'
+        string += str(self.n_pert) + 'avg_' + p + '_' + str(bandwidth_scale) +'.txt'
         return self.chain_file_path + 'computed_densities/' + string
 
 
