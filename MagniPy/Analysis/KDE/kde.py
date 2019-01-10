@@ -16,6 +16,7 @@ class KDE_nD(object):
         return 1.05 * n ** (-1. / (d + 4))
 
     def _boundary_kernel(self, shape, nbins):
+
         B = np.ones(shape)
         return B
         # return np.pad(B, nbins, mode='constant', constant_values=0)
@@ -112,8 +113,10 @@ class KDE_nD(object):
         density = fftconvolve(H.T, gaussian_kernel, mode='same')
 
         if boundary_order == 1:
+
             boundary_kernel = self._boundary_kernel(shape=np.shape(H), nbins=np.shape(H)[0])
             boundary_normalization = fftconvolve(gaussian_kernel, boundary_kernel, mode='same')
+
             density *= boundary_normalization ** -1
 
         return density

@@ -130,9 +130,18 @@ class ChainFromSamples(object):
     def __init__(self,chain_name='',which_lens=None, error=0, trimmed_ranges=None,
         deplete = False, deplete_fac = 0.5, n_pert = 1, load = True, statistics=None,
                  parameters = None, from_parent = False):
+        try:
+            self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
+                                                                       chain_name + '/simulation_info.txt')
+            Ncores, cores_per_lens, self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
+                                                                      chain_name + '/simulation_info.txt')
 
-        self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/processed_chains/' +
-                                                                           chain_name + '/simulation_info.txt')
+        except:
+            self.params_varied, self.truths, self.prior_info = read_chain_info(chainpath_out + '/chain_stats/' +
+                                                                               chain_name + '/simulation_info.txt')
+            Ncores, cores_per_lens, self.Nlenses = read_run_partition(chainpath_out + '/chain_stats/' +
+                                                                      chain_name + '/simulation_info.txt')
+
         if 'logmhm' in self.truths:
             self.truths.update({'log_m_break':self.truths['logmhm']})
 
@@ -140,8 +149,6 @@ class ChainFromSamples(object):
         self._chain_name = chain_name
         self.n_pert = n_pert
 
-        Ncores,cores_per_lens,self.Nlenses = read_run_partition(chainpath_out + '/processed_chains/' +
-                                                                    chain_name + '/simulation_info.txt')
 
         self.chain_file_path = chainpath_out + 'chain_stats/' + chain_name +'/'
 
@@ -205,7 +212,9 @@ class ChainFromSamples(object):
     def eval_KDE(self, bandwidth_scale = 1, tol = 2500, nkde_bins = 20,
                  save_to_file = True):
 
-        kernel = KDE_nD(bandwidth_scale)
+        if not hasattr(self, '_kernel'):
+
+            self._kernel = KDE_nD(bandwidth_scale)
 
         posteriors = self.get_posteriors(tol)
 
@@ -230,7 +239,7 @@ class ChainFromSamples(object):
                 for i, pi in enumerate(self.params_varied):
                     data[:,i] = posteriors[n][p].samples[pi]
 
-                density_n += kernel(data, points, ranges, weights=None)
+                density_n += self._kernel(data, points, ranges, weights=None)
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
                 print(str(t_elpased) + ' min per lens.')
@@ -242,17 +251,17 @@ class ChainFromSamples(object):
 
         self.density = density
 
-        self._density_projections(density, save_to_file)
+        self._density_projections(density, save_to_file, bandwidth_scale)
 
-    def get_projection(self, params, load_from_file = True):
+    def get_projection(self, params, bandwidth_scale, load_from_file = True):
 
         if load_from_file:
             if len(params) == 1:
-                fname = self._fnamemarginal(params[0])
+                fname = self._fnamemarginal(params[0], bandwidth_scale)
                 return np.loadtxt(fname)
             else:
-                fname1 = self._fnamejoint(params[0], params[1])
-                fname2 = self._fnamejoint(params[1], params[0])
+                fname1 = self._fnamejoint(params[0], params[1], bandwidth_scale)
+                fname2 = self._fnamejoint(params[1], params[0], bandwidth_scale)
                 try:
                     return np.loadtxt(fname1)
                 except:
@@ -348,7 +357,7 @@ class ChainFromSamples(object):
 
             return posteriors
 
-    def _density_projections(self, density, save_to_file, fpath = None):
+    def _density_projections(self, density, save_to_file, bandwidth_scale):
 
         self.joint_densities = []
         self.marginal_densities = []
@@ -364,17 +373,17 @@ class ChainFromSamples(object):
                 self.marginal_densities.append(marg)
 
                 if save_to_file:
-                    fname = self._fnamemarginal(p)
+                    fname = self._fnamemarginal(p, bandwidth_scale)
                     np.savetxt(fname, X = marg.array)
 
         proj_LOSa0 = np.sum(density, axis=(2, 3, 4)).T
-        proj_a0logm = np.sum(density, axis=(1, 3, 4))
+        proj_a0logm = np.sum(density, axis=(1, 3, 4)).T
         proj_a0SIE = np.sum(density, axis=(1, 2, 4)).T
         proj_srca0 = np.sum(density, axis=(1, 2, 3)).T
 
         proj_logmLOS = np.sum(density, axis=(0, 3, 4)).T
-        proj_sieLOS = np.sum(density, axis=(0, 2, 4))
-        proj_srcLOS = np.sum(density, axis=(0, 2, 3))
+        proj_sieLOS = np.sum(density, axis=(0, 2, 4)).T
+        proj_srcLOS = np.sum(density, axis=(0, 2, 3)).T
 
         proj_SIElogm = np.sum(density, axis=(0, 1, 4))
         proj_srclogm = np.sum(density, axis=(0, 1, 3))
@@ -413,25 +422,25 @@ class ChainFromSamples(object):
 
         if save_to_file:
             for j in self.joint_densities:
-                fname = self._fnamejoint(j.param_x, j.param_y)
+                fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
                 np.savetxt(fname, X = j.array)
 
-    def _fnamejoint(self, px, py):
+    def _fnamejoint(self, px, py, bandwidth_scale):
 
         if not os.path.exists(self.chain_file_path + 'computed_densities/'):
             create_directory(self.chain_file_path + 'computed_densities/')
 
         string = str(len(self.lenses))+'lens_'+str(self.error)+'error_'
-        string += str(self.n_pert)+'avg_' + px + '__' + py + '.txt'
+        string += str(self.n_pert)+'avg_' + px + '__' + py  + '_'+bandwidth_scale+'.txt'
         return self.chain_file_path + 'computed_densities/' + string
 
-    def _fnamemarginal(self, p):
+    def _fnamemarginal(self, p, bandwidth_scale):
 
         if not os.path.exists(self.chain_file_path + 'computed_densities/'):
             create_directory(self.chain_file_path + 'computed_densities/')
 
         string = str(len(self.lenses)) + 'lens_' + str(self.error) + 'error_'
-        string += str(self.n_pert) + 'avg_' + p + '.txt'
+        string += str(self.n_pert) + 'avg_' + p + '_' + bandwidth_scale +'.txt'
         return self.chain_file_path + 'computed_densities/' + string
 
 
@@ -515,9 +524,9 @@ class SingleLens(object):
 
         new_dictionary = {}
 
-        rounding = {'a0_area': 0.01, 'log_m_break': 0.01, 'SIE_gamma': 0.001,
-                    'source_size_kpc': 0.01, 'LOS_normalization': 0.001}
-
+        _rounding = {'a0_area': 0.1, 'log_m_break': 0.1, 'SIE_gamma': 0.01,
+                    'source_size_kpc': 1, 'LOS_normalization': 0.01}
+        rounding = {'source_size_kpc': 25 * 100 ** -1}
         rounding_dec = {'a0_area': 2, 'log_m_break': 3, 'SIE_gamma': 3,
                     'source_size_kpc': 2, 'LOS_normalization': 3}
 
@@ -529,8 +538,12 @@ class SingleLens(object):
         for i,pname in enumerate(pnames):
 
             #new_params = np.round(params[:,i].astype(float), rounding_dec[pname]).astype(float)
-            new_params = params[:,i].astype(float)
-            #new_params = round_to(params[:,i].astype(float), 1*rounding[pname])
+            if pname in rounding.keys():
+                new_params = round_to(params[:, i].astype(float), rounding[pname])
+
+            else:
+                new_params = params[:,i].astype(float)
+            #new_params = round_to(params[:,i].astype(float), rounding[pname])
 
             new_dictionary.update({pname: new_params})
 

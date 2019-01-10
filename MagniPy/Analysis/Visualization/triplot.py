@@ -51,11 +51,19 @@ class TriPlot(object):
 
         if contour_colors is None:
             contour_colors = self._default_contour_colors
-
+        self._auto_scale = []
         for i, chain in enumerate(self.chains):
             self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file, transpose_idx = transpose_idx)
 
+        for k in range(len(param_names)):
+            scales = []
+            for c in range(0,len(self.chains)):
+                scales.append(self._auto_scale[c][k])
+            maxh = np.max(scales) * 1.1
+            axes[int((len(param_names)+1) * k)].set_ylim(0, maxh)
+
+        self._auto_scale = []
         plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
                             right=1 - self.spacing[2] * self.spacing_scale,
                             top=1 - self.spacing[3] * self.spacing_scale,
@@ -63,7 +71,7 @@ class TriPlot(object):
 
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
-                        truths=None, labsize=14, tick_label_font=14, load_from_file = True, transpose_idx=None):
+                        truths=None, labsize=15, tick_label_font=14, load_from_file = True, transpose_idx=None):
 
         if param_names is None:
             param_names = self.param_names
@@ -74,6 +82,7 @@ class TriPlot(object):
         marg_in_row, plot_index = 0, 0
         n_subplots = len(param_names)
         self._reference_grid = None
+        autoscale = []
 
         for row in range(n_subplots):
 
@@ -159,21 +168,22 @@ class TriPlot(object):
 
                     bar_centers, bar_width, bar_heights = self._bar_plot_heights(density, coords, None)
 
-                    bar_heights *= np.max(bar_heights) ** -1
+                    bar_heights *= np.sum(bar_heights) ** -1 * len(bar_centers) ** -1
+                    autoscale.append(np.max(bar_heights))
 
                     for i, y in enumerate(bar_heights):
                         x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
 
                         axes[plot_index].plot([x1, x2], [y, y], color=contour_colors[color_index][1],
-                                              alpha=contour_alpha)
+                                              alpha=0.6)
                         axes[plot_index].fill_between([x1, x2], y, color=contour_colors[color_index][1],
-                                                      alpha=contour_alpha)
+                                                      alpha=0.6)
                         axes[plot_index].plot([x1, x1], [0, y], color=contour_colors[color_index][1],
-                                              alpha=contour_alpha)
+                                              alpha=0.6)
                         axes[plot_index].plot([x2, x2], [0, y], color=contour_colors[color_index][1],
-                                              alpha=contour_alpha)
+                                              alpha=0.6)
                     axes[plot_index].set_xlim(pmin, pmax)
-                    axes[plot_index].set_ylim(0, 1.1)
+                    #axes[plot_index].set_ylim(0, hmax * 1.1 * self._hmax_scale)
                     axes[plot_index].set_yticks([])
 
                     low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
@@ -190,7 +200,8 @@ class TriPlot(object):
                         axes[plot_index].set_xticks([])
                     else:
                         axes[plot_index].set_xticks(xtick_locs)
-                        axes[plot_index].set_xticklabels(xtick_labels)
+                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font)
+                        axes[plot_index].set_xlabel(xlabel, fontsize=labsize)
 
                     if truths is not None:
 
@@ -205,6 +216,7 @@ class TriPlot(object):
                     axes[plot_index].axis('off')
 
                 plot_index += 1
+        self._auto_scale.append(autoscale)
 
     def _confidence_int(self, centers, heights, percentile):
 
