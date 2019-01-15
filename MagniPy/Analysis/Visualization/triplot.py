@@ -36,7 +36,8 @@ class TriPlot(object):
 
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
-                     fig_size=8, truths=None, load_from_file=True, transpose_idx = None):
+                     fig_size=8, truths=None, load_from_file=True,
+                     transpose_idx = None, bandwidth_scale = 0.7):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -54,7 +55,8 @@ class TriPlot(object):
         self._auto_scale = []
         for i, chain in enumerate(self.chains):
             self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
-                                 fig_size, truths, load_from_file = load_from_file, transpose_idx = transpose_idx)
+                                 fig_size, truths, load_from_file = load_from_file,
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale)
 
         for k in range(len(param_names)):
             scales = []
@@ -71,7 +73,8 @@ class TriPlot(object):
 
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
-                        truths=None, labsize=15, tick_label_font=14, load_from_file = True, transpose_idx=None):
+                        truths=None, labsize=15, tick_label_font=14,
+                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
 
         if param_names is None:
             param_names = self.param_names
@@ -91,7 +94,7 @@ class TriPlot(object):
 
                 if col < marg_in_row:
 
-                    density = chain.get_projection([param_names[row], param_names[col]],
+                    density = chain.get_projection([param_names[row], param_names[col]], bandwidth_scale,
                                                    load_from_file=load_from_file)
 
                     if transpose_idx is not None and plot_index in transpose_idx:
@@ -127,8 +130,11 @@ class TriPlot(object):
                         axes[plot_index].set_ylabel(ylabel, fontsize=labsize)
 
                     else:
+                        axes[plot_index].set_xticks([])
+                        axes[plot_index].set_yticks([])
                         axes[plot_index].set_xticklabels([])
                         axes[plot_index].set_yticklabels([])
+
 
                     if filled_contours:
                         coordsx = np.linspace(extent[0], extent[1], density.shape[0])
@@ -160,7 +166,8 @@ class TriPlot(object):
                     marg_done = True
                     marg_in_row += 1
 
-                    density = chain.get_projection([param_names[col]], load_from_file)
+                    density = chain.get_projection([param_names[col]], bandwidth_scale,
+                                                   load_from_file)
 
                     xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
                     pmin, pmax = self._get_param_minmax(param_names[col])
