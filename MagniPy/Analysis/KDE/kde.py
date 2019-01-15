@@ -21,82 +21,27 @@ class KDE_nD(object):
         return B
         # return np.pad(B, nbins, mode='constant', constant_values=0)
 
-    def _gaussian_product_2d(self, cov, x):
+    def _gaussian_kernel(self, inverse_cov_matrix, coords_centered, dimension, n_reshape):
 
-        x00 = x[0, :, :] ** 2 * cov[0][0]
-        x11 = x[1, :, :] ** 2 * cov[1][1]
-        x12 = x[0, :, :] * x[1, :, :] * cov[1][0]
+        def _gauss(_x):
+            return np.exp(-0.5 * np.dot(np.dot(_x, inverse_cov_matrix), _x))
 
-        return -0.5 * (x00 + x11 + x12)
+        z = [_gauss(coord) for coord in coords_centered]
 
-    def _gaussian_product_5d(self, cov, x):
-
-        cc = np.diagonal(cov)
-        xx_diagonal = 0
-
-        for i, ci in enumerate(cc):
-            xx_diagonal += x[i, :, :, :, :] ** 2 * ci
-
-        x01 = x[0, :, :, :, :] * x[1, :, :, :, :] * cov[0, 1]
-        x02 = x[0, :, :, :, :] * x[2, :, :, :, :] * cov[0, 2]
-        x03 = x[0, :, :, :, :] * x[3, :, :, :, :] * cov[0, 3]
-        x04 = x[0, :, :, :, :] * x[4, :, :, :, :] * cov[0, 4]
-
-        x12 = x[1, :, :, :, :] * x[2, :, :, :, :] * cov[1, 2]
-        x13 = x[1, :, :, :, :] * x[3, :, :, :, :] * cov[1, 3]
-        x14 = x[1, :, :, :, :] * x[4, :, :, :, :] * cov[1, 4]
-
-        x23 = x[2, :, :, :, :] * x[3, :, :, :, :] * cov[2, 3]
-        x24 = x[2, :, :, :, :] * x[4, :, :, :, :] * cov[2, 4]
-
-        x34 = x[3, :, :, :, :] * x[4, :, :, :, :] * cov[3, 4]
-
-        xx_off_diagonal = x01 + x02 + x03 + x04 + x12 + x13 + \
-                          x14 + x23 + x24 + x34
-
-        return -0.5 * (xx_diagonal + xx_off_diagonal)
-
-    def _gaussian_round(self, covariance, coords_centered):
-
-        cc = np.diagonal(covariance)
-        prod = 0
-        for i, coords in enumerate(coords_centered):
-            prod += -0.5 * coords ** 2 * cc[i]
-
-        return prod
-
-    def _gaussian_kernel(self, covariance, coords_centered, dimension, round_kernel=True):
-
-        if dimension == 2:
-            round_kernel = False
-        if dimension == 5:
-            round_kernel = True
-
-        if round_kernel:
-            prod = self._gaussian_round(covariance, coords_centered)
-
-        else:
-            if dimension == 2:
-                prod = self._gaussian_product_2d(covariance, coords_centered)
-
-            elif dimension == 5:
-                return self._gaussian_product_5d(covariance, coords_centered)
-
-        return np.exp(prod)
+        return np.reshape(z, tuple([n_reshape] * dimension))
 
     def _compute_ND(self, data, coordinates, ranges, weights=None, boundary_order=1):
 
         histbins = []
-        cc = np.meshgrid(*coordinates)
-        cc_center = []
+
+        X = np.meshgrid(*coordinates)
+        cc_center = np.vstack([X[i].ravel() - np.mean(ranges[i]) for i in range(len(X))]).T
 
         dimension = int(np.shape(data)[1])
         h = self.bandwidth_scale * self._scotts_factor(len(coordinates[0]), dimension)
 
         for i, coord in enumerate(coordinates):
             histbins.append(np.linspace(ranges[i][0], ranges[i][-1], len(coord) + 1))
-            cc_center.append(cc[i] - np.mean(ranges[i]))
-        cc_center = np.array(cc_center)
 
         if weights is None:
             H, _ = np.histogramdd(data, range=ranges, bins=histbins)
@@ -105,15 +50,12 @@ class KDE_nD(object):
 
         covariance = h * np.cov(data.T)
         c_inv = np.linalg.inv(covariance)
-
-        # sigmas = np.diagonal(h * np.eye(dimension) * np.diagonal(np.cov(data.T)) ** 0.5)
-
-        gaussian_kernel = self._gaussian_kernel(c_inv, cc_center, dimension)
+        n = len(coordinates[0])
+        gaussian_kernel = self._gaussian_kernel(c_inv, cc_center, dimension, n)
 
         density = fftconvolve(H.T, gaussian_kernel, mode='same')
 
         if boundary_order == 1:
-
             boundary_kernel = self._boundary_kernel(shape=np.shape(H), nbins=np.shape(H)[0])
             boundary_normalization = fftconvolve(gaussian_kernel, boundary_kernel, mode='same')
 

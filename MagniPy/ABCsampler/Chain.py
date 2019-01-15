@@ -61,7 +61,6 @@ class ChainFromChain():
         self.prior_info = chain.prior_info
         self.pranges = chain.pranges
         self.Nlenses = chain.Nlenses
-        self.pranges_trimmed = chain.pranges_trimmed
 
         self.lenses = []
         self._add_lenses(indicies, load_flux)
@@ -164,6 +163,7 @@ class ChainFromSamples(object):
 
             if from_parent is not False:
                 assert isinstance(from_parent, ChainFromChain)
+
                 new_lens = from_parent.lenses[ind]
             else:
                 new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
@@ -253,9 +253,10 @@ class ChainFromSamples(object):
 
         self._density_projections(density, save_to_file, bandwidth_scale)
 
-    def get_projection(self, params, bandwidth_scale, load_from_file = True):
+    def get_projection(self, params, bandwidth_scale=None, load_from_file = True):
 
         if load_from_file:
+            assert bandwidth_scale is not None
             if len(params) == 1:
                 fname = self._fnamemarginal(params[0], bandwidth_scale)
                 return np.loadtxt(fname)
@@ -517,8 +518,6 @@ class SingleLens(object):
             params = numpy.squeeze(pandas.read_csv(fname, header=None, sep=" ", index_col=None)).astype(numpy.ndarray)
         else:
             params = numpy.squeeze(np.loadtxt(fname))
-
-        params = numpy.array(numpy.take(params, numpy.array(finite_inds), axis=0))
 
         params = self._rescale(params)
 

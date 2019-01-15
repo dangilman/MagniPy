@@ -5,7 +5,7 @@ import numpy as np
 def bootstrap(chain_name, Nlenses, error, which_lenses, Nbootstraps, fname_prefix):
 
     interval = bootstrap_intervals(chain_name, Nlenses, which_lenses,
-               'log_m_break', Nbootstraps, error, 1500)
+                                   Nbootstraps, error, 2000)
     nlens = interval['Nlenses']
     high95 = interval['high_95']
 
@@ -16,13 +16,15 @@ def bootstrap(chain_name, Nlenses, error, which_lenses, Nbootstraps, fname_prefi
 
 def run():
 
+    N_lenses = [10, 15, 20, 25, 30, 35, 40, 45, 50]
+
     for k in range(1, 2):
         for error in [0.02, 0.04, 0.06, 0.08]:
             for rep in range(0, 1):
                 chain_names = ['CDM_sigma0.01_srcsize0.033','CDM_sigma0.025_srcsize0.033']
                 path_prefix = ['lownorm', 'highnorm']
                 for i, chain in enumerate(chain_names):
-                    N_lenses = [10, 15, 20, 25, 30, 35, 40, 45, 50]
-                    bootstrap(chain, N_lenses, error, np.arange(1, 51), Nbootstraps=1, fname_prefix=path_prefix[i])
 
+                    bootstrap(chain, N_lenses, error, np.arange(1, 51), Nbootstraps=1, fname_prefix=path_prefix[i])
+                    
 run()

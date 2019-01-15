@@ -50,8 +50,8 @@ def CI(centers, heights, percentile):
 
     return centers[index - 1]
 
-def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstraps, error,
-                        tol, param_weights_individual=None, xtrim=None, ytrim=None, bins=20):
+def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
+                        tol, bandwidth_scale=0.6, bins=5):
 
     if not isinstance(Nlenses, list):
         Nlenses = [Nlenses]
@@ -69,22 +69,17 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, parameter, Nbootstrap
 
             lens_list = np.random.randint(1, len(which_lenses), nlens)
 
-            chain = ChainFromChain(chain_master, lens_list, load_flux=True)
+            parent_chain = ChainFromChain(chain_master, lens_list, load_flux=True)
 
             print('adding perturbations.... ')
-            chain._add_perturbations(error, tol)
+            parent_chain._add_perturbations(error, tol)
 
-            #if param_weights_individual is not None:
-            #    weight_param = param_weights_individual['param']
-            #    weight_means = param_weights_individual['means']
-            #    weight_sigmas = param_weights_individual['sigma']
-            #    posteriors = reweight_posteriors_individually(posteriors, weight_param, weight_means, weight_sigmas,
-            #                                                  lens_list, post_to_reweight=[0])[0]
-
-            new_chain = ChainFromSamples(chain_name, np.arange(0,len(which_lenses)),
-                                         error=0, n_pert=1, load=False, from_parent = chain)
-
-            new_chain.eval_KDE(tol = tol, nkde_bins=bins)
+            new_chain = ChainFromSamples(chain_name, np.arange(0,nlens),
+                                         error=0, n_pert=1, load=False,
+                                         from_parent = parent_chain)
+            print('evaluading KDE... ')
+            new_chain.eval_KDE(tol = tol, nkde_bins=bins, bandwidth_scale=bandwidth_scale,
+                               save_to_file=False)
 
             marginalized = new_chain.get_projection(['log_m_break'], load_from_file=False)
 
