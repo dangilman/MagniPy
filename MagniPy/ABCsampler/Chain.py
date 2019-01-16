@@ -477,9 +477,7 @@ class SingleLens(object):
         self._parameters.append(new_dictionary)
 
     def _rescale(self, params):
-        print(np.max(params[:,0]))
-        print(np.max(params[:,-1]))
-        exit(1)
+        
         if np.max(params[:,0]) < 25:
             params[:,0] *= 1000
         if not np.max(params[:,-1]) > 0.045:
