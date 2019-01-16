@@ -26,5 +26,5 @@ def run():
                 for i, chain in enumerate(chain_names):
 
                     bootstrap(chain, N_lenses, error, np.arange(1, 51), Nbootstraps=1, fname_prefix=path_prefix[i])
-                    
+
 run()
