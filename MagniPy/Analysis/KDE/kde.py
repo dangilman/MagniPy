@@ -3,8 +3,6 @@ from MagniPy.Analysis.KDE.kernels import *
 from scipy.stats import gaussian_kde
 from scipy.signal import fftconvolve
 from copy import deepcopy
-from numpy.fft import fftshift, fft2, ifft2
-
 
 class KDE_nD(object):
 

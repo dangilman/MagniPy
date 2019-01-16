@@ -51,7 +51,7 @@ def CI(centers, heights, percentile):
     return centers[index - 1]
 
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
-                        tol, bandwidth_scale=0.6, bins=5):
+                        tol, bandwidth_scale=0.6, bins=20):
 
     if not isinstance(Nlenses, list):
         Nlenses = [Nlenses]
