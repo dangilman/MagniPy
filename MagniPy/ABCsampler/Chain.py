@@ -521,6 +521,7 @@ class SingleLens(object):
         else:
             params = numpy.squeeze(np.loadtxt(fname))
 
+        params = numpy.array(params)
         params = self._rescale(params)
 
         new_dictionary = {}
