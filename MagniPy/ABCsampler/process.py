@@ -45,9 +45,6 @@ def CI(centers, heights, percentile):
         summ += heights[index]
         index += 1
 
-    if index == len(centers) or index == 1:
-        return None
-
     return centers[index - 1]
 
 def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
@@ -91,6 +88,7 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
 
             low95.append(l95)
             high95.append(h95)
+
 
         low95_interval.append(np.mean(low95))
         high95_interval.append(np.mean(high95))
