@@ -20,8 +20,8 @@ plt.rcParams['ytick.major.width'] = 2.5
 plt.rcParams['ytick.major.size'] = 8
 plt.rcParams['ytick.minor.size'] = 2
 
-plt.rcParams['xtick.labelsize'] = 12
-plt.rcParams['ytick.labelsize'] = 12
+plt.rcParams['xtick.labelsize'] = 14
+plt.rcParams['ytick.labelsize'] = 14
 
 class FluxRatioCumulative:
 
@@ -196,7 +196,8 @@ class FluxRatioCumulative:
         if color is None:
             color = default_colors
         if xlabel is None:
-            xlabel = r'$\sqrt{\sum_{i=1}^{3} \left({f_i}^{\prime} - {f_i} \right)^2}$'
+            #xlabel = r'$\sqrt{\sum_{i=1}^{3} \left({f_i}^{\prime} - {f_i} \right)^2}$'
+            xlabel = r'$S_{\rm{smooth}}$'
         if ylabel is None:
             ylabel = 'Percent\n'+r'$ > x$'
         if linestyle is None:

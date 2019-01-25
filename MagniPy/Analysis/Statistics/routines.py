@@ -6,7 +6,6 @@ from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from MagniPy.paths import *
 
-
 def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=None, scale_scale = 1):
 
     def build_latex(mean, sigma):

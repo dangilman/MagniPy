@@ -34,6 +34,23 @@ class TriPlot(object):
 
         self._computed_densities = {}
 
+    def make_joint(self, p1, p2, contour_colors=None, levels=[0.05, 0.22, 1],
+                     filled_contours=True, contour_alpha=0.6, param_names=None,
+                     fig_size=8, truths=None, load_from_file=True,
+                     transpose_idx = None, bandwidth_scale = 0.7):
+
+        self.fig = plt.figure(1)
+        self._init(fig_size)
+        ax = plt.subplot(111)
+
+        if contour_colors is None:
+            contour_colors = self._default_contour_colors
+
+        for i, chain in enumerate(self.chains):
+            self._make_joint_i(chain, p1, p2, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+                                 fig_size, truths, load_from_file=load_from_file,
+                                 transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale)
+
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
@@ -70,6 +87,154 @@ class TriPlot(object):
                             right=1 - self.spacing[2] * self.spacing_scale,
                             top=1 - self.spacing[3] * self.spacing_scale,
                             wspace=self.spacing[4] * self.spacing_scale, hspace=self.spacing[5] * self.spacing_scale)
+
+        return axes
+
+    def make_marginal(self, p1, contour_colors=None, levels=[0.05, 0.22, 1],
+                     filled_contours=True, contour_alpha=0.6, param_names=None,
+                     fig_size=8, truths=None, load_from_file=True,
+                     transpose_idx = None, bandwidth_scale = 0.7):
+
+        self.fig = plt.figure(1)
+        self._init(fig_size)
+        ax = plt.subplot(111)
+        self._auto_scale = []
+
+        if contour_colors is None:
+            contour_colors = self._default_contour_colors
+        self._auto_scale = []
+        for i, chain in enumerate(self.chains):
+            self._make_marginal_i(chain, p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+                                 fig_size, truths, load_from_file = load_from_file,
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale)
+
+        scales = []
+        for c in range(0,len(self.chains)):
+            scales.append(self._auto_scale[c][0])
+        maxh = np.max(scales) * 1.1
+        ax.set_ylim(0, maxh)
+        pmin, pmax = self._get_param_minmax(p1)
+        asp = maxh * (pmax - pmin) ** -1
+        ax.set_aspect(asp ** -1)
+
+        self._auto_scale = []
+
+
+    def _make_marginal_i(self, chain, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+                        filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
+                        truths=None, labsize=15, tick_label_font=14,
+                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
+
+        autoscale = []
+
+        density = chain.get_projection([p1], bandwidth_scale,
+                                       load_from_file=load_from_file)
+
+        xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(p1)
+        pmin, pmax = self._get_param_minmax(p1)
+
+        coords = np.linspace(pmin, pmax, len(density))
+
+        bar_centers, bar_width, bar_heights = self._bar_plot_heights(density, coords, None)
+
+        bar_heights *= np.sum(bar_heights) ** -1 * len(bar_centers) ** -1
+        autoscale.append(np.max(bar_heights))
+
+        for i, y in enumerate(bar_heights):
+            x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
+
+            ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1],
+                                  alpha=0.6)
+            ax.fill_between([x1, x2], y, color=contour_colors[color_index][1],
+                                          alpha=0.6)
+            ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1],
+                                  alpha=0.6)
+            ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1],
+                                  alpha=0.6)
+        ax.set_xlim(pmin, pmax)
+
+        ax.set_yticks([])
+
+        low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
+        high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+
+        low68 = self._confidence_int(bar_centers, bar_heights, 0.22)
+        high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
+
+        print('low/high68:'+str(low68)+' '+str(high68))
+        print('low/high95:' + str(low95) + ' ' + str(high95))
+
+        if low95 is not None:
+            ax.axvline(low95, color=contour_colors[color_index][1],
+                                     alpha=0.8, linewidth=2.5, linestyle='-.')
+        if high95 is not None:
+            ax.axvline(high95, color=contour_colors[color_index][1],
+                                     alpha=0.8, linewidth=2.5, linestyle='-.')
+
+        ax.set_xticks(xtick_locs)
+        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
+        ax.set_xlabel(xlabel, fontsize=labsize)
+
+        if truths is not None:
+
+            t = deepcopy(truths[p1])
+            pmin, pmax = self._get_param_minmax(p1)
+            if t <= pmin:
+                t = pmin * 1.075
+
+            ax.axvline(t, linestyle='--', color=self.truth_color, linewidth=3)
+
+        self._auto_scale.append(autoscale)
+
+
+    def _make_joint_i(self, chain, p1, p2, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+                        filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
+                        truths=None, labsize=15, tick_label_font=14,
+                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
+
+        density = chain.get_projection([p1, p2], bandwidth_scale,
+                                       load_from_file=load_from_file)
+
+        extent, aspect = self._extent_aspect([p1, p2])
+        pmin1, pmax1 = extent[0], extent[1]
+        pmin2, pmax2 = extent[2], extent[3]
+
+        xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(p1)
+        ytick_locs, ytick_labels, ylabel, _ = self._ticks_and_labels(p2)
+
+        if filled_contours:
+            coordsx = np.linspace(extent[0], extent[1], density.shape[0])
+            coordsy = np.linspace(extent[2], extent[3], density.shape[1])
+
+            ax.imshow(density.T, extent=extent, aspect=aspect,
+                                    origin='lower', cmap=self.cmap, alpha=0)
+            self._contours(coordsx, coordsy, density.T, ax, extent=extent,
+                           contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
+                           levels=levels)
+            ax.set_xlim(pmin1, pmax1)
+            ax.set_ylim(pmin2, pmax2)
+
+
+        else:
+            ax.imshow(density.T, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
+                                    vmax=np.max(density), aspect=aspect, extent=extent)
+            ax.set_xlim(pmin1, pmax1)
+            ax.set_ylim(pmin2, pmax2)
+
+        ax.set_xticks(xtick_locs)
+        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation = rotation)
+
+        ax.set_yticks(ytick_locs)
+        ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
+
+        ax.set_xlabel(xlabel, fontsize=labsize)
+        ax.set_ylabel(ylabel, fontsize=labsize)
+
+        if truths is not None:
+            t1, t2 = truths[p1], truths[p2]
+            ax.scatter(t1, t2, color=self.truth_color, s=50)
+            ax.axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
+            ax.axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
 
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
@@ -195,6 +360,8 @@ class TriPlot(object):
 
                     low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
                     high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+                    if param_names[col] == 'log_m_break':
+                        print(low95, high95)
 
                     if low95 is not None:
                         axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
@@ -233,8 +400,8 @@ class TriPlot(object):
             summ += heights[index]
             index += 1
 
-        if index == len(centers) or index == 1:
-            return None
+        #if index == len(centers) or index == 1:
+        #    return None
 
         return centers[index - 1]
 

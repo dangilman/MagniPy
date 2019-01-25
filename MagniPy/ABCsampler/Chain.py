@@ -51,7 +51,7 @@ class MarginalDensity(object):
         else:
             return None, False
 
-class ChainFromChain():
+class ChainFromChain(object):
 
     def __init__(self, chain, indicies, load_flux = False):
 
@@ -167,7 +167,7 @@ class ChainFromSamples(object):
                 new_lens = from_parent.lenses[ind]
             else:
                 new_lens = SingleLens(zlens = None, zsource=None, flux_path=chainpath_out + '/processed_chains/' +
-                                                                    chain_name+'/')
+                                                                    chain_name+'/', ID = ind)
 
             if load and not from_parent:
                 for ni in range(0,n_pert):
@@ -447,8 +447,9 @@ class ChainFromSamples(object):
 
 class SingleLens(object):
 
-    def __init__(self, zlens, zsource, weights=None, flux_path=''):
+    def __init__(self, zlens, zsource, weights=None, flux_path='', ID = None):
 
+        self._ID = ID
         self.weights = weights
         self.posterior = None
         self.zlens, self.zsource = zlens, zsource
@@ -477,7 +478,7 @@ class SingleLens(object):
         self._parameters.append(new_dictionary)
 
     def _rescale(self, params):
-        
+
         if np.max(params[:,0]) < 25:
             params[:,0] *= 1000
         if not np.max(params[:,-1]) > 0.045:

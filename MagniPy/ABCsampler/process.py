@@ -65,7 +65,7 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
         for i in range(0, Nbootstraps):
 
             lens_list = np.random.randint(1, len(which_lenses), nlens)
-
+            print(lens_list)
             parent_chain = ChainFromChain(chain_master, lens_list, load_flux=True)
 
             print('adding perturbations.... ')
@@ -88,7 +88,6 @@ def bootstrap_intervals(chain_name, Nlenses, which_lenses, Nbootstraps, error,
 
             low95.append(l95)
             high95.append(h95)
-
 
         low95_interval.append(np.mean(low95))
         high95_interval.append(np.mean(high95))
@@ -194,12 +193,12 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
 def resample_sys(num, process_only):
     num = int(num)
-    errors = [0, 0.02, 0.04, 0.06, 0.08]
-    src_mean = 30
+    errors = [0, 0.02, 0.04, 0.06]
+    src_mean = 35
 
     if num == 1:
-        resample_chain(a0_area=1.6, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
-                   N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
+        resample_chain(a0_area=1.2, logmhm=7, src_size=src_mean, LOS_norm=1, errors=errors,
+                   N_pert=5, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
     elif num == 2:
         resample_chain(a0_area=1.6, logmhm=4.95, src_size=src_mean, LOS_norm=1.1, errors=errors,
@@ -238,7 +237,7 @@ def resample_sys(num, process_only):
 #process_raw('jpl_sim2', np.arange(1,6), counter_start = 40)
 #process_raw('jpl_sim3', np.arange(1,6), counter_start = 45)
 #exit(1)
-#process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 1, [0,0.02,0.04,0.06,0.08])
+#process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 5, [0,0.02,0.04,0.06,0.08])
 
 #resample_sys(1, False)
 #resample_sys(2, False)
