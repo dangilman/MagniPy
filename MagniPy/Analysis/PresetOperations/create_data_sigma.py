@@ -228,16 +228,17 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         shear = draw_shear()
         #shear_theta = draw_shear_PA()
         shear_theta = draw_shear_PA_correlated(ellip_theta, sigma = 50)
-        gamma = np.round(np.random.normal(2.08, 0.05), 2)
-
-        while True:
-            source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
-            if source_size_kpc < 0.01:
-                continue
-            if source_size_kpc > 0.06:
-                continue
-            else:
-                break
+        #gamma = np.round(np.random.normal(2.08, 0.05), 2)
+        gamma = 2.08
+        source_size_kpc = 0.035
+        #while True:
+        #    source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
+        #    if source_size_kpc < 0.01:
+        #        continue
+        #    if source_size_kpc > 0.06:
+        #        continue
+        #    else:
+        #        break
 
         pyhalo = pyHalo(zlens, zsrc)
         c = LensCosmo(zlens, zsrc)
@@ -245,10 +246,10 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         analysis = Analysis(zlens, zsrc)
         #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
 
-        halo_args = {'mdef_main': 'TNFW', 'mdef_los': 'TNFW', 'a0_area': a0_area, 'log_mlow': log_ml, 'log_mhigh': log_mh,
-                     'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4, 'mdef': 'TNFW',
-                     'break_index': -1.3, 'c_scale': 60, 'c_power': -0.17, 'r_tidal': r_core, 'break_index': break_index,
-                     'c_scale': 60, 'cone_opening_angle': 6 * rein}
+        halo_args = {'mdef_main': 'CNFW', 'mdef_los': 'CNFW', 'a0_area': a0_area, 'log_mlow': log_ml, 'log_mhigh': log_mh,
+                     'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4,
+                     'c_scale': 60, 'c_power': -0.17, 'r_tidal': r_core, 'break_index': break_index,
+                     'cone_opening_angle': 6 * rein, 'core_ratio': core_ratio}
 
         real = pyhalo.render(model_type, halo_args)
 
@@ -377,10 +378,11 @@ src_size_mean = 0.035
 src_size_sigma = 0.0001
 log_ml, log_mh = 6, 10
 break_index = -1.3
+core_ratio = 0.5
 
 nav = prefix
 
-dpath_base = nav + 'data/mock_data/jpl_sim1/lens_'
+dpath_base = nav + '/mock_data/SIDM_7.7/lens_'
 
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 #run(0,1,0,1)

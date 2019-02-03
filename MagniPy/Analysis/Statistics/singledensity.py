@@ -3,9 +3,10 @@ from MagniPy.Analysis.KDE.kde import *
 class SingleDensity(object):
 
     def __init__(self,pnames=None,samples=None,pranges=None,kde_train_ranges=None,kde_class ='mine',
-                 steps=20,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
+                 steps=50,scale=5,reweight=True,kernel_function='Gaussian',bandwidth_scale=1, use_kde=True):
 
         assert isinstance(pnames, list)
+        kde_class = 'custom'
         self._use_kde = use_kde
         self.reweight = reweight
         self.scale = scale
@@ -50,12 +51,15 @@ class SingleDensity(object):
         if self.dimension==2:
             if kde_class=='scipy':
                 return KDE_scipy(dim=2)
+            elif kde_class == 'getdist':
+                return KDE_getdist()
             else:
-                return KernelDensity2D(reweight=self.reweight, scale=self.scale,
-                                       bandwidth_scale=self.bandwidth_scale, kernel=self.kernel_function)
+                return KernelDensity2D(bandwidth_scale=self.bandwidth_scale)
         else:
-
-            return KernelDensity1D(scale = self.scale, bandwidth_scale=self.bandwidth_scale)
+            if kde_class == 'scipy':
+                return KDE_scipy(dim=1)
+            else:
+                return KernelDensity1D(bandwidth_scale=self.bandwidth_scale)
 
     def _trim_density(self, density, x_left, y_left, x_right, y_right):
 
@@ -89,6 +93,7 @@ class SingleDensity(object):
             if xtrim is None:
                 param_ranges = self.pranges
                 X = self.X
+                xstart, xend = self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1]
             else:
                 param_ranges, xstart, xend = self._trim1d(self.pranges, xtrim, len(self.X), self.param_names)
                 X = np.linspace(xstart, xend, self.steps)
@@ -99,6 +104,8 @@ class SingleDensity(object):
 
                 param_ranges = self.pranges
                 X, Y = self.X, self.Y
+                xstart, xend = self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1]
+                ystart, yend = self.pranges[self.param_names[1]][0], self.pranges[self.param_names[1]][1]
 
             else:
 
@@ -109,21 +116,32 @@ class SingleDensity(object):
 
             if self.dimension == 1:
 
-                kde, xx = self.kde(self.data, X, pranges_true=[self.kde_train_ranges[self.param_names[0]]], prior_weights=self.prior_weights)
+                kde = self.kde(self.data, X, prange=[self.kde_train_ranges[self.param_names[0]]], prior_weights=self.prior_weights)
 
-                density = np.histogram(xx, bins=len(X), density=True, weights=kde.ravel())[0]
-
+                density = np.histogram(X, bins=len(X), density=True, weights=kde.ravel())[0]
 
             else:
 
-                X, Y = np.linspace(xstart, xend, self.steps), np.linspace(ystart, yend, self.steps)
+                X, Y = np.linspace(self.pranges[self.param_names[0]][0], self.pranges[self.param_names[0]][1], self.steps), \
+                       np.linspace(self.pranges[self.param_names[1]][0], self.pranges[self.param_names[1]][1], self.steps)
 
-                kde, xx, yy = self.kde(self.data, X, Y, pranges_true=[self.kde_train_ranges[self.param_names[0]],
-                                       self.kde_train_ranges[self.param_names[1]]], prior_weights=self.prior_weights)
+                if self.kde_class == 'getdist':
 
-                density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
+                    kde = self.kde(self.data, self.param_names)
+                else:
+                    kde = self.kde(self.data, X, Y, pranges=[self.kde_train_ranges[self.param_names[0]],
+                                          self.kde_train_ranges[self.param_names[1]]])
 
-            return density.T, param_ranges
+                xx, yy = np.meshgrid(X, Y)
+                density, x, y = np.histogram2d(xx.ravel(), yy.ravel(), bins = len(X),weights = kde.ravel())
+                density = density.T
+                #density = kde
+
+                #norm = np.sum(density) * len(X) ** 2
+                #density = norm
+                #density = np.histogram2d(xx, yy, bins=len(X), density=True, weights=kde.ravel())[0]
+
+            return density, self.pranges
 
         else:
 

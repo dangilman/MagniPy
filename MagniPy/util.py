@@ -4,6 +4,35 @@ import subprocess
 import shutil
 import scipy.ndimage.filters as sfilt
 import itertools
+from copy import deepcopy
+
+def snap_to_bins(data, xbin_centers, dx, ybin_centers, dy, ranges):
+
+    new_datax = deepcopy(data[:, 0])
+    new_datay = deepcopy(data[:, 1])
+    new_datax[np.where(new_datax <= ranges[0][0])] = xbin_centers[0]
+    new_datax[np.where(new_datax >= ranges[0][1])] = xbin_centers[-1]
+
+    new_datay[np.where(new_datay <= ranges[1][0])] = ybin_centers[0]
+    new_datay[np.where(new_datay >= ranges[1][1])] = ybin_centers[-1]
+
+    new_data = None
+    xx, yy = np.meshgrid(xbin_centers, ybin_centers)
+    coords = zip(np.round(xx.ravel(), 4), np.round(yy.ravel(), 4))
+
+    for i, (cenx, ceny) in enumerate(coords):
+
+        subx = np.absolute(new_datax - cenx) * dx ** -1
+        suby = np.absolute(new_datay - ceny) * dy ** -1
+        inds = np.where(np.logical_and(subx < 1, suby < 1))[0]
+        if len(inds) > 0:
+            new_array = np.column_stack((np.array([cenx] * len(inds)), np.array([ceny] * len(inds))))
+            if new_data is None:
+                new_data = deepcopy(new_array)
+            else:
+                new_data = np.vstack((new_data, new_array))
+
+    return new_data
 
 def approx_theta_E(ximg,yimg):
 
