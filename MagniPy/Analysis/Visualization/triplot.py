@@ -140,6 +140,11 @@ class TriPlot(object):
         bar_heights *= np.sum(bar_heights) ** -1 * len(bar_centers) ** -1
         autoscale.append(np.max(bar_heights))
 
+        max_idx = np.argmax(bar_heights)
+        max_h = bar_heights[max_idx]
+        print(bar_centers[max_idx])
+        print('relative likelihood WDM: '+str(max_h*bar_heights[0]**-1))
+
         for i, y in enumerate(bar_heights):
             x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
 
@@ -214,10 +219,14 @@ class TriPlot(object):
             ax.set_xlim(pmin1, pmax1)
             ax.set_ylim(pmin2, pmax2)
 
-
         else:
+            coordsx = np.linspace(extent[0], extent[1], density.shape[0])
+            coordsy = np.linspace(extent[2], extent[3], density.shape[1])
             ax.imshow(density.T, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
                                     vmax=np.max(density), aspect=aspect, extent=extent)
+            self._contours(coordsx, coordsy, density.T, ax, extent=extent,
+                           contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
+                           levels=levels)
             ax.set_xlim(pmin1, pmax1)
             ax.set_ylim(pmin2, pmax2)
 

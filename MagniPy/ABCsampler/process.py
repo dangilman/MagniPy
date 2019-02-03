@@ -197,7 +197,7 @@ def resample_sys(num, process_only):
     src_mean = 35
 
     if num == 1:
-        resample_chain(a0_area=1.2, logmhm=7, src_size=src_mean, LOS_norm=1, errors=errors,
+        resample_chain(a0_area=0, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                    N_pert=5, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                    which_lens_indexes=np.arange(1, 51))
     elif num == 2:

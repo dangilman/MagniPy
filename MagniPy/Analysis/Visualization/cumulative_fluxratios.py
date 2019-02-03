@@ -231,7 +231,8 @@ class FluxRatioCumulative:
                 else:
                     shift = shift_left[i]
                 y.append((L - sum(val < (x[k]+shift) for val in anomalies))*L**-1)
-
+                if x[k] > 0.19 and x[k] < 0.21:
+                    print(i, x[k], y[-1])
             y = np.array(y)
             curves.append(y)
             if labels is not None:

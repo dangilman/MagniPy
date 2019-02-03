@@ -5,7 +5,7 @@ import numpy as np
 def bootstrap(chain_name, Nlenses, error, which_lenses, Nbootstraps, fname_prefix):
 
     interval = bootstrap_intervals(chain_name, Nlenses, which_lenses,
-                                   Nbootstraps, error, 2000, bandwidth_scale=0.6, bins=4)
+                                   Nbootstraps, error, 1500, bandwidth_scale=0.5, bins=4)
     nlens = interval['Nlenses']
     high95 = interval['high_95']
 

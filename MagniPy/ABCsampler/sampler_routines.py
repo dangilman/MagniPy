@@ -18,7 +18,7 @@ def perturb_data(data,delta_pos,delta_flux):
 def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
                    mindis_back=0.4, log_masscut_front=None, log_masscut_back=None, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
-                   mass_func_type=None,log_mL=None, log_mH=None, a0_area=None, A0=None, logmhm=None,
+                   mass_func_type=None,log_mL=None, log_mH=None, a0_area=None, A0=None, logmhm=None, core_ratio = None,
                    zmin=None, zmax=None, params_to_vary={},chain_description='',
                    chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
                    position_sigma=None, flux_sigma=None, Nsamples_perlens=None,
@@ -95,6 +95,9 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
     if zmax is not None:
         chain_keys['zmax'] = zmax
 
+    if core_ratio is not None:
+        chain_keys['core_ratio'] = core_ratio
+
     chain_keys_to_vary = {}
 
     for name in chain_keys.keys():
@@ -102,7 +105,6 @@ def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None,
             chain_keys_to_vary[name] = params_to_vary[name]
 
     return {'main_keys': chain_keys, 'tovary_keys': chain_keys_to_vary}
-
 
 def write_param_dictionary(fname='', param_dictionary={}):
     with open(fname, 'w') as f:
@@ -167,6 +169,16 @@ def halo_model_args(params):
             args.update({'zmax':params['zmax']})
         else:
             args.update({'zmax':params['zsrc']-0.01})
+
+        if args['mdef_main'] == 'CNFW':
+            assert 'core_ratio' in params.keys()
+        if args['mdef_los'] == 'CNFW':
+            assert 'core_ratio' in params.keys()
+
+        if 'core_ratio' in params.keys():
+            assert args['mdef_main'] == 'CNFW'
+            assert args['mdef_los'] == 'CNFW'
+            args.update({'core_ratio': params['core_ratio']})
 
     return args
 
