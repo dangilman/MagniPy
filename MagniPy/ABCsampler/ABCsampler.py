@@ -243,5 +243,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/SIDM_run/',1)
+#runABC(prefix+'data/SIDM_run/',4001)
 
