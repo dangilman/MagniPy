@@ -72,6 +72,11 @@ class Deflector(object):
         e1,e2 = polar_to_cart(self.shear,self.shear_theta)
         self.shear_args = {'e1':e1,'e2':e2}
 
+    def ellip_PA_polar(self):
+
+        ellip, ePA = cart_to_polar(self.lenstronomy_args['e1'], self.lenstronomy_args['e2'])
+        return ellip, ePA
+
     def update(self,method=None,is_shear=False,**newparams):
 
         assert method in ['lensmodel','lenstronomy']

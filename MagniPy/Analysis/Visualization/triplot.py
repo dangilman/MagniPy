@@ -54,7 +54,7 @@ class TriPlot(object):
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
-                     transpose_idx = None, bandwidth_scale = 0.7):
+                     transpose_idx = None, bandwidth_scale = 0.7, label_scale = 1):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -73,7 +73,7 @@ class TriPlot(object):
         for i, chain in enumerate(self.chains):
             self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
-                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale)
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale, label_scale = label_scale)
 
         for k in range(len(param_names)):
             scales = []
@@ -93,7 +93,7 @@ class TriPlot(object):
     def make_marginal(self, p1, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
-                     transpose_idx = None, bandwidth_scale = 0.7):
+                     transpose_idx = None, bandwidth_scale = 0.7, label_scale = 1):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -106,7 +106,7 @@ class TriPlot(object):
         for i, chain in enumerate(self.chains):
             self._make_marginal_i(chain, p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
-                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale)
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale, label_scale = label_scale)
 
         scales = []
         for c in range(0,len(self.chains)):
@@ -123,7 +123,7 @@ class TriPlot(object):
     def _make_marginal_i(self, chain, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
-                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
+                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7, label_scale = None):
 
         autoscale = []
 
@@ -178,7 +178,10 @@ class TriPlot(object):
 
         ax.set_xticks(xtick_locs)
         ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
-        ax.set_xlabel(xlabel, fontsize=labsize)
+        if xlabel == r'$\frac{r_{\rm{core}}}{r_s}$':
+            ax.set_xlabel(xlabel, fontsize=40*label_scale)
+        else:
+            ax.set_xlabel(xlabel, fontsize=labsize*label_scale)
 
         if truths is not None:
 
@@ -236,8 +239,13 @@ class TriPlot(object):
         ax.set_yticks(ytick_locs)
         ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
 
-        ax.set_xlabel(xlabel, fontsize=labsize)
-        ax.set_ylabel(ylabel, fontsize=labsize)
+        if xlabel == r'$\frac{r_{\rm{core}}}{r_s}$':
+            ax.set_xlabel(xlabel, fontsize=40)
+        elif ylabel == r'$\frac{r_{\rm{core}}}{r_s}$':
+            ax.set_ylabel(ylabel, fontsize=40)
+        else:
+            ax.set_xlabel(xlabel, fontsize=labsize)
+            ax.set_ylabel(ylabel, fontsize=labsize)
 
         if truths is not None:
             t1, t2 = truths[p1], truths[p2]
@@ -248,7 +256,7 @@ class TriPlot(object):
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
-                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
+                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7, label_scale = None):
 
         if param_names is None:
             param_names = self.param_names
@@ -290,18 +298,25 @@ class TriPlot(object):
                         if col == 0:
                             axes[plot_index].set_yticks(ytick_locs)
                             axes[plot_index].set_yticklabels(ytick_labels, fontsize=tick_label_font)
-                            axes[plot_index].set_ylabel(ylabel, fontsize=labsize)
+                            axes[plot_index].set_ylabel(ylabel, fontsize=labsize*label_scale)
                         else:
                             axes[plot_index].set_yticks([])
                             axes[plot_index].set_yticklabels([])
-                        axes[plot_index].set_xlabel(xlabel, fontsize=labsize)
+
+                        if xlabel == r'$\frac{r_{\rm{core}}}{r_s}$':
+                            axes[plot_index].set_xlabel(xlabel, fontsize=25*label_scale)
+                        else:
+                            axes[plot_index].set_xlabel(xlabel, fontsize=labsize*label_scale)
 
 
                     elif col == 0:
                         axes[plot_index].set_yticks(ytick_locs)
                         axes[plot_index].set_yticklabels(ytick_labels, fontsize=tick_label_font)
                         axes[plot_index].set_xticks([])
-                        axes[plot_index].set_ylabel(ylabel, fontsize=labsize)
+                        if ylabel == r'$\frac{r_{\rm{core}}}{r_s}$':
+                            axes[plot_index].set_ylabel(ylabel, fontsize=25*label_scale)
+                        else:
+                            axes[plot_index].set_ylabel(ylabel, fontsize=labsize*label_scale)
 
                     else:
                         axes[plot_index].set_xticks([])
@@ -384,7 +399,7 @@ class TriPlot(object):
                     else:
                         axes[plot_index].set_xticks(xtick_locs)
                         axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font)
-                        axes[plot_index].set_xlabel(xlabel, fontsize=labsize)
+                        axes[plot_index].set_xlabel(xlabel, fontsize=labsize*label_scale)
 
                     if truths is not None:
 
@@ -483,7 +498,7 @@ class TriPlot(object):
         return bar_centers, bar_width, bar_heights
 
     def _contours(self, x, y, grid, ax, linewidths=4, filled_contours=True, contour_colors='',
-                  contour_alpha=1, extent=None, levels=[0.05, 0.22, 1]):
+                  contour_alpha=1, extent=None, levels=[0.05, 0.32, 1]):
 
         levels = np.array(levels) * np.max(grid)
         X, Y = np.meshgrid(x, y)
@@ -520,7 +535,7 @@ class TriPlot(object):
         if pname == 'a0_area':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
-            tick_locs = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
+            tick_locs = np.array([0, 0.9, 1.8, 2.7, 3.6, 4.5])*0.01
             rotation = 45
         elif pname == 'SIE_gamma':
             name = r'$\gamma_{\rm{macro}}$'
@@ -539,5 +554,9 @@ class TriPlot(object):
             name = r'$\delta_{\rm{LOS}}$'
             tick_labels = [0.7, 0.85, 1.0, 1.15, 1.3]
             tick_locs = [0.7, 0.85, 1.0, 1.15, 1.3]
+        elif pname == 'core_ratio':
+            name = r'$\frac{r_{\rm{core}}}{r_s}$'
+            tick_labels = [0.01, 0.2, 0.4, 0.6, 0.8]
+            tick_locs = [0.01, 0.2, 0.4, 0.6, 0.8]
 
         return tick_locs, tick_labels, name, rotation

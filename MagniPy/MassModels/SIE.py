@@ -76,20 +76,20 @@ class SIE:
 
         return kappa
 
-    def params(self,R_ein = None, ellip = None, ellip_theta = None, x=None,
-               y = None, gamma=2,**kwargs):
+    def params(self, **kwargs):
 
         subparams = {}
         otherkwargs = {}
 
         otherkwargs['parameterization'] = 'SIE_shear'
         otherkwargs['name'] = 'SPEMD'
-        q = 1-ellip
+        q = 1-kwargs['ellip']
         subparams['q'] = q
-        subparams['phi_G'] = (ellip_theta)*np.pi*180**-1
-        subparams['gamma'] = gamma
-        subparams['center_x'] = x
-        subparams['center_y'] = y
-        subparams['theta_E'] = R_ein
+
+        subparams['phi_G'] = kwargs['ellip_theta']*np.pi*180**-1
+        subparams['gamma'] = kwargs['gamma']
+        subparams['center_x'] = kwargs['center_x']
+        subparams['center_y'] = kwargs['center_y']
+        subparams['theta_E'] = kwargs['theta_E']
 
         return subparams, otherkwargs

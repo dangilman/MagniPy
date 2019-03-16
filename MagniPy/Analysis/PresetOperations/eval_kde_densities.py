@@ -25,10 +25,10 @@ def run():
         n_pert = 5
 
     bandwidth_scale = 0.6
-    nkde_bins = 15
-    tol = 1500
-    which_lenses = np.arange(1,51)
-    evaluate_denities('CDM_sigma0_srcsize35', which_lenses,
+    nkde_bins = 20
+    tol = 800
+    which_lenses = np.arange(1,12)
+    evaluate_denities('SIDM_run', which_lenses,
                       error, n_pert, nkde_bins, '', tol, bandwidth_scale)
 
 run()

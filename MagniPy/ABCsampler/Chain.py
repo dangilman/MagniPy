@@ -180,6 +180,7 @@ class ChainFromSamples(object):
                         new_lens.statistic.append(statistics[ind-1])
 
                     if parameters is None:
+                        print(self.params_varied)
                         fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
                         new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                         fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
@@ -240,6 +241,7 @@ class ChainFromSamples(object):
                     data[:,i] = posteriors[n][p].samples[pi]
 
                 density_n += self._kernel(data, points, ranges, weights=None)
+
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
                 print(str(t_elpased) + ' min per lens.')
@@ -364,18 +366,75 @@ class ChainFromSamples(object):
         self.marginal_densities = []
         pinds = np.arange(0,len(self.params_varied))
 
-        if len(self.params_varied) == 5:
+        for i, p in enumerate(self.params_varied[::-1]):
+            inds = deepcopy(pinds)
+            inds = inds[np.where(inds != i)]
+            d_i = np.sum(density, axis=tuple(inds))
+            marg = MarginalDensity(p, d_i)
+            self.marginal_densities.append(marg)
 
-            for i, p in enumerate(self.params_varied[::-1]):
-                inds = deepcopy(pinds)
-                inds = inds[np.where(inds != i)]
-                d_i = np.sum(density, axis=tuple(inds))
-                marg = MarginalDensity(p, d_i)
-                self.marginal_densities.append(marg)
+            if save_to_file:
+                fname = self._fnamemarginal(p, bandwidth_scale)
+                np.savetxt(fname, X = marg.array)
 
-                if save_to_file:
-                    fname = self._fnamemarginal(p, bandwidth_scale)
-                    np.savetxt(fname, X = marg.array)
+        if len(density.shape) == 5:
+            self._projections_5D(density, bandwidth_scale, save_to_file)
+        elif len(density.shape) == 3:
+            self._projections_3D(density, bandwidth_scale, save_to_file)
+        elif len(density.shape) == 2:
+            self._projections_2D(density, bandwidth_scale, save_to_file)
+
+    def _fnamejoint(self, px, py, bandwidth_scale):
+
+        if not os.path.exists(self.chain_file_path + 'computed_densities/'):
+            create_directory(self.chain_file_path + 'computed_densities/')
+
+        string = str(len(self.lenses))+'lens_'+str(self.error)+'error_'
+        string += str(self.n_pert)+'avg_' + px + '__' + py  + '_'+ str(bandwidth_scale) +'.txt'
+        return self.chain_file_path + 'computed_densities/' + string
+
+    def _fnamemarginal(self, p, bandwidth_scale):
+
+        if not os.path.exists(self.chain_file_path + 'computed_densities/'):
+            create_directory(self.chain_file_path + 'computed_densities/')
+
+        string = str(len(self.lenses)) + 'lens_' + str(self.error) + 'error_'
+        string += str(self.n_pert) + 'avg_' + p + '_' + str(bandwidth_scale) +'.txt'
+        return self.chain_file_path + 'computed_densities/' + string
+
+    def _projections_2D(self, density, bandwidth_scale, save_to_file):
+
+        proj_logmcore = density
+
+        px, py = 'log_m_break', 'core_ratio'
+        self.joint_densities.append(JointDensity(px, py, proj_logmcore))
+
+        if save_to_file:
+            for j in self.joint_densities:
+                fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
+                np.savetxt(fname, X=j.array)
+
+    def _projections_3D(self, density, bandwidth_scale, save_to_file):
+
+        proj_a0logm = np.sum(density, axis=1).T
+        proj_a0core = np.sum(density, axis=2).T
+        proj_logmcore = np.sum(density, axis=0).T
+
+        px, py = 'a0_area', 'log_m_break'
+        self.joint_densities.append(JointDensity(px, py, proj_a0logm))
+
+        py, px = 'a0_area', 'core_ratio'
+        self.joint_densities.append(JointDensity(px, py, proj_a0core))
+
+        py, px = 'log_m_break', 'core_ratio'
+        self.joint_densities.append(JointDensity(px, py, proj_logmcore))
+
+        if save_to_file:
+            for j in self.joint_densities:
+                fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
+                np.savetxt(fname, X=j.array)
+
+    def _projections_5D(self, density, bandwidth_scale, save_to_file):
 
         proj_LOSa0 = np.sum(density, axis=(2, 3, 4)).T
         proj_a0logm = np.sum(density, axis=(1, 3, 4)).T
@@ -426,25 +485,6 @@ class ChainFromSamples(object):
                 fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
                 np.savetxt(fname, X = j.array)
 
-    def _fnamejoint(self, px, py, bandwidth_scale):
-
-        if not os.path.exists(self.chain_file_path + 'computed_densities/'):
-            create_directory(self.chain_file_path + 'computed_densities/')
-
-        string = str(len(self.lenses))+'lens_'+str(self.error)+'error_'
-        string += str(self.n_pert)+'avg_' + px + '__' + py  + '_'+ str(bandwidth_scale) +'.txt'
-        return self.chain_file_path + 'computed_densities/' + string
-
-    def _fnamemarginal(self, p, bandwidth_scale):
-
-        if not os.path.exists(self.chain_file_path + 'computed_densities/'):
-            create_directory(self.chain_file_path + 'computed_densities/')
-
-        string = str(len(self.lenses)) + 'lens_' + str(self.error) + 'error_'
-        string += str(self.n_pert) + 'avg_' + p + '_' + str(bandwidth_scale) +'.txt'
-        return self.chain_file_path + 'computed_densities/' + string
-
-
 class SingleLens(object):
 
     def __init__(self, zlens, zsource, weights=None, flux_path='', ID = None):
@@ -476,15 +516,6 @@ class SingleLens(object):
             new_dictionary.update({pname:parameters[:,i].astype(float)})
 
         self._parameters.append(new_dictionary)
-
-    def _rescale(self, params):
-
-        if np.max(params[:,0]) < 25:
-            params[:,0] *= 1000
-        if not np.max(params[:,-1]) > 0.045:
-            params[:,-1] *= 100
-
-        return params
 
     def draw(self,tol, reject_pnames, keep_ranges):
 
@@ -521,29 +552,12 @@ class SingleLens(object):
             params = numpy.squeeze(np.loadtxt(fname))
 
         params = numpy.array(params)
-        params = self._rescale(params)
 
         new_dictionary = {}
 
-        _rounding = {'a0_area': 0.1, 'log_m_break': 0.1, 'SIE_gamma': 0.01,
-                    'source_size_kpc': 1, 'LOS_normalization': 0.01}
-        rounding = {'source_size_kpc': 25 * 100 ** -1}
-        rounding_dec = {'a0_area': 2, 'log_m_break': 3, 'SIE_gamma': 3,
-                    'source_size_kpc': 2, 'LOS_normalization': 3}
-
-        def round_to(n, precision):
-
-            correction = 0.5*np.ones_like(n)
-            return (n / precision + correction).astype(int) * precision
-
         for i,pname in enumerate(pnames):
 
-            #new_params = np.round(params[:,i].astype(float), rounding_dec[pname]).astype(float)
-            if pname in rounding.keys():
-                new_params = round_to(params[:, i].astype(float), rounding[pname])
-
-            else:
-                new_params = params[:,i].astype(float)
+            new_params = params[:,i].astype(float)
             #new_params = round_to(params[:,i].astype(float), rounding[pname])
 
             new_dictionary.update({pname: new_params})

@@ -91,11 +91,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         #print('running... ')
         #print(samples)
         while True:
-
+            print(halo_args)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
                 #print('source size: ',chain_keys_run['source_size_kpc'])
+
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
@@ -243,4 +244,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/SIDM_run/',1)
+runABC(prefix+'data/SIDM_run/',1)

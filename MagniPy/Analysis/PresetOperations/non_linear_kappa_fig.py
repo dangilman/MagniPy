@@ -16,7 +16,7 @@ def make_kappa_maps(realizations, zlens=0.5, zsource=1.5, Npix = 200, s = 1.3):
     deltaPix = 2*s * Npix ** -1
     xx, yy = np.meshgrid(x, y)
 
-    macroargs_start = {'R_ein': 1, 'x': 0, 'y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.065, 'shear_theta': -30,
+    macroargs_start = {'theta_E': 1, 'center_x': 0, 'center_y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.065, 'shear_theta': -30,
                        'gamma': 2.0}
     macromodel_start = Deflector(redshift=zlens, subclass=SIE(),
                                  varyflags=['1', '1', '1', '1', '1', '1', '1', '0', '0', '0'], lens_args=None,

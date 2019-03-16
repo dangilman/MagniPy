@@ -93,9 +93,17 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
 
             np.savetxt(perturbed_path + 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',
                        X=summary_statistic[ordered_inds], fmt=('%.4f'))
-            np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds,:],
-                       fmt=('%.2f', '%.3f', '%.3f', '%.3f', '%.2f'))
-
+            if parameters.shape[1] == 5:
+                np.savetxt(perturbed_path + 'params_'+str(int(error * 100)) + 'error_' + str(k) + '.txt',X=parameters[ordered_inds,:],
+                       fmt=('%.3f', '%.4f', '%.4f', '%.4f', '%.3f'))
+            elif parameters.shape[1] == 3:
+                np.savetxt(perturbed_path + 'params_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',
+                           X=parameters[ordered_inds, :],
+                           fmt=('%.5f', '%.5f', '%.5f'))
+            elif parameters.shape[1] == 2:
+                np.savetxt(perturbed_path + 'params_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',
+                           X=parameters[ordered_inds, :],
+                           fmt=('%.5f', '%.5f'))
             if error == 0:
                 break
 

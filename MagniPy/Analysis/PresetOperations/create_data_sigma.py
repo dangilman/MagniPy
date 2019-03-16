@@ -354,7 +354,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
             write_data(dpath + '/lensdata.txt', data_withhalos, mode='write')
 
             system = solver.build_system(main=start, realization=real[0], multiplane=True)
-            zlist, lens_list, arg_list = system.lenstronomy_lists()
+            zlist, lens_list, arg_list, supplement = system.lenstronomy_lists()
 
             with open(dpath + '/redshifts.txt', 'w') as f:
                 np.savetxt(f, X=zlist)

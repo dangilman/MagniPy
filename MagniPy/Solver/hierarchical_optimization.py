@@ -19,7 +19,7 @@ def split_realization(datatofit, realization):
 
 def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations,
                  source_shape, source_size_kpc, polar_grid, optimizer_routine, re_optimize, verbose, particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back):
+                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back, centroid, satellites):
 
     foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
     reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
@@ -34,7 +34,7 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
                                                           mindis_back=1, logmasscut_front=foreground_globalmin_masses[h],
                                                           logabsolute_mass_cut_front = foreground_aperture_masses[h],
                                                           logmasscut_back=12,
-                                                          logabsolute_mass_cut_back=12)
+                                                          logabsolute_mass_cut_back=12, centroid = centroid)
 
         else:
 
@@ -48,7 +48,7 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
                                           ray_y=out_kwargs['path_y'], logabsolute_mass_cut_back=12,
                                           path_redshifts=out_kwargs['path_redshifts'],
                                           path_Tzlist=out_kwargs['path_Tzlist'],
-                                          logabsolute_mass_cut_front = foreground_aperture_masses[h])
+                                          logabsolute_mass_cut_front = foreground_aperture_masses[h], centroid = centroid)
 
             realization_filtered = real.join(realization_filtered)
 
@@ -68,7 +68,7 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
 
             lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered, multiplane=True,
                                                     LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                    LOS_mass_sheet_back=LOS_mass_sheet_back)
+                                                    LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites)
 
             optimized_data, model, out_kwargs, keywords_lensmodel = solver_class._optimize_4imgs_lenstronomy([lens_system],
                                                                                              data2fit=datatofit,
@@ -94,7 +94,8 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
                                                                                            tol_simplex_func=tol_simplex_func,
                                                                                            simplex_n_iter=simplex_n_iter,
                                                                                            optimizer_kwargs=optimizer_kwargs,
-                                                                                           finite_source_magnification=False)
+                                                                                           finite_source_magnification=False,
+                                                                                           chi2_mode='source')
 
             foreground_rays = out_kwargs['precomputed_rays']
             foreground_macromodel = model[0].lens_components[0]
@@ -108,7 +109,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, solver_class,
                         background_globalmin_masses = None, background_aperture_masses = None, background_filters = None,
                         reoptimize_scale = None, optimize_iteration = None, particle_swarm_reopt = None,
-                        LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8):
+                        LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, centroid = None, satellites = None):
 
     if background_globalmin_masses is None or background_aperture_masses is None:
 
@@ -135,7 +136,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                           mindis_back=background_filters[h], logmasscut_front=12,
                                           logabsolute_mass_cut_front = 12,
                                           logmasscut_back=background_globalmin_masses[h],
-                                          logabsolute_mass_cut_back=background_aperture_masses[h])
+                                          logabsolute_mass_cut_back=background_aperture_masses[h], centroid = centroid)
 
             realization_filtered = realization_foreground.join(filtered_background)
 
@@ -154,7 +155,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                           ray_y=path_y, logabsolute_mass_cut_back=background_aperture_masses[h],
                                           path_redshifts=path_redshifts,
                                           path_Tzlist=path_Tzlist,
-                                          logabsolute_mass_cut_front=12)
+                                          logabsolute_mass_cut_front=12, centroid = centroid)
 
             realization_filtered = realization_filtered.join(filtered_background)
 
@@ -180,7 +181,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
             # print(macromodel.lenstronomy_args)
             lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered,
                                                     multiplane=True, LOS_mass_sheet_front = LOS_mass_sheet_front,
-                                                    LOS_mass_sheet_back = LOS_mass_sheet_back)
+                                                    LOS_mass_sheet_back = LOS_mass_sheet_back, satellites=satellites)
 
             optimized_data, model, out_kwargs, keywords_lensmodel = solver_class._optimize_4imgs_lenstronomy([lens_system],
                                                                  data2fit=datatofit,tol_source=tol_source,
@@ -205,7 +206,8 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                                                                        tol_simplex_func=tol_simplex_func,
                                                                                        simplex_n_iter=simplex_n_iter,
                                                                                        optimizer_kwargs=optimizer_args,
-                                                                                       finite_source_magnification=False)
+                                                                                       finite_source_magnification=False,
+                                                                                       chi2_mode='source')
 
             path_x, path_y, path_redshifts, path_Tzlist = out_kwargs['path_x'], out_kwargs['path_y'], \
                                                           out_kwargs['path_redshifts'], out_kwargs[

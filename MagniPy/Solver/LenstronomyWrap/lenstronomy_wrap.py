@@ -25,15 +25,16 @@ class LenstronomyWrap:
 
     def assemble(self,system):
 
-        zlist, lens_list, arg_list = system.lenstronomy_lists()
+        zlist, lens_list, arg_list, supplement = system.lenstronomy_lists()
 
-        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,'redshift_list':zlist}
+        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,'redshift_list':zlist, 'supplement': supplement}
 
     def get_lensmodel(self,lens_system):
 
         lists = self.assemble(lens_system)
-        lensmodel = LensModel(lens_model_list=lists['lens_model_list'],redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
-                         multi_plane=lens_system.multiplane)
+
+        lensmodel = LensModel(lens_model_list=lists['lens_model_list'], lens_redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
+                         multi_plane=lens_system.multiplane, numerical_alpha_class = lists['supplement'])
 
         return lensmodel,lists['kwargs_lens']
 
@@ -71,18 +72,20 @@ class LenstronomyWrap:
     def run_optimize(self,lens_system,z_source,x_pos,y_pos,tol_source,magnification_target,tol_mag,tol_centroid,centroid_0,
                      optimizer_routine,z_main,n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,
                      constrain_params,pso_convergence_mean,pso_compute_magnification, tol_simplex_params,
-                     tol_simplex_func,simplex_n_iter,optimizer_kwargs):
+                     tol_simplex_func,simplex_n_iter,optimizer_kwargs, chi2_mode, tol_image):
 
         lensmodel_kwargs = self.assemble(lens_system)
 
         optimizer = Optimizer(x_pos,y_pos,magnification_target=magnification_target,redshift_list=lensmodel_kwargs['redshift_list'],
                               lens_model_list=lensmodel_kwargs['lens_model_list'],kwargs_lens=lensmodel_kwargs['kwargs_lens'],
+                              numerical_alpha_class=lensmodel_kwargs['supplement'],
                               optimizer_routine=optimizer_routine,multiplane=lens_system.multiplane,z_main=z_main,z_source=z_source,
                               tol_source=tol_source,tol_mag=tol_mag,tol_centroid=tol_centroid,centroid_0=centroid_0,astropy_instance=self.astropy_instance,
                               verbose=verbose,re_optimize=re_optimize,particle_swarm=particle_swarm,
                               constrain_params=constrain_params,pso_compute_magnification=pso_compute_magnification,pso_convergence_mean=pso_convergence_mean,
                               tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
-                              simplex_n_iterations=simplex_n_iter,optimizer_kwargs = optimizer_kwargs)
+                              simplex_n_iterations=simplex_n_iter,optimizer_kwargs = optimizer_kwargs,
+                              chi2_mode=chi2_mode, tol_image=tol_image)
 
         optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 
