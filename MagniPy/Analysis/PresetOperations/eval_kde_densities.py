@@ -24,11 +24,11 @@ def run():
     elif error == 6:
         n_pert = 5
 
-    bandwidth_scale = 0.6
+    bandwidth_scale = 0.65
     nkde_bins = 20
     tol = 800
-    which_lenses = np.arange(1,12)
-    evaluate_denities('SIDM_run', which_lenses,
+    which_lenses = np.arange(1,20)
+    evaluate_denities('WSIDM_7_sigma0.012_core0.6', which_lenses,
                       error, n_pert, nkde_bins, '', tol, bandwidth_scale)
 
-run()
+#run()

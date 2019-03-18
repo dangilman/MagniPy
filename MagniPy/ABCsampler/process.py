@@ -224,9 +224,9 @@ def resample_sys(num, process_only):
     src_mean = 35
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.012, logmhm=4.95, core_ratio=0.7, core_ratio_sigma=0.025, errors=errors,
+        resample_chain_sidm(a0_area=0.012, logmhm=7, core_ratio=0.6, core_ratio_sigma=0.025, errors=errors,
                    N_pert=1, process_only=process_only, name='SIDM_run',
-                   which_lens_indexes=np.arange(1, 12))
+                   which_lens_indexes=np.arange(1, 20))
     elif num == 2:
             resample_chain_sidm(a0_area=0.012, logmhm=4.95, core_ratio=0.2, core_ratio_sigma=0.025, errors=errors,
                                 N_pert=1, process_only=process_only, name='SIDM_run',
@@ -255,7 +255,7 @@ def resample_sys(num, process_only):
                        which_lens_indexes=np.arange(1, 51))
 
 
-#process_raw('SIDM_run', np.arange(1,13), counter_start=0)
+#process_raw('SIDM_run', np.arange(21,22), counter_start=13)
 #process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
 #process_raw('hoffman_run3', np.arange(1,6), counter_start=15)
 #process_raw('hoffman_run4', np.arange(1,6), counter_start = 20)
@@ -264,9 +264,9 @@ def resample_sys(num, process_only):
 #process_raw('jpl_sim2', np.arange(1,6), counter_start = 40)
 #process_raw('SIDM_run', np.arange(1,12), counter_start = 0)
 #exit(1)
-#process_samples('SIDM_run', np.arange(1,12), 1, [0])
+#process_samples('SIDM_run', np.arange(13,20), 1, [0])
 
-resample_sys(1, False)
+#resample_sys(1, False)
 #resample_sys(2, False)
 #resample_sys(2, False)
 #resample_sys(3, False)
