@@ -253,7 +253,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
 
         real = pyhalo.render(model_type, halo_args)
 
-        lens_args = {'R_ein': c.vdis_to_Rein(zlens, zsrc, vdis), 'x': 0, 'y': 0, 'ellip': ellip, 'ellip_theta': ellip_theta,
+        lens_args = {'theta_E': c.vdis_to_Rein(zlens, zsrc, vdis), 'center_x': 0, 'center_y': 0, 'ellip': ellip, 'ellip_theta': ellip_theta,
                      'gamma': gamma, 'shear': shear, 'shear_theta': shear_theta}
 
         start = Deflector(subclass=SIE(), redshift=zlens, **lens_args)
