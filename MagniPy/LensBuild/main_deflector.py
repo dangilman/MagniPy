@@ -14,6 +14,7 @@ class Deflector(object):
         self.subclass = subclass
 
         args, self.other_args = subclass.params(**lens_kwargs)
+        self.profname = self.other_args['name']
 
         self.lenstronomy_args = model_translate_tolenstronomy(args, name=self.other_args['name'])
         self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])

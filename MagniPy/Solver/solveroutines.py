@@ -264,6 +264,7 @@ class SolveRoutines(Magnipy):
             method = default_solve_method
 
         lens_systems = []
+        assert macromodel is not None
 
         lens_systems.append(self.build_system(main=copy.deepcopy(macromodel), realization=None, multiplane=multiplane))
 

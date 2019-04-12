@@ -157,7 +157,7 @@ class Magnipy:
 
         data,opt_sys = [],[]
 
-        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
 
         for i,system in enumerate(lens_systems):
 
@@ -200,7 +200,7 @@ class Magnipy:
         if sigmas is None:
             sigmas = [self.default_pos_sigma, self.default_flux_sigma, self.default_tdelay_sigma]
 
-        lenstronomywrap = LenstronomyWrap()
+        lenstronomywrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
         d2fit = [data2fit.x,data2fit.y,data2fit.m,data2fit.t]
         optimized_systems = []
 
@@ -220,8 +220,9 @@ class Magnipy:
         for system in lens_systems:
 
             full = FullModel(multiplane=system.multiplane)
+
             for i, model in enumerate(system.lens_components):
-                full.populate(SingleModel(lensmodel=model, units=system.units,shr_coords=shr_coords))
+                full.populate(SingleModel(lensmodel=model, shr_coords=shr_coords))
 
             solver.add_lens_system(full)
 

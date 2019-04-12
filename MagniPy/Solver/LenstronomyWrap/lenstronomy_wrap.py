@@ -9,7 +9,7 @@ from lenstronomy.LensModel.Solver.lens_equation_solver import LensEquationSolver
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from lenstronomy.LensModel.Optimizer.optimizer import Optimizer
 
-class LenstronomyWrap:
+class LenstronomyWrap(object):
 
     def __init__(self,cosmo=None,z_source = None):
 

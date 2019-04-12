@@ -38,6 +38,15 @@ elif homedir == '/home/nierenbe/':
     # don't need this one either
     gravlens_input_path = IO_directory + 'gravlens_input/'
 
+elif homedir == '/home/gilmanda/':
+    prefix = homedir
+    IO_directory = prefix
+    path_2_lensmodel = homedir
+    gravlens_input_path = IO_directory + 'data/gravlens_input/'
+
+else:
+    raise Exception('You seem to be using a different computer. The home directory '+str(homedir)+' is not found.')
+
 #if os.path.exists(path_2_lensmodel+'lensmodel'):
 #    pass
 #else:
