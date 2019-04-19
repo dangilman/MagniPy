@@ -224,7 +224,7 @@ def resample_sys(num, process_only):
     src_mean = 35
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.012, logmhm=7, core_ratio=0.6, core_ratio_sigma=0.025, errors=errors,
+        resample_chain_sidm(a0_area=0.012, logmhm=7.3, core_ratio=0.65, core_ratio_sigma=0.025, errors=errors,
                    N_pert=1, process_only=process_only, name='SIDM_run',
                    which_lens_indexes=np.arange(1, 20))
     elif num == 2:

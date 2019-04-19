@@ -88,8 +88,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         halo_args = halo_model_args(chain_keys_run)
 
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
-        #print('running... ')
-        #print(samples)
+
         while True:
             print(halo_args)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
@@ -155,7 +154,7 @@ def runABC(chain_ID='',core_index=int):
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
     chain_keys.update({'cone_opening_angle': 5*approx_theta_E(datatofit.x, datatofit.y)})
-    print(chain_keys['cone_opening_angle'])
+
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
     print('lens redshift: ', chain_keys['zlens'])
@@ -244,4 +243,4 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-runABC(prefix+'data/SIDM_run/',1)
+#runABC(prefix+'data/SIDM_run/',1)

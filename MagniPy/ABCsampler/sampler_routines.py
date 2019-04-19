@@ -15,7 +15,11 @@ def perturb_data(data,delta_pos,delta_flux):
 
     return new_data
 
-def set_chain_keys(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
+def set_chain_keys(keys_to_vary, **kwargs):
+
+    return {'main_keys': kwargs, 'tovary_keys': keys_to_vary}
+
+def set_chain_keys_old(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
                    mindis_back=0.4, log_masscut_front=None, log_masscut_back=None, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
                    solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
                    mass_func_type=None,log_mL=None, log_mH=None, a0_area=None, A0=None, logmhm=None, core_ratio = None,
@@ -151,14 +155,13 @@ def halo_model_args(params):
                  'LOS_normalization']
 
         for name in names:
-            args.update({name: params[name]})
+            if name in params.keys():
+                args.update({name: params[name]})
 
         args.update({'mass_func_type':mass_func_type})
 
         if 'a0_area' in params.keys():
             args.update({'a0_area': params['a0_area']})
-        #elif 'fsub' in params.keys():
-        #    args.update({'fsub': params['fsub']})
 
         if 'zmin' in params.keys():
             args.update({'zmin':params['zmin']})
@@ -179,6 +182,9 @@ def halo_model_args(params):
             assert args['mdef_main'] == 'CNFW'
             assert args['mdef_los'] == 'CNFW'
             args.update({'core_ratio': params['core_ratio']})
+
+        if 'SIDMcross' in params.keys():
+            args.update({'SIDMcross': params['SIDMcross']})
 
     return args
 
