@@ -132,11 +132,11 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
 
         f.write('SIE_gamma '+str(SIE_gamma_mean)+'\n')
 
-    with open(chainpath_out + 'processed_chains/'+new_name + '/gamma_values.txt', 'w') as f:
+    #with open(chainpath_out + 'processed_chains/'+new_name + '/gamma_values.txt', 'w') as f:
 
         #f.write('re-sampled gamma '+str(SIE_gamma_mean)+' +\- '+str(SIE_gamma_sigma)+'\n')
-        for g in new_gamma:
-            f.write(str(g)+'\n')
+    #    for g in new_gamma:
+    #        f.write(str(g)+'\n')
 
 def process_raw(name=str,which_lenses=[], counter_start = 0):
 
@@ -191,19 +191,46 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
     return new_name
 
+def resample_chain_sidm(a0_area=None, logmhm=None, core_ratio=None, errors = [0, 0.02],N_pert=1,
+                   process_only = False, logmhm_sigma = 0.1, core_ratio_sigma = 0.05,
+                   a0_area_sigma = 0.02, name='WDM_sim_7.7_.012', which_lens_indexes = None, ending = ''):
+
+    #name = 'WDM_sim_7.7_.012'
+
+    if logmhm > 6:
+        new_name = 'WSIDM_'+str(logmhm)+'_'
+    else:
+        new_name = 'SIDM_'
+
+    new_name += 'sigma'+str(a0_area)+'_core'+str(core_ratio) + ending
+
+    if process_only is False:
+
+        #params_new = {'a0_area': [a0_area, a0_area_sigma], 'log_m_break': [logmhm, logmhm_sigma],
+        #                            'core_ratio': [core_ratio, core_ratio_sigma]}
+        params_new = {'log_m_break': [logmhm, logmhm_sigma],
+                                    'core_ratio': [core_ratio, core_ratio_sigma]}
+
+        _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
+                       parameters_new=params_new)
+
+    process_samples(new_name, which_lens_indexes, errors = errors, N_pert=N_pert)
+
+    return new_name
+
 def resample_sys(num, process_only):
     num = int(num)
-    errors = [0, 0.02, 0.04, 0.06]
+    errors = [0, 0.02]
     src_mean = 35
 
     if num == 1:
-        resample_chain(a0_area=0, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
-                   N_pert=5, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                   which_lens_indexes=np.arange(1, 51))
+        resample_chain_sidm(a0_area=0.012, logmhm=7.3, core_ratio=0.65, core_ratio_sigma=0.025, errors=errors,
+                   N_pert=1, process_only=process_only, name='SIDM_run',
+                   which_lens_indexes=np.arange(1, 20))
     elif num == 2:
-        resample_chain(a0_area=1.6, logmhm=4.95, src_size=src_mean, LOS_norm=1.1, errors=errors,
-                   N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                   which_lens_indexes=np.arange(1, 51))
+            resample_chain_sidm(a0_area=0.012, logmhm=4.95, core_ratio=0.2, core_ratio_sigma=0.025, errors=errors,
+                                N_pert=1, process_only=process_only, name='SIDM_run',
+                                which_lens_indexes=np.arange(1, 13))
     elif num == 3:
         resample_chain(a0_area=1.8, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                        N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
@@ -228,18 +255,19 @@ def resample_sys(num, process_only):
                        which_lens_indexes=np.arange(1, 51))
 
 
-#process_raw('hoffman_run1', np.arange(1,6), counter_start=0)
+#process_raw('SIDM_run', np.arange(21,22), counter_start=13)
 #process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
 #process_raw('hoffman_run3', np.arange(1,6), counter_start=15)
 #process_raw('hoffman_run4', np.arange(1,6), counter_start = 20)
 #process_raw('hoffman_run5', np.arange(1,11), counter_start = 25)
 #process_raw('jpl_sim1', np.arange(1,6), counter_start = 35)
 #process_raw('jpl_sim2', np.arange(1,6), counter_start = 40)
-#process_raw('jpl_sim3', np.arange(1,6), counter_start = 45)
+#process_raw('SIDM_run', np.arange(1,12), counter_start = 0)
 #exit(1)
-#process_samples('WDM_7.7_sigma0.012_srcsize35', np.arange(1,51), 5, [0,0.02,0.04,0.06,0.08])
+#process_samples('SIDM_run', np.arange(13,20), 1, [0])
 
 #resample_sys(1, False)
+#resample_sys(2, False)
 #resample_sys(2, False)
 #resample_sys(3, False)
 #resample_sys(4, False)

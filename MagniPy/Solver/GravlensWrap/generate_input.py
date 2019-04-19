@@ -145,7 +145,7 @@ class GravlensInput:
 
     def _add_header(self,zlens, zsrc, opt_routine):
 
-        self.header = Header(zlens=zlens,zsrc=zsrc,omega_M=self.cosmology.cosmo.Om0,hval=self.cosmology.h,shr_coords=self.shr_coords)
+        self.header = Header(zlens=zlens,zsrc=zsrc,omega_M=self.cosmology.astropy.Om0,hval=self.cosmology.h,shr_coords=self.shr_coords)
         self.header.opt_routine(opt_routine)
 
     def _write_header(self):

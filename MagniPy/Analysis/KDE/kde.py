@@ -44,7 +44,7 @@ class KDE_nD(object):
         if weights is None:
             H, _ = np.histogramdd(data, range=ranges, bins=histbins)
         else:
-            H, _ = np.histogramdd(data, range=ranges, bins=histbins, weights=weights)
+            H, _ = np.histogramdd(data, range=ranges, bins = histbins, weights=weights)
 
         covariance = h * np.cov(data.T)
         c_inv = np.linalg.inv(covariance)
@@ -61,9 +61,10 @@ class KDE_nD(object):
 
         return density
 
-    def __call__(self, data, points, ranges, weights=None):
+    def __call__(self, data, points, ranges, weights=None, boundary_order = 1):
 
-        density = self._compute_ND(data, points, ranges, weights)
+        density = self._compute_ND(data, points, ranges, weights,
+                                   boundary_order=boundary_order)
 
         return density
 

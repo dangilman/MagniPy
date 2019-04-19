@@ -32,7 +32,7 @@ class FluxRatioCumulative:
         lensdata = []
 
         for fname in fnames:
-
+            print(fname)
             anomalies = np.loadtxt(fname)
 
             lensdata.append(anomalies)

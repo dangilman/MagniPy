@@ -65,11 +65,12 @@ class Magnipy:
             return lens_system
 
     def build_system(self, main=None, realization=None, multiplane=None, LOS_mass_sheet_front=7.7,
-                     LOS_mass_sheet_back = 8):
+                     LOS_mass_sheet_back = 8, satellites = None):
 
         assert multiplane is not None
 
-        newsystem = LensSystem(main,realization,multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
+        newsystem = LensSystem(main, satellites = satellites, realization = realization, multiplane=multiplane,
+                               LOS_mass_sheet_front=LOS_mass_sheet_front,
                                LOS_mass_sheet_back = LOS_mass_sheet_back)
 
         return newsystem
@@ -79,7 +80,8 @@ class Magnipy:
                                     polar_grid=None, optimizer_routine=str, verbose=bool, re_optimize=False,
                                     particle_swarm = True, restart = 1, constrain_params=None, return_ray_path = False,
                                     pso_convergence_mean=None, pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
-                                    simplex_n_iter=None, optimizer_kwargs = {}, finite_source_magnification = True):
+                                    simplex_n_iter=None, optimizer_kwargs = {}, finite_source_magnification = True, chi2_mode = 'source',
+                                    tol_image = None):
 
         data, opt_sys = [], []
 
@@ -92,7 +94,8 @@ class Magnipy:
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
                             pso_convergence_mean=pso_convergence_mean,pso_compute_magnification=pso_compute_magnification,
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
-                              simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs)
+                              simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs,
+                               chi2_mode = chi2_mode, tol_image = tol_image)
 
             lensModel = optimizer.lensModel
 
@@ -154,7 +157,7 @@ class Magnipy:
 
         data,opt_sys = [],[]
 
-        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.cosmo, z_source=self.zsrc)
+        lenstronomyWrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
 
         for i,system in enumerate(lens_systems):
 
@@ -197,7 +200,7 @@ class Magnipy:
         if sigmas is None:
             sigmas = [self.default_pos_sigma, self.default_flux_sigma, self.default_tdelay_sigma]
 
-        lenstronomywrap = LenstronomyWrap()
+        lenstronomywrap = LenstronomyWrap(cosmo=self.cosmo.astropy, z_source=self.zsrc)
         d2fit = [data2fit.x,data2fit.y,data2fit.m,data2fit.t]
         optimized_systems = []
 
@@ -217,8 +220,9 @@ class Magnipy:
         for system in lens_systems:
 
             full = FullModel(multiplane=system.multiplane)
+
             for i, model in enumerate(system.lens_components):
-                full.populate(SingleModel(lensmodel=model, units=system.units,shr_coords=shr_coords))
+                full.populate(SingleModel(lensmodel=model, shr_coords=shr_coords))
 
             solver.add_lens_system(full)
 
@@ -333,11 +337,9 @@ class Magnipy:
 
             for i, system in enumerate(lens_systems):
 
-                redshift_list, lens_list, lensmodel_params = system.lenstronomy_lists()
-
                 lensModel, kwargs_lens = lenstronomywrap.get_lensmodel(system)
 
-                x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,lensmodel_params,brightimg)
+                x_image,y_image = lenstronomyWrap.solve_leq(srcx,srcy,lensModel,kwargs_lens,brightimg)
 
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
@@ -353,7 +355,7 @@ class Magnipy:
                 if arrival_time:
 
                     if system.multiplane:
-                        arrival_times = lensModel.arrival_time(x_image,y_image,lensmodel_params)
+                        arrival_times = lensModel.arrival_time(x_image,y_image,kwargs_lens)
 
                     else:
                         arrival_times = [0,0,0,0]

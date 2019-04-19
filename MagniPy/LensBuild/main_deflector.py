@@ -14,6 +14,7 @@ class Deflector(object):
         self.subclass = subclass
 
         args, self.other_args = subclass.params(**lens_kwargs)
+        self.profname = self.other_args['name']
 
         self.lenstronomy_args = model_translate_tolenstronomy(args, name=self.other_args['name'])
         self.gravlens_args = model_translate_togravlens(self.lenstronomy_args, name=self.other_args['name'])
@@ -71,6 +72,11 @@ class Deflector(object):
         self.shear = newshear
         e1,e2 = polar_to_cart(self.shear,self.shear_theta)
         self.shear_args = {'e1':e1,'e2':e2}
+
+    def ellip_PA_polar(self):
+
+        ellip, ePA = cart_to_polar(self.lenstronomy_args['e1'], self.lenstronomy_args['e2'])
+        return ellip, ePA
 
     def update(self,method=None,is_shear=False,**newparams):
 
