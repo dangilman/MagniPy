@@ -17,6 +17,16 @@ def perturb_data(data,delta_pos,delta_flux):
 
 def set_chain_keys(keys_to_vary, **kwargs):
 
+    lens_data = kwargs['data_to_fit']
+    kwargs['x_to_fit'] = lens_data.x.tolist()
+    kwargs['y_to_fit'] = lens_data.x.tolist()
+    kwargs['flux_to_fit'] = lens_data.m.tolist()
+    kwargs['t_to_fit'] = lens_data.t.tolist()
+    kwargs['source'] = [lens_data.srcx, lens_data.srcy]
+    del kwargs['data_to_fit']
+
+    kwargs['output_folder'] = kwargs['chain_ID'] + '/'
+
     return {'main_keys': kwargs, 'tovary_keys': keys_to_vary}
 
 def set_chain_keys_old(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
