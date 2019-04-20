@@ -9,11 +9,12 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
-                                                 tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.04,
+                                                 tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
-                                                 simplex_n_iter=400, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=2)
+                                                 simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
+                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
+                                                 tol_simplex_func=0.001)
 
     return model
 
@@ -23,12 +24,12 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2]
+        #gamma_values = [2.0]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
             macro_i = initialize_macro(solver, data, _macro)
-            macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
+            #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
             macromodels_init.append(macro_i)
 
     else:
@@ -94,7 +95,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
-                #print('source size: ',chain_keys_run['source_size_kpc'])
+
+                print('source size: ',chain_keys_run['source_size_kpc'])
 
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
@@ -153,7 +155,9 @@ def runABC(chain_ID='',core_index=int):
     datatofit = Data(x=chain_keys['x_to_fit'], y=chain_keys['y_to_fit'], m=chain_keys['flux_to_fit'],
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
-    chain_keys.update({'cone_opening_angle': 5*approx_theta_E(datatofit.x, datatofit.y)})
+    rein_main = approx_theta_E(datatofit.x, datatofit.y)
+    chain_keys.update({'R_ein_main': rein_main})
+    chain_keys.update({'cone_opening_angle': chain_keys['opening_angle_factor'] * rein_main})
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
@@ -243,4 +247,9 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-#runABC(prefix+'data/SIDM_run/',1)
+cpl = 2000
+L = 1
+index = (L-1)*cpl + 1
+
+#runABC(prefix+'data/coldSIDM_run/',index)
+
