@@ -13,7 +13,7 @@ def initialize_macro(solver,data,init):
                                                  tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
+                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=2,
                                                  tol_simplex_func=0.001)
 
     return model
@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 25
 
     while N_computed < keys['Nsamples']:
 
@@ -91,7 +91,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
 
         while True:
-            print(halo_args)
+            #print(halo_args)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
@@ -157,6 +157,7 @@ def runABC(chain_ID='',core_index=int):
 
     rein_main = approx_theta_E(datatofit.x, datatofit.y)
     chain_keys.update({'R_ein_main': rein_main})
+    print(chain_keys['opening_angle_factor'], rein_main)
     chain_keys.update({'cone_opening_angle': chain_keys['opening_angle_factor'] * rein_main})
 
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
@@ -251,5 +252,5 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 1
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_run/',index)
+#runABC(prefix+'data/coldSIDM_run/',1)
 
