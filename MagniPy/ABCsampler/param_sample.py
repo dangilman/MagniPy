@@ -8,7 +8,7 @@ class ParamSample:
     recognized_param_precision['logmhm'] = 3
     recognized_param_precision['SIE_gamma'] = 4
     recognized_param_precision['core_ratio'] = 4
-    recognized_param_precision['source_size_kpc'] = 7
+    recognized_param_precision['source_size_kpc'] = 6
     recognized_param_precision['SIDMcross'] = 3
     
     def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5,**kwargs):
