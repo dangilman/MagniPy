@@ -14,6 +14,19 @@ from scipy.optimize import minimize
 cosmo = Cosmology()
 arcsec = 206265  # arcsec per radian
 
+def matching(want_config, config):
+    if want_config == 'cross':
+        want_config = 0
+    elif want_config == 'fold':
+        want_config = 1
+    else:
+        want_config = 2
+
+    if config == want_config:
+        return True
+    else:
+        return False
+
 def set_Rindex(dfile_base,minidx,maxidx):
 
     indexes = np.arange(minidx,maxidx)
@@ -83,8 +96,8 @@ def flux_at_edge(image):
     else:
         return False
 
-def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
-    print('finding images....')
+def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis,print_things = False):
+    if print_things: print('finding images....')
     xcrit = None
 
     while True:
@@ -99,8 +112,9 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis):
                                                                            multiplane=multiplane, grid_scale=0.01,
                                                                            compute_window=3)
         if data_withhalos[0].nimg == 4:
-            print('done finding images.')
-            return data_withhalos, xcaus, ycaus
+
+            if print_things: print('done finding images.')
+            return data_withhalos, xcaus, ycaus, xs, ys
         try:
             xs, ys = guess_source(xcaus, ycaus)
         except:
@@ -170,7 +184,7 @@ def draw_ellip_PA(low = -90, high = 90):
 
     return np.random.uniform(low, high)
 
-def draw_shear(mean = 0.05, sigma = 0.02, low = 0.035, high = 0.1):
+def draw_shear(mean = 0.06, sigma = 0.02, low = 0.035, high = 0.1):
 
     while True:
         shear = np.random.normal(mean, sigma)
@@ -367,22 +381,23 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
             write_info(str(to_write), dpath + '/info.txt')
             #write_info(str('R_index: ' + str(None)), dpath + '/R_index.txt')
 
-model_type = 'composite_powerlaw'
-multiplane = True
+if False:
+    model_type = 'composite_powerlaw'
+    multiplane = True
 
-a0_area = 0.012
-M_halo = 10 ** 13
-logmhm = 4.9
-r_tidal = '0.5Rs'
-src_size_mean = 0.035
-src_size_sigma = 0.0001
-log_ml, log_mh = 6, 10
-break_index = -1.3
-core_ratio = 0.01
+    a0_area = 0.012
+    M_halo = 10 ** 13
+    logmhm = 4.9
+    r_tidal = '0.5Rs'
+    src_size_mean = 0.035
+    src_size_sigma = 0.0001
+    log_ml, log_mh = 6, 10
+    break_index = -1.3
+    core_ratio = 0.01
 
-nav = prefix
+    nav = prefix
 
-dpath_base = nav + '/mock_data/coldSIDM/lens_'
+    dpath_base = nav + '/mock_data/coldSIDM/lens_'
 #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
 #run(0,1,0,1)
 #import sys
