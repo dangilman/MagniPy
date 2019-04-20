@@ -19,11 +19,16 @@ def set_chain_keys(keys_to_vary, **kwargs):
 
     lens_data = kwargs['data_to_fit']
     kwargs['x_to_fit'] = lens_data.x.tolist()
-    kwargs['y_to_fit'] = lens_data.x.tolist()
+    kwargs['y_to_fit'] = lens_data.y.tolist()
     kwargs['flux_to_fit'] = lens_data.m.tolist()
     kwargs['t_to_fit'] = lens_data.t.tolist()
     kwargs['source'] = [lens_data.srcx, lens_data.srcy]
     del kwargs['data_to_fit']
+
+    for name in kwargs['halo_args_init'].keys():
+        kwargs.update({name: kwargs['halo_args_init'][name]})
+
+    del kwargs['halo_args_init']
 
     kwargs['output_folder'] = kwargs['chain_ID'] + '/'
 
@@ -160,7 +165,7 @@ def halo_model_args(params):
 
     if mass_func_type == 'composite_powerlaw':
 
-        names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'power_law_index',
+        names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'opening_angle_factor','power_law_index',
                  'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main', 'parent_c',
                  'LOS_normalization']
 

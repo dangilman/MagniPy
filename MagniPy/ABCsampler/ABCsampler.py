@@ -9,7 +9,7 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.001,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.04,
                                                  tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -157,8 +157,8 @@ def runABC(chain_ID='',core_index=int):
 
     rein_main = approx_theta_E(datatofit.x, datatofit.y)
     chain_keys.update({'R_ein_main': rein_main})
-    chain_keys.update({'cone_opening_angle': chain_keys['halo_args_init']['opening_angle_factor'] * rein_main})
-    print(datatofit.m)
+    chain_keys.update({'cone_opening_angle': chain_keys['opening_angle_factor'] * rein_main})
+
     write_data(output_path + 'lensdata.txt',[datatofit], mode='write')
 
     print('lens redshift: ', chain_keys['zlens'])
@@ -248,8 +248,8 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
         f.write(keys['chain_description'])
 
 cpl = 2000
-L = 6
+L = 1
 index = (L-1)*cpl + 1
 
-runABC(prefix+'data/coldSIDM_run/',index)
+#runABC(prefix+'data/coldSIDM_run/',index)
 
