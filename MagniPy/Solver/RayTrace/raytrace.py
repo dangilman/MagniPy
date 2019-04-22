@@ -67,7 +67,8 @@ class RayTrace:
         elif size_asec < 0.003:
             s = 0.28
         elif size_asec < 0.005:
-            s = 0.34
+            s = 0.35
+
         else:
             s = 0.48
 
@@ -100,10 +101,10 @@ class RayTrace:
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            #n = int(np.sqrt(len(image)))
-            #plt.imshow(image.reshape(n,n))
-            #plt.show()
-            #a=input('continue')
+            n = int(np.sqrt(len(image)))
+            plt.imshow(image.reshape(n,n))
+            plt.show()
+            a=input('continue')
 
             flux.append(np.sum(image*self.res**2))
 

@@ -250,9 +250,10 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 
         f.write(keys['chain_description'])
 
-cpl = 2000
-L = 21
-index = (L-1)*cpl + 1
+#cpl = 2000
+#L = 21
+#index = (L-1)*cpl + 1
 
 #runABC(prefix+'data/coldSIDM_run/',index)
+
 
