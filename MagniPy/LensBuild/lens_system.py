@@ -35,7 +35,7 @@ class LensSystem(object):
         self.satellite_redshift = redshift
         self.satellite_kwargs = kwargs
 
-    def _build(self):
+    def _build(self, halos_only = False):
 
         if not hasattr(self, '_halo_names'):
             if self.realization is not None:
@@ -45,16 +45,22 @@ class LensSystem(object):
             else:
                 self._halo_names, self._halo_redshifts, self._halo_kwargs, self.custom_class = [], [], [], None
 
-        main_names, main_redshift, main_args = self._unpack_main(self.main)
+        if halos_only is False:
+            main_names, main_redshift, main_args = self._unpack_main(self.main)
 
-        if self._has_satellites:
-            main_names += self.satellite_mass_model
-            main_redshift += self.satellite_redshift
-            main_args += self.satellite_kwargs
+            if self._has_satellites:
+                main_names += self.satellite_mass_model
+                main_redshift += self.satellite_redshift
+                main_args += self.satellite_kwargs
 
-        lens_model_names = main_names + self._halo_names
-        lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)
-        lens_model_kwargs = main_args + self._halo_kwargs
+            lens_model_names = main_names + self._halo_names
+            lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)
+            lens_model_kwargs = main_args + self._halo_kwargs
+
+        else:
+            lens_model_names = self._halo_names
+            lens_model_redshifts = self._halo_redshifts
+            lens_model_kwargs = self._halo_kwargs
 
         return lens_model_names, lens_model_redshifts, lens_model_kwargs, self.custom_class
 
@@ -94,8 +100,8 @@ class LensSystem(object):
         self.main = deflector_main
         self.zmain = deflector_main.redshift
 
-    def lenstronomy_lists(self):
+    def lenstronomy_lists(self, halos_only = False):
 
-        lens_list, zlist, arg_list, custom_class = self._build()
+        lens_list, zlist, arg_list, custom_class = self._build(halos_only=halos_only)
 
         return zlist,lens_list,arg_list, custom_class

@@ -5,8 +5,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
 from MagniPy.LensBuild.defaults import *
+from scipy.ndimage.filters import gaussian_filter
 
 class Analysis(Magnipy):
+
+    def get_shear_atscale(self, lens_system=None,main=None,halos=None,x=None,y=None, convolve_scale = None):
+
+        g1, g2, g3 = self.get_shear(lens_system, main, halos, x, y, multiplane=True)
+
+        g1 = gaussian_filter(g1, convolve_scale)
+        g2 = gaussian_filter(g2, convolve_scale)
+        g3 = gaussian_filter(g3, convolve_scale)
+        
+        return g1, g2, g3
 
     def sersicNFW_effective_slope(self,params):
 
@@ -28,7 +39,7 @@ class Analysis(Magnipy):
 
         lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
 
-        if isinstance(x,int) or isinstance(x,list):
+        if isinstance(x,int) or isinstance(x,float):
 
             f_xx, f_xy, f_yx, f_yy = lensmodel.hessian(x,y,kwargs=lensmodel_params)
 
@@ -201,10 +212,6 @@ class Analysis(Magnipy):
                                                  return_image=True)
 
         return magnifications, image
-
-
-
-
 
 
 
