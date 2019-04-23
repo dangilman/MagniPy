@@ -1,4 +1,5 @@
 from MagniPy.Solver.solveroutines import SolveRoutines
+from MagniPy.Solver.analysis import Analysis
 from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
@@ -24,7 +25,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.0]
+        gamma_values = [2.08]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -36,8 +37,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
         gamma_values = [chain_keys_run['SIE_gamma']]
         _macro = get_default_SIE(z=chain_keys_run['zlens'])
         _macro.update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-        macro_i = initialize_macro(solver, data, _macro)
-        macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
+
         macromodels_init.append(initialize_macro(solver, data, _macro))
 
     return macromodels_init, gamma_values
@@ -50,7 +50,7 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, output_path, write_header):
+def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, analysis, output_path, write_header):
 
     chaindata = []
     parameters = []
@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 2
 
     while N_computed < keys['Nsamples']:
 
@@ -94,24 +94,48 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             print(halo_args)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            try:
+            #try:
 
-                print('source size: ',chain_keys_run['source_size_kpc'])
+            print('source size: ',chain_keys_run['source_size_kpc'])
 
-                new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
-                                   pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
-                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
+            new, opt, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                               realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
+                               verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                               pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                simplex_n_iter=400, polar_grid=False, grid_res=0.002,
+                                LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
+                                 LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
-                xfit, yfit = new[0].x, new[0].y
-                #print(new[0].m)
+            xfit, yfit = new[0].x, new[0].y
+            c_res = [1e-6, 0.03, 0.06]
+            shear_vals_1 = np.zeros((3, 2))
+            shear_vals_2 = np.zeros_like(shear_vals_1)
+            shear_vals_3 = np.zeros_like(shear_vals_1)
+            shear_vals_4 = np.zeros_like(shear_vals_1)
+            for i, convolve_res in enumerate(c_res):
+                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[0],
+                            y_img=yfit[0], convolve_scale = convolve_res, step = 0.01, window_size = 0.05)
+                shear_vals_1[i,0] = np.mean(shear1)
+                shear_vals_1[i,1] = np.mean(shear2)
+                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[1],
+                                                           y_img=yfit[1], convolve_scale=convolve_res, step=0.01,
+                                                           window_size=0.05)
+                shear_vals_2[i, 0] = np.mean(shear1)
+                shear_vals_2[i, 1] = np.mean(shear2)
+                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[2],
+                                                           y_img=yfit[2], convolve_scale=convolve_res, step=0.01,
+                                                           window_size=0.05)
+                shear_vals_3[i, 0] = np.mean(shear1)
+                shear_vals_3[i, 1] = np.mean(shear2)
+                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[3],
+                                                           y_img=yfit[3], convolve_scale=convolve_res, step=0.01,
+                                                           window_size=0.05)
+                shear_vals_4[i, 0] = np.mean(shear1)
+                shear_vals_4[i, 1] = np.mean(shear2)
 
-            except:
-                print('error in fitting positions...')
-                xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
+            #except:
+             #   print('error in fitting positions...')
+              #  xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 break
@@ -128,13 +152,23 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         if start:
             chaindata = new[0].m
             parameters = np.array(samples_array)
+            shear_values_1 = shear_vals_1
+            shear_values_2 = shear_vals_2
+            shear_values_3 = shear_vals_3
+            shear_values_4 = shear_vals_4
+
         else:
             chaindata = np.vstack((chaindata,new[0].m))
             parameters = np.vstack((parameters,np.array(samples_array)))
+            shear_values_1 = np.vstack((shear_values_1, shear_vals_1))
+            shear_values_2 = np.vstack((shear_values_2, shear_vals_2))
+            shear_values_3 = np.vstack((shear_values_3, shear_vals_3))
+            shear_values_4 = np.vstack((shear_values_4, shear_vals_4))
 
         if N_computed%readout_steps == 0:
 
-            readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
+            readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), shear_values_1, shear_values_2,
+                    shear_values_3, shear_values_4, write_header)
             start = True
             write_header = False
 
@@ -170,6 +204,7 @@ def runABC(chain_ID='',core_index=int):
 
     solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
                            temp_folder=chain_keys['scratch_file'], clean_up=True)
+    analysis = Analysis(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'])
 
     param_names_tovary = chain_keys_to_vary.keys()
     write_info_file(chainpath + chain_keys['output_folder'] + 'simulation_info.txt',
@@ -186,8 +221,8 @@ def runABC(chain_ID='',core_index=int):
 
     else:
 
-        run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
-                        chain_keys['write_header'])
+        run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, analysis,
+                        output_path, chain_keys['write_header'])
 
 def write_params(params,fname,header, mode='append'):
 
@@ -251,6 +286,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_run/',index)
+#runABC(prefix+'data/extendedimg_info/',1)
 
 

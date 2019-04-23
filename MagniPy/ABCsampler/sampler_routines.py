@@ -226,8 +226,15 @@ def write_params(params,fname,header, mode):
                     f.write(str(float(row[p]))+' ')
                 f.write('\n')
 
+def write_shear_values(fname, m, values):
 
-def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
+    with open(fname, mode=m) as f:
+        for row in range(0, int(np.shape(values)[0])):
+            towrite = str(values[row,0]) + ' ' + str(values[row,1]) + '\n'
+            f.write(towrite)
+
+def readout(output_path, fluxes, parameters, param_names_tovary, shear_values_1, shear_values_2,
+                    shear_values_3, shear_values_4, write_header):
 
     if write_header:
         header_string = ''
@@ -235,11 +242,19 @@ def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
             header_string += name + ' '
         write_params(parameters, output_path + 'parameters.txt', header_string, mode='write')
         write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='write')
+        write_shear_values(output_path+'shearvals_img1.txt', 'w', shear_values_1)
+        write_shear_values(output_path + 'shearvals_img2.txt', 'w', shear_values_2)
+        write_shear_values(output_path + 'shearvals_img3.txt', 'w', shear_values_3)
+        write_shear_values(output_path + 'shearvals_img4.txt', 'w', shear_values_4)
 
     else:
 
         write_params(parameters,output_path + 'parameters.txt', None, mode='append')
         write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='append')
+        write_shear_values(output_path + 'shearvals_img1.txt', 'a', shear_values_1)
+        write_shear_values(output_path + 'shearvals_img2.txt', 'a', shear_values_2)
+        write_shear_values(output_path + 'shearvals_img3.txt', 'a', shear_values_3)
+        write_shear_values(output_path + 'shearvals_img4.txt', 'a', shear_values_4)
 
 def get_inputfile_path(chain_ID, core_index):
     info_file = chain_ID + '/paramdictionary_1.txt'
