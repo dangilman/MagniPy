@@ -397,30 +397,27 @@ if False:
 
     nav = prefix
 
-<<<<<<< HEAD
+
     dpath_base = nav + '/mock_data/coldSIDM/lens_'
-=======
-dpath_base = nav + '/mock_data/coldSIDM/lens_'
 
->>>>>>> check_lenses
-#dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
-#run(0,1,0,1)
-#import sys
-#start_idx=int(sys.argv[1])
+    #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
+    #run(0,1,0,1)
+    #import sys
+    #start_idx=int(sys.argv[1])
 
-cusps = np.arange(1,60,3)
-folds = cusps + 1
-crosses = cusps + 2
-start_idx = 7
-if start_idx in cusps:
-    print('cusp')
-    run(1, 0, 0, start_idx)
-elif start_idx in folds:
-    print('fold')
-    run(0, 1, 0, start_idx)
-else:
-    print('cross')
-    run(0, 0, 1, start_idx)
+    cusps = np.arange(1,60,3)
+    folds = cusps + 1
+    crosses = cusps + 2
+    start_idx = 7
+    if start_idx in cusps:
+        print('cusp')
+        run(1, 0, 0, start_idx)
+    elif start_idx in folds:
+        print('fold')
+        run(0, 1, 0, start_idx)
+    else:
+        print('cross')
+        run(0, 0, 1, start_idx)
 
 #cusps = np.arange(1,60,3)
 #folds = cusps + 1

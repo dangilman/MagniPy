@@ -9,15 +9,51 @@ from scipy.ndimage.filters import gaussian_filter
 
 class Analysis(Magnipy):
 
-    def get_shear_atscale(self, lens_system=None,main=None,halos=None,x=None,y=None, convolve_scale = None):
+    def hessian_with_scale(self, lens_system=None,main=None,halos=None,x_img=None,
+                       y_img=None, convolve_scale = None, step = 0.003, window_size = 0.05):
 
-        g1, g2, g3 = self.get_shear(lens_system, main, halos, x, y, multiplane=True)
+        if lens_system is None:
+            lens_system = self.build_system(main=main, realization=halos, multiplane=True)
 
-        g1 = gaussian_filter(g1, convolve_scale)
-        g2 = gaussian_filter(g2, convolve_scale)
-        g3 = gaussian_filter(g3, convolve_scale)
-        
-        return g1, g2, g3
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
+
+        x = np.arange(x_img - 0.5*window_size, x_img + 0.5 * window_size, step)
+        y = np.arange(y_img - 0.5*window_size, y_img + 0.5 * window_size, step)
+        xx, yy = np.meshgrid(x, y)
+        original_shape = xx.shape
+        xx = xx.ravel()
+        yy = yy.ravel()
+
+        alpha_ra, alpha_dec = lensmodel.alpha(xx, yy, lensmodel_params)
+
+        alpha_ra_dx, alpha_dec_dx = lensmodel.alpha(xx + convolve_scale, yy, lensmodel_params)
+        alpha_ra_dy, alpha_dec_dy = lensmodel.alpha(xx, yy + convolve_scale, lensmodel_params)
+
+        dalpha_rara = (alpha_ra_dx - alpha_ra) / convolve_scale
+        dalpha_radec = (alpha_ra_dy - alpha_ra) / convolve_scale
+        dalpha_decra = (alpha_dec_dx - alpha_dec) / convolve_scale
+        dalpha_decdec = (alpha_dec_dy - alpha_dec) / convolve_scale
+
+        fxx = dalpha_rara
+        fyy = dalpha_decdec
+        fxy = dalpha_radec
+        fyx = dalpha_decra
+
+        return fxx.reshape(original_shape), fxy.reshape(original_shape), \
+               fyx.reshape(original_shape), fyy.reshape(original_shape)
+
+    def shear_with_scale(self, lens_system=None,main=None,halos=None,x_img=None,
+                       y_img=None, convolve_scale = None, step = 0.003, window_size = 0.05):
+
+        fxx, fxy, fyx, fyy = self.hessian_with_scale(lens_system, main, halos, x_img, y_img,
+                                                     convolve_scale, step, window_size)
+
+        shear1 = 0.5*(fxx - fyy)
+        shear2 = np.sqrt(0.25 * fxy * fyx)
+
+        return shear1, shear2
 
     def sersicNFW_effective_slope(self,params):
 
@@ -30,7 +66,7 @@ class Analysis(Magnipy):
 
         return np.polyfit(np.log10(kappa), np.log10(x), 1)[0]
 
-    def get_hessian(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=None):
+    def get_hessian(self,lens_system=None,main=None,halos=None,x=None,y=None,multiplane=True):
 
         if lens_system is None:
             lens_system = self.build_system(main=main, realization=halos, multiplane=multiplane)
