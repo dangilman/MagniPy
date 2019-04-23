@@ -36,8 +36,8 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
         gamma_values = [chain_keys_run['SIE_gamma']]
         _macro = get_default_SIE(z=chain_keys_run['zlens'])
         _macro.update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-        macro_i = initialize_macro(solver, data, _macro)
-        macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
+        #macro_i = initialize_macro(solver, data, _macro)
+        #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
         macromodels_init.append(initialize_macro(solver, data, _macro))
 
     return macromodels_init, gamma_values

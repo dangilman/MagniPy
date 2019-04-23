@@ -180,7 +180,7 @@ class ChainFromSamples(object):
                         new_lens.statistic.append(statistics[ind-1])
 
                     if parameters is None:
-                        print(self.params_varied)
+                        #print(self.params_varied)
                         fname = 'params_' + str(error) + 'error_' + str(ni+1) + '.txt'
                         new_lens.add_parameters(pnames=self.params_varied,finite_inds=finite,
                                         fname=self.chain_file_path+'lens'+str(ind)+'/'+fname)
@@ -207,8 +207,6 @@ class ChainFromSamples(object):
                         new_lens.statistic[ni] = new_lens.statistic[ni][keep]
 
             self.lenses.append(new_lens)
-
-
 
     def eval_KDE(self, bandwidth_scale = 1, tol = 2500, nkde_bins = 20,
                  save_to_file = True):
@@ -378,7 +376,8 @@ class ChainFromSamples(object):
                 np.savetxt(fname, X = marg.array)
 
         if len(density.shape) == 5:
-            self._projections_5D(density, bandwidth_scale, save_to_file)
+            #self._projections_5D(density, bandwidth_scale, save_to_file)
+            self._projections_5D_SIDM(density, bandwidth_scale, save_to_file)
         elif len(density.shape) == 3:
             self._projections_3D(density, bandwidth_scale, save_to_file)
         elif len(density.shape) == 2:
@@ -434,7 +433,58 @@ class ChainFromSamples(object):
                 fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
                 np.savetxt(fname, X=j.array)
 
-    def _projections_5D(self, density, bandwidth_scale, save_to_file):
+    def _projections_5D_SIDM(self, density, bandwidth_scale, save_to_file):
+
+        proj_LOSa0 = np.sum(density, axis=(2, 3, 4)).T
+        proj_a0cross = np.sum(density, axis=(1, 3, 4)).T
+        proj_a0SIE = np.sum(density, axis=(1, 2, 4)).T
+        proj_srca0 = np.sum(density, axis=(1, 2, 3)).T
+
+        proj_crossLOS = np.sum(density, axis=(0, 3, 4))
+        proj_sieLOS = np.sum(density, axis=(0, 2, 4))
+        proj_srcLOS = np.sum(density, axis=(0, 2, 3)).T
+
+        proj_SIEcross = np.sum(density, axis=(0, 1, 4))
+        proj_srccross = np.sum(density, axis=(0, 1, 3))
+
+        proj_srcSIE = np.sum(density, axis=(0, 1, 2))
+
+        px, py = 'LOS_normalization', 'a0_area'
+        self.joint_densities.append(JointDensity(px, py, proj_LOSa0))
+
+        py, px = 'a0_area', 'SIDMcross'
+        self.joint_densities.append(JointDensity(px, py, proj_a0cross))
+
+        py, px = 'a0_area', 'SIE_gamma'
+        self.joint_densities.append(JointDensity(px, py, proj_a0SIE))
+
+        px, py = 'source_size_kpc', 'a0_area'
+        self.joint_densities.append(JointDensity(px, py, proj_srca0))
+
+        px, py = 'SIDMcross', 'LOS_normalization'
+        self.joint_densities.append(JointDensity(px, py, proj_crossLOS))
+
+        px, py = 'SIE_gamma', 'LOS_normalization'
+        self.joint_densities.append(JointDensity(px, py, proj_sieLOS))
+
+        py, px = 'source_size_kpc', 'LOS_normalization'
+        self.joint_densities.append(JointDensity(px, py, proj_srcLOS))
+
+        px, py = 'SIE_gamma', 'SIDMcross'
+        self.joint_densities.append(JointDensity(px, py, proj_SIEcross))
+
+        px, py = 'source_size_kpc', 'SIDMcross'
+        self.joint_densities.append(JointDensity(px, py, proj_srccross))
+
+        px, py = 'source_size_kpc', 'SIE_gamma'
+        self.joint_densities.append(JointDensity(px, py, proj_srcSIE))
+
+        if save_to_file:
+            for j in self.joint_densities:
+                fname = self._fnamejoint(j.param_x, j.param_y, bandwidth_scale)
+                np.savetxt(fname, X = j.array)
+
+    def _projections_5D_WDM(self, density, bandwidth_scale, save_to_file):
 
         proj_LOSa0 = np.sum(density, axis=(2, 3, 4)).T
         proj_a0logm = np.sum(density, axis=(1, 3, 4)).T

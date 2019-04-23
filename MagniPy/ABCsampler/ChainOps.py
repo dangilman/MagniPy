@@ -37,7 +37,7 @@ def stack_chain(chain_name='', which_lens = None, parameters=None,fluxes_obs=Non
 
     np.savetxt(chain_file_path + 'modelfluxes' + '.txt', fluxes, fmt='%.6f')
     np.savetxt(chain_file_path + 'observedfluxes' + '.txt',fluxes_obs, fmt='%.6f')
-    np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.3f',header=header)
+    np.savetxt(chain_file_path + 'samples.txt',parameters,fmt='%.5f',header=header)
 
 def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, errors = None, N_pert = 1,
                            keep_n=15000):

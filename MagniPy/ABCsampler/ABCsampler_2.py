@@ -167,7 +167,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, a
 
         if N_computed%readout_steps == 0:
 
-            readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), shear_values_1, shear_values_2,
+            readout_withshear(output_path, chaindata, parameters, list(keys_to_vary.keys()), shear_values_1, shear_values_2,
                     shear_values_3, shear_values_4, write_header)
             start = True
             write_header = False

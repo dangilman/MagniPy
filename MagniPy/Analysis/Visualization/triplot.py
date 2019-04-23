@@ -545,7 +545,7 @@ class TriPlot(object):
         elif pname == 'source_size_kpc':
             name = r'$\sigma_{\rm{src}}$'
             tick_labels = [25, 30, 35, 40, 45, 50]
-            tick_locs = tick_labels
+            tick_locs = np.array(tick_labels)*0.001
         elif pname == 'log_m_break':
             name = r'$\log_{10}{m_{\rm{hm}}}$'
             tick_labels = [5, 6, 7, 8, 9, 10]
@@ -558,5 +558,9 @@ class TriPlot(object):
             name = r'$\frac{r_{\rm{core}}}{r_s}$'
             tick_labels = [0.01, 0.2, 0.4, 0.6, 0.8]
             tick_locs = [0.01, 0.2, 0.4, 0.6, 0.8]
+        elif pname == 'SIDMcross':
+            name = r'$\sigma_{\rm{SIDM}}$'
+            tick_labels = [0.01, 2, 4, 6, 8]
+            tick_locs = [0.01, 2, 4, 6, 8]
 
         return tick_locs, tick_labels, name, rotation

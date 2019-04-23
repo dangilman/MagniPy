@@ -233,7 +233,21 @@ def write_shear_values(fname, m, values):
             towrite = str(values[row,0]) + ' ' + str(values[row,1]) + '\n'
             f.write(towrite)
 
-def readout(output_path, fluxes, parameters, param_names_tovary, shear_values_1, shear_values_2,
+def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
+
+    if write_header:
+        header_string = ''
+        for name in param_names_tovary:
+            header_string += name + ' '
+        write_params(parameters, output_path + 'parameters.txt', header_string, mode='write')
+        write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='write')
+
+    else:
+
+        write_params(parameters,output_path + 'parameters.txt', None, mode='append')
+        write_fluxes(output_path + 'fluxes.txt', fluxes=fluxes, summed_in_quad=False, mode='append')
+
+def readout_withshear(output_path, fluxes, parameters, param_names_tovary, shear_values_1, shear_values_2,
                     shear_values_3, shear_values_4, write_header):
 
     if write_header:
