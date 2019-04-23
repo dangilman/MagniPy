@@ -94,48 +94,48 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, a
             print(halo_args)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            #try:
+            try:
 
-            print('source size: ',chain_keys_run['source_size_kpc'])
+                print('source size: ',chain_keys_run['source_size_kpc'])
 
-            new, opt, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                               realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                               verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
-                               pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                simplex_n_iter=400, polar_grid=False, grid_res=0.002,
-                                LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                 LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
+                new, opt, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
+                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
+                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
+                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
-            xfit, yfit = new[0].x, new[0].y
-            c_res = [1e-6, 0.03, 0.06]
-            shear_vals_1 = np.zeros((3, 2))
-            shear_vals_2 = np.zeros_like(shear_vals_1)
-            shear_vals_3 = np.zeros_like(shear_vals_1)
-            shear_vals_4 = np.zeros_like(shear_vals_1)
-            for i, convolve_res in enumerate(c_res):
-                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[0],
-                            y_img=yfit[0], convolve_scale = convolve_res, step = 0.01, window_size = 0.05)
-                shear_vals_1[i,0] = np.mean(shear1)
-                shear_vals_1[i,1] = np.mean(shear2)
-                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[1],
-                                                           y_img=yfit[1], convolve_scale=convolve_res, step=0.01,
-                                                           window_size=0.05)
-                shear_vals_2[i, 0] = np.mean(shear1)
-                shear_vals_2[i, 1] = np.mean(shear2)
-                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[2],
-                                                           y_img=yfit[2], convolve_scale=convolve_res, step=0.01,
-                                                           window_size=0.05)
-                shear_vals_3[i, 0] = np.mean(shear1)
-                shear_vals_3[i, 1] = np.mean(shear2)
-                shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[3],
-                                                           y_img=yfit[3], convolve_scale=convolve_res, step=0.01,
-                                                           window_size=0.05)
-                shear_vals_4[i, 0] = np.mean(shear1)
-                shear_vals_4[i, 1] = np.mean(shear2)
+                xfit, yfit = new[0].x, new[0].y
+                c_res = [1e-6, 0.03, 0.06]
+                shear_vals_1 = np.zeros((3, 2))
+                shear_vals_2 = np.zeros_like(shear_vals_1)
+                shear_vals_3 = np.zeros_like(shear_vals_1)
+                shear_vals_4 = np.zeros_like(shear_vals_1)
+                for i, convolve_res in enumerate(c_res):
+                    shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[0],
+                                y_img=yfit[0], convolve_scale = convolve_res, step = 0.01, window_size = 0.05)
+                    shear_vals_1[i,0] = np.mean(shear1)
+                    shear_vals_1[i,1] = np.mean(shear2)
+                    shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[1],
+                                                               y_img=yfit[1], convolve_scale=convolve_res, step=0.01,
+                                                               window_size=0.05)
+                    shear_vals_2[i, 0] = np.mean(shear1)
+                    shear_vals_2[i, 1] = np.mean(shear2)
+                    shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[2],
+                                                               y_img=yfit[2], convolve_scale=convolve_res, step=0.01,
+                                                               window_size=0.05)
+                    shear_vals_3[i, 0] = np.mean(shear1)
+                    shear_vals_3[i, 1] = np.mean(shear2)
+                    shear1, shear2 = analysis.shear_with_scale(lens_system=opt[0], x_img=xfit[3],
+                                                               y_img=yfit[3], convolve_scale=convolve_res, step=0.01,
+                                                               window_size=0.05)
+                    shear_vals_4[i, 0] = np.mean(shear1)
+                    shear_vals_4[i, 1] = np.mean(shear2)
 
-            #except:
-             #   print('error in fitting positions...')
-              #  xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
+            except:
+                print('error in fitting positions...')
+                xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 break
