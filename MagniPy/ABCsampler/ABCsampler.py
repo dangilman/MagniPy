@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 25
 
     while N_computed < keys['Nsamples']:
 
@@ -91,12 +91,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
 
         while True:
-            print(halo_args)
+
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
 
-                print('source size: ',chain_keys_run['source_size_kpc'])
+                #print('source size: ',chain_keys_run['source_size_kpc'])
 
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
@@ -250,7 +250,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-
-#runABC(prefix+'data/coldSIDM_run/',index)
+#runABC(prefix+'data/coldSIDM_run/',1)
 
 
