@@ -35,6 +35,9 @@ class LensSystem(object):
         self.satellite_redshift = redshift
         self.satellite_kwargs = kwargs
 
+        assert len(mass_model) == len(redshift)
+        assert len(redshift) == len(kwargs)
+
     def _build(self, halos_only = False):
 
         if not hasattr(self, '_halo_names'):
@@ -49,9 +52,9 @@ class LensSystem(object):
             main_names, main_redshift, main_args = self._unpack_main(self.main)
 
             if self._has_satellites:
-                main_names += self.satellite_mass_model
-                main_redshift += self.satellite_redshift
-                main_args += self.satellite_kwargs
+                main_names += [model for model in self.satellite_mass_model]
+                main_redshift += [red_shift for red_shift in self.satellite_redshift]
+                main_args += [kwargs_sat for kwargs_sat in self.satellite_kwargs]
 
             lens_model_names = main_names + self._halo_names
             lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)

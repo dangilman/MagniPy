@@ -66,7 +66,6 @@ class ParamSample:
 
             return np.array(samples)
 
-
     def _sample_d1(self,index=0):
 
         return self.priors[index].draw(self.Nsamples)

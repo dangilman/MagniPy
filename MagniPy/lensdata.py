@@ -1,8 +1,8 @@
 import numpy as np
 
-class Data:
+class Data(object):
 
-    def __init__(self,x,y,m,t,source):
+    def __init__(self,x,y,m,t,source, sigma_x = None, sigma_y = None, sigma_m = None):
 
         self.decimals_pos = 5
         self.decimals_mag = 6
@@ -22,6 +22,16 @@ class Data:
             self.set_src(source[0],source[1])
         else:
             self.set_src(None,None)
+
+        if sigma_x is None:
+            sigma_x = np.zeros_like(x)
+        if sigma_y is None:
+            sigma_y = np.zeros_like(y)
+        if sigma_m is None:
+            sigma_m = np.zeros_like(m)
+
+        self.sigma_x, self.sigma_y = sigma_x, sigma_y
+        self.sigma_m = sigma_m
 
     def sort_by_pos(self,x,y):
 

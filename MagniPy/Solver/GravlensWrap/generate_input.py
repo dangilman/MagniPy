@@ -52,7 +52,7 @@ class GravlensInput:
 
                 extra_commands = {}
 
-                extra_commands['randomize'] = ['randomize 10 ' + self.outfile_path + self.filename + '_rand' + str(self.dataindex) + '\n']
+                extra_commands['randomize'] = ['randomize 20 ' + self.outfile_path + self.filename + '_rand' + str(self.dataindex) + '\n']
 
                 ranges = ''
 
