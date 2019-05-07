@@ -3,7 +3,7 @@ from MagniPy.Solver.RayTrace.source_models import *
 from MagniPy.util import *
 import matplotlib.pyplot as plt
 
-class RayTrace:
+class RayTrace(object):
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
                  polar_grid=False, polar_q = 1, minimum_image_sep = None, **kwargs):
@@ -59,6 +59,7 @@ class RayTrace:
             img_sep = 10000
 
         if size_asec < 0.0005:
+            res = 0.0075
             s = 0.03
         elif size_asec < 0.001:
             s = 0.08

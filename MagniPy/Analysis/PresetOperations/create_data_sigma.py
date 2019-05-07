@@ -207,7 +207,7 @@ def draw_shear_PA_correlated(mean, sigma):
 
     return pa
 
-def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
+def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
     continue_loop = True
     n_computed = 0
@@ -233,7 +233,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         if done_cusp and done_cross and done_fold:
             break
 
-        rein, vdis, zlens, zsrc = sample_from_strides(1)
+        while zsrc <= z_src_max:
+            rein, vdis, zlens, zsrc = sample_from_strides(1)
 
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
 
@@ -244,7 +245,6 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         shear_theta = draw_shear_PA_correlated(ellip_theta, sigma = 50)
         #gamma = np.round(np.random.normal(2.08, 0.05), 2)
         gamma = 2.08
-        source_size_kpc = 0.035
         #while True:
         #    source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
         #    if source_size_kpc < 0.01:
@@ -259,8 +259,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
         solver = SolveRoutines(zlens, zsrc)
         analysis = Analysis(zlens, zsrc)
         #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
-        mdef = 'TNFW'
-        halo_args = {'mdef_main': mdef, 'mdef_los': mdef, 'a0_area': a0_area, 'log_mlow': log_ml, 'log_mhigh': log_mh,
+
+        halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'a0_area': a0_area, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'log_m_break': logmhm, 'parent_m200': M_halo, 'parent_c': 4,
                      'c_scale': 60, 'c_power': -0.17, 'r_tidal': r_tidal, 'break_index': break_index,
                      'R_ein_main': rein, 'core_ratio': core_ratio}
@@ -274,7 +274,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
 
         print('zlens: ', zlens)
         print('zsrc: ', zsrc)
-        print('src_size_kpc: ', source_size_kpc)
+        print('src_size_kpc: ', src_size_mean)
         print('vdis:', vdis)
         print('R_ein:', rein)
         print('shear, ellip: ', shear, ellip)
@@ -320,7 +320,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
             other_lens_args['zsrc'] = zsrc
             other_lens_args['gamma'] = gamma
             other_lens_args['config'] = config
-            other_lens_args['source_size_kpc'] = source_size_kpc
+            other_lens_args['source_size_kpc'] = src_size_mean
             other_lens_args['rmax2d_asec'] = 3*rein
             continue_findimg_loop = False
 
@@ -331,7 +331,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
                                                              multiplane=multiplane,
                                                              srcx=data_withhalos[0].srcx, srcy=data_withhalos[0].srcy, res=0.01,
                                                              method='lenstronomy', source_shape='GAUSSIAN',
-                                                             source_size_kpc=source_size_kpc)
+                                                             source_size_kpc=src_size_mean)
 
 
             if flux_at_edge(image):
@@ -381,43 +381,45 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx, ):
             write_info(str(to_write), dpath + '/info.txt')
             #write_info(str('R_index: ' + str(None)), dpath + '/R_index.txt')
 
-if False:
+if True:
     model_type = 'composite_powerlaw'
     multiplane = True
 
-    a0_area = 0.012
+    a0_area = 0.015
     M_halo = 10 ** 13
     logmhm = 4.9
     r_tidal = '0.5Rs'
-    src_size_mean = 0.035
+    src_size_mean = 0.02
     src_size_sigma = 0.0001
     log_ml, log_mh = 6, 10
     break_index = -1.3
     core_ratio = 0.01
-
+    z_src_max = 2.5
     nav = prefix
+    mass_def = 'cNFWmod_trunc'
 
 
     dpath_base = nav + '/mock_data/coldSIDM/lens_'
+    #run(0, 1, 0, 1)
 
     #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
     #run(0,1,0,1)
     #import sys
     #start_idx=int(sys.argv[1])
 
-    cusps = np.arange(1,60,3)
-    folds = cusps + 1
-    crosses = cusps + 2
-    start_idx = 7
-    if start_idx in cusps:
-        print('cusp')
-        run(1, 0, 0, start_idx)
-    elif start_idx in folds:
-        print('fold')
-        run(0, 1, 0, start_idx)
-    else:
-        print('cross')
-        run(0, 0, 1, start_idx)
+    #cusps = np.arange(1,60,3)
+    #folds = cusps + 1
+    #crosses = cusps + 2
+    #start_idx = 7
+    #if start_idx in cusps:
+    #    print('cusp')
+    #    run(1, 0, 0, start_idx)
+    #elif start_idx in folds:
+    #    print('fold')
+    #    run(0, 1, 0, start_idx)
+    #else:
+    #    print('cross')
+    #    run(0, 0, 1, start_idx)
 
 #cusps = np.arange(1,60,3)
 #folds = cusps + 1
