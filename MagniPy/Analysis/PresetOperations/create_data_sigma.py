@@ -232,9 +232,16 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         if done_cusp and done_cross and done_fold:
             break
+        zsrc = 500
+        zlens = 500
+        rein = 400
 
-        while zsrc <= z_src_max:
+        while True:
             rein, vdis, zlens, zsrc = sample_from_strides(1)
+            if rein <= rein_max:
+                if zlens <= z_lens_max:
+                    if zsrc <= z_src_max:
+                        break
 
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
 
@@ -395,11 +402,15 @@ if True:
     break_index = -1.3
     core_ratio = 0.01
     z_src_max = 2.5
+    z_lens_max = 0.6
+    rein_max = 1.3
     nav = prefix
     mass_def = 'cNFWmod_trunc'
 
 
-    dpath_base = nav + '/mock_data/coldSIDM/lens_'
+    dpath_base = nav + '/mock_data/coldSIDM_src20/lens_'
+
+    #run(1, 0, 0, 1)
     #run(0, 1, 0, 1)
 
     #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
