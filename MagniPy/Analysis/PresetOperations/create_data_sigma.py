@@ -301,7 +301,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             else:
                 xs_init, ys_init = 0.06, -0.01
 
-            data_withhalos, xcaus, ycaus = imgFinder(start, real, xs_init, ys_init, True, solver, analysis)
+            data_withhalos, xcaus, ycaus, _, _ = imgFinder(start, real, xs_init, ys_init, True, solver, analysis)
             lens_config = identify(data_withhalos[0].x, data_withhalos[0].y, c.vdis_to_Rein(zlens, zsrc, vdis))
             min_sep = min_img_sep(data_withhalos[0].x, data_withhalos[0].y)
             #print('minimum image separation: ', min_sep)
@@ -410,7 +410,7 @@ if True:
 
     dpath_base = nav + '/mock_data/coldSIDM_src20/lens_'
 
-    #run(1, 0, 0, 1)
+    run(0, 0, 1, 1)
     #run(0, 1, 0, 1)
 
     #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
