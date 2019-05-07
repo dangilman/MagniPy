@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 25
+    readout_steps = 50
 
     while N_computed < keys['Nsamples']:
 
@@ -251,6 +251,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_run_profiler/',1)
+#runABC(prefix+'data/coldSIDM_run/',1)
 
 

@@ -196,10 +196,12 @@ def halo_model_args(params):
         if 'core_ratio' in params.keys():
             assert args['mdef_main'] == 'CNFW'
             assert args['mdef_los'] == 'CNFW'
+
             args.update({'core_ratio': params['core_ratio']})
 
         if 'SIDMcross' in params.keys():
             args.update({'SIDMcross': params['SIDMcross']})
+            args.update({'vpower': params['vpower']})
 
     return args
 
