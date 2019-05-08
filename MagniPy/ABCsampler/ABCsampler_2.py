@@ -10,17 +10,17 @@ from MagniPy.util import approx_theta_E
 def shear_vals_atimage(imgx, imgy, convolve_res, system, analysis):
 
     s1, s2, s3 = analysis.shear_with_scale(lens_system=system, x_img=imgx,
-                             y_img=imgy, convolve_scale=convolve_res[0], step=0.01, window_size=0.05)
+                             y_img=imgy, convolve_scale=convolve_res[0], step=0.001, window_size=0.075)
 
     arr1 = np.array([s1, s2, s3])
 
     s1, s2, s3 = analysis.shear_with_scale(lens_system=system, x_img=imgx,
-                                           y_img=imgy, convolve_scale=convolve_res[1], step=0.01, window_size=0.05)
+                                           y_img=imgy, convolve_scale=convolve_res[1], step=0.001, window_size=0.075)
 
     arr2 = np.array([s1, s2, s3])
 
     s1, s2, s3 = analysis.shear_with_scale(lens_system=system, x_img=imgx,
-                                           y_img=imgy, convolve_scale=convolve_res[2], step=0.01, window_size=0.05)
+                                           y_img=imgy, convolve_scale=convolve_res[2], step=0.001, window_size=0.075)
 
     arr3 = np.array([s1, s2, s3])
 

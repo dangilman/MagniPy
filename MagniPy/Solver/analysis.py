@@ -45,7 +45,7 @@ class Analysis(Magnipy):
                fyx.reshape(original_shape), fyy.reshape(original_shape)
 
     def shear_with_scale(self, lens_system=None,main=None,halos=None,x_img=None,
-                       y_img=None, convolve_scale = None, step = 0.003, window_size = 0.05):
+                       y_img=None, convolve_scale = None, step = 0.001, window_size = 0.075):
 
         fxx, fxy, fyx, fyy = self.hessian_with_scale(lens_system, main, halos, x_img, y_img,
                                                      convolve_scale, step, window_size)
