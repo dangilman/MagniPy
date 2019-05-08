@@ -50,10 +50,12 @@ class Analysis(Magnipy):
         fxx, fxy, fyx, fyy = self.hessian_with_scale(lens_system, main, halos, x_img, y_img,
                                                      convolve_scale, step, window_size)
 
-        shear1 = 0.5*(fxx - fyy)
-        shear2 = np.sqrt(0.25 * fxy * fyx)
 
-        return shear1, shear2
+        shear1 = 0.5*(fxx - fyy)
+        shear2 = -0.5*fxy
+        shear3 = -0.5*fyx
+
+        return np.mean(shear1), np.mean(shear2), np.mean(shear3)
 
     def sersicNFW_effective_slope(self,params):
 
