@@ -9,7 +9,7 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.02,
                                                  tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.0]
+        gamma_values = [2.08]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 2
 
     while N_computed < keys['Nsamples']:
 
@@ -102,7 +102,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
+                                    simplex_n_iter=400, polar_grid=False, grid_res=0.001,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
@@ -251,6 +251,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_run/',1)
+#runABC(prefix+'data/coldSIDMmin/',500)
 
 
