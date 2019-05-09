@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.08]
+        gamma_values = [2.08]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -84,6 +84,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             base = macro_list[0]
 
         macromodel = deepcopy(base[0])
+        #print(chain_keys_run['SIE_gamma'])
         macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
         halo_args = halo_model_args(chain_keys_run)
@@ -95,8 +96,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
-
-                #print('source size: ',chain_keys_run['source_size_kpc'])
 
                 new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
@@ -251,6 +250,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDMmin/',500)
+#runABC(prefix+'data/coldSIDM/',25)
 
 
