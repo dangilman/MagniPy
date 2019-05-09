@@ -96,14 +96,14 @@ def flux_at_edge(image):
     else:
         return False
 
-def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis,print_things = False):
+def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis,source_size_kpc,print_things = False):
     if print_things: print('finding images....')
     xcrit = None
 
     while True:
 
         data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
-                                                    multiplane=True, method='lenstronomy',
+                                                    multiplane=True, method='lenstronomy', source_size_kpc=source_size_kpc,
                                                     polar_grid=False, brightimg=True, res=0.001, LOS_mass_sheet_back = 6,
                                                     LOS_mass_sheet_front = 6)
 
@@ -301,7 +301,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
             else:
                 xs_init, ys_init = 0.06, -0.01
 
-            data_withhalos, xcaus, ycaus, _, _ = imgFinder(start, real, xs_init, ys_init, True, solver, analysis)
+            data_withhalos, xcaus, ycaus, _, _ = imgFinder(start, real, xs_init, ys_init, True, solver, analysis, src_size_mean)
             lens_config = identify(data_withhalos[0].x, data_withhalos[0].y, c.vdis_to_Rein(zlens, zsrc, vdis))
             min_sep = min_img_sep(data_withhalos[0].x, data_withhalos[0].y)
             #print('minimum image separation: ', min_sep)
