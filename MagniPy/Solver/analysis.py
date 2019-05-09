@@ -4,10 +4,47 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from lenstronomy.LensModel.lens_model_extensions import LensModelExtensions
+from scipy.ndimage.filters import gaussian_filter
 from MagniPy.LensBuild.defaults import *
 from scipy.ndimage.filters import gaussian_filter
 
 class Analysis(Magnipy):
+
+    def hessian_with_scale_2(self, lens_system=None,main=None,halos=None,x_img=None,
+                       y_img=None, convolve_scale = None, step = 0.003, window_size = 0.05):
+
+        if lens_system is None:
+            lens_system = self.build_system(main=main, realization=halos, multiplane=True)
+
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, lensmodel_params = lenstronomy.get_lensmodel(lens_system)
+
+        x = np.arange(x_img - 0.5 * window_size, x_img + 0.5 * window_size, step)
+        y = np.arange(y_img - 0.5 * window_size, y_img + 0.5 * window_size, step)
+        xx, yy = np.meshgrid(x, y)
+
+        original_shape = xx.shape
+        xx = xx.ravel()
+        yy = yy.ravel()
+
+        fxx, fxy, fyx, fyy = lensmodel.hessian(xx, yy, lensmodel_params)
+
+        fxx, fxy, fyx, fyy = fxx.reshape(original_shape), fxy.reshape(original_shape), \
+                             fyx.reshape(original_shape), fyy.reshape(original_shape)
+
+        arcsec_per_pixel = window_size * len(x) ** -1
+        print(arcsec_per_pixel)
+
+        sigma = convolve_scale * arcsec_per_pixel ** -1
+        print(sigma)
+        fxx = gaussian_filter(fxx, sigma)
+        fxy = gaussian_filter(fxy, sigma)
+        fyx = gaussian_filter(fyx, sigma)
+        fyy = gaussian_filter(fyy, sigma)
+
+        return fxx, fxy, fyx, fyy
+
 
     def hessian_with_scale(self, lens_system=None,main=None,halos=None,x_img=None,
                        y_img=None, convolve_scale = None, step = 0.003, window_size = 0.05):

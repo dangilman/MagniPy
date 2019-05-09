@@ -272,7 +272,7 @@ def background_mass_filters(m_ref, LOS_mass_sheet):
         background_globalmin_masses += [rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window]
         reoptimize_scale += [0.4, 0.05]
-        particle_swarm_reopt += [False, False]
+        particle_swarm_reopt += [True, False]
         optimize_iteration += [True, False]
 
     elif m_ref < 8:
