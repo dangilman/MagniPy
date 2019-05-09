@@ -104,7 +104,7 @@ def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis,print_things
 
         data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
                                                     multiplane=True, method='lenstronomy',
-                                                    polar_grid=False, brightimg=True, res=0.002, LOS_mass_sheet_back = 6,
+                                                    polar_grid=False, brightimg=True, res=0.001, LOS_mass_sheet_back = 6,
                                                     LOS_mass_sheet_front = 6)
 
         if xcrit is None:
@@ -394,7 +394,7 @@ if True:
 
     a0_area = 0.015
     M_halo = 10 ** 13
-    logmhm = 4.9
+    logmhm = 0
     r_tidal = '0.5Rs'
     src_size_mean = 0.02
     src_size_sigma = 0.0001
@@ -405,12 +405,12 @@ if True:
     z_lens_max = 0.6
     rein_max = 1.3
     nav = prefix
-    mass_def = 'cNFWmod_trunc'
+    mass_def = 'TNFW'
 
 
-    dpath_base = nav + '/mock_data/coldSIDM_src20/lens_'
+    dpath_base = nav + '/mock_data/CDMsrc20/lens_'
 
-    run(0, 0, 1, 1)
+    #run(0, 0, 1, 1)
     #run(0, 1, 0, 1)
 
     #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
