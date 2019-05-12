@@ -188,14 +188,7 @@ def halo_model_args(params):
         else:
             args.update({'zmax':params['zsrc']-0.01})
 
-        if args['mdef_main'] == 'CNFW':
-            assert 'core_ratio' in params.keys()
-        if args['mdef_los'] == 'CNFW':
-            assert 'core_ratio' in params.keys()
-
         if 'core_ratio' in params.keys():
-            assert args['mdef_main'] == 'CNFW'
-            assert args['mdef_los'] == 'CNFW'
 
             args.update({'core_ratio': params['core_ratio']})
 
