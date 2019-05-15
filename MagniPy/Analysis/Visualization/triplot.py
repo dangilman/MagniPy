@@ -4,6 +4,7 @@ from MagniPy.Analysis.KDE.kde import *
 import numpy as np
 
 class TriPlot(object):
+
     cmap = 'gist_heat'
 
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
@@ -15,6 +16,9 @@ class TriPlot(object):
 
     spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
     spacing_scale = 1
+
+    cmap_call = plt.get_cmap(cmap)
+    _color_eval = 0.9
 
     def __init__(self, parameter_names, parameter_ranges, chains):
 
@@ -33,6 +37,14 @@ class TriPlot(object):
         self.chains = chains
 
         self._computed_densities = {}
+
+    def set_cmap(self, newcmap, color_eval = 0.9, marginal_col = None):
+
+        self.cmap = newcmap
+        self.cmap_call = plt.get_cmap(newcmap)
+        self._color_eval = color_eval
+
+        self._marginal_col = marginal_col
 
     def make_joint(self, p1, p2, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
@@ -73,7 +85,8 @@ class TriPlot(object):
         for i, chain in enumerate(self.chains):
             self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
-                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale, label_scale = label_scale)
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale,
+                                 label_scale = label_scale, cmap = self.cmap_call)
 
         for k in range(len(param_names)):
             scales = []
@@ -93,7 +106,7 @@ class TriPlot(object):
     def make_marginal(self, p1, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
-                     transpose_idx = None, bandwidth_scale = 0.7, label_scale = 1):
+                     transpose_idx = None, bandwidth_scale = 0.7, label_scale = 1, cmap=None):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -106,7 +119,8 @@ class TriPlot(object):
         for i, chain in enumerate(self.chains):
             self._make_marginal_i(chain, p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
-                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale, label_scale = label_scale)
+                                 transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale,
+                                  label_scale = label_scale, cmap=cmap)
 
         scales = []
         for c in range(0,len(self.chains)):
@@ -123,7 +137,8 @@ class TriPlot(object):
     def _make_marginal_i(self, chain, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
-                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7, label_scale = None):
+                        load_from_file = True, transpose_idx=None,
+                         bandwidth_scale = 0.7, label_scale = None, cmap=None):
 
         autoscale = []
 
@@ -148,14 +163,25 @@ class TriPlot(object):
         for i, y in enumerate(bar_heights):
             x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
 
-            ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1],
-                                  alpha=0.6)
-            ax.fill_between([x1, x2], y, color=contour_colors[color_index][1],
-                                          alpha=0.6)
-            ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1],
-                                  alpha=0.6)
-            ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1],
-                                  alpha=0.6)
+            if filled_contours:
+                ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1],
+                                      alpha=0.6)
+                ax.fill_between([x1, x2], y, color=contour_colors[color_index][1],
+                                              alpha=0.6)
+                ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1],
+                                      alpha=0.6)
+                ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1],
+                                      alpha=0.6)
+            else:
+                ax.plot([x1, x2], [y, y], color=cmap(0.2),
+                        alpha=0.6)
+                ax.fill_between([x1, x2], y, color=cmap(0.2),
+                                alpha=0.6)
+                ax.plot([x1, x1], [0, y], color=cmap(0.2),
+                        alpha=0.6)
+                ax.plot([x2, x2], [0, y], color=cmap(0.2),
+                        alpha=0.6)
+
         ax.set_xlim(pmin, pmax)
 
         ax.set_yticks([])
@@ -256,7 +282,8 @@ class TriPlot(object):
     def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
-                        load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7, label_scale = None):
+                        load_from_file = True, transpose_idx=None,
+                        bandwidth_scale = 0.7, label_scale = None, cmap=None):
 
         if param_names is None:
             param_names = self.param_names
@@ -370,14 +397,29 @@ class TriPlot(object):
                     for i, y in enumerate(bar_heights):
                         x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
 
-                        axes[plot_index].plot([x1, x2], [y, y], color=contour_colors[color_index][1],
-                                              alpha=0.6)
-                        axes[plot_index].fill_between([x1, x2], y, color=contour_colors[color_index][1],
-                                                      alpha=0.6)
-                        axes[plot_index].plot([x1, x1], [0, y], color=contour_colors[color_index][1],
-                                              alpha=0.6)
-                        axes[plot_index].plot([x2, x2], [0, y], color=contour_colors[color_index][1],
-                                              alpha=0.6)
+                        if filled_contours:
+                            axes[plot_index].plot([x1, x2], [y, y], color=contour_colors[color_index][1],
+                                                  alpha=0.6)
+                            axes[plot_index].fill_between([x1, x2], y, color=contour_colors[color_index][1],
+                                                          alpha=0.6)
+                            axes[plot_index].plot([x1, x1], [0, y], color=contour_colors[color_index][1],
+                                                  alpha=0.6)
+                            axes[plot_index].plot([x2, x2], [0, y], color=contour_colors[color_index][1],
+                                                  alpha=0.6)
+                        else:
+                            if self._marginal_col is None:
+                                marginal_col = cmap(self._color_eval)
+                            else:
+                                marginal_col = self._marginal_col
+                            axes[plot_index].plot([x1, x2], [y, y], color=marginal_col,
+                                                  alpha=1)
+                            axes[plot_index].fill_between([x1, x2], y, color=marginal_col,
+                                                          alpha=0.8)
+                            axes[plot_index].plot([x1, x1], [0, y], color=marginal_col,
+                                                  alpha=1)
+                            axes[plot_index].plot([x2, x2], [0, y], color=marginal_col,
+                                                  alpha=1)
+
                     axes[plot_index].set_xlim(pmin, pmax)
                     #axes[plot_index].set_ylim(0, hmax * 1.1 * self._hmax_scale)
                     axes[plot_index].set_yticks([])

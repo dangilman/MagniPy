@@ -6,10 +6,10 @@ default_source_shape = 'GAUSSIAN'
 default_source_size_kpc = 0.01 #10 parsec
 
 def get_default_SIE_random(z,varyflags=['1','1','1','1','1','1','1','0','0','0']):
-    default_startkwargs_random = {'R_ein': np.absolute(np.random.normal(1, 0.1)),
+    default_startkwargs_random = {'theta_E': np.absolute(np.random.normal(1, 0.1)),
                                   'ellip': np.absolute(np.random.normal(0.3, 0.05)),
                                   'ellip_theta': np.random.uniform(-90, 90),
-                                  'x': 0, 'y': 0, 'shear': np.random.uniform(0.03, 0.06),
+                                  'center_x': 0, 'center_y': 0, 'shear': np.absolute(np.random.uniform(0.08, 0.03)),
                                   'shear_theta': np.random.uniform(-90, 90), 'gamma': 2}
 
     return Deflector(subclass=SIE(),tovary=True,varyflags=varyflags,redshift=z,lens_params=None,**default_startkwargs_random)

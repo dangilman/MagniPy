@@ -209,7 +209,7 @@ class ChainFromSamples(object):
             self.lenses.append(new_lens)
 
     def eval_KDE(self, bandwidth_scale = 1, tol = 2500, nkde_bins = 20,
-                 save_to_file = True):
+                 save_to_file = True, smooth_KDE = True, weights = None):
 
         if not hasattr(self, '_kernel'):
 
@@ -232,13 +232,29 @@ class ChainFromSamples(object):
             t0 = time()
 
             density_n = 0
+            param_weight = 1
+
             for p in range(0, self.n_pert):
 
                 data = np.empty(shape = (tol, len(self.params_varied)))
                 for i, pi in enumerate(self.params_varied):
                     data[:,i] = posteriors[n][p].samples[pi]
 
-                density_n += self._kernel(data, points, ranges, weights=None)
+                    if weights is not None and pi in weights.keys():
+
+                        if pi in weights.keys():
+
+                            param_weight *= weights[pi](data[:,i])
+
+                    else:
+                        param_weight = None
+
+                if smooth_KDE:
+                    density_n += self._kernel(data, points, ranges, weights=param_weight)
+                else:
+                    density_n += numpy.histogramdd(data, range = ranges,
+                                                   density=True, bins=nkde_bins,
+                                                   weights=param_weight)[0]
 
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
@@ -405,7 +421,7 @@ class ChainFromSamples(object):
 
         proj_logmcore = density
 
-        px, py = 'log_m_break', 'core_ratio'
+        px, py = 'SIDMcross', 'a0_area'
         self.joint_densities.append(JointDensity(px, py, proj_logmcore))
 
         if save_to_file:

@@ -23,6 +23,8 @@ class RayTrace(object):
 
         self.xsrc,self.ysrc = xsrc,ysrc
 
+        self._source_size_kpc = kwargs['source_size']
+
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
             self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
@@ -95,6 +97,11 @@ class RayTrace(object):
 
     def magnification(self,xpos,ypos,lensModel,kwargs_lens):
 
+        if self._source_size_kpc == 0:
+            flux = lensModel.magnification(xpos, ypos, kwargs_lens)
+
+            return np.absolute(flux)
+
         flux = []
         xgrids, ygrids = self._get_grids(xpos, ypos, len(xpos))
 
@@ -102,7 +109,7 @@ class RayTrace(object):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            n = int(np.sqrt(len(image)))
+            #n = int(np.sqrt(len(image)))
             #plt.imshow(image.reshape(n,n))
             #plt.show()
             #a=input('continue')

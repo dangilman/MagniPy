@@ -28,7 +28,7 @@ class KDE_nD(object):
 
         return np.reshape(z, tuple([n_reshape] * dimension))
 
-    def _compute_ND(self, data, coordinates, ranges, weights=None, boundary_order=1):
+    def _compute_ND(self, data, coordinates, ranges, weights, boundary_order=1):
 
         histbins = []
 
@@ -41,10 +41,7 @@ class KDE_nD(object):
         for i, coord in enumerate(coordinates):
             histbins.append(np.linspace(ranges[i][0], ranges[i][-1], len(coord) + 1))
 
-        if weights is None:
-            H, _ = np.histogramdd(data, range=ranges, bins=histbins)
-        else:
-            H, _ = np.histogramdd(data, range=ranges, bins = histbins, weights=weights)
+        H, _ = np.histogramdd(data, range=ranges, bins = histbins, weights=weights)
 
         covariance = h * np.cov(data.T)
         c_inv = np.linalg.inv(covariance)
