@@ -110,6 +110,7 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
         fluxes, fluxes_obs, parameters, header, newgamma = resample(name, which_lens, parameters_new,
                                                                     SIE_gamma_mean=SIE_gamma_mean,
                                                                     SIE_gamma_sigma=SIE_gamma_sigma)
+        print(header)
 
         new_gamma.append(newgamma)
 
@@ -138,7 +139,7 @@ def _resample_chain(name=str, new_name = str, which_lens_indexes=int, parameters
     #    for g in new_gamma:
     #        f.write(str(g)+'\n')
 
-def process_raw(name=str,which_lenses=[], counter_start = 0):
+def process_raw(name=str,which_lenses=[], counter_start = 0, swap_cols = None):
 
     """
     coverts output from cluster into single files for each lens
@@ -147,10 +148,18 @@ def process_raw(name=str,which_lenses=[], counter_start = 0):
     for which_lens in which_lenses:
 
         fluxes,fluxes_obs,parameters,header = extract_chain(name,which_lens)
+        if swap_cols is not None:
+            parameters = parameters[:, np.array(swap_cols)]
+            header_split = header.split(' ')
+            new_head = ''
+
+            for col in swap_cols:
+                new_head += header_split[col] + ' '
+            header = new_head
 
         stack_chain(name, which_lens, parameters, np.squeeze(fluxes_obs), fluxes, header, counter_start)
 
-def process_samples(chain_name, which_lenses, N_pert=1, errors=None):
+def process_samples(chain_name, which_lenses, N_pert=1, errors=None, swap_cols = [4, 2, 1, 3, 0]):
 
     for which_lens in which_lenses:
 
@@ -191,25 +200,22 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
 
     return new_name
 
-def resample_chain_sidm(a0_area=None, logmhm=None, core_ratio=None, errors = [0, 0.02],N_pert=1,
-                   process_only = False, logmhm_sigma = 0.1, core_ratio_sigma = 0.05,
-                   a0_area_sigma = 0.02, name='WDM_sim_7.7_.012', which_lens_indexes = None, ending = ''):
+def resample_chain_sidm(a0_area=None, SIDMcross=None, errors = [0, 0.02],N_pert=1,
+                   process_only = False, SIDMcross_sigma = 0.1, SIE_gamma_mean=2.06,
+                   SIE_gamma_sigma=0.06, a0_area_sigma = 0.003, name='WDM_sim_7.7_.012',
+                        which_lens_indexes = None, ending = '', src_size = 0.025, src_size_sigma = 0.005,
+                        LOS_norm = 1, LOS_norm_sigma = 0.1):
 
-    #name = 'WDM_sim_7.7_.012'
+    new_name = 'SIDM_'
 
-    if logmhm > 6:
-        new_name = 'WSIDM_'+str(logmhm)+'_'
-    else:
-        new_name = 'SIDM_'
-
-    new_name += 'sigma'+str(a0_area)+'_core'+str(core_ratio) + ending
+    new_name += 'sigma'+str(a0_area)+'_cross'+str(SIDMcross) + ending
 
     if process_only is False:
-
-        #params_new = {'a0_area': [a0_area, a0_area_sigma], 'log_m_break': [logmhm, logmhm_sigma],
-        #                            'core_ratio': [core_ratio, core_ratio_sigma]}
-        params_new = {'log_m_break': [logmhm, logmhm_sigma],
-                                    'core_ratio': [core_ratio, core_ratio_sigma]}
+        params_new = {'a0_area': [a0_area, a0_area_sigma],
+                      'source_size_kpc': [src_size, src_size_sigma],
+                      'LOS_normalization': [LOS_norm, LOS_norm_sigma],
+                      'SIE_gamma': [SIE_gamma_mean, SIE_gamma_sigma], 'SIDMcross':
+                          [SIDMcross, SIDMcross_sigma]}
 
         _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
                        parameters_new=params_new)
@@ -221,12 +227,13 @@ def resample_chain_sidm(a0_area=None, logmhm=None, core_ratio=None, errors = [0,
 def resample_sys(num, process_only):
     num = int(num)
     errors = [0, 0.02]
-    src_mean = 35
+    src_mean = 0.018
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.012, logmhm=7.3, core_ratio=0.65, core_ratio_sigma=0.025, errors=errors,
-                   N_pert=1, process_only=process_only, name='SIDM_run',
-                   which_lens_indexes=np.arange(1, 20))
+        resample_chain_sidm(a0_area=0.012, SIDMcross=6.5, SIDMcross_sigma=0.2, src_size = src_mean,
+                            errors=errors,
+                   N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
+                   which_lens_indexes=np.arange(1, 21))
     elif num == 2:
             resample_chain_sidm(a0_area=0.012, logmhm=4.95, core_ratio=0.2, core_ratio_sigma=0.025, errors=errors,
                                 N_pert=1, process_only=process_only, name='SIDM_run',
@@ -255,7 +262,9 @@ def resample_sys(num, process_only):
                        which_lens_indexes=np.arange(1, 51))
 
 
-#process_raw('SIDM_run', np.arange(21,22), counter_start=13)
+#process_raw('coldSIDM_full', np.arange(1,21))
+#process_samples('coldSIDM_full', np.arange(1,21), 1, [0])
+#resample_sys(1, False)
 #process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
 #process_raw('hoffman_run3', np.arange(1,6), counter_start=15)
 #process_raw('hoffman_run4', np.arange(1,6), counter_start = 20)
@@ -264,10 +273,8 @@ def resample_sys(num, process_only):
 #process_raw('jpl_sim2', np.arange(1,6), counter_start = 40)
 #process_raw('SIDM_run', np.arange(1,12), counter_start = 0)
 #exit(1)
-#process_samples('SIDM_run', np.arange(13,20), 1, [0])
-
+#process_samples('coldSIDM', np.arange(1,26), 1, [0])
 #resample_sys(1, False)
-#resample_sys(2, False)
 #resample_sys(2, False)
 #resample_sys(3, False)
 #resample_sys(4, False)

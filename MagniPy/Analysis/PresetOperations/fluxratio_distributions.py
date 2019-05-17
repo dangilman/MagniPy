@@ -13,7 +13,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     source_size_kpc=None, write_to_file=False, filter_halo_positions=False, outfilepath=None, method='lenstronomy',
                                     mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
                                     n_restart=1, pso_conv_mean = 100,
-                                    srcx = 0, srcy = 0, use_source=True, hierarchical = True, grid_res = 0.002,
+                                    srcx = 0, srcy = 0, use_source=True, hierarchical = True, grid_res = 0.001,
                                     LOS_mass_sheet_front = 7.7,
                                     LOS_mass_sheet_back = 8,
                                     multiplane = None, two_halo_term = True, **kwargs):

@@ -228,6 +228,33 @@ def write_shear_values(fname, m, values):
             towrite = str(values[row,0]) + ' ' + str(values[row,1]) + ' ' + str(values[row,2]) + '\n'
             f.write(towrite)
 
+def read_macro_array(lensmodel):
+
+    rein = lensmodel.lenstronomy_args['theta_E']
+    cenx, ceny = lensmodel.lenstronomy_args['center_x'], lensmodel.lenstronomy_args['center_y']
+    ellipandPA = lensmodel.ellip_PA_polar()
+    ellip = ellipandPA[0]
+    ellipPA = ellipandPA[1]
+    shear = lensmodel.shear
+    shearPA = lensmodel.shear_theta
+
+    return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA])
+
+def readout_macro(output_path, params, open_file):
+
+    if open_file:
+        mode = 'w'
+    else:
+        mode = 'a'
+
+    with open(output_path + 'macro.txt', mode) as f:
+        rows, cols = int(np.shape(params)[0]), int(np.shape(params)[1])
+        for row in range(0, rows):
+            for col in range(0, cols):
+                f.write(str(np.round(params[row,col]),4) + ' ')
+            f.write('\n')
+
+
 def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
 
     if write_header:

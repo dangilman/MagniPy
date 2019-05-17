@@ -97,7 +97,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
 
             try:
 
-                new, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
                                    verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
@@ -115,6 +115,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 break
 
+        macro_fit = optmodel[0].lens_components[0]
+
         N_computed += 1
         if N_computed%readout_steps == 0:
             print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
@@ -125,14 +127,16 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             samples_array.append(chain_keys_run[pname])
 
         if start:
+            macro_array = read_macro_array(macro_fit)
             chaindata = new[0].m
             parameters = np.array(samples_array)
         else:
+            macro_array = np.vstack((macro_array, read_macro_array(macro_fit)))
             chaindata = np.vstack((chaindata,new[0].m))
             parameters = np.vstack((parameters,np.array(samples_array)))
 
         if N_computed%readout_steps == 0:
-
+            readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             start = True
             write_header = False

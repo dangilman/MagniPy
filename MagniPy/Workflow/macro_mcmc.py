@@ -2,6 +2,7 @@ import numpy as np
 from MagniPy.lensdata import Data
 from MagniPy.LensBuild.defaults import get_default_SIE
 from copy import deepcopy
+from MagniPy.util import chi_square_img
 import corner.corner
 import time
 
@@ -69,8 +70,22 @@ class MacroMCMC(object):
                         satellite_kwargs.update({'center_y': np.random.uniform(tovary[pname][0], tovary[pname][1])})
 
                 else:
-                    low, high = tovary[pname][0], tovary[pname][1]
-                    macro.lenstronomy_args[pname] = np.random.uniform(low, high)
+                    if pname == 'fixed_param_gaussian':
+                        dictionary = tovary['fixed_param_gaussian']
+                        name = list(dictionary.keys())[0]
+                        fixed_mean, fixed_sigma = dictionary[name][0], dictionary[name][1]
+                        fixed_param = np.random.normal(fixed_mean, fixed_sigma)
+                        args.update({'constrain_params': {name: fixed_param}})
+
+                    elif pname == 'fixed_param_uniform':
+                        dictionary = tovary['fixed_param_uniform']
+                        name = list(dictionary.keys())[0]
+                        fixed_low, fixed_high = dictionary[name][0], dictionary[name][1]
+                        fixed_param = np.random.uniform(fixed_low, fixed_high)
+                        args.update({'constrain_params': {name: fixed_param}})
+                    else:
+                        low, high = tovary[pname][0], tovary[pname][1]
+                        macro.lenstronomy_args[pname] = np.random.uniform(low, high)
 
             if 'gamma' in tovary.keys():
                 gammavalue = np.random.uniform(tovary['gamma'][0], tovary['gamma'][1])
@@ -95,11 +110,14 @@ class MacroMCMC(object):
             args.update({'satellites': satellites})
 
             if self.from_class:
-                optdata, optmodel = self._optimize_once_fromlensclass(self.optroutine, args)
+                optdata, optmodel, data_fitted = self._optimize_once_fromlensclass(self.optroutine, args)
 
             else:
-                out = self._optimize_once(self.optroutine, args)
-                optdata, optmodel = out[0][0], out[1][0]
+                out1, out2, data_fitted = self._optimize_once(self.optroutine, args)
+                optdata, optmodel = out1[0][0], out2[1][0]
+
+            if chi_square_img(optdata.x,optdata.y,data_fitted.x,data_fitted.y,0.001) > 1:
+                continue
 
             if 'satellite_theta_E' in tovary.keys():
                 satellite_thetaE.append(optmodel.satellite_kwargs[0]['theta_E'])
@@ -211,9 +229,11 @@ class MacroMCMC(object):
         for argname in args.keys():
             run_args.update({argname: args[argname]})
 
-        run_args.update({'datatofit': self._setup_data()})
+        d = self._setup_data()
+        run_args.update({'datatofit': d})
+        out1, out2 = opt_routine(**run_args)
 
-        return opt_routine(**run_args)
+        return out1, out2, d
 
     def _optimize_once_fromlensclass(self, opt_routine, args):
 
@@ -221,9 +241,12 @@ class MacroMCMC(object):
         for argname in args.keys():
             run_args.update({argname: args[argname]})
 
-        run_args.update({'datatofit': self._setup_data()})
+        d = self._setup_data()
+        run_args.update({'datatofit': d})
         macromodel = run_args['macromodel']
         del run_args['macromodel']
 
-        return opt_routine(kwargs_fit = run_args, macro_init = macromodel)
+        out = opt_routine(kwargs_fit = run_args, macro_init = macromodel)
+
+        return out[0], out[1], d
 

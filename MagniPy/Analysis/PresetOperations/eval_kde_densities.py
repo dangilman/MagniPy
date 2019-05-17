@@ -2,11 +2,19 @@ from MagniPy.ABCsampler.Chain import ChainFromSamples
 import numpy as np
 import sys
 
-def weight_a0area(values, mean = 0.0, sigma = .02):
+def weight_a0area(values, mean = 0.015, sigma = .025):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
-def weight_cross(values, mean = 0.01, sigma = 5):
+def weight_sourcesize(values, mean = 0.02, sigma = 0.005):
+
+    return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
+
+def weight_siegamma(values, mean = 2.08, sigma = 0.04):
+
+    return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
+
+def weight_LOSnorm(values, mean = 1, sigma = 0.1):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
@@ -19,7 +27,7 @@ def evaluate_denities(chain_name, which_lenses, error, n_pert, nkde_bins,
     chain.eval_KDE(bandwidth_scale=bw_scale,tol = tol, nkde_bins=nkde_bins,
                    save_to_file=True, smooth_KDE=True, weights=weight_funcs)
 
-def run():
+def run(weight_functions = None):
     #errors = [2,4,6]
     #error = errors[int(sys.argv[1])-1]
     error = 0
@@ -32,13 +40,13 @@ def run():
     elif error == 6:
         n_pert = 5
 
-    weight_functions = {'a0_area': weight_a0area}
-    #weight_functions = None
     bandwidth_scale = 0.6
     nkde_bins = 10
-    tol = 500
-    which_lenses = np.arange(1,26)
-    evaluate_denities('SIDM_sigma0.0_cross0.01', which_lenses,
+    tol = 800
+    which_lenses = np.arange(1,21)
+    evaluate_denities('SIDM_sigma0.012_cross6.5', which_lenses,
                       error, n_pert, nkde_bins, '', tol, bandwidth_scale, weight_funcs=weight_functions)
 
+#wfunc1 = {'SIE_gamma': weight_siegamma, 'source_size_kpc': weight_sourcesize, 'LOS_normalization': weight_LOSnorm}
+#run()
 run()

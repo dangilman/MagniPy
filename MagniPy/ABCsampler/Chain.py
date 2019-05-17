@@ -232,7 +232,7 @@ class ChainFromSamples(object):
             t0 = time()
 
             density_n = 0
-            param_weight = 1
+            param_weight = None
 
             for p in range(0, self.n_pert):
 
@@ -243,11 +243,10 @@ class ChainFromSamples(object):
                     if weights is not None and pi in weights.keys():
 
                         if pi in weights.keys():
-
-                            param_weight *= weights[pi](data[:,i])
-
-                    else:
-                        param_weight = None
+                            if param_weight is None:
+                                param_weight = weights[pi](data[:,i])
+                            else:
+                                param_weight *= weights[pi](data[:,i])
 
                 if smooth_KDE:
                     density_n += self._kernel(data, points, ranges, weights=param_weight)
@@ -456,8 +455,8 @@ class ChainFromSamples(object):
         proj_a0SIE = np.sum(density, axis=(1, 2, 4)).T
         proj_srca0 = np.sum(density, axis=(1, 2, 3)).T
 
-        proj_crossLOS = np.sum(density, axis=(0, 3, 4))
-        proj_sieLOS = np.sum(density, axis=(0, 2, 4))
+        proj_crossLOS = np.sum(density, axis=(0, 3, 4)).T
+        proj_sieLOS = np.sum(density, axis=(0, 2, 4)).T
         proj_srcLOS = np.sum(density, axis=(0, 2, 3)).T
 
         proj_SIEcross = np.sum(density, axis=(0, 1, 4))
