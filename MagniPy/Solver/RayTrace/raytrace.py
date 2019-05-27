@@ -76,7 +76,7 @@ class RayTrace(object):
             s = 0.48
 
         size = min(0.5*img_sep,s)
-
+        
         return size,res
 
     def get_images(self,xpos,ypos,lensModel,kwargs_lens,return_image=False):
@@ -87,7 +87,7 @@ class RayTrace(object):
             ypos = ypos[0]
         else:
             xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
-
+        #del kwargs_lens[0]['source_size_kpc']
         img = self.rayshoot(xpos,ypos,lensModel,kwargs_lens)
 
         if return_image:
@@ -109,12 +109,17 @@ class RayTrace(object):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            #n = int(np.sqrt(len(image)))
-            #plt.imshow(image.reshape(n,n))
-            #plt.show()
-            #a=input('continue')
+            n = int(np.sqrt(len(image)))
+            blended = flux_at_edge(image.reshape(n,n))
 
-            flux.append(np.sum(image*self.res**2))
+            if blended:
+                flux.append(np.nan)
+            else:
+                flux.append(np.sum(image*self.res**2))
+
+            # plt.imshow(image.reshape(n,n))
+            # plt.show()
+            # a=input('continue')
 
         return np.array(flux)
 

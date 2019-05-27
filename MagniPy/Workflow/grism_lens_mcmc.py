@@ -1,6 +1,6 @@
 from MagniPy.Workflow.macro_mcmc import MacroMCMC
 
-def execute_mcmc(fname, lens_class, N, to_vary = {}):
+def execute_mcmc(fname, lens_class, N, optkwargs, to_vary = {}):
 
     mcmc = MacroMCMC(lens_class.data, lens_class.optimize_fit)
     mcmc.from_class = True
@@ -21,35 +21,61 @@ def execute_mcmc(fname, lens_class, N, to_vary = {}):
         satellite_mass_model = None
         satellite_kwargs = None
 
-    _, _ = mcmc.run(flux_ratio_index=0, macromodel=lens_class._macromodel,
-                      N=N, optimizer_kwargs=optimizer_kwargs,
+    _, _ = mcmc.run(flux_ratio_index=lens_class.flux_ratio_index, macromodel=lens_class._macromodel,
+                      N=N, optimizer_kwargs=optkwargs,
                             tovary=tovary, write_to_file=True, fname=fname,
                               satellite_mass_model=satellite_mass_model, satellite_kwargs = satellite_kwargs)
 
+from MagniPy.Workflow.grism_lenses.J0405 import J0405
 from MagniPy.Workflow.grism_lenses.lens1606 import Lens1606
 from MagniPy.Workflow.grism_lenses.lens2026 import Lens2026
+from MagniPy.Workflow.grism_lenses.lens2033 import WFI2033
 from MagniPy.Workflow.grism_lenses.lens2038 import Lens2038
+from MagniPy.Workflow.grism_lenses.rxj0911 import RXJ0911
+from MagniPy.Workflow.grism_lenses.lens1330 import Lens1330
 
-N = 200
-optimizer_kwargs = {'tol_mag': 0.1, 'pso_compute_magnification': 1e+9,
-                    'n_particles': 50, 'verbose': False, 'optimize_routine': 'fixedshearpowerlaw'}
+from MagniPy.Workflow.grism_lenses.lens0810 import Lens0810
 
-execute_mcmc('2038_fixedshear.txt', Lens2038(), N, to_vary={'fixed_param_gaussian': {'shear': [0.09, 0.02]}})
-#execute_mcmc('2026_fixedshear.txt', Lens2026(), N, to_vary={'fixed_param_uniform': {'shear': [0.05, 0.22]}})
-#execute_mcmc('1606_fixedshear.txt', Lens1606(), N, to_vary={'fixed_param_gaussian': {'shear': [0.16, 0.025]}})
+#simple_quads = [Lens2038(), Lens2026(), J0405(), Lens1606()]
+simple_quads = [Lens1330(), Lens1606(), Lens1330()]
+N = 1000
 
-if False:
-    lenses = [Lens2026(), Lens2038(), Lens1606()]
-    names = [['2026_nofluxes.txt', '2026_withfluxes.txt'], ['2038_nofluxes.txt', '2038_withfluxes.txt']]
+optimizer_kwargs = [{'tol_mag': 0.2, 'pso_compute_magnification': 1e+5,
+                    'n_particles': 50, 'verbose': False,
+                    'optimize_routine': 'fixed_powerlaw_shear',
+                     'use_finite_source': False},
+                    {'tol_mag': 0.2, 'pso_compute_magnification': 1e+5,
+                     'n_particles': 50, 'verbose': False,
+                     'optimize_routine': 'fixed_powerlaw_shear',
+                     },{'tol_mag': 0.2, 'pso_compute_magnification': 1e+5,
+                     'n_particles': 50, 'verbose': False,
+                     'optimize_routine': 'fixed_powerlaw_shear',
+                     }]
 
-    for j, lens in enumerate(lenses):
+lensJ1606_sat = simple_quads[1].satellite_kwargs[0]
+sat_thetaE1606 = lensJ1606_sat['theta_E']
+sat_centerx1606 = lensJ1606_sat['center_x']
+sat_centery1606 = lensJ1606_sat['center_y']
 
-        N = 200
-        optimizer_kwargs = {'tol_mag': None, 'pso_compute_magnification': 1e+9,
-                            'n_particles': 50, 'verbose': False}
-        execute_mcmc(names[j][0], lens, N)
+# 2033: wider prior on power law slope (to smaller values)
 
-        optimizer_kwargs = {'tol_mag': 0.05, 'pso_compute_magnification': 1e+9,
-                            'n_particles': 50, 'verbose': False}
-        execute_mcmc(names[j][1], lens, N)
+#For satellites
+# impose Gaussian prior on position
+# wider flat prior on Einstein radius
+
+varyparams = [{'satellite_keff': [0, 0.35], 'satellite_reff': [0.1, 0.7],
+               'satellite_ellip': [0.6, 0.9], 'satellite_PA': [-75, -45]},
+              {'satellite_x': [sat_centerx1606, 0.1],
+               'satellite_y': [sat_centery1606, 0.1],
+               'satellite_theta_E': [0, sat_thetaE1606 + 0.6]}, {}]
+
+fnames = ['./quad_mcmc/1330_samples.txt',
+          './quad_mcmc/1606_samples.txt',
+          './quad_mcmc/1330nodisk_samples.txt']
+
+for fname, lens, opt_kwargs_i, to_vary_i in zip(fnames, simple_quads, optimizer_kwargs, varyparams):
+
+    if fname == fnames[0]:
+        continue
+    execute_mcmc(fname, lens, N, opt_kwargs_i, to_vary = to_vary_i)
 

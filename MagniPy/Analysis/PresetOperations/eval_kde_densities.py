@@ -6,7 +6,7 @@ def weight_a0area(values, mean = 0.015, sigma = .025):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
-def weight_sourcesize(values, mean = 0.02, sigma = 0.005):
+def weight_sourcesize(values, mean = 0.017, sigma = 0.006):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
@@ -14,7 +14,7 @@ def weight_siegamma(values, mean = 2.08, sigma = 0.04):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
-def weight_LOSnorm(values, mean = 1, sigma = 0.1):
+def weight_LOSnorm(values, mean = 1, sigma = 0.05):
 
     return np.exp(-0.5*(values - mean)**2 * sigma ** -2)
 
@@ -40,13 +40,14 @@ def run(weight_functions = None):
     elif error == 6:
         n_pert = 5
 
-    bandwidth_scale = 0.6
-    nkde_bins = 10
-    tol = 800
-    which_lenses = np.arange(1,21)
-    evaluate_denities('SIDM_sigma0.012_cross6.5', which_lenses,
+    bandwidth_scale = 0.8
+    nkde_bins = 12
+    tol = 250
+    which_lenses = np.arange(1,26)
+    evaluate_denities('coldSIDM_full', which_lenses,
                       error, n_pert, nkde_bins, '', tol, bandwidth_scale, weight_funcs=weight_functions)
 
 #wfunc1 = {'SIE_gamma': weight_siegamma, 'source_size_kpc': weight_sourcesize, 'LOS_normalization': weight_LOSnorm}
 #run()
+wfunc = {'LOS_normalization': weight_LOSnorm}
 run()

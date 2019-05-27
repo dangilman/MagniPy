@@ -83,7 +83,7 @@ class SolveRoutines(Magnipy):
                                    constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=5e-3, tol_simplex_func = 0.05,
                                    simplex_n_iter=300, LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8,
-                                   chi2_mode='source', tol_image = 0.005, satellites=None):
+                                   chi2_mode='source', tol_image = 0.005, satellites=None, use_finite_source = True):
 
 
         if source_shape is None:
@@ -127,7 +127,8 @@ class SolveRoutines(Magnipy):
                                                                  constrain_params=constrain_params, pso_convergence_mean=pso_convergence_mean,
                                                                  pso_compute_magnification=pso_compute_magnification,
                                                                  tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
-                                                                 simplex_n_iter=simplex_n_iter, chi2_mode = chi2_mode, tol_image = tol_image)
+                                                                 simplex_n_iter=simplex_n_iter, chi2_mode = chi2_mode, tol_image = tol_image,
+                                                                       finite_source_magnification=use_finite_source)
 
         return optimized_data,model
 

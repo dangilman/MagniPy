@@ -5,16 +5,16 @@ from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
 
-class Lens2026(Quad):
+class Lens2038(Quad):
 
-    x = np.array([0.187, 0.44, 0.023, -0.548])
-    y = np.array([-0.563, -0.348, 0.865, -0.179])
-    m = np.array([1., 0.75, 0.31, 0.28])
+    x = np.array([-1.474, 0.832, -0.686, 0.706])
+    y = np.array([0.488, -1.22, -1.191, 0.869])
+    m = np.array([0.862069, 1., 0.793103, 0.396552])
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
+
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.5, 2.23
-    # lens redshift ?
+    zlens, zsrc = 0.5, 1.5
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -22,7 +22,7 @@ class Lens2026(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens2026'
+    identifier = 'lens2036'
 
     flux_ratio_index = 0
 
@@ -32,8 +32,8 @@ class Lens2026(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    gamma_min = 1.9
-    gamma_max = 2.2
+    gamma_min = 2.1
+    gamma_max = 2.4
 
     srcmin = 0.02
     srcmax = 0.05

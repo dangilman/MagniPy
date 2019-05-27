@@ -4,17 +4,18 @@ from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
+from lenstronomy.Util.param_util import phi_q2_ellipticity
 
-class Lens2026(Quad):
+class Lens1330(Quad):
 
-    x = np.array([0.187, 0.44, 0.023, -0.548])
-    y = np.array([-0.563, -0.348, 0.865, -0.179])
-    m = np.array([1., 0.75, 0.31, 0.28])
+    x = np.array([0.226, -0.188, -1.023, 0.463])
+    y = np.array([-0.978, -0.99, 0.189, 0.604])
+    m = np.array([1., 0.79, 0.41, 0.25])
+
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.5, 2.23
-    # lens redshift ?
+    zlens, zsrc = 0.5, 1.5
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -22,7 +23,7 @@ class Lens2026(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens2026'
+    identifier = 'lens1330'
 
     flux_ratio_index = 0
 
@@ -38,6 +39,18 @@ class Lens2026(Quad):
     srcmin = 0.02
     srcmax = 0.05
 
+    #satellite_mass_model = ['SERSIC_ELLIPSE_KAPPA']
+    # from mass center
+    satellite_pos_mass = np.array([0, 0])
+
+    disk_q, disk_angle = 0.2, 180 * np.arctan(y[0] / x[0]) / np.pi
+    disk_angle += 25
+
+    disk_angle *= np.pi / 180
+    e1_disk, e2_disk = phi_q2_ellipticity(disk_angle, disk_q)
+    satellite_kwargs = [{'k_eff': 0.2, 'R_sersic': 0.5, 'n_sersic': 1, 'e1': e1_disk,
+                         'e2': e2_disk, 'center_x':0, 'center_y':0}]
+
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
         if 'datatofit' in kwargs_fit.keys():
@@ -45,6 +58,13 @@ class Lens2026(Quad):
             del kwargs_fit['datatofit']
         else:
             data = self.data
+
+        satellites = None
+        #satellites['lens_model_name'] = self.satellite_mass_model
+        #satellites['z_satellite'] = [self.zlens]
+        #satellites['kwargs_satellite'] = self.satellite_kwargs
+
+        kwargs_fit.update({'satellites': satellites})
 
         optdata, optmodel = self._fit(data, self.solver, kwargs_fit, macromodel_init=macro_init)
 

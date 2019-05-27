@@ -166,7 +166,7 @@ def halo_model_args(params):
     if mass_func_type == 'composite_powerlaw':
 
         names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'opening_angle_factor','power_law_index',
-                 'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main', 'parent_c',
+                 'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main',
                  'LOS_normalization']
 
         for name in names:
@@ -177,6 +177,8 @@ def halo_model_args(params):
 
         if 'a0_area' in params.keys():
             args.update({'a0_area': params['a0_area']})
+        elif 'sigma_sub' in params.keys():
+            args.update({'sigma_sub': params['sigma_sub']})
 
         if 'zmin' in params.keys():
             args.update({'zmin':params['zmin']})
@@ -237,8 +239,33 @@ def read_macro_array(lensmodel):
     ellipPA = ellipandPA[1]
     shear = lensmodel.shear
     shearPA = lensmodel.shear_theta
+    gamma = lensmodel.lenstronomy_args['gamma']
 
-    return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA])
+    return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
+
+def readout_realizations(optimized_lens_model, fname, statistic, params):
+
+    zlist, lens_list, arg_list, _ = optimized_lens_model.lenstronomy_lists()
+
+    with open(fname, 'w') as f:
+        f.write(str(statistic) + '\n')
+        f.write('params_varied = np.array([')
+        for pi in params:
+            f.write(str(pi)+', ')
+        f.write('])\n\n')
+        f.write('redshifts = '+str(repr(list(zlist)))+'\n\n')
+        f.write('lens_model_list = '+str(repr(lens_list)) + '\n\n')
+        f.write('lens_model_args = '+str(repr(arg_list)))
+
+
+def summary_stat_flux(f_obs, f_model):
+
+    ratios_obs = f_obs[1:] * f_obs[0] ** -1
+    ratios_model = f_model[1:] * f_model[0] ** -1
+
+    diff = np.sqrt(np.sum((ratios_obs - ratios_model)**2))
+
+    return diff
 
 def readout_macro(output_path, params, open_file):
 
@@ -251,9 +278,8 @@ def readout_macro(output_path, params, open_file):
         rows, cols = int(np.shape(params)[0]), int(np.shape(params)[1])
         for row in range(0, rows):
             for col in range(0, cols):
-                f.write(str(np.round(params[row,col]),4) + ' ')
+                f.write(str(np.round(params[row,col],4)) + ' ')
             f.write('\n')
-
 
 def readout(output_path, fluxes, parameters, param_names_tovary, write_header):
 
@@ -347,6 +373,7 @@ def initialize(chain_ID, core_index):
         else:
             chain_keys['Nsamples'] = chain_keys['Nsamples'] - N_lines
             chain_keys['write_header'] = False
+
 
     if os.path.exists(output_path):
         pass

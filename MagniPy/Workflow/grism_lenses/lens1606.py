@@ -7,9 +7,10 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens1606(Quad):
 
-    x = np.array([0.833, -0.793, 0.04, -0.296])
-    y = np.array([0.373, -0.223, -0.541, 0.524])
-    m = np.array([1., 0.99, 0.59, 0.76])
+    x = np.array([ 0.838, -0.784,  0.048, -0.289])
+    y = np.array([ 0.378, -0.211, -0.527,  0.528])
+    m = np.array([1., 1, 0.59, 0.79])
+
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
@@ -21,7 +22,7 @@ class Lens1606(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens2026'
+    identifier = 'lens1606'
 
     flux_ratio_index = 0
 
@@ -39,9 +40,9 @@ class Lens1606(Quad):
 
     satellite_mass_model = ['SIS']
     # from mass center
-    satellite_pos_mass = [-0.1646, -1.3582]
+    satellite_pos_mass = np.array([-0.307, -1.153])
     # from light center
-    satellite_pos_light = [-0.1255, -1.3517]
+    #satellite_pos_light = [-0.1255, -1.3517]
     satellite_kwargs = [{'theta_E': 0.269, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):

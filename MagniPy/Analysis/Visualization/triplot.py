@@ -585,7 +585,7 @@ class TriPlot(object):
             tick_locs = [2, 2.05, 2.1, 2.15, 2.2]
             rotation = 45
         elif pname == 'source_size_kpc':
-            name = r'$\sigma_{\rm{src}}$'
+            name = r'$\sigma_{\rm{src}} \ \left[\rm{pc}\right]$'
             tick_labels = [15, 20, 25, 30, 35, 40]
             tick_locs = np.array(tick_labels)*0.001
         elif pname == 'log_m_break':
@@ -601,7 +601,7 @@ class TriPlot(object):
             tick_labels = [0.01, 0.2, 0.4, 0.6, 0.8]
             tick_locs = [0.01, 0.2, 0.4, 0.6, 0.8]
         elif pname == 'SIDMcross':
-            name = r'$\sigma_{\rm{SIDM}}$'
+            name = r'$\sigma_0 \left[\rm{cm^2} \ \rm{g^{-1}}\right]$'
             tick_labels = [0.01, 2, 4, 6, 8, 10]
             tick_locs = [0.01, 2, 4, 6, 8, 10]
 

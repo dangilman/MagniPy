@@ -2,7 +2,9 @@ import numpy as np
 from MagniPy.lensdata import Data
 from MagniPy.LensBuild.defaults import get_default_SIE
 from copy import deepcopy
-from MagniPy.util import chi_square_img
+from MagniPy.util import chi_square_img, min_img_sep
+from MagniPy.Solver.analysis import Analysis
+from lenstronomy.Util.param_util import phi_q2_ellipticity, ellipticity2phi_gamma
 import corner.corner
 import time
 
@@ -35,13 +37,17 @@ class MacroMCMC(object):
             [], [], [], [], [], [], [], [], []
 
         satellite_x, satellite_y, satellite_thetaE, z_sat = [], [], [], []
+        satellitepa = []
+        satelliteellip = []
+        satellite_keff = []
+        satellite_reff = []
 
-        fluxes = None
+        fluxes = []
 
         if macromodel is None:
             macromodel = get_default_SIE(zlens)
-
-        for i in range(0, N):
+        n_computed = 0
+        while n_computed < N:
 
             if i % 100 == 0:
                 print(str(i) + ' of ' + str(N) + '... ')
@@ -55,19 +61,33 @@ class MacroMCMC(object):
                 satellite_redshift = [zlens]*len(satellite_mass_model)
 
             for pname in tovary.keys():
+                param_names = ['satellite_theta_E', 'satellite_x', 'satellite_y', 'satellite_redshift',
+                             'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
+                if pname in param_names:
 
-                if pname in ['satellite_theta_E', 'satellite_x', 'satellite_y', 'satellite_redshift']:
                     assert satellite_kwargs is not None
                     assert satellite_mass_model is not None
 
                     if pname == 'satellite_redshift':
                         satellite_redshift = [np.random.uniform(tovary[pname][0], tovary[pname][1])]*len(satellite_mass_model)
                     elif pname == 'satellite_theta_E':
-                        satellite_kwargs.update({'theta_E': np.random.uniform(tovary[pname][0], tovary[pname][1])})
+                        satellite_kwargs.update({'theta_E': np.random.uniform(max(0,tovary[pname][0]), tovary[pname][1])})
                     elif pname == 'satellite_x':
-                        satellite_kwargs.update({'center_x': np.random.uniform(tovary[pname][0], tovary[pname][1])})
+                        satellite_kwargs.update({'center_x': np.random.normal(tovary[pname][0], tovary[pname][1])})
                     elif pname == 'satellite_y':
-                        satellite_kwargs.update({'center_y': np.random.uniform(tovary[pname][0], tovary[pname][1])})
+                        satellite_kwargs.update({'center_y': np.random.normal(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_keff':
+                        satellite_kwargs.update({'k_eff': np.random.uniform(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_reff':
+                        satellite_kwargs.update({'R_sersic': np.random.uniform(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_ellip':
+                        assert 'satellite_PA' in param_names
+
+                        satellip = np.random.uniform(tovary[pname][0], tovary[pname][1])
+                        satPA = np.random.uniform(tovary['satellite_PA'][0], tovary['satellite_PA'][1])
+
+                        sate1, sate2 = phi_q2_ellipticity(satPA * np.pi * 180**-1, 1-satellip)
+                        satellite_kwargs.update({'e1': sate1, 'e2': sate2})
 
                 else:
                     if pname == 'fixed_param_gaussian':
@@ -75,17 +95,36 @@ class MacroMCMC(object):
                         name = list(dictionary.keys())[0]
                         fixed_mean, fixed_sigma = dictionary[name][0], dictionary[name][1]
                         fixed_param = np.random.normal(fixed_mean, fixed_sigma)
-                        args.update({'constrain_params': {name: fixed_param}})
+                        if 'constrain_params' in args.keys():
+                            args['constrain_params'].update({name: fixed_param})
+                        else:
+                            args.update({'constrain_params': {name: fixed_param}})
 
                     elif pname == 'fixed_param_uniform':
                         dictionary = tovary['fixed_param_uniform']
                         name = list(dictionary.keys())[0]
                         fixed_low, fixed_high = dictionary[name][0], dictionary[name][1]
                         fixed_param = np.random.uniform(fixed_low, fixed_high)
-                        args.update({'constrain_params': {name: fixed_param}})
+                        if 'constrain_params' in args.keys():
+                            args['constrain_params'].update({name: fixed_param})
+                        else:
+                            args.update({'constrain_params': {name: fixed_param}})
+
+                    elif pname == 'constrained_param_uniform':
+                        dictionary = tovary['constrained_param_uniform']
+                        name = list(dictionary.keys())[0]
+                        pmin, pmax, tol = dictionary[name][0], dictionary[name][1], dictionary[name][2]
+                        value = np.random.uniform(pmin)
+                        if 'constrain_params' in args.keys():
+                            args['constrain_params'].update({name: fixed_param})
+                        else:
+                            args.update({'constrain_params': {name: [value, tol]}})
+
                     else:
-                        low, high = tovary[pname][0], tovary[pname][1]
-                        macro.lenstronomy_args[pname] = np.random.uniform(low, high)
+
+                        if pname != 'source_size_kpc':
+                            low, high = tovary[pname][0], tovary[pname][1]
+                            macro.lenstronomy_args[pname] = np.random.uniform(low, high)
 
             if 'gamma' in tovary.keys():
                 gammavalue = np.random.uniform(tovary['gamma'][0], tovary['gamma'][1])
@@ -98,7 +137,6 @@ class MacroMCMC(object):
                 assert 'source_size_kpc' in optimizer_kwargs.keys()
                 srcsize = optimizer_kwargs['source_size_kpc']
             args.update({'source_size_kpc': srcsize})
-
 
             if satellite_mass_model is not None:
                 satellites = {'lens_model_name': satellite_mass_model, 'z_satellite': satellite_redshift,
@@ -118,6 +156,37 @@ class MacroMCMC(object):
 
             if chi_square_img(optdata.x,optdata.y,data_fitted.x,data_fitted.y,0.001) > 1:
                 continue
+            if np.isnan(optdata.m[0]):
+                #print('nan')
+                continue
+            if False:
+                analysis = Analysis(zlens, 1.5)
+                mags = []
+                import matplotlib.pyplot as plt
+                ratiosobs = np.array([0.93, 0.48, 0.19])
+                ratiosmod = np.array(optdata.m[1:]) * optdata.m[0] ** -1
+                print(ratiosmod)
+                print(ratiosobs)
+                stat = np.sqrt(np.sum((ratiosmod - ratiosobs) ** 2))
+                print(stat)
+                print(satellite_kwargs['theta_E'], srcsize)
+
+                if stat < 400:
+                    for j in range(0, 4):
+                        minsep = min_img_sep(optdata.x, optdata.y)
+                        #system = analysis.build_system(optmodel, multiplane=True)
+
+                        mag, img = analysis.raytrace_images(full_system=optmodel, xcoord=optdata.x[j],
+                                                            ycoord=optdata.y[j], multiplane=True,
+                                                            srcx=optdata.srcx, srcy=optdata.srcy,
+                                                            res=0.001, method='lenstronomy',
+                                                            source_shape='GAUSSIAN', source_size_kpc=srcsize,
+                                                            minimum_image_sep=minsep)
+                        plt.imshow(img)
+                        plt.show()
+                        mags.append(mag)
+                    print(np.array(mags) * np.max(mags) ** -1)
+                    a = input('continue')
 
             if 'satellite_theta_E' in tovary.keys():
                 satellite_thetaE.append(optmodel.satellite_kwargs[0]['theta_E'])
@@ -126,7 +195,15 @@ class MacroMCMC(object):
             if 'satellite_y' in tovary.keys():
                 satellite_y.append(optmodel.satellite_kwargs[0]['center_y'])
             if 'satellite_redshift' in tovary.keys():
-                z_sat.append(optmodel.satellite_redshift[0])
+                z_sat.append(satellite_redshift)
+            if 'satellite_keff' in tovary.keys():
+                satellite_keff.append(optmodel.satellite_kwargs[0]['k_eff'])
+            if 'satellite_reff' in tovary.keys():
+                satellite_reff.append(optmodel.satellite_kwargs[0]['R_sersic'])
+            if 'satellite_ellip' in tovary.keys():
+                satellip, satPA = ellipticity2phi_gamma(optmodel.satellite_kwargs[0]['e1'], optmodel.satellite_kwargs[0]['e2'])
+                satelliteellip.append(satellip)
+                satellitepa.append(satPA)
 
             optimized_macromodel = optmodel.lens_components[0]
             modelargs = optimized_macromodel.lenstronomy_args
@@ -138,6 +215,7 @@ class MacroMCMC(object):
             PA.append(ellipPA[1])
 
             shear.append(optimized_macromodel.shear)
+
             shearPA.append(optimized_macromodel.shear_theta)
 
             gamma.append(gammavalue)
@@ -145,13 +223,16 @@ class MacroMCMC(object):
             cen_x.append(modelargs['center_x'])
             cen_y.append(modelargs['center_y'])
 
-            if fluxes is None:
+            if len(fluxes) == 0:
                 norm = optdata.m[flux_ratio_index]
                 fluxes = optdata.m[inds] * norm**-1
+                fluxes.reshape(1,3)
             else:
                 norm = optdata.m[flux_ratio_index]
                 new_ratios = optdata.m[inds] * norm**-1
                 fluxes = np.vstack((fluxes, new_ratios))
+            n_computed += 1
+            print('N remaining: ', N - n_computed)
 
         rein = np.round(rein, 4)
         ellip = np.round(ellip, 4)
@@ -164,21 +245,32 @@ class MacroMCMC(object):
         z_sat = np.round(z_sat, 2)
         satellite_x, satellite_y = np.round(satellite_x, 4), np.round(satellite_y, 4)
         satellite_thetaE = np.round(satellite_thetaE, 3)
+        satellite_keff = np.round(satellite_keff, 4)
+        satellite_reff = np.round(satellite_reff, 4)
+        satellite_ellip = np.round(satelliteellip, 3)
+        satellitepa = np.round(satellitepa, 3)
 
         full_dictionary = {'Rein': rein, 'ellip': ellip, 'ellipPA': PA,
                            'shear': shear, 'shearPA': shearPA, 'gamma': gamma,
                            'srcsize': source_size, 'centroid_x': cen_x, 'centroid_y': cen_y,
                            'G2x': satellite_x, 'G2y': satellite_y, 'G2thetaE': satellite_thetaE,
-                           'G2redshift': z_sat}
+                           'G2redshift': z_sat, 'satellite_keff': satellite_keff, 'satellite_reff': satellite_reff,
+                           'satellite_ellip': satellite_ellip, 'satellite_PA': satellitepa}
+
+        param_order = ['Rein', 'shear', 'shearPA', 'ellip', 'ellipPA', 'gamma', 'srcsize', 'centroid_x', 'centroid_y']
+
+        supp = ['G2x', 'G2y', 'G2thetaE', 'G2z', 'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
+
+        for supp_param in supp:
+            if supp_param in full_dictionary.keys() and len(full_dictionary[supp_param])>0:
+                param_order.append(supp_param)
 
         if write_to_file:
-            array = fluxes
+            array = np.array(fluxes)
             #header = 'f1 f2 f3 '
-            for key in full_dictionary.keys():
-                if len(full_dictionary[key]) == 0:
-                    continue
-            #    header += key + ' '
-                array = np.column_stack((array, full_dictionary[key]))
+            for param_name in param_order:
+
+                array = np.column_stack((array, full_dictionary[param_name]))
             with open(fname, mode='a') as f:
                 for row in range(0, int(np.shape(array)[0])):
                     for col in range(0, int(np.shape(array)[1])):
@@ -243,6 +335,7 @@ class MacroMCMC(object):
 
         d = self._setup_data()
         run_args.update({'datatofit': d})
+
         macromodel = run_args['macromodel']
         del run_args['macromodel']
 

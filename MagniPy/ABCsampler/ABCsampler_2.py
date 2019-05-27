@@ -69,7 +69,7 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, analysis, output_path, write_header):
+def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, analysis, output_path, write_header, save_statistic):
 
     chaindata = []
     parameters = []

@@ -270,6 +270,9 @@ class Analysis(Magnipy):
                 assert len(realizations) == 1
                 lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=realizations[0],
                                                 multiplane=multiplane)
+            else:
+                lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=None,
+                                                multiplane=multiplane)
 
         else:
 

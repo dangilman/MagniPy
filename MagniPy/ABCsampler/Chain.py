@@ -240,20 +240,20 @@ class ChainFromSamples(object):
                 for i, pi in enumerate(self.params_varied):
                     data[:,i] = posteriors[n][p].samples[pi]
 
-                    if weights is not None and pi in weights.keys():
+                    #if weights is not None and pi in weights.keys():
 
-                        if pi in weights.keys():
-                            if param_weight is None:
-                                param_weight = weights[pi](data[:,i])
-                            else:
-                                param_weight *= weights[pi](data[:,i])
+                    #    if pi in weights.keys():
+                    #        if param_weight is None:
+                    #            param_weight = weights[pi](data[:,i])
+                    #        else:
+                    #            param_weight *= weights[pi](data[:,i])
 
                 if smooth_KDE:
-                    density_n += self._kernel(data, points, ranges, weights=param_weight)
+                    density_n += self._kernel(data, points, ranges, weights=None)
                 else:
                     density_n += numpy.histogramdd(data, range = ranges,
                                                    density=True, bins=nkde_bins,
-                                                   weights=param_weight)[0]
+                                                   weights=None)[0]
 
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
@@ -265,6 +265,8 @@ class ChainFromSamples(object):
             density *= density_n
 
         self.density = density
+
+
 
         self._density_projections(density, save_to_file, bandwidth_scale)
 

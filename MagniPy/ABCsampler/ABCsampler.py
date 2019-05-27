@@ -58,7 +58,14 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 2
+
+    current_best = 1e+6
+    if write_header:
+        save_statistic = True
+
+    else:
+        save_statistic = False
 
     while N_computed < keys['Nsamples']:
 
@@ -99,20 +106,20 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
 
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=False, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
                                    pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=400, polar_grid=False, grid_res=0.001,
+                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
                 xfit, yfit = new[0].x, new[0].y
-                #print(new[0].m)
 
             except:
                 print('error in fitting positions...')
                 xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
 
-            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
+            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1 and new[0].m[0] is not np.nan:
+
                 break
 
         macro_fit = optmodel[0].lens_components[0]
@@ -126,6 +133,14 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         for pname in keys_to_vary.keys():
             samples_array.append(chain_keys_run[pname])
 
+        if save_statistic:
+            new_statistic = summary_stat_flux(d2fit.m, new[0].m)
+            print(new_statistic, current_best)
+            if new_statistic < current_best:
+                current_best = new_statistic
+                current_best_realization = optmodel[0]
+                params_best = samples_array
+
         if start:
             macro_array = read_macro_array(macro_fit)
             chaindata = new[0].m
@@ -138,6 +153,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         if N_computed%readout_steps == 0:
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
+            if save_statistic:
+                readout_realizations(current_best_realization, output_path + 'best_realization.txt', current_best, params_best)
             start = True
             write_header = False
 
@@ -254,6 +271,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_full/', 49)
+#runABC(prefix+'data/coldSIDM_full/', 1)
 
 

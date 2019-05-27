@@ -640,6 +640,16 @@ def chi_square(d1,d2,sigma):
 
     return np.sum(((d1 - d2)*sigma**-1)**2)
 
+def flux_at_edge(image):
+
+    maxbright = np.max(image)
+    edgebright = [image[0,:],image[-1,:],image[:,0],image[:,-1]]
+
+    for edge in edgebright:
+        if any(edge > maxbright * 0.1):
+            return True
+    else:
+        return False
 
 
 

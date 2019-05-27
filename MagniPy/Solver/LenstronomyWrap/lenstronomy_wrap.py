@@ -38,13 +38,15 @@ class LenstronomyWrap(object):
 
         return lensmodel,lists['kwargs_lens']
 
-    def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params,brightimg):
+    def solve_leq(self,xsrc,ysrc,lensmodel,lens_model_params,brightimg, precision_lim=10 ** (-10), nitermax = 10):
 
         lensEquationSolver = LensEquationSolver(lensModel=lensmodel)
 
         if brightimg:
             x_image, y_image = lensEquationSolver.findBrightImage(xsrc, ysrc, lens_model_params,
-                                                                  arrival_time_sort=False)
+                                                                  arrival_time_sort=False, min_distance = 0.02,
+                                                                  search_window = 3.5, precision_limit=precision_lim,
+                                                                  num_iter_max=nitermax)
         else:
             x_image, y_image = lensEquationSolver.image_position_from_source(kwargs_lens=lens_model_params, sourcePos_x=xsrc,
                                                               sourcePos_y=ysrc,min_distance=self.min_distance, search_window=self.search_window,

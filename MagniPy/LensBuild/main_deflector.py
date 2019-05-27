@@ -2,7 +2,7 @@ from MagniPy.MassModels.ExternalShear import Shear
 from MagniPy.Solver.GravlensWrap.kwargs_translate import model_translate_togravlens
 from MagniPy.Solver.LenstronomyWrap.kwargs_translate import model_translate_tolenstronomy
 from MagniPy.util import polar_to_cart, cart_to_polar
-
+import numpy as np
 
 class Deflector(object):
 
@@ -72,6 +72,17 @@ class Deflector(object):
         self.shear = newshear
         e1,e2 = polar_to_cart(self.shear,self.shear_theta)
         self.shear_args = {'e1':e1,'e2':e2}
+
+    def ellip_PA_phiq(self):
+
+        e1, e2 = self.lenstronomy_args['e1'], self.lenstronomy_args['e2']
+        phi = np.arctan2(e1, e2) / 2
+        c = np.sqrt(e1 ** 2 + e2 ** 2)
+        if c > 0.999:
+            c = 0.999
+        q = (1 - c) / (1 + c)
+
+        return phi * 180 * np.pi ** -1, 1-q
 
     def ellip_PA_polar(self):
 

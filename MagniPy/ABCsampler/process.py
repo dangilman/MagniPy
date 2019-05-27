@@ -161,10 +161,10 @@ def process_raw(name=str,which_lenses=[], counter_start = 0, swap_cols = None):
 
 def process_samples(chain_name, which_lenses, N_pert=1, errors=None, swap_cols = [4, 2, 1, 3, 0]):
 
-    for which_lens in which_lenses:
+    for k, which_lens in enumerate(which_lenses):
 
         fluxes, observed_fluxes, parameters, params_header = extract_chain_fromprocessed(chain_name, which_lens)
-
+        print('number of samples in lens '+str(k+1)+': ', np.shape(fluxes)[0])
         add_flux_perturbations(chain_name, which_lens, parameters, observed_fluxes, fluxes, errors = errors, N_pert = N_pert)
 
 def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, errors = [0, 0.04],N_pert=1,
@@ -201,8 +201,8 @@ def resample_chain(a0_area=None, logmhm=None, src_size=None, LOS_norm=1.0, error
     return new_name
 
 def resample_chain_sidm(a0_area=None, SIDMcross=None, errors = [0, 0.02],N_pert=1,
-                   process_only = False, SIDMcross_sigma = 0.1, SIE_gamma_mean=2.06,
-                   SIE_gamma_sigma=0.06, a0_area_sigma = 0.003, name='WDM_sim_7.7_.012',
+                   process_only = False, SIDMcross_sigma = 0.1, SIE_gamma_mean=2.04,
+                   SIE_gamma_sigma=0.03, a0_area_sigma = 0.003, name='WDM_sim_7.7_.012',
                         which_lens_indexes = None, ending = '', src_size = 0.025, src_size_sigma = 0.005,
                         LOS_norm = 1, LOS_norm_sigma = 0.1):
 
@@ -227,17 +227,18 @@ def resample_chain_sidm(a0_area=None, SIDMcross=None, errors = [0, 0.02],N_pert=
 def resample_sys(num, process_only):
     num = int(num)
     errors = [0, 0.02]
-    src_mean = 0.018
+    src_mean = 0.02
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.012, SIDMcross=6.5, SIDMcross_sigma=0.2, src_size = src_mean,
+        resample_chain_sidm(a0_area=0.016, SIDMcross=0.15, SIDMcross_sigma=0.2, src_size = src_mean,
                             errors=errors,
                    N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
-                   which_lens_indexes=np.arange(1, 21))
+                   which_lens_indexes=np.arange(1, 26))
     elif num == 2:
-            resample_chain_sidm(a0_area=0.012, logmhm=4.95, core_ratio=0.2, core_ratio_sigma=0.025, errors=errors,
-                                N_pert=1, process_only=process_only, name='SIDM_run',
-                                which_lens_indexes=np.arange(1, 13))
+        resample_chain_sidm(a0_area=0.025, SIDMcross=6, SIDMcross_sigma=0.2, src_size=src_mean,
+                            errors=errors,
+                            N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
+                            which_lens_indexes=np.arange(1, 26))
     elif num == 3:
         resample_chain(a0_area=1.8, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
                        N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
@@ -262,9 +263,10 @@ def resample_sys(num, process_only):
                        which_lens_indexes=np.arange(1, 51))
 
 
-#process_raw('coldSIDM_full', np.arange(1,21))
-#process_samples('coldSIDM_full', np.arange(1,21), 1, [0])
+#process_raw('coldSIDM_full', np.arange(1,26))
+#process_samples('coldSIDM_full', np.arange(1,26), 1, [0])
 #resample_sys(1, False)
+resample_sys(1, False)
 #process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
 #process_raw('hoffman_run3', np.arange(1,6), counter_start=15)
 #process_raw('hoffman_run4', np.arange(1,6), counter_start = 20)

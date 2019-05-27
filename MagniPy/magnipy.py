@@ -89,6 +89,7 @@ class Magnipy:
         assert len(lens_systems) == 1
         for i, system in enumerate(lens_systems):
 
+            compute_fluxes = True
             kwargs_lens, [xsrc,ysrc], [x_opt,y_opt], optimizer = lenstronomyWrap.run_optimize(system,self.zsrc,data2fit.x,
                             data2fit.y,tol_source,data2fit.m,tol_mag,tol_centroid,centroid_0,optimizer_routine,self.zmain,
                             n_particles,n_iterations,verbose,restart,re_optimize,particle_swarm,constrain_params,
@@ -96,6 +97,17 @@ class Magnipy:
                              tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
                               simplex_n_iter=simplex_n_iter, optimizer_kwargs = optimizer_kwargs,
                                chi2_mode = chi2_mode, tol_image = tol_image)
+
+            if len(x_opt) != len(data2fit.x) or len(y_opt) != len(data2fit.y):
+                print('Warning: optimization found the wrong number of images')
+
+                x_opt, y_opt = lenstronomyWrap.solve_leq(xsrc, ysrc, optimizer.lensModel, kwargs_lens, brightimg=True,
+                                                         precision_lim=10**-12, nitermax=20)
+
+                if len(x_opt) != len(data2fit.x) or len(y_opt) != len(data2fit.y):
+                    x_opt = data2fit.x
+                    y_opt = data2fit.y
+                    compute_fluxes = False
 
             lensModel = optimizer.lensModel
 
@@ -121,11 +133,16 @@ class Magnipy:
                 else:
                     optimizer_kwargs = None
 
-            if finite_source_magnification:
+            if finite_source_magnification and compute_fluxes:
                 fluxes = self._ray_trace_finite(x_opt, y_opt, xsrc, ysrc, system.multiplane, lensModel, kwargs_lens, res,
                                                 source_shape, source_size_kpc, polar_grid)
+            elif compute_fluxes:
+                try:
+                    fluxes = optimizer_kwargs['magnification_pointsrc']
+                except:
+                    fluxes = np.absolute(lensModel.magnification(x_opt, y_opt, kwargs_lens))
             else:
-                fluxes = optimizer_kwargs['magnification_pointsrc']
+                fluxes = np.array([np.nan]*4)
 
             optimized_sys = self.update_system(lens_system=system,newkwargs=kwargs_lens, method='lenstronomy')
 
