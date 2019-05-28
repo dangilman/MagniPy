@@ -61,6 +61,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     readout_steps = 50
 
     current_best = 1e+6
+    best_fluxes = [0,0,0,0]
     if write_header:
         save_statistic = True
 
@@ -141,6 +142,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
                 params_best = samples_array
+                best_fluxes = new[0].m
 
         if start:
             macro_array = read_macro_array(macro_fit)
@@ -155,7 +157,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             if save_statistic:
-                readout_realizations(current_best_realization, output_path + 'best_realization.txt', current_best, params_best)
+                readout_realizations(current_best_realization, output_path + 'best_realization.txt', current_best,
+                                     params_best, best_fluxes)
             start = True
             write_header = False
 

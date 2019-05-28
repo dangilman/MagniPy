@@ -9,7 +9,7 @@ if homedir == '/u/home/g/gilmanda/':
     try:
         IO_directory = os.getenv('TMPDIR') + '/'
     except:
-        IO_directory = os.getenv('NEWSCRATCH')+ '/'
+        IO_directory = os.getenv('SCRATCH')+ '/'
 
     #IO_directory = os.getenv('NEWSCRATCH')+ '/'
 

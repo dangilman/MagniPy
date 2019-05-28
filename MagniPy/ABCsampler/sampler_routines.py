@@ -243,12 +243,13 @@ def read_macro_array(lensmodel):
 
     return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
 
-def readout_realizations(optimized_lens_model, fname, statistic, params):
+def readout_realizations(optimized_lens_model, fname, statistic, params, fluxes):
 
     zlist, lens_list, arg_list, _ = optimized_lens_model.lenstronomy_lists()
 
     with open(fname, 'w') as f:
-        f.write(str(statistic) + '\n')
+        f.write('stat = '+str(statistic) + '\n')
+        f.write('fluxes = np.'+repr(fluxes)+'\n')
         f.write('params_varied = np.array([')
         for pi in params:
             f.write(str(pi)+', ')
