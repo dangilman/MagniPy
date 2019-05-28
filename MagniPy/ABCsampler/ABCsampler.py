@@ -59,6 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     init_macro = False
     t0 = time.time()
     readout_steps = 50
+    verbose = False
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -106,7 +107,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
-                                       verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
+                                       verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
                                        pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=0.001,
                                         LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
@@ -117,14 +118,14 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                 xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
-                print(new[0].m[0], np.isfinite(new[0].m[0]))
+                if verbose: print(new[0].m[0], np.isfinite(new[0].m[0]))
                 if np.isfinite(new[0].m[0]):
                     break
 
         macro_fit = optmodel[0].lens_components[0]
 
         N_computed += 1
-        if N_computed%readout_steps == 0:
+        if N_computed%readout_steps == 0 and verbose:
             print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
 
         samples_array = []
@@ -138,6 +139,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             if new_statistic < current_best:
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
+                current_best_fullrealization = \
+                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos[0],multiplane=True)
                 params_best = samples_array
                 best_fluxes = new[0].m
 
@@ -154,7 +157,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             if save_statistic:
-                readout_realizations(current_best_realization, output_path, current_best,
+                readout_realizations(current_best_realization, current_best_fullrealization, output_path, current_best,
                                      params_best, best_fluxes)
             start = True
             write_header = False
@@ -162,7 +165,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         else:
             start = False
 
-    print('time elapsed: ', time.time() - t0)
+    if verbose: print('time elapsed: ', time.time() - t0)
     return chaindata, parameters
 
 def runABC(chain_ID='',core_index=int):

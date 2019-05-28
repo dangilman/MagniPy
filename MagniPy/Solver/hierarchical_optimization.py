@@ -297,17 +297,3 @@ def background_mass_filters(m_ref, LOS_mass_sheet):
     return background_aperture_masses, background_globalmin_masses, background_filters, \
     reoptimize_scale, particle_swarm_reopt, optimize_iteration
 
-
-def build_kwargs(lens_system,data2fit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations, res,
-                 source_shape, source_size_kpc, return_ray_path, polar_grid, optimizer_routine, verbose, re_optimize,
-                 particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                tol_simplex_func, simplex_n_iter, optimizer_kwargs, finite_source_magnification):
-
-    arg_list = {}
-
-    argspec = inspect.getargvalues(inspect.currentframe())
-
-    for pname in argspec.args:
-        arg_list.update({pname: argspec.locals[pname]})
-
-    return arg_list

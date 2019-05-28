@@ -46,7 +46,7 @@ class SolveRoutines(Magnipy):
 
         foreground_realization, background_realization = split_realization(datatofit, realizations[0])
 
-        print('optimizing foreground... ')
+        if verbose: print('optimizing foreground... ')
         foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel = optimize_foreground(macromodel,
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
@@ -54,7 +54,7 @@ class SolveRoutines(Magnipy):
                             tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet_front, LOS_mass_sheet_back,
                                   centroid = centroid_0, satellites=satellites)
 
-        print('optimizing background... ')
+        if verbose: print('optimizing background... ')
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
                       datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,  n_iterations,
                       source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose,
