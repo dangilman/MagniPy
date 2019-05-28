@@ -157,7 +157,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             if save_statistic:
-                readout_realizations(current_best_realization, output_path + 'best_realization.txt', current_best,
+                readout_realizations(current_best_realization, output_path, current_best,
                                      params_best, best_fluxes)
             start = True
             write_header = False
