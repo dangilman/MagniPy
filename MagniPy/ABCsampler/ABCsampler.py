@@ -9,9 +9,9 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.04,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.02,
                                                  tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
-                                                 centroid_0=[0, 0], n_particles=60, n_iterations=700,pso_convergence_mean=5000,
+                                                 centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=True, re_optimize=False, particle_swarm=True, restart=1,
                                                  tol_simplex_func=0.001)
@@ -23,8 +23,8 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
     macromodels_init = []
 
     if 'SIE_gamma' in keys_to_vary:
-        gamma_values = [2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.08]
+        gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
+        #gamma_values = [2.0]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -58,7 +58,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 2
+    readout_steps = 50
 
     current_best = 1e+6
     if write_header:
@@ -69,46 +69,46 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
 
     while N_computed < keys['Nsamples']:
 
-        samples = prior.sample(scale_by='Nsamples')[0]
+        d2fit = perturb_data(data, keys['position_sigma'], keys['flux_sigma'])
 
-        chain_keys_run = copy(keys)
-
-        for i,pname in enumerate(keys_to_vary.keys()):
-
-            chain_keys_run[pname] = samples[i]
-
-        if not init_macro:
-            print('initializing macromodels.... ')
-            macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
-            init_macro = True
-
-        if 'SIE_gamma' in keys_to_vary:
-
-            base = choose_macromodel_init(macro_list, gamma_values, chain_keys_run)
-
-        else:
-
-            base = macro_list[0]
-
-        macromodel = deepcopy(base[0])
-        #print(chain_keys_run['SIE_gamma'])
-        macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-
-        halo_args = halo_model_args(chain_keys_run)
-
-        d2fit = perturb_data(data,chain_keys_run['position_sigma'],chain_keys_run['flux_sigma'])
+        print('N computed: ', N_computed)
 
         while True:
 
+            samples = prior.sample(scale_by='Nsamples')[0]
+
+            chain_keys_run = copy(keys)
+
+            for i,pname in enumerate(keys_to_vary.keys()):
+
+                chain_keys_run[pname] = samples[i]
+                print(pname, chain_keys_run[pname])
+            if not init_macro:
+                print('initializing macromodels.... ')
+                macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
+                init_macro = True
+
+            if 'SIE_gamma' in keys_to_vary:
+
+                base = choose_macromodel_init(macro_list, gamma_values, chain_keys_run)
+
+            else:
+
+                base = macro_list[0]
+
+            macromodel = deepcopy(base[0])
+            macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
+            #print(chain_keys_run['source_size_kpc'])
+            halo_args = halo_model_args(chain_keys_run)
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
 
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450,
-                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=20000,
+                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
+                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
                                    pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=400, polar_grid=False, grid_res=0.002,
+                                    simplex_n_iter=200, polar_grid=False, grid_res=0.001,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
@@ -118,9 +118,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
                 print('error in fitting positions...')
                 xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
 
-            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1 and new[0].m[0] is not np.nan:
-
-                break
+            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
+                print(new[0].m[0], np.isfinite(new[0].m[0]))
+                if np.isfinite(new[0].m[0]):
+                    break
 
         macro_fit = optmodel[0].lens_components[0]
 
@@ -135,7 +136,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
 
         if save_statistic:
             new_statistic = summary_stat_flux(d2fit.m, new[0].m)
-            print(new_statistic, current_best)
+            #print(new_statistic, current_best)
             if new_statistic < current_best:
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
@@ -200,13 +201,7 @@ def runABC(chain_ID='',core_index=int):
 
     constructor = pyHalo(np.round(chain_keys['zlens'],2), np.round(chain_keys['zsrc'],2))
 
-    if chain_keys['solve_method'] == 'lensmodel':
-
-        raise Exception('not yet implemented.')
-
-    else:
-
-        run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
+    run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
                         chain_keys['write_header'])
 
 def write_params(params,fname,header, mode='append'):
@@ -271,6 +266,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_full/', 1)
+#runABC(prefix+'data/lens1422/', 1)
 
 

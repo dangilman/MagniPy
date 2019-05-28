@@ -117,9 +117,9 @@ class RayTrace(object):
             else:
                 flux.append(np.sum(image*self.res**2))
 
-            # plt.imshow(image.reshape(n,n))
-            # plt.show()
-            # a=input('continue')
+            #plt.imshow(image.reshape(n,n))
+            #plt.show()
+            #a=input('continue')
 
         return np.array(flux)
 

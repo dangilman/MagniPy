@@ -1,5 +1,6 @@
 from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
+from MagniPy.lensdata import Data
 import os
 
 class Quad(object):
@@ -9,6 +10,11 @@ class Quad(object):
                           'pso_compute_magnification': 1e+9, 'optimize_routine': 'fixed_powerlaw_shear'}
 
     default_kwargs_fit_lensmodel = {'method': 'lensmodel', 'ray_trace': False}
+
+    def export_data(self):
+
+        return Data(self.x, self.y, self.m, None, None, sigma_x=self.sigma_x,
+                    sigma_y=self.sigma_y, sigma_m=None)
 
     def _fit(self, data_class, solver_class, kwargs_fit, macromodel_init = None):
 

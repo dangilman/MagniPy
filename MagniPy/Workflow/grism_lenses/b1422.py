@@ -5,16 +5,15 @@ from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
 
-class Lens0128(Quad):
+class Lens1422(Quad):
 
-    x = np.array([-0.2046459, -0.1066459, 0.3153541, -0.0966459])
-    y = np.array([0.10689306, 0.20089306, -0.06510694, -0.14310694])
-    m = np.array([1., 0.584, 0.52, 0.506])
-
-    sigma_x = np.array([0.003]*4)
-    sigma_y = np.array([0.003]*4)
+    x = np.array([-0.347, -0.734, -1.096,  0.207])
+    y = np.array([ 0.964,  0.649, -0.079, -0.148])
+    m = np.array([0.88 , 1.   , 0.474, 0.05 ])
+    sigma_x = np.array([0.005]*4)
+    sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 1.145, 3.12
+    zlens, zsrc = 0.34, 3.62
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -22,7 +21,7 @@ class Lens0128(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens0128'
+    identifier = 'lens1422'
 
     flux_ratio_index = 0
 
@@ -32,11 +31,11 @@ class Lens0128(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    gamma_min = 1.95
+    gamma_min = 1.9
     gamma_max = 2.2
 
-    srcmin = 0.01
-    srcmax = 0.03
+    srcmin = 0.02
+    srcmax = 0.05
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 

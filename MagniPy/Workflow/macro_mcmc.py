@@ -2,7 +2,7 @@ import numpy as np
 from MagniPy.lensdata import Data
 from MagniPy.LensBuild.defaults import get_default_SIE
 from copy import deepcopy
-from MagniPy.util import chi_square_img, min_img_sep
+from MagniPy.util import chi_square_img, min_img_sep, cart_to_polar
 from MagniPy.Solver.analysis import Analysis
 from lenstronomy.Util.param_util import phi_q2_ellipticity, ellipticity2phi_gamma
 import corner.corner
@@ -157,19 +157,17 @@ class MacroMCMC(object):
             if chi_square_img(optdata.x,optdata.y,data_fitted.x,data_fitted.y,0.001) > 1:
                 continue
             if np.isnan(optdata.m[0]):
-                #print('nan')
+
                 continue
+
             if False:
                 analysis = Analysis(zlens, 1.5)
                 mags = []
                 import matplotlib.pyplot as plt
                 ratiosobs = np.array([0.93, 0.48, 0.19])
                 ratiosmod = np.array(optdata.m[1:]) * optdata.m[0] ** -1
-                print(ratiosmod)
-                print(ratiosobs)
+
                 stat = np.sqrt(np.sum((ratiosmod - ratiosobs) ** 2))
-                print(stat)
-                print(satellite_kwargs['theta_E'], srcsize)
 
                 if stat < 400:
                     for j in range(0, 4):
@@ -179,7 +177,7 @@ class MacroMCMC(object):
                         mag, img = analysis.raytrace_images(full_system=optmodel, xcoord=optdata.x[j],
                                                             ycoord=optdata.y[j], multiplane=True,
                                                             srcx=optdata.srcx, srcy=optdata.srcy,
-                                                            res=0.001, method='lenstronomy',
+                                                            res=0.00025, method='lenstronomy',
                                                             source_shape='GAUSSIAN', source_size_kpc=srcsize,
                                                             minimum_image_sep=minsep)
                         plt.imshow(img)
@@ -201,7 +199,7 @@ class MacroMCMC(object):
             if 'satellite_reff' in tovary.keys():
                 satellite_reff.append(optmodel.satellite_kwargs[0]['R_sersic'])
             if 'satellite_ellip' in tovary.keys():
-                satellip, satPA = ellipticity2phi_gamma(optmodel.satellite_kwargs[0]['e1'], optmodel.satellite_kwargs[0]['e2'])
+                satellip, satPA = cart_to_polar(optmodel.satellite_kwargs[0]['e1'], optmodel.satellite_kwargs[0]['e2'])
                 satelliteellip.append(satellip)
                 satellitepa.append(satPA)
 
@@ -269,7 +267,7 @@ class MacroMCMC(object):
             array = np.array(fluxes)
             #header = 'f1 f2 f3 '
             for param_name in param_order:
-
+                print(param_name)
                 array = np.column_stack((array, full_dictionary[param_name]))
             with open(fname, mode='a') as f:
                 for row in range(0, int(np.shape(array)[0])):

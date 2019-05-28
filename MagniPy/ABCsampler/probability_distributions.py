@@ -11,6 +11,10 @@ class ProbabilityDistribution:
             self.draw  = self.Uniform
             self.low,self.high = args['low'],args['high']
 
+        elif distribution_type=='LogUniform':
+            self.draw  = self.LogUniform
+            self.low,self.high = args['low'],args['high']
+
         elif distribution_type=='Gaussian':
             self.draw = self.Gaussian
             self.mean,self.sigma = args['mean'],args['sigma']
@@ -27,6 +31,16 @@ class ProbabilityDistribution:
             self.sort_ascending = True
         else:
             self.sort_ascending = False
+
+    def LogUniform(self, N):
+
+        logsamples = np.random.uniform(self.low, self.high, N)
+        if self.sort_ascending:
+            logsamples = logsamples[np.argsort(logsamples)]
+
+        samples = 10**logsamples
+
+        return np.round(np.array(samples), self.decimals)
 
     def Uniform(self,N):
 

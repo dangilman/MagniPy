@@ -646,7 +646,7 @@ def flux_at_edge(image):
     edgebright = [image[0,:],image[-1,:],image[:,0],image[:,-1]]
 
     for edge in edgebright:
-        if any(edge > maxbright * 0.1):
+        if any(edge > maxbright * 0.333):
             return True
     else:
         return False
