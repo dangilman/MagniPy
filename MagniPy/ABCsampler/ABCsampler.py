@@ -82,7 +82,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             for i,pname in enumerate(keys_to_vary.keys()):
 
                 chain_keys_run[pname] = samples[i]
-                print(pname, chain_keys_run[pname])
+                #print(pname, chain_keys_run[pname])
             if not init_macro:
                 print('initializing macromodels.... ')
                 macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
