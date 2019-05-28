@@ -66,6 +66,7 @@ class SolveRoutines(Magnipy):
                          LOS_mass_sheet_front = LOS_mass_sheet_front, LOS_mass_sheet_back = LOS_mass_sheet_back,
                           optimize_iteration=optimize_iteration, centroid = centroid_0, satellites=satellites)
 
+
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
                                source_size_kpc, polar_grid)

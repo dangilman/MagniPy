@@ -178,7 +178,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
             do_optimization = False
 
         if do_optimization:
-            # print(macromodel.lenstronomy_args)
+
             lens_system = solver_class.build_system(main=macromodel, realization=realization_filtered,
                                                     multiplane=True, LOS_mass_sheet_front = LOS_mass_sheet_front,
                                                     LOS_mass_sheet_back = LOS_mass_sheet_back, satellites=satellites)
@@ -218,6 +218,9 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
             background_zs.append(path_redshifts)
             reoptimized_realizations.append(realization_filtered)
             N_background_halos_last = N_background_halos
+
+    else:
+        model[0].realization = realization_filtered
 
     return optimized_data, model, \
            (backx, backy, background_Tzs, background_zs, reoptimized_realizations), keywords_lensmodel

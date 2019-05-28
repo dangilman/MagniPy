@@ -9,7 +9,7 @@ class Lens1422(Quad):
 
     x = np.array([-0.347, -0.734, -1.096,  0.207])
     y = np.array([ 0.964,  0.649, -0.079, -0.148])
-    m = np.array([0.88 , 1.   , 0.474, 0.05 ])
+    m = np.array([0.88 , 1.   , 0.474, 0.025])
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)

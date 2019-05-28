@@ -101,23 +101,20 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
             #print(chain_keys_run['source_size_kpc'])
             halo_args = halo_model_args(chain_keys_run)
+
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
-
             try:
-
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
-                                   verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
-                                   pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=200, polar_grid=False, grid_res=0.001,
-                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
+                                       verbose=True, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
+                                       pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                        simplex_n_iter=200, polar_grid=False, grid_res=0.001,
+                                        LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
+                                         LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
 
                 xfit, yfit = new[0].x, new[0].y
-
             except:
-                print('error in fitting positions...')
-                xfit, yfit = np.array([0, 0, 0, 0]), np.array([0, 0, 0, 0])
+                xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 print(new[0].m[0], np.isfinite(new[0].m[0]))
