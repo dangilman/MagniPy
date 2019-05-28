@@ -2,6 +2,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 from MagniPy.Analysis.KDE.kde import *
 import numpy as np
+from MagniPy.Analysis.KDE.kde_util import NDgaussian
 
 class TriPlot(object):
 
@@ -20,7 +21,7 @@ class TriPlot(object):
     cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
 
-    def __init__(self, parameter_names, parameter_ranges, chains):
+    def __init__(self, parameter_names, parameter_ranges, density_fpaths):
 
         """
         :param parameter_names: param names (dictionary)
@@ -31,12 +32,69 @@ class TriPlot(object):
         N_realizations (n_pert), N_posteriors (n_lenses))
 
         """
+
         self.param_names = parameter_names
         self.parameter_ranges = parameter_ranges
 
-        self.chains = chains
-
         self._computed_densities = {}
+
+        self._density_fpaths = density_fpaths
+
+        self._nchains = len(density_fpaths)
+
+        self._pnames_ordered, self.density = self._load_density(density_fpaths)
+
+    def reset(self):
+
+        self._pnames_ordered, self.density = self._load_density(self._density_fpaths)
+
+    def _load_projection_1D(self, pname, idx):
+
+        sum_inds = []
+        for i, name in enumerate(self._pnames_ordered):
+            if pname != name:
+                sum_inds.append(len(self._pnames_ordered) - (i+1))
+
+        projection = np.sum(self.density[idx], tuple(sum_inds))
+
+        return projection
+
+    def _load_projection_2D(self, p1, p2, idx):
+
+        sum_inds = []
+        for i, name in enumerate(self._pnames_ordered):
+            if p1 != name and p2 != name:
+                sum_inds.append(len(self._pnames_ordered) - (i+1))
+
+        tpose = False
+        for name in self._pnames_ordered:
+            if name == p1:
+                break
+            elif name == p2:
+                tpose = True
+                break
+
+        projection = np.sum(self.density[idx], tuple(sum_inds))
+        if tpose:
+            projection = projection.T
+
+        return projection
+
+    def _load_density(self, chain_paths):
+
+        density = []
+        for paths in chain_paths:
+            with open(paths[0], 'r') as f:
+                lines = f.readlines()
+
+            pnames_ordered = lines[0].split(' ')
+            nbins = int(pnames_ordered[-1])
+            pnames_ordered = pnames_ordered[0:-1]
+
+            shape = [nbins] * len(pnames_ordered)
+            density.append(np.loadtxt(paths[1]).reshape(tuple(shape)))
+
+        return pnames_ordered, density
 
     def set_cmap(self, newcmap, color_eval = 0.9, marginal_col = None):
 
@@ -58,8 +116,8 @@ class TriPlot(object):
         if contour_colors is None:
             contour_colors = self._default_contour_colors
 
-        for i, chain in enumerate(self.chains):
-            self._make_joint_i(chain, p1, p2, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+        for i in range(self._nchains):
+            self._make_joint_i(p1, p2, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file=load_from_file,
                                  transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale)
 
@@ -82,15 +140,15 @@ class TriPlot(object):
         if contour_colors is None:
             contour_colors = self._default_contour_colors
         self._auto_scale = []
-        for i, chain in enumerate(self.chains):
-            self._make_triplot_i(chain, axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+        for i in range(self._nchains):
+            self._make_triplot_i(axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
                                  transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale,
                                  label_scale = label_scale, cmap = self.cmap_call)
 
         for k in range(len(param_names)):
             scales = []
-            for c in range(0,len(self.chains)):
+            for c in range(0, self._nchains):
                 scales.append(self._auto_scale[c][k])
             maxh = np.max(scales) * 1.1
             axes[int((len(param_names)+1) * k)].set_ylim(0, maxh)
@@ -116,14 +174,14 @@ class TriPlot(object):
         if contour_colors is None:
             contour_colors = self._default_contour_colors
         self._auto_scale = []
-        for i, chain in enumerate(self.chains):
-            self._make_marginal_i(chain, p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+        for i in range(self._nchains):
+            self._make_marginal_i(p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file = load_from_file,
                                  transpose_idx = transpose_idx, bandwidth_scale = bandwidth_scale,
                                   label_scale = label_scale, cmap=cmap)
 
         scales = []
-        for c in range(0,len(self.chains)):
+        for c in range(0, self._nchains):
             scales.append(self._auto_scale[c][0])
         maxh = np.max(scales) * 1.1
         ax.set_ylim(0, maxh)
@@ -133,8 +191,7 @@ class TriPlot(object):
 
         self._auto_scale = []
 
-
-    def _make_marginal_i(self, chain, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+    def _make_marginal_i(self, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
                         load_from_file = True, transpose_idx=None,
@@ -142,8 +199,7 @@ class TriPlot(object):
 
         autoscale = []
 
-        density = chain.get_projection([p1], bandwidth_scale,
-                                       load_from_file=load_from_file)
+        density = self._load_projection_1D(p1, color_index)
 
         xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(p1)
         pmin, pmax = self._get_param_minmax(p1)
@@ -221,13 +277,12 @@ class TriPlot(object):
         self._auto_scale.append(autoscale)
 
 
-    def _make_joint_i(self, chain, p1, p2, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+    def _make_joint_i(self, p1, p2, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
                         load_from_file = True, transpose_idx=None, bandwidth_scale = 0.7):
 
-        density = chain.get_projection([p1, p2], bandwidth_scale,
-                                       load_from_file=load_from_file)
+        density = self._load_projection_2D(p1, p2, color_index)
 
         extent, aspect = self._extent_aspect([p1, p2])
         pmin1, pmax1 = extent[0], extent[1]
@@ -279,7 +334,7 @@ class TriPlot(object):
             ax.axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
             ax.axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
 
-    def _make_triplot_i(self, chain, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
+    def _make_triplot_i(self, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14,
                         load_from_file = True, transpose_idx=None,
@@ -303,8 +358,7 @@ class TriPlot(object):
 
                 if col < marg_in_row:
 
-                    density = chain.get_projection([param_names[row], param_names[col]], bandwidth_scale,
-                                                   load_from_file=load_from_file)
+                    density = self._load_projection_2D(param_names[row], param_names[col], color_index)
 
                     if transpose_idx is not None and plot_index in transpose_idx:
                         print(param_names[row],param_names[col])
@@ -382,8 +436,9 @@ class TriPlot(object):
                     marg_done = True
                     marg_in_row += 1
 
-                    density = chain.get_projection([param_names[col]], bandwidth_scale,
-                                                   load_from_file)
+                    #density = chain.get_projection([param_names[col]], bandwidth_scale,
+                    #                               load_from_file)
+                    density = self._load_projection_1D(param_names[col], color_index)
 
                     xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
                     pmin, pmax = self._get_param_minmax(param_names[col])

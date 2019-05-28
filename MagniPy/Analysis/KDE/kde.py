@@ -39,6 +39,7 @@ class KDE_nD(object):
         h = self.bandwidth_scale * self._scotts_factor(len(coordinates[0]), dimension)
 
         for i, coord in enumerate(coordinates):
+            npoints = len(coord) + 1
             histbins.append(np.linspace(ranges[i][0], ranges[i][-1], len(coord) + 1))
 
         H, _ = np.histogramdd(data, range=ranges, bins = histbins, weights=weights)
@@ -56,6 +57,7 @@ class KDE_nD(object):
 
             density *= boundary_normalization ** -1
 
+        #norm = npoints ** dimension / np.sum(density) ** -1
         return density
 
     def __call__(self, data, points, ranges, weights=None, boundary_order = 1):

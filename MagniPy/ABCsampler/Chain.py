@@ -2,6 +2,7 @@ import pandas
 from MagniPy.ABCsampler.ChainOps import *
 import numpy as numpy
 from MagniPy.Analysis.KDE.kde import KDE_nD
+from MagniPy.Analysis.KDE.kde_util import NDgaussian
 from time import time
 
 class JointDensity(object):
@@ -209,7 +210,8 @@ class ChainFromSamples(object):
             self.lenses.append(new_lens)
 
     def eval_KDE(self, bandwidth_scale = 1, tol = 2500, nkde_bins = 20,
-                 save_to_file = True, smooth_KDE = True, weights = None):
+                 save_to_file = True, smooth_KDE = True, filename = '',
+                 weights_global = None, weights_single = None):
 
         if not hasattr(self, '_kernel'):
 
@@ -227,33 +229,53 @@ class ChainFromSamples(object):
         print_time = True
         counter = 0
 
+        if weights_single is None:
+            weights_single = [None] * len(self.lenses)
+        else:
+            assert len(weights_single) == len(self.lenses)
+
         for n in range(len(self.lenses)):
 
             t0 = time()
 
             density_n = 0
-            param_weight = None
 
             for p in range(0, self.n_pert):
 
+                params_weights = None
                 data = np.empty(shape = (tol, len(self.params_varied)))
+
                 for i, pi in enumerate(self.params_varied):
                     data[:,i] = posteriors[n][p].samples[pi]
 
-                    #if weights is not None and pi in weights.keys():
+                    if weights_global is not None and n == 0:
 
-                    #    if pi in weights.keys():
-                    #        if param_weight is None:
-                    #            param_weight = weights[pi](data[:,i])
-                    #        else:
-                    #            param_weight *= weights[pi](data[:,i])
+                        if pi in weights_global.keys():
+
+                            diff = data[:, i] - weights_global[pi][0]
+                            sigma = weights_global[pi][1]
+                            new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
+                            if params_weights is None:
+                                params_weights = new_weight
+                            else:
+                                params_weights *= new_weight
+
+                    if weights_single[n] is not None and pi in weights_single:
+                        diff = data[:,i] - weights_single[pi][0]
+                        sigma = weights_single[pi][1]
+                        new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
+                        if params_weights is None:
+                            params_weights = new_weight
+                        else:
+                            params_weights *= new_weight
 
                 if smooth_KDE:
-                    density_n += self._kernel(data, points, ranges, weights=None)
+                    density_n += self._kernel(data, points, ranges, weights=params_weights)
                 else:
                     density_n += numpy.histogramdd(data, range = ranges,
                                                    density=True, bins=nkde_bins,
-                                                   weights=None)[0]
+                                                   weights=params_weights)[0]
+
 
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
@@ -266,9 +288,22 @@ class ChainFromSamples(object):
 
         self.density = density
 
+        if save_to_file:
 
+            if not os.path.exists(self.chain_file_path + 'computed_densities/'):
+                create_directory(self.chain_file_path + 'computed_densities/')
 
-        self._density_projections(density, save_to_file, bandwidth_scale)
+            with open(self.chain_file_path + 'computed_densities/'+filename+'pnames_ordered.txt', 'w') as f:
+                pname_string = ''
+                for param_name in self.params_varied:
+                    pname_string += param_name + ' '
+                f.write(pname_string)
+                f.write(str(int(np.shape(self.density)[0])))
+
+            np.savetxt(self.chain_file_path+'computed_densities/'+filename+'_density.txt',
+                       X = self.density.ravel())
+
+        #self._density_projections(density, save_to_file, bandwidth_scale)
 
     def get_projection(self, params, bandwidth_scale=None, load_from_file = True):
 
