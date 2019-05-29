@@ -169,11 +169,17 @@ def halo_model_args(params):
                  'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main',
                  'LOS_normalization', 'RocheNorm', 'RocheNu', 'break_scale']
 
+        if 'parent_m200' in params.keys():
+            assert 'log_m_parent' not in params.keys()
+
         for name in names:
             if name in params.keys():
                 args.update({name: params[name]})
 
         args.update({'mass_func_type':mass_func_type})
+
+        if 'log_m_parent' in params.keys():
+            args.update({'parent_m200': 10**params['log_m_parent']})
 
         if 'a0_area' in params.keys():
             args.update({'a0_area': params['a0_area']})
@@ -394,10 +400,14 @@ def initialize(chain_ID, core_index):
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
     chain_keys['write_header'] = True
+    readout_best = True
 
     if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
         values = np.loadtxt(output_path + 'fluxes.txt')
         N_lines = int(np.shape(values)[0])
+
+        if N_lines > chain_keys['Nsamples']*0.5:
+            readout_best = False
 
         if N_lines >= chain_keys['Nsamples']:
             return False, False, False, False
@@ -416,4 +426,4 @@ def initialize(chain_ID, core_index):
     else:
         shutil.copy2(lensmodel_location + 'lensmodel', path_2_lensmodel)
 
-    return chain_keys, chain_keys_to_vary, output_path, True
+    return chain_keys, chain_keys_to_vary, output_path, True, readout_best

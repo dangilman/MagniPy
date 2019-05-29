@@ -50,7 +50,8 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, output_path, write_header):
+def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
+                    output_path, write_header, readout_best):
 
     chaindata = []
     parameters = []
@@ -58,7 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 2
     verbose = False
 
     current_best = 1e+6
@@ -156,7 +157,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
         if N_computed%readout_steps == 0:
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
-            if save_statistic:
+            if save_statistic and readout_best:
                 readout_realizations(current_best_realization, current_best_fullrealization, output_path, current_best,
                                      params_best, best_fluxes)
             start = True
@@ -170,7 +171,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver, o
 
 def runABC(chain_ID='',core_index=int):
 
-    chain_keys,chain_keys_to_vary,output_path,run = initialize(chain_ID,core_index)
+    chain_keys,chain_keys_to_vary,output_path,run, readout_best = initialize(chain_ID,core_index)
 
     if run is False:
         return
@@ -205,7 +206,7 @@ def runABC(chain_ID='',core_index=int):
     constructor = pyHalo(np.round(chain_keys['zlens'],2), np.round(chain_keys['zsrc'],2))
 
     run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
-                        chain_keys['write_header'])
+                        chain_keys['write_header'], readout_best)
 
 def write_params(params,fname,header, mode='append'):
 
@@ -269,6 +270,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_full/', 27001)
+#runABC(prefix+'data/lens1422/', 1)
 
 
