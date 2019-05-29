@@ -167,7 +167,7 @@ def halo_model_args(params):
 
         names = ['log_mlow', 'log_mhigh', 'log_m_break', 'cone_opening_angle', 'opening_angle_factor','power_law_index',
                  'parent_m200', 'c_scale', 'c_power', 'break_index', 'mdef_los', 'mdef_main',
-                 'LOS_normalization']
+                 'LOS_normalization', 'RocheNorm', 'RocheNu', 'break_scale']
 
         for name in names:
             if name in params.keys():
