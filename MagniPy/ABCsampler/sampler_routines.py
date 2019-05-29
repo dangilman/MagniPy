@@ -248,6 +248,23 @@ def readout_realizations(optimized_lens_model, full_lens_model, outputpath, stat
     zlist, lens_list, arg_list, _ = optimized_lens_model.lenstronomy_lists()
     zlistfull, lens_listfull, arg_listfull, _ = full_lens_model.lenstronomy_lists()
 
+    full_masses = []
+    full_c = []
+    for halo in full_lens_model.realization.halos:
+        full_masses.append(halo.mass)
+        full_c.append(halo.mass_def_arg[0])
+
+    full_masses = np.log10(full_masses)
+    full_c = np.array(full_c)
+
+    masses = []
+    c = []
+    for halo in optimized_lens_model.realization.halos:
+        masses.append(halo.mass)
+        c.append(halo.mass_def_arg[0])
+    masses = np.log10(masses)
+    c = np.array(c)
+
     with open(outputpath+'best_params.txt', 'w') as f:
         f.write(str(statistic)+'\n')
         for fi in fluxes:
@@ -260,13 +277,17 @@ def readout_realizations(optimized_lens_model, full_lens_model, outputpath, stat
 
         f.write('redshifts = '+str(repr(list(zlist)))+'\n\n')
         f.write('lens_model_list = '+str(repr(lens_list)) + '\n\n')
-        f.write('lens_model_args = '+str(repr(arg_list)))
+        f.write('lens_model_args = '+str(repr(arg_list)) + '\n\n')
+        f.write('masses = np.'+str(repr(masses))+'\n\n')
+        f.write('concentration = np.' + str(repr(c)) + '\n\n')
 
     with open(outputpath + 'best_fullrealization.txt', 'w') as f:
 
         f.write('redshifts = '+str(repr(list(zlistfull)))+'\n\n')
         f.write('lens_model_list = '+str(repr(lens_listfull)) + '\n\n')
-        f.write('lens_model_args = '+str(repr(arg_listfull)))
+        f.write('lens_model_args = '+str(repr(arg_listfull)) + '\n\n')
+        f.write('masses = np.' + str(repr(full_masses)) + '\n\n')
+        f.write('concentration = np.' + str(repr(full_c)) + '\n\n')
 
 def summary_stat_flux(f_obs, f_model):
 

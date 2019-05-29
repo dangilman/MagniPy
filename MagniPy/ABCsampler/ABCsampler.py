@@ -13,7 +13,7 @@ def initialize_macro(solver,data,init):
                                                  tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
+                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=1,
                                                  tol_simplex_func=0.001)
 
     return model
