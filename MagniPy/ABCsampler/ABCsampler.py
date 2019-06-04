@@ -277,6 +277,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens0435/', 1)
+#runABC(prefix+'data/coldSIDM_full/', 37000)
 
 

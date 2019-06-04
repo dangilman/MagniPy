@@ -356,7 +356,7 @@ class ChainFromSamples(object):
         for keys in info.keys():
             pname = info[keys]
             if pname['prior_type'] == 'Gaussian':
-                pranges[keys] = [float(pname['mean']) - float(pname['sigma'])*2,float(pname['mean'])+float(pname['sigma'])*2]
+                pranges[keys] = [float(pname['mean']) - float(pname['sigma'])*4,float(pname['mean'])+float(pname['sigma'])*4]
             elif pname['prior_type'] == 'Uniform':
                 pranges[keys] = [float(pname['low']),float(pname['high'])]
 

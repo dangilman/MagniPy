@@ -34,101 +34,9 @@ def set_chain_keys(keys_to_vary, **kwargs):
 
     return {'main_keys': kwargs, 'tovary_keys': keys_to_vary}
 
-def set_chain_keys_old(zlens=None, zsrc=None, source_size_kpc=None, multiplane=None, SIE_gamma=2,mindis_front=0.5,
-                   mindis_back=0.4, log_masscut_front=None, log_masscut_back=None, sigmas=None, grid_rmax=None, grid_res=None, raytrace_with=None,
-                   solve_method=None, lensmodel_varyflags=None, data_to_fit=None, chain_ID=None, Nsamples=None,
-                   mass_func_type=None,log_mL=None, log_mH=None, a0_area=None, A0=None, logmhm=None, core_ratio = None,
-                   zmin=None, zmax=None, params_to_vary={},chain_description='',
-                   chain_truths={}, Ncores=int,cores_per_lens=int, halo_args_init={},
-                   position_sigma=None, flux_sigma=None, Nsamples_perlens=None,
-                   LOS_normalization = None, LOS_mass_sheet_front = None, LOS_mass_sheet_back = None):
-
-    chain_keys = {}
-
-    chain_keys['zlens'] = zlens
-    chain_keys['zsrc'] = zsrc
-    chain_keys['source_size_kpc'] = source_size_kpc
-
-    if SIE_gamma is not None:
-        chain_keys['SIE_gamma'] = SIE_gamma
-
-    chain_keys['multiplane'] = multiplane
-
-    for param in halo_args_init.keys():
-        chain_keys.update({param: halo_args_init[param]})
-
-    chain_keys['mindis_front'] = mindis_front
-    chain_keys['mindis_back'] = mindis_back
-    chain_keys['log_masscut_front'] = log_masscut_front
-    chain_keys['log_masscut_back'] = log_masscut_back
-
-    chain_keys['grid_rmax'] = grid_rmax
-    chain_keys['grid_res'] = grid_res
-    chain_keys['raytrace_with'] = raytrace_with
-    chain_keys['solve_method'] = solve_method
-    if lensmodel_varyflags is None:
-        lensmodel_varyflags = ['1', '1', '1', '1', '1', '1', '1', '0', '0', '0']
-    chain_keys['varyflags'] = lensmodel_varyflags
-
-    chain_keys['x_to_fit'] = data_to_fit.x.tolist()
-    chain_keys['y_to_fit'] = data_to_fit.y.tolist()
-    chain_keys['flux_to_fit'] = data_to_fit.m.tolist()
-    chain_keys['position_sigma'] = position_sigma
-    chain_keys['flux_sigma'] = flux_sigma
-    chain_keys['source'] = [data_to_fit.srcx, data_to_fit.srcy]
-
-    if sigmas is None:
-        sigmas = default_sigmas
-
-    if data_to_fit.t[1] == 0 and data_to_fit.t[2] == 0:
-        sigmas[-1] = [100] * 4
-
-    chain_keys['t_to_fit'] = data_to_fit.t.tolist()
-    chain_keys['sigmas'] = sigmas
-    chain_keys['chain_ID'] = chain_ID
-    chain_keys['output_folder'] = chain_keys['chain_ID'] + '/'
-
-    chain_keys['Nsamples'] = Nsamples
-    chain_keys['chain_description'] = chain_description
-    chain_keys['chain_truths'] = chain_truths
-    chain_keys['Ncores'] = Ncores
-    chain_keys['cores_per_lens'] = cores_per_lens
-    chain_keys['Nsamples_perlens'] = Nsamples_perlens
-
-    chain_keys['mass_func_type'] = mass_func_type
-    chain_keys['log_mL'] = log_mL
-    chain_keys['log_mH'] = log_mH
-    chain_keys['LOS_normalization'] = LOS_normalization
-    chain_keys['LOS_mass_sheet_front'] = LOS_mass_sheet_front
-    chain_keys['LOS_mass_sheet_back'] = LOS_mass_sheet_back
-
-    if a0_area is not None:
-        assert A0 is None
-        chain_keys['a0_area'] = a0_area
-
-    if logmhm is not None:
-        chain_keys['logmhm'] = logmhm
-
-    if zmin is not None:
-        chain_keys['zmin'] = zmin
-    if zmax is not None:
-        chain_keys['zmax'] = zmax
-
-    if core_ratio is not None:
-        chain_keys['core_ratio'] = core_ratio
-
-    chain_keys_to_vary = {}
-
-    for name in chain_keys.keys():
-        if name in params_to_vary.keys():
-            chain_keys_to_vary[name] = params_to_vary[name]
-
-    return {'main_keys': chain_keys, 'tovary_keys': chain_keys_to_vary}
-
 def write_param_dictionary(fname='', param_dictionary={}):
     with open(fname, 'w') as f:
         f.write(str(param_dictionary))
-
 
 def read_paraminput(file):
     with open(file, 'r') as f:
@@ -268,10 +176,9 @@ def read_macro_array(lens_system):
     shearPA = lensmodel.shear_theta
     gamma = lensmodel.lenstronomy_args['gamma']
 
-    if lens_system.satellite_position_lensed:
+    if lens_system._has_satellites and lens_system.satellite_position_lensed:
         physical_loc = lens_system._satellite_physical_location
         cenxphys, cenyphys = physical_loc[0], physical_loc[1]
-
         return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma, cenxphys, cenyphys])
     else:
         return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])

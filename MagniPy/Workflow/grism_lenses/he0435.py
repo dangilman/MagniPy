@@ -40,7 +40,7 @@ class Lens0435(Quad):
 
     has_satellite = True
     satellite_mass_model = ['SIS']
-    satellite_redshift = [0.76]
+    satellite_redshift = [0.78]
     satellite_convention = 'lensed'
     # from mass center
     satellite_pos_mass = np.array([-2.911, 2.339])
