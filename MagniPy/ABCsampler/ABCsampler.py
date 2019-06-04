@@ -106,7 +106,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             halo_args = halo_model_args(chain_keys_run)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
-            halo_args['log_m_break'] = 9.8
+
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
