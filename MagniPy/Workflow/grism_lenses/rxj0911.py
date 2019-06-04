@@ -13,7 +13,7 @@ class RXJ0911(Quad):
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.77, 2.80
+    zlens, zsrc = 0.77, 2.76
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -36,7 +36,7 @@ class RXJ0911(Quad):
 
     srcmin = 0.02
     srcmax = 0.05
-
+    has_satellite = True
     satellite_mass_model = ['SIS']
     satellite_pos_mass = [-0.767, 0.657]
     # satellite einstein radius from Blackburne et al. 2011

@@ -25,16 +25,17 @@ class LenstronomyWrap(object):
 
     def assemble(self,system):
 
-        zlist, lens_list, arg_list, supplement = system.lenstronomy_lists()
+        zlist, lens_list, arg_list, supplement, lensed_inds = system.lenstronomy_lists()
 
-        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,'redshift_list':zlist, 'supplement': supplement}
+        return {'lens_model_list':lens_list,'kwargs_lens':arg_list,'redshift_list':zlist,
+                'supplement': supplement, 'lensed_inds': lensed_inds}
 
     def get_lensmodel(self,lens_system):
 
         lists = self.assemble(lens_system)
 
         lensmodel = LensModel(lens_model_list=lists['lens_model_list'], lens_redshift_list=lists['redshift_list'],z_source=self.zsrc,cosmo=self.astropy_instance ,
-                         multi_plane=lens_system.multiplane, numerical_alpha_class = lists['supplement'])
+                         multi_plane=lens_system.multiplane, numerical_alpha_class = lists['supplement'], observed_convention_index=lists['lensed_inds'])
 
         return lensmodel,lists['kwargs_lens']
 
@@ -87,7 +88,7 @@ class LenstronomyWrap(object):
                               constrain_params=constrain_params,pso_compute_magnification=pso_compute_magnification,pso_convergence_mean=pso_convergence_mean,
                               tol_simplex_params=tol_simplex_params,tol_simplex_func=tol_simplex_func,
                               simplex_n_iterations=simplex_n_iter,optimizer_kwargs = optimizer_kwargs,
-                              chi2_mode=chi2_mode, tol_image=tol_image)
+                              chi2_mode=chi2_mode, tol_image=tol_image, observed_convention_index=lensmodel_kwargs['lensed_inds'])
 
         optimized_args, source, images = optimizer.optimize(n_particles,n_iterations,restart)
 

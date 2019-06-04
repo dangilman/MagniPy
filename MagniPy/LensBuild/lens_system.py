@@ -34,9 +34,18 @@ class LensSystem(object):
         self.satellite_mass_model = mass_model
         self.satellite_redshift = redshift
         self.satellite_kwargs = kwargs
+        self.satellite_position_lensed = False
+        if 'position_convention' in satellites.keys():
+            if satellites['position_convention'] == 'lensed':
+                self.satellite_position_lensed = True
+
+        if len(self.satellite_kwargs) > 1:
+            raise ValueError('more than 1 satellite not currently supported')
 
         assert len(mass_model) == len(redshift)
         assert len(redshift) == len(kwargs)
+
+        self._satellite_physical_location = np.array([kwargs[0]['center_x'], kwargs[0]['center_y']])
 
     def _build(self, halos_only = False):
 
@@ -48,6 +57,7 @@ class LensSystem(object):
             else:
                 self._halo_names, self._halo_redshifts, self._halo_kwargs, self.custom_class = [], [], [], None
 
+        lensed_inds = False
         if halos_only is False:
             main_names, main_redshift, main_args = self._unpack_main(self.main)
 
@@ -55,6 +65,9 @@ class LensSystem(object):
                 main_names += [model for model in self.satellite_mass_model]
                 main_redshift += [red_shift for red_shift in self.satellite_redshift]
                 main_args += [kwargs_sat for kwargs_sat in self.satellite_kwargs]
+
+                if self.satellite_position_lensed:
+                    lensed_inds = [len(main_names)-1]
 
             lens_model_names = main_names + self._halo_names
             lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)
@@ -65,7 +78,7 @@ class LensSystem(object):
             lens_model_redshifts = self._halo_redshifts
             lens_model_kwargs = self._halo_kwargs
 
-        return lens_model_names, lens_model_redshifts, lens_model_kwargs, self.custom_class
+        return lens_model_names, lens_model_redshifts, lens_model_kwargs, self.custom_class, lensed_inds
 
     def _unpack_main(self, main):
 
@@ -105,6 +118,6 @@ class LensSystem(object):
 
     def lenstronomy_lists(self, halos_only = False):
 
-        lens_list, zlist, arg_list, custom_class = self._build(halos_only=halos_only)
+        lens_list, zlist, arg_list, custom_class, lensed_position_inds = self._build(halos_only=halos_only)
 
-        return zlist,lens_list,arg_list, custom_class
+        return zlist,lens_list,arg_list, custom_class, lensed_position_inds

@@ -34,7 +34,7 @@ class Lens2026(Quad):
 
     gamma_min = 1.9
     gamma_max = 2.2
-
+    has_satellite = False
     srcmin = 0.02
     srcmax = 0.05
 

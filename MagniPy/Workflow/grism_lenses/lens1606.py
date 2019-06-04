@@ -38,6 +38,7 @@ class Lens1606(Quad):
     srcmin = 0.02
     srcmax = 0.05
 
+    has_satellite = True
     satellite_mass_model = ['SIS']
     # from mass center
     satellite_pos_mass = np.array([-0.307, -1.153])

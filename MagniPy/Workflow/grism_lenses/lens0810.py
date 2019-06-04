@@ -33,7 +33,7 @@ class Lens0810(Quad):
 
     gamma_min = 1.9
     gamma_max = 2.3
-
+    has_satellite = False
     srcmin = 0.005
     srcmax = 0.05
 

@@ -15,7 +15,7 @@ class Lens1330(Quad):
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.5, 1.5
+    zsrc, zlens = 1.38, 0.37
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -42,6 +42,8 @@ class Lens1330(Quad):
     #satellite_mass_model = ['SERSIC_ELLIPSE_KAPPA']
     # from mass center
     satellite_pos_mass = np.array([0, 0])
+
+    has_satellite = False
 
     disk_q, disk_angle = 0.2, 180 * np.arctan(y[0] / x[0]) / np.pi
     disk_angle += 25

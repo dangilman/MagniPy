@@ -5,16 +5,16 @@ from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
 
-class Lens2038(Quad):
+class Lens0435(Quad):
 
-    x = np.array([-1.474, 0.832, -0.686, 0.706])
-    y = np.array([0.488, -1.22, -1.191, 0.869])
-    m = np.array([0.862069, 1., 0.793103, 0.396552])
-    sigma_x = np.array([0.005]*4)
-    sigma_y = np.array([0.005]*4)
+    x = np.array([1.272, 0.306, -1.152, -0.384])
+    y = np.array([0.156, -1.092, -0.636, 1.026])
+    m = np.array([0.96, 0.976, 1., 0.65])
 
+    sigma_x = np.array([0.008]*4)
+    sigma_y = np.array([0.008]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zsrc, zlens = 0.78, 0.23
+    zlens, zsrc = 0.45,1.69
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -22,7 +22,7 @@ class Lens2038(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens2036'
+    identifier = 'lens0435'
 
     flux_ratio_index = 0
 
@@ -32,13 +32,21 @@ class Lens2038(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    has_satellite = False
-
-    gamma_min = 2.1
-    gamma_max = 2.4
+    gamma_min = 1.9
+    gamma_max = 2.2
 
     srcmin = 0.02
     srcmax = 0.05
+
+    has_satellite = True
+    satellite_mass_model = ['SIS']
+    satellite_redshift = [0.76]
+    satellite_convention = 'lensed'
+    # from mass center
+    satellite_pos_mass = np.array([-2.911, 2.339])
+    # from light center
+    #satellite_pos_light = [-0.1255, -1.3517]
+    satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
@@ -48,7 +56,18 @@ class Lens2038(Quad):
         else:
             data = self.data
 
-        optdata, optmodel = self._fit(data, self.solver, kwargs_fit, macromodel_init=macro_init)
+        satellites = {}
+        satellites['lens_model_name'] = self.satellite_mass_model
+        satellites['z_satellite'] = self.satellite_redshift
+        satellites['kwargs_satellite'] = self.satellite_kwargs
+        satellites['position_convention'] = self.satellite_convention
+
+        kwargs_fit.update({'satellites': satellites})
+
+        kwargs_fit.update({'multiplane': True})
+
+        optdata, optmodel = self._fit(data, self.solver, kwargs_fit, macromodel_init=macro_init,
+                                      sat_pos_lensed=True)
 
         if print_output:
             self._print_output(optdata[0], optmodel[0])

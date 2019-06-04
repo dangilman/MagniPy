@@ -33,7 +33,7 @@ class J0405(Quad):
 
     gamma_min = 1.95
     gamma_max = 2.3
-
+    has_satellite = False
     srcmin = 0.02
     srcmax = 0.05
 

@@ -13,7 +13,7 @@ class WFI2033(Quad):
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.66, 1.66
+    zsrc, zlens = 1.66, 0.661
     # source redshift from Motta et al
 
     solver = SolveRoutines(zlens, zsrc)
@@ -37,7 +37,7 @@ class WFI2033(Quad):
 
     srcmin = 0.02
     srcmax = 0.05
-
+    has_satellite = True
     satellite_mass_model = ['SIS']
     satellite_pos_mass = [0.245, 2.037]
     theta_E = (0.389*0.334)**0.5

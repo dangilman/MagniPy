@@ -59,7 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 2
+    readout_steps = 50
     verbose = False
 
     current_best = 1e+6
@@ -85,6 +85,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             for i,pname in enumerate(keys_to_vary.keys()):
 
                 chain_keys_run[pname] = samples[i]
+
                 #print(pname, chain_keys_run[pname])
             if not init_macro:
                 print('initializing macromodels.... ')
@@ -104,15 +105,20 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             #print(chain_keys_run['source_size_kpc'])
             halo_args = halo_model_args(chain_keys_run)
 
+            chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
+            halo_args['log_m_break'] = 9.8
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
+
             try:
+
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
                                        verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
                                        pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=0.001,
                                         LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                         LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'])
+                                         LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
+                                                                    satellites=chain_keys_run['satellites'])
 
                 xfit, yfit = new[0].x, new[0].y
             except:
@@ -123,7 +129,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
                 if np.isfinite(new[0].m[0]):
                     break
 
-        macro_fit = optmodel[0].lens_components[0]
+        macro_fit = optmodel[0]
 
         N_computed += 1
         if N_computed%readout_steps == 0 and verbose:
@@ -141,7 +147,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
                 current_best_fullrealization = \
-                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos[0],multiplane=True)
+                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos[0],
+                                        multiplane=True, satellites=chain_keys_run['satellites'])
                 params_best = samples_array
                 best_fluxes = new[0].m
 
@@ -270,6 +277,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens1422/', 1)
+#runABC(prefix+'data/lens0435/', 1)
 
 

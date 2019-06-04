@@ -207,7 +207,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                                                                        simplex_n_iter=simplex_n_iter,
                                                                                        optimizer_kwargs=optimizer_args,
                                                                                        finite_source_magnification=False,
-                                                                                       chi2_mode='source')
+                                                                                       chi2_mode='source', record_satellite_physical=True)
 
             path_x, path_y, path_redshifts, path_Tzlist = out_kwargs['path_x'], out_kwargs['path_y'], \
                                                           out_kwargs['path_redshifts'], out_kwargs[

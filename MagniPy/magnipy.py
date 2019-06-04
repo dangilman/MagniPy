@@ -81,7 +81,7 @@ class Magnipy:
                                     particle_swarm = True, restart = 1, constrain_params=None, return_ray_path = False,
                                     pso_convergence_mean=None, pso_compute_magnification=None, tol_simplex_params=None, tol_simplex_func=None,
                                     simplex_n_iter=None, optimizer_kwargs = {}, finite_source_magnification = True, chi2_mode = 'source',
-                                    tol_image = None):
+                                    tol_image = None, record_satellite_physical=False):
 
         data, opt_sys = [], []
 
@@ -124,7 +124,9 @@ class Magnipy:
 
                 if return_ray_path:
 
-                    x_path, y_path, redshifts, Tzlist = lensModel._ray_shooting_steps(kwargs_lens)
+                    x_path, y_path, redshifts, Tzlist = lensModel._full_lensmodel.\
+                        lens_model.ray_shooting_partial_steps(np.zeros_like(x_opt), np.zeros_like(y_opt),x_opt,
+                                       y_opt, 0, self.zsrc, kwargs_lens)
 
                     optimizer_kwargs.update({'path_x': x_path})
                     optimizer_kwargs.update({'path_y': y_path})
@@ -150,6 +152,19 @@ class Magnipy:
             new_data.sort_by_pos(data2fit.x,data2fit.y)
             data.append(new_data)
             opt_sys.append(optimized_sys)
+
+            if opt_sys[-1]._has_satellites and record_satellite_physical:
+
+                if opt_sys[-1].satellite_position_lensed:
+
+                    physical_kwargs = lensModel._full_lensmodel. \
+                        lens_model._convention(kwargs_lens)
+                    physical_x, physical_y = physical_kwargs[2]['center_x'], physical_kwargs[2]['center_y']
+
+                    opt_sys[-1]._satellite_physical_location = np.array([physical_x, physical_y])
+                else:
+                    opt_sys[-1]._satellite_physical_location = np.array([kwargs_lens[2]['center_x'],
+                                                                      kwargs_lens[2]['center_y']])
 
         return data, opt_sys, optimizer_kwargs, {'kwargs_lens': kwargs_lens, 'lensModel': lensModel}
 

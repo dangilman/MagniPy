@@ -20,7 +20,8 @@ class MacroMCMC(object):
     def run(self, macromodel=None,
             tovary={'source_size_kpc': [0.01, 0.05], 'gamma': [1.95, 2.2]}, N=500,
             zlens=0.5, optimizer_kwargs={}, write_to_file=False, fname=None,
-            satellite_kwargs = None, satellite_mass_model = None, flux_ratio_index = None):
+            satellite_kwargs = None, satellite_mass_model = None, satellite_redshift=None,
+            satellite_convention=None, flux_ratio_index = None):
 
         assert flux_ratio_index is not None
         flux_ratio_index = int(flux_ratio_index)
@@ -57,8 +58,6 @@ class MacroMCMC(object):
                 args.update({argname: optimizer_kwargs[argname]})
 
             macro = deepcopy(macromodel)
-            if satellite_mass_model is not None:
-                satellite_redshift = [zlens]*len(satellite_mass_model)
 
             for pname in tovary.keys():
                 param_names = ['satellite_theta_E', 'satellite_x', 'satellite_y', 'satellite_redshift',
@@ -140,7 +139,8 @@ class MacroMCMC(object):
 
             if satellite_mass_model is not None:
                 satellites = {'lens_model_name': satellite_mass_model, 'z_satellite': satellite_redshift,
-                              'kwargs_satellite': [satellite_kwargs]}
+                              'kwargs_satellite': [satellite_kwargs],
+                              'position_convention': satellite_convention}
             else:
                 satellites = None
 
@@ -189,11 +189,19 @@ class MacroMCMC(object):
             if 'satellite_theta_E' in tovary.keys():
                 satellite_thetaE.append(optmodel.satellite_kwargs[0]['theta_E'])
             if 'satellite_x' in tovary.keys():
-                satellite_x.append(optmodel.satellite_kwargs[0]['center_x'])
+                if optmodel.satellite_position_lensed:
+                    physloc = optmodel._satellite_physical_location
+                    satellite_x.append(physloc[0])
+                else:
+                    satellite_x.append(optmodel.satellite_kwargs[0]['center_x'])
             if 'satellite_y' in tovary.keys():
-                satellite_y.append(optmodel.satellite_kwargs[0]['center_y'])
+                if optmodel.satellite_position_lensed:
+                    physloc = optmodel._satellite_physical_location
+                    satellite_y.append(physloc[1])
+                else:
+                    satellite_y.append(optmodel.satellite_kwargs[0]['center_y'])
             if 'satellite_redshift' in tovary.keys():
-                z_sat.append(satellite_redshift)
+                z_sat.append(satellite_redshift[0])
             if 'satellite_keff' in tovary.keys():
                 satellite_keff.append(optmodel.satellite_kwargs[0]['k_eff'])
             if 'satellite_reff' in tovary.keys():
@@ -218,6 +226,7 @@ class MacroMCMC(object):
 
             gamma.append(gammavalue)
             source_size.append(srcsize * 1000)
+
             cen_x.append(modelargs['center_x'])
             cen_y.append(modelargs['center_y'])
 
@@ -257,7 +266,7 @@ class MacroMCMC(object):
 
         param_order = ['Rein', 'shear', 'shearPA', 'ellip', 'ellipPA', 'gamma', 'srcsize', 'centroid_x', 'centroid_y']
 
-        supp = ['G2x', 'G2y', 'G2thetaE', 'G2z', 'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
+        supp = ['G2x', 'G2y', 'G2thetaE', 'G2redshift', 'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
 
         for supp_param in supp:
             if supp_param in full_dictionary.keys() and len(full_dictionary[supp_param])>0:

@@ -74,6 +74,20 @@ class SolveRoutines(Magnipy):
         optimized_data[0].set_mag(fluxes)
         optimized_data[0].sort_by_pos(datatofit.x,datatofit.y)
 
+        if satellites is not None:
+
+            if 'position_convention' in satellites.keys() and \
+                    satellites['position_convention'] == 'lensed':
+
+                physical_kwargs = keywords_lensmodel['lensModel']._full_lensmodel.\
+                    lens_model._convention(keywords_lensmodel['kwargs_lens'])
+                physical_x, physical_y = physical_kwargs[2]['center_x'], physical_kwargs[2]['center_y']
+
+                model[0]._satellite_physical_location = np.array([physical_x, physical_y])
+            else:
+                model[0]._satellite_physical_location = np.array([keywords_lensmodel['kwargs_lens'][2]['center_x'],
+                                                          keywords_lensmodel['kwargs_lens'][2]['center_y']])
+
         return optimized_data, model, outputs
 
     def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
@@ -84,7 +98,7 @@ class SolveRoutines(Magnipy):
                                    constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=5e-3, tol_simplex_func = 0.05,
                                    simplex_n_iter=300, LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8,
-                                   chi2_mode='source', tol_image = 0.005, satellites=None, use_finite_source = True):
+                                   chi2_mode='source', tol_image = 0.005, satellites=None, use_finite_source=True):
 
 
         if source_shape is None:
@@ -129,7 +143,8 @@ class SolveRoutines(Magnipy):
                                                                  pso_compute_magnification=pso_compute_magnification,
                                                                  tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
                                                                  simplex_n_iter=simplex_n_iter, chi2_mode = chi2_mode, tol_image = tol_image,
-                                                                       finite_source_magnification=use_finite_source)
+                                                                       finite_source_magnification=use_finite_source,
+                                                                       record_satellite_physical=True)
 
         return optimized_data,model
 

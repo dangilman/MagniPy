@@ -236,9 +236,30 @@ def write_shear_values(fname, m, values):
             towrite = str(values[row,0]) + ' ' + str(values[row,1]) + ' ' + str(values[row,2]) + '\n'
             f.write(towrite)
 
-def read_macro_array(lensmodel):
+def update_satellites(chain_keys_run, params_varied):
+
+    if chain_keys_run['satellites'] is None:
+        return chain_keys_run['satellites']
+
+    sat = deepcopy(chain_keys_run['satellites'])
+
+    if 'satellite_x' in params_varied:
+        sat['kwargs_satellite'][0]['center_x'] = chain_keys_run['satellite_x']
+    if 'satellite_y' in params_varied:
+        sat['kwargs_satellite'][0]['center_y'] = chain_keys_run['satellite_y']
+    if 'satellite_thetaE' in params_varied:
+        sat['kwargs_satellite'][0]['theta_E'] = chain_keys_run['satellite_thetaE']
+    if 'satellite_z' in params_varied:
+        sat['z_satellite'] = [chain_keys_run['satellite_z']]
+
+    return sat
+
+def read_macro_array(lens_system):
+
+    lensmodel = lens_system.lens_components[0]
 
     rein = lensmodel.lenstronomy_args['theta_E']
+
     cenx, ceny = lensmodel.lenstronomy_args['center_x'], lensmodel.lenstronomy_args['center_y']
     ellipandPA = lensmodel.ellip_PA_polar()
     ellip = ellipandPA[0]
@@ -247,12 +268,18 @@ def read_macro_array(lensmodel):
     shearPA = lensmodel.shear_theta
     gamma = lensmodel.lenstronomy_args['gamma']
 
-    return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
+    if lens_system.satellite_position_lensed:
+        physical_loc = lens_system._satellite_physical_location
+        cenxphys, cenyphys = physical_loc[0], physical_loc[1]
+
+        return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma, cenxphys, cenyphys])
+    else:
+        return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
 
 def readout_realizations(optimized_lens_model, full_lens_model, outputpath, statistic, params, fluxes):
 
-    zlist, lens_list, arg_list, _ = optimized_lens_model.lenstronomy_lists()
-    zlistfull, lens_listfull, arg_listfull, _ = full_lens_model.lenstronomy_lists()
+    zlist, lens_list, arg_list, _, _ = optimized_lens_model.lenstronomy_lists()
+    zlistfull, lens_listfull, arg_listfull, _, _ = full_lens_model.lenstronomy_lists()
 
     full_masses = []
     full_c = []
