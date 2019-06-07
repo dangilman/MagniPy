@@ -1,5 +1,51 @@
 from MagniPy.util import polar_to_cart
 import numpy as np
+from lenstronomy.LensModel.lens_model import LensModel
+
+class Satellite(object):
+
+    def __init__(self, mass_model, redshift, kwargs, position_convention='phys'):
+
+        self._mass_model = mass_model
+        self._redshift = redshift
+        self._kwargs = kwargs
+        self._position_convention = position_convention
+
+        if self._position_convention != 'lensed':
+            x, y = self.location
+            self.set_physical_location(x, y)
+
+    @property
+    def convention(self):
+
+        return self._position_convention
+
+    def set_physical_location(self, xphys, yphys):
+
+        self._lensed_x, self._lensed_y = xphys, yphys
+
+    @property
+    def properties(self):
+
+        return self._mass_model, self._redshift, self._kwargs
+
+    @property
+    def location(self):
+
+        if self._position_convention == 'lensed':
+            return self._lensed_location
+        else:
+            return self._physical_location
+
+    @property
+    def _physical_location(self):
+
+        return self._kwargs['center_x'], self._kwargs['center_y']
+
+    @property
+    def _lensed_location(self):
+
+        return self._lensed_x, self._lensed_y
 
 class LensSystem(object):
 
@@ -27,25 +73,77 @@ class LensSystem(object):
 
     def satellites(self, satellites):
 
-        mass_model = satellites['lens_model_name']
-        redshift = satellites['z_satellite']
-        kwargs = satellites['kwargs_satellite']
+        self._satellite_inds = []
+        self._satellites = []
+        self._nsat = 0
 
-        self.satellite_mass_model = mass_model
-        self.satellite_redshift = redshift
-        self.satellite_kwargs = kwargs
-        self.satellite_position_lensed = False
-        if 'position_convention' in satellites.keys():
-            if satellites['position_convention'] == 'lensed':
-                self.satellite_position_lensed = True
+        for idx, (model_name, zsat, kwargs_sat) in enumerate(zip(satellites['lens_model_name'], satellites['z_satellite'],
+                                                satellites['kwargs_satellite'])):
+            self._nsat += 1
 
-        if len(self.satellite_kwargs) > 1:
-            raise ValueError('more than 1 satellite not currently supported')
+            if 'position_convention' in satellites.keys() and satellites['position_convention'][idx] == 'lensed':
+                convention = 'lensed'
+            else:
+                convention = 'phys'
 
-        assert len(mass_model) == len(redshift)
-        assert len(redshift) == len(kwargs)
+            self._satellites.append(Satellite(model_name, zsat, kwargs_sat, convention))
 
-        self._satellite_physical_location = np.array([kwargs[0]['center_x'], kwargs[0]['center_y']])
+            self._satellite_inds.append(idx + 2)
+
+    def get_satellite_physical_location_fromkwargs(self, z_source, i_max=None):
+
+        kwargs_lens, lensModel = self.getlensModel(z_source)
+
+        kwargs_lens = lensModel.lens_model._convention(kwargs_lens)
+
+        coords = []
+
+        if i_max is None:
+            i_max = len(kwargs_lens)
+
+        for i in range(self._nmacro, i_max):
+
+            xphys, yphys = kwargs_lens[i]['center_x'], kwargs_lens[i]['center_y']
+
+            coords.append([xphys, yphys])
+
+        return coords
+
+    def set_satellite_physical_location(self, ind, xphys, yphys):
+
+        self._satellites[ind].set_physical_location(xphys, yphys)
+
+    @property
+    def satellite_properties(self):
+
+        mass_model, zsat, kwargssat, convention = [], [], [], []
+        if self._has_satellites:
+            for sat in self._satellites:
+                sat_mass_model, satz, satkwargs = sat.properties
+                mass_model.append(sat_mass_model)
+                zsat.append(satz)
+                kwargssat.append(satkwargs)
+                convention.append(sat.convention)
+            return mass_model, zsat, kwargssat, convention
+        else:
+            return None
+
+    def convetion_inds(self, convention_list=None):
+
+        if convention_list is None:
+            _, _, _, convention_list = self.satellite_properties
+
+        inds = []
+
+        for i, con in enumerate(convention_list):
+
+            if con == 'lensed':
+                inds.append(i+self._nmacro)
+
+        if len(inds) == 0:
+            inds = False
+
+        return inds
 
     def _build(self, halos_only = False):
 
@@ -62,12 +160,13 @@ class LensSystem(object):
             main_names, main_redshift, main_args = self._unpack_main(self.main)
 
             if self._has_satellites:
-                main_names += [model for model in self.satellite_mass_model]
-                main_redshift += [red_shift for red_shift in self.satellite_redshift]
-                main_args += [kwargs_sat for kwargs_sat in self.satellite_kwargs]
 
-                if self.satellite_position_lensed:
-                    lensed_inds = [len(main_names)-1]
+                mass_models, zshifts, satkwargs, convention_list = self.satellite_properties
+                lensed_inds = self.convetion_inds(convention_list)
+
+                main_names += mass_models
+                main_redshift += zshifts
+                main_args += satkwargs
 
             lens_model_names = main_names + self._halo_names
             lens_model_redshifts = np.append(main_redshift, self._halo_redshifts)
@@ -92,6 +191,7 @@ class LensSystem(object):
             shear_e1, shear_e2 = polar_to_cart(main.shear, main.shear_theta)
             kwargs = [main.lenstronomy_args]
             kwargs.append({'e1': shear_e1, 'e2': shear_e2})
+            self._nmacro = 2
 
         elif main.parameterization == 'SERSIC_NFW':
 
@@ -101,6 +201,7 @@ class LensSystem(object):
             kwargs = main.lenstronomy_args['SERSIC']
             kwargs.append({'e1': shear_e1, 'e2': shear_e2})
             kwargs.append(main.lenstronomy_args['NFW'])
+            self._nmacro = 3
 
         else:
             raise Exception('macromodel parameteriztion '+main.parameterization+' not recognized.')
@@ -121,3 +222,12 @@ class LensSystem(object):
         lens_list, zlist, arg_list, custom_class, lensed_position_inds = self._build(halos_only=halos_only)
 
         return zlist,lens_list,arg_list, custom_class, lensed_position_inds
+
+    def getlensModel(self, z_source):
+
+        zlist, lens_list, arg_list, custom_class, lensed_position_inds = self.lenstronomy_lists()
+
+        lensModel = LensModel(lens_list, z_source=z_source, lens_redshift_list=zlist, multi_plane=True,
+                              numerical_alpha_class=custom_class, observed_convention_index=lensed_position_inds)
+
+        return arg_list, lensModel

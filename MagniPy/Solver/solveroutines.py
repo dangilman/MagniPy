@@ -128,6 +128,7 @@ class SolveRoutines(Magnipy):
                                                               multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
                                                           LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
                 else:
+
                     lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet_front=LOS_mass_sheet_front,
                                                           LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
 

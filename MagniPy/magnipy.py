@@ -153,19 +153,6 @@ class Magnipy:
             data.append(new_data)
             opt_sys.append(optimized_sys)
 
-            if opt_sys[-1]._has_satellites and record_satellite_physical:
-
-                if opt_sys[-1].satellite_position_lensed:
-
-                    physical_kwargs = lensModel._full_lensmodel. \
-                        lens_model._convention(kwargs_lens)
-                    physical_x, physical_y = physical_kwargs[2]['center_x'], physical_kwargs[2]['center_y']
-
-                    opt_sys[-1]._satellite_physical_location = np.array([physical_x, physical_y])
-                else:
-                    opt_sys[-1]._satellite_physical_location = np.array([kwargs_lens[2]['center_x'],
-                                                                      kwargs_lens[2]['center_y']])
-
         return data, opt_sys, optimizer_kwargs, {'kwargs_lens': kwargs_lens, 'lensModel': lensModel}
 
     def _ray_trace_finite(self, ximg, yimg, xsrc, ysrc, multiplane, lensModel, kwargs_lens, resolution, source_shape, source_size_kpc, polar_grid):

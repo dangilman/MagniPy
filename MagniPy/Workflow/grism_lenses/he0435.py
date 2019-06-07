@@ -41,9 +41,11 @@ class Lens0435(Quad):
     has_satellite = True
     satellite_mass_model = ['SIS']
     satellite_redshift = [0.78]
-    satellite_convention = 'lensed'
+
+    satellite_convention = ['phys']
     # from mass center
     satellite_pos_mass = np.array([-2.911, 2.339])
+    satellite_pos_mass_effective = np.array([-2.37, 2.08])
     # from light center
     #satellite_pos_light = [-0.1255, -1.3517]
     satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]

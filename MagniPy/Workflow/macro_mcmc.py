@@ -20,8 +20,8 @@ class MacroMCMC(object):
     def run(self, macromodel=None,
             tovary={'source_size_kpc': [0.01, 0.05], 'gamma': [1.95, 2.2]}, N=500,
             zlens=0.5, optimizer_kwargs={}, write_to_file=False, fname=None,
-            satellite_kwargs = None, satellite_mass_model = None, satellite_redshift=None,
-            satellite_convention=None, flux_ratio_index = None):
+            satellite_kwargs = None, satellite_mass_model = None, satellite_redshift=None, satellite_convention=None,
+            flux_ratio_index = None, return_physical_positions=[], z_source=None):
 
         assert flux_ratio_index is not None
         flux_ratio_index = int(flux_ratio_index)
@@ -37,11 +37,8 @@ class MacroMCMC(object):
         rein, ellip, PA, shear, shearPA, gamma, source_size, cen_x, cen_y = \
             [], [], [], [], [], [], [], [], []
 
-        satellite_x, satellite_y, satellite_thetaE, z_sat = [], [], [], []
-        satellitepa = []
-        satelliteellip = []
-        satellite_keff = []
-        satellite_reff = []
+        satellite_x_1, satellite_y_1, satellite_thetaE_1, z_sat_1 = [], [], [], []
+        satellite_x_2, satellite_y_2, satellite_thetaE_2, z_sat_2 = [], [], [], []
 
         fluxes = []
 
@@ -60,33 +57,32 @@ class MacroMCMC(object):
             macro = deepcopy(macromodel)
 
             for pname in tovary.keys():
-                param_names = ['satellite_theta_E', 'satellite_x', 'satellite_y', 'satellite_redshift',
-                             'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
+                param_names = ['satellite_theta_E_1', 'satellite_x_1', 'satellite_y_1', 'satellite_redshift_1',
+                               'satellite_theta_E_2', 'satellite_x_2', 'satellite_y_2', 'satellite_redshift_2']
                 if pname in param_names:
 
                     assert satellite_kwargs is not None
                     assert satellite_mass_model is not None
 
-                    if pname == 'satellite_redshift':
+                    if pname == 'satellite_redshift_1':
+                        satellite_redshift[0] = np.random.uniform(tovary[pname][0], tovary[pname][1])
+                    if pname == 'satellite_redshift_2':
+                        satellite_redshift[1] = np.random.uniform(tovary[pname][0], tovary[pname][1])
+                    elif pname == 'satellite_theta_E_1':
+                        satellite_kwargs[0].update({'theta_E': np.random.uniform(max(0,tovary[pname][0]), tovary[pname][1])})
+                    elif pname == 'satellite_x_1':
+                        satellite_kwargs[0].update({'center_x': np.random.normal(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_y_1':
+                        satellite_kwargs[0].update({'center_y': np.random.normal(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_redshift_2':
                         satellite_redshift = [np.random.uniform(tovary[pname][0], tovary[pname][1])]*len(satellite_mass_model)
-                    elif pname == 'satellite_theta_E':
-                        satellite_kwargs.update({'theta_E': np.random.uniform(max(0,tovary[pname][0]), tovary[pname][1])})
-                    elif pname == 'satellite_x':
-                        satellite_kwargs.update({'center_x': np.random.normal(tovary[pname][0], tovary[pname][1])})
-                    elif pname == 'satellite_y':
-                        satellite_kwargs.update({'center_y': np.random.normal(tovary[pname][0], tovary[pname][1])})
-                    elif pname == 'satellite_keff':
-                        satellite_kwargs.update({'k_eff': np.random.uniform(tovary[pname][0], tovary[pname][1])})
-                    elif pname == 'satellite_reff':
-                        satellite_kwargs.update({'R_sersic': np.random.uniform(tovary[pname][0], tovary[pname][1])})
-                    elif pname == 'satellite_ellip':
-                        assert 'satellite_PA' in param_names
+                    elif pname == 'satellite_theta_E_2':
+                        satellite_kwargs[1].update({'theta_E': np.random.uniform(max(0,tovary[pname][0]), tovary[pname][1])})
 
-                        satellip = np.random.uniform(tovary[pname][0], tovary[pname][1])
-                        satPA = np.random.uniform(tovary['satellite_PA'][0], tovary['satellite_PA'][1])
-
-                        sate1, sate2 = phi_q2_ellipticity(satPA * np.pi * 180**-1, 1-satellip)
-                        satellite_kwargs.update({'e1': sate1, 'e2': sate2})
+                    elif pname == 'satellite_x_2':
+                        satellite_kwargs[1].update({'center_x': np.random.normal(tovary[pname][0], tovary[pname][1])})
+                    elif pname == 'satellite_y_2':
+                        satellite_kwargs[1].update({'center_y': np.random.normal(tovary[pname][0], tovary[pname][1])})
 
                 else:
                     if pname == 'fixed_param_gaussian':
@@ -138,8 +134,9 @@ class MacroMCMC(object):
             args.update({'source_size_kpc': srcsize})
 
             if satellite_mass_model is not None:
+
                 satellites = {'lens_model_name': satellite_mass_model, 'z_satellite': satellite_redshift,
-                              'kwargs_satellite': [satellite_kwargs],
+                              'kwargs_satellite': satellite_kwargs,
                               'position_convention': satellite_convention}
             else:
                 satellites = None
@@ -160,56 +157,35 @@ class MacroMCMC(object):
 
                 continue
 
-            if False:
-                analysis = Analysis(zlens, 1.5)
-                mags = []
-                import matplotlib.pyplot as plt
-                ratiosobs = np.array([0.93, 0.48, 0.19])
-                ratiosmod = np.array(optdata.m[1:]) * optdata.m[0] ** -1
+            if optmodel._has_satellites:
 
-                stat = np.sqrt(np.sum((ratiosmod - ratiosobs) ** 2))
+                mass_model, zsat, kwargssat, convention = optmodel.satellite_properties
 
-                if stat < 400:
-                    for j in range(0, 4):
-                        minsep = min_img_sep(optdata.x, optdata.y)
-                        #system = analysis.build_system(optmodel, multiplane=True)
-
-                        mag, img = analysis.raytrace_images(full_system=optmodel, xcoord=optdata.x[j],
-                                                            ycoord=optdata.y[j], multiplane=True,
-                                                            srcx=optdata.srcx, srcy=optdata.srcy,
-                                                            res=0.00025, method='lenstronomy',
-                                                            source_shape='GAUSSIAN', source_size_kpc=srcsize,
-                                                            minimum_image_sep=minsep)
-                        plt.imshow(img)
-                        plt.show()
-                        mags.append(mag)
-                    print(np.array(mags) * np.max(mags) ** -1)
-                    a = input('continue')
-
-            if 'satellite_theta_E' in tovary.keys():
-                satellite_thetaE.append(optmodel.satellite_kwargs[0]['theta_E'])
-            if 'satellite_x' in tovary.keys():
-                if optmodel.satellite_position_lensed:
-                    physloc = optmodel._satellite_physical_location
-                    satellite_x.append(physloc[0])
+                if return_physical_positions:
+                    coords = optmodel.get_satellite_physical_location_fromkwargs(z_source)
                 else:
-                    satellite_x.append(optmodel.satellite_kwargs[0]['center_x'])
-            if 'satellite_y' in tovary.keys():
-                if optmodel.satellite_position_lensed:
-                    physloc = optmodel._satellite_physical_location
-                    satellite_y.append(physloc[1])
-                else:
-                    satellite_y.append(optmodel.satellite_kwargs[0]['center_y'])
-            if 'satellite_redshift' in tovary.keys():
-                z_sat.append(satellite_redshift[0])
-            if 'satellite_keff' in tovary.keys():
-                satellite_keff.append(optmodel.satellite_kwargs[0]['k_eff'])
-            if 'satellite_reff' in tovary.keys():
-                satellite_reff.append(optmodel.satellite_kwargs[0]['R_sersic'])
-            if 'satellite_ellip' in tovary.keys():
-                satellip, satPA = cart_to_polar(optmodel.satellite_kwargs[0]['e1'], optmodel.satellite_kwargs[0]['e2'])
-                satelliteellip.append(satellip)
-                satellitepa.append(satPA)
+                    coords = []
+                    for j in range(0, len(kwargssat)):
+                        coords.append([kwargssat[j]['center_x'], kwargssat[j]['center_y']])
+
+            if 'satellite_theta_E_1' in tovary.keys():
+                satellite_thetaE_1.append(kwargssat[0]['theta_E'])
+            if 'satellite_x_1' in tovary.keys():
+                satellite_x_1.append(coords[0][0])
+            if 'satellite_y_1' in tovary.keys():
+                satellite_y_1.append(coords[0][1])
+
+            if 'satellite_theta_E_2' in tovary.keys():
+                satellite_thetaE_2.append(kwargssat[1]['theta_E'])
+            if 'satellite_x_2' in tovary.keys():
+                satellite_x_2.append(coords[1][0])
+            if 'satellite_y_2' in tovary.keys():
+                satellite_y_2.append(coords[1][1])
+
+            if 'satellite_redshift_1' in tovary.keys():
+                z_sat_1.append(zsat[0])
+            if 'satellite_redshift_2' in tovary.keys():
+                z_sat_2.append(zsat[1])
 
             optimized_macromodel = optmodel.lens_components[0]
             modelargs = optimized_macromodel.lenstronomy_args
@@ -249,24 +225,24 @@ class MacroMCMC(object):
         gamma = np.round(gamma, 2)
         source_size = np.round(source_size, 2)
         cen_x, cen_y = np.round(cen_x, 4), np.round(cen_y, 4)
-        z_sat = np.round(z_sat, 2)
-        satellite_x, satellite_y = np.round(satellite_x, 4), np.round(satellite_y, 4)
-        satellite_thetaE = np.round(satellite_thetaE, 3)
-        satellite_keff = np.round(satellite_keff, 4)
-        satellite_reff = np.round(satellite_reff, 4)
-        satellite_ellip = np.round(satelliteellip, 3)
-        satellitepa = np.round(satellitepa, 3)
+        z_sat_1 = np.round(z_sat_1, 2)
+        z_sat_2 = np.round(z_sat_2, 2)
+
+        satellite_x_1, satellite_y_1 = np.round(satellite_x_1, 4), np.round(satellite_y_1, 4)
+        satellite_x_2, satellite_y_2 = np.round(satellite_x_2, 4), np.round(satellite_y_2, 4)
+
+        satellite_thetaE_1, satellite_thetaE_2 = np.round(satellite_thetaE_1, 3), np.round(satellite_thetaE_2, 3)
 
         full_dictionary = {'Rein': rein, 'ellip': ellip, 'ellipPA': PA,
                            'shear': shear, 'shearPA': shearPA, 'gamma': gamma,
                            'srcsize': source_size, 'centroid_x': cen_x, 'centroid_y': cen_y,
-                           'G2x': satellite_x, 'G2y': satellite_y, 'G2thetaE': satellite_thetaE,
-                           'G2redshift': z_sat, 'satellite_keff': satellite_keff, 'satellite_reff': satellite_reff,
-                           'satellite_ellip': satellite_ellip, 'satellite_PA': satellitepa}
+                           'G2x1': satellite_x_1, 'G2y1': satellite_y_1, 'G2thetaE1': satellite_thetaE_1,
+                           'G2redshift1': z_sat_1, 'G2x2': satellite_x_2, 'G2y2': satellite_y_2, 'G2thetaE2': satellite_thetaE_2,
+                           'G2redshift2': z_sat_2}
 
         param_order = ['Rein', 'shear', 'shearPA', 'ellip', 'ellipPA', 'gamma', 'srcsize', 'centroid_x', 'centroid_y']
 
-        supp = ['G2x', 'G2y', 'G2thetaE', 'G2redshift', 'satellite_keff', 'satellite_reff', 'satellite_ellip', 'satellite_PA']
+        supp = ['G2x1', 'G2y1', 'G2thetaE1', 'G2redshift', 'G2x2', 'G2y2', 'G2thetaE2', 'G2redshif2']
 
         for supp_param in supp:
             if supp_param in full_dictionary.keys() and len(full_dictionary[supp_param])>0:

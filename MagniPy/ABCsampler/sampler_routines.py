@@ -151,14 +151,34 @@ def update_satellites(chain_keys_run, params_varied):
 
     sat = deepcopy(chain_keys_run['satellites'])
 
-    if 'satellite_x' in params_varied:
-        sat['kwargs_satellite'][0]['center_x'] = chain_keys_run['satellite_x']
-    if 'satellite_y' in params_varied:
-        sat['kwargs_satellite'][0]['center_y'] = chain_keys_run['satellite_y']
-    if 'satellite_thetaE' in params_varied:
-        sat['kwargs_satellite'][0]['theta_E'] = chain_keys_run['satellite_thetaE']
-    if 'satellite_z' in params_varied:
-        sat['z_satellite'] = [chain_keys_run['satellite_z']]
+    nsatellites = chain_keys_run['n_satellites']
+
+    if nsatellites == 1:
+
+        if 'satellite_x' in params_varied:
+            sat['kwargs_satellite'][0]['center_x'] = chain_keys_run['satellite_x']
+        if 'satellite_y' in params_varied:
+            sat['kwargs_satellite'][0]['center_y'] = chain_keys_run['satellite_y']
+        if 'satellite_thetaE' in params_varied:
+            sat['kwargs_satellite'][0]['theta_E'] = chain_keys_run['satellite_thetaE']
+
+
+    elif nsatellites == 2:
+
+        if 'satellite_x_1' in params_varied:
+            sat['kwargs_satellite'][0]['center_x'] = chain_keys_run['satellite_x_1']
+        if 'satellite_y_1' in params_varied:
+            sat['kwargs_satellite'][0]['center_y'] = chain_keys_run['satellite_y_1']
+        if 'satellite_thetaE_1' in params_varied:
+            sat['kwargs_satellite'][0]['theta_E'] = chain_keys_run['satellite_thetaE_1']
+
+        if 'satellite_x_2' in params_varied:
+            sat['kwargs_satellite'][1]['center_x'] = chain_keys_run['satellite_x_2']
+        if 'satellite_y_2' in params_varied:
+            sat['kwargs_satellite'][1]['center_y'] = chain_keys_run['satellite_y_2']
+        if 'satellite_thetaE_2' in params_varied:
+            sat['kwargs_satellite'][1]['theta_E'] = chain_keys_run['satellite_thetaE_2']
+
 
     return sat
 
@@ -175,11 +195,20 @@ def read_macro_array(lens_system):
     shear = lensmodel.shear
     shearPA = lensmodel.shear_theta
     gamma = lensmodel.lenstronomy_args['gamma']
+    if lens_system._has_satellites:
 
-    if lens_system._has_satellites and lens_system.satellite_position_lensed:
-        physical_loc = lens_system._satellite_physical_location
-        cenxphys, cenyphys = physical_loc[0], physical_loc[1]
-        return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma, cenxphys, cenyphys])
+        _, _, kwargs_sat, convention = lens_system.satellite_properties
+        coords = []
+        for kw in kwargs_sat:
+            coords.append([kw['center_x'], kw['center_y']])
+
+        if len(coords) == 1:
+            return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma, coords[0][0], coords[0][1],
+                             kwargs_sat[0]['theta_E']])
+        elif len(coords) == 2:
+            return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma, coords[0][0], coords[0][1],
+                             kwargs_sat[0]['theta_E'], coords[1][0], coords[1][1], kwargs_sat[1]['theta_E']])
+
     else:
         return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
 

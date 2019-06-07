@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.0]
+        gamma_values = [2.0]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -59,8 +59,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
-    verbose = False
+    readout_steps = 2
+    verbose = True
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -106,23 +106,21 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             halo_args = halo_model_args(chain_keys_run)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
-
+            #halo_args['log_m_break'] = 9.9
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            try:
-
-                new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
-                                       verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=30000,
-                                       pso_compute_magnification=1000, source_size_kpc=chain_keys_run['source_size_kpc'],
+            new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = None,
+                                       verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
+                                       pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=0.001,
                                         LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                          LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
                                                                     satellites=chain_keys_run['satellites'])
 
-                xfit, yfit = new[0].x, new[0].y
-            except:
-                xfit = yfit = np.array([1000, 1000, 1000, 1000])
+            xfit, yfit = new[0].x, new[0].y
+            #except:
+            #    xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 if verbose: print(new[0].m[0], np.isfinite(new[0].m[0]))
@@ -277,6 +275,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/coldSIDM_full/', 37000)
+runABC(prefix+'data/lens1422/', 1)
 
 

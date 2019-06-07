@@ -95,11 +95,12 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
                                                                                            simplex_n_iter=simplex_n_iter,
                                                                                            optimizer_kwargs=optimizer_kwargs,
                                                                                            finite_source_magnification=False,
-                                                                                           chi2_mode='source')
+                                                                                           chi2_mode='source', record_satellite_physical=False)
 
             foreground_rays = out_kwargs['precomputed_rays']
             foreground_macromodel = model[0].lens_components[0]
             N_foreground_halos_last = N_foreground_halos
+
 
     return foreground_rays, foreground_macromodel, [realization_filtered], keywords_lensmodel
 
@@ -207,7 +208,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                                                                        simplex_n_iter=simplex_n_iter,
                                                                                        optimizer_kwargs=optimizer_args,
                                                                                        finite_source_magnification=False,
-                                                                                       chi2_mode='source', record_satellite_physical=True)
+                                                                                       chi2_mode='source', record_satellite_physical=False)
 
             path_x, path_y, path_redshifts, path_Tzlist = out_kwargs['path_x'], out_kwargs['path_y'], \
                                                           out_kwargs['path_redshifts'], out_kwargs[
@@ -221,6 +222,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 
     else:
         model[0].realization = realization_filtered
+
 
     return optimized_data, model, \
            (backx, backy, background_Tzs, background_zs, reoptimized_realizations), keywords_lensmodel
