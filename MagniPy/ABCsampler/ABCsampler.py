@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        gamma_values = [2.0]
+        #gamma_values = [2.0]
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -110,7 +110,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = None,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
                                        verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=0.001,
@@ -275,6 +275,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-runABC(prefix+'data/lens1422/', 1)
+#runABC(prefix+'data/lens1422/', 1)
 
 
