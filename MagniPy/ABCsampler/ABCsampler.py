@@ -59,7 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 2
+    readout_steps = 50
     verbose = True
 
     current_best = 1e+6
