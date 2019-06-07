@@ -108,8 +108,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
             #halo_args['log_m_break'] = 9.9
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
-
-            new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+            try:
+                new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
                                        verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
@@ -118,9 +118,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
                                          LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
                                                                     satellites=chain_keys_run['satellites'])
 
-            xfit, yfit = new[0].x, new[0].y
-            #except:
-            #    xfit = yfit = np.array([1000, 1000, 1000, 1000])
+                xfit, yfit = new[0].x, new[0].y
+            except:
+                xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 if verbose: print(new[0].m[0], np.isfinite(new[0].m[0]))
