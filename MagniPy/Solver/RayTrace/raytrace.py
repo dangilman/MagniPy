@@ -110,8 +110,8 @@ class RayTrace(object):
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
             n = int(np.sqrt(len(image)))
-            #blended = flux_at_edge(image.reshape(n,n))
-            blended = False
+            blended = flux_at_edge(image.reshape(n,n))
+            #blended = False
             if blended:
                 flux.append(np.nan)
             else:
