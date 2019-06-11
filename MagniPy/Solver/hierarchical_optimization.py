@@ -101,6 +101,10 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
             foreground_macromodel = model[0].lens_components[0]
             N_foreground_halos_last = N_foreground_halos
 
+        else:
+            model[0].realization = realization_filtered
+            foreground_macromodel = model[0].lens_components[0]
+
 
     return foreground_rays, foreground_macromodel, [realization_filtered], keywords_lensmodel
 

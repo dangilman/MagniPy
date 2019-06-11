@@ -9,8 +9,8 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.02,
-                                                 tol_source=1e-5, tol_mag=0.5, tol_centroid=0.05,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
+                                                 tol_source=1e-5, tol_mag=0.5, tol_centroid=0.03,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=False, re_optimize=False, particle_swarm=True, restart=1,
@@ -50,7 +50,7 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
+def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
                     output_path, write_header, readout_best):
 
     chaindata = []
@@ -64,11 +64,15 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
+
     if write_header:
         save_statistic = True
 
     else:
         save_statistic = False
+
+    if 'zlens' not in keys_to_vary.keys():
+        halo_constructor = pyHalo(np.round(keys['zlens'], 2), np.round(keys['zsrc'], 2))
 
     while N_computed < keys['Nsamples']:
 
@@ -87,6 +91,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, halo_constructor, solver,
                 chain_keys_run[pname] = samples[i]
 
                 #print(pname, chain_keys_run[pname])
+            if 'zlens' in keys_to_vary.keys():
+                halo_constructor = pyHalo(np.round(chain_keys_run['zlens'], 2), np.round(chain_keys_run['zsrc'], 2))
+
             if not init_macro:
                 print('initializing macromodels.... ')
                 macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
@@ -208,9 +215,7 @@ def runABC(chain_ID='',core_index=int):
 
     prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1)
 
-    constructor = pyHalo(np.round(chain_keys['zlens'],2), np.round(chain_keys['zsrc'],2))
-
-    run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, constructor, solver, output_path,
+    run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, solver, output_path,
                         chain_keys['write_header'], readout_best)
 
 def write_params(params,fname,header, mode='append'):
@@ -275,6 +280,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens1422/', 1)
+#runABC(prefix+'data/lens2038/', 1)
 
 

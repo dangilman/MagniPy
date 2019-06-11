@@ -22,7 +22,7 @@ class Lens2038(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens2036'
+    identifier = 'lens2038'
 
     flux_ratio_index = 0
 

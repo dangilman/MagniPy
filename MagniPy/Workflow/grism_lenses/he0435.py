@@ -48,7 +48,8 @@ class Lens0435(Quad):
     satellite_pos_mass_effective = np.array([-2.37, 2.08])
     # from light center
     #satellite_pos_light = [-0.1255, -1.3517]
-    satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
+    satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass_effective[0],
+                         'center_y': satellite_pos_mass_effective[1]}]
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
