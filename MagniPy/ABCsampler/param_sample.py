@@ -1,7 +1,7 @@
 import numpy as np
 from MagniPy.ABCsampler.probability_distributions import ProbabilityDistribution
 
-class ParamSample:
+class ParamSample(object):
 
     recognized_param_precision = {}
     recognized_param_precision['a0_area'] = 5
@@ -10,6 +10,7 @@ class ParamSample:
     recognized_param_precision['core_ratio'] = 4
     recognized_param_precision['source_size_kpc'] = 6
     recognized_param_precision['SIDMcross'] = 3
+    recognized_param_precision['zlens'] = 2
     
     def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5,**kwargs):
         """

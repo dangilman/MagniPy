@@ -249,9 +249,9 @@ class Analysis(Magnipy):
     def raytrace_images(self, full_system=None, macromodel=None, xcoord=None, ycoord=None, realizations=None,
                         multiplane=None,
                         identifier=None, srcx=None, srcy=None, res=None, method='lenstronomy',
-                        source_shape='GAUSSIAN', source_size_kpc=None, **kwargs):
+                        source_shape='GAUSSIAN', source_size_kpc=None, minimgsep=None, satellites=None,
+                        grid_rmax_scale=1):
 
-        lens_systems = []
 
         if source_size_kpc is None:
             raise Exception('specify source size')
@@ -269,10 +269,54 @@ class Analysis(Magnipy):
             if realizations is not None:
                 assert len(realizations) == 1
                 lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=realizations[0],
-                                                multiplane=multiplane)
+                                                multiplane=multiplane, satellites=satellites)
             else:
                 lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=None,
-                                                multiplane=multiplane)
+                                                multiplane=multiplane, satellites=satellites)
+
+        else:
+
+            lens_system=copy.deepcopy(full_system)
+
+        lenstronomy = self.lenstronomy_build()
+
+        lensmodel, kwargs_lens = lenstronomy.get_lensmodel(lens_system)
+
+        trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, res=res,
+                         source_shape=source_shape, source_size=source_size,polar_grid=False,
+                         adaptive_grid=False,minimum_image_sep=minimgsep,grid_rmax_scale=grid_rmax_scale)
+
+        magnifications, image = trace.get_images(xcoord, ycoord, lensmodel, kwargs_lens,
+                                                 return_image=True)
+
+        return magnifications, image
+
+    def image_mag_finite(self, full_system=None, macromodel=None, xcoord=None, ycoord=None, realizations=None,
+                        multiplane=None,
+                        identifier=None, srcx=None, srcy=None, res=None, method='lenstronomy',
+                        source_shape='GAUSSIAN', source_size_kpc=None, minimgsep=None, adaptive_grid=False,
+                         satellites=None,grid_rmax_scale=1):
+
+        if source_size_kpc is None:
+            raise Exception('specify source size')
+
+        source_scale = self.cosmo.kpc_per_asec(self.zsrc)
+        source_size = source_size_kpc * source_scale ** -1
+
+        if res is None:
+            res = default_res(source_size)
+
+        if full_system is None:
+
+            assert macromodel is not None
+
+            if realizations is not None:
+                assert len(realizations) == 1
+                lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=realizations[0],
+                                                multiplane=multiplane, satellites=satellites)
+            else:
+                lens_system = self.build_system(main=copy.deepcopy(macromodel), realization=None,
+                                                multiplane=multiplane, satellites=satellites)
 
         else:
 
@@ -284,12 +328,12 @@ class Analysis(Magnipy):
 
         trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, method=method, res=res,
                          source_shape=source_shape,raytrace_with=method,
-                         cosmology=self.cosmo, source_size=source_size,polar_grid=False,**kwargs)
+                         cosmology=self.cosmo, source_size=source_size,polar_grid=False,
+                         adaptive_grid=adaptive_grid,minimum_image_sep=minimgsep,grid_rmax_scale=grid_rmax_scale)
 
-        magnifications, image = trace.get_images(xcoord, ycoord, lensmodel, kwargs_lens,
-                                                 return_image=True)
+        magnifications = trace.get_images(xcoord, ycoord, lensmodel, kwargs_lens, return_image=False)
 
-        return magnifications, image
+        return magnifications
 
 
 

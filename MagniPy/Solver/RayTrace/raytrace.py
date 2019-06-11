@@ -3,10 +3,66 @@ from MagniPy.Solver.RayTrace.source_models import *
 from MagniPy.util import *
 import matplotlib.pyplot as plt
 
+class RayShootingGrid(object):
+
+    def __init__(self, side_length, grid_res, adaptive):
+
+        self.x_grid_0, self.y_grid_0 = np.meshgrid(
+            np.linspace(-side_length, side_length, 2 * side_length * grid_res ** -1),
+            np.linspace(-side_length, side_length, 2 * side_length * grid_res ** -1))
+
+        self.radius = side_length
+
+        self._adaptive = adaptive
+
+    @property
+    def grid_at_xy_unshifted(self):
+        return self.x_grid_0, self.y_grid_0
+
+    def _grid_at_xy(self, x, y):
+
+        return x + self.x_grid_0, y + self.y_grid_0
+
+    def grid_at_xy(self, xloc, yloc, x_other_list, y_other_list):
+
+        gridx0, gridy0 = self.grid_at_xy_unshifted
+
+        #ellipse_inds = ellipse_coordinates(gridx0, ygrid0, self.radius, q=1,
+        #                                   theta=np.arctan2(xloc, yloc) + 0.5 * np.pi)
+
+        xgrid, ygrid = gridx0 + xloc, gridy0 + yloc
+        xgrid, ygrid = xgrid.ravel(), ygrid.ravel()
+
+        if self._adaptive:
+            for j, (xo, yo) in enumerate(zip(x_other_list, y_other_list)):
+                sep = dr(xloc, xo, yloc, yo)
+                if sep < 2*self.radius:
+                    xgrid, ygrid = self.filter_xy(xgrid, ygrid, xo, yo, xloc, yloc)
+
+        return xgrid, ygrid
+
+    def filter_xy(self, xgrid, ygrid, x_center_other, y_center_other, xloc, yloc):
+
+        delta_r_1 = np.sqrt((xgrid - x_center_other)**2 + (ygrid - y_center_other) ** 2)
+        delta_r_2 = np.sqrt((xgrid - xloc) ** 2 + (ygrid - yloc) ** 2)
+
+        inds = np.where(delta_r_1 > delta_r_2)
+        #plt.figure(1)
+        #ax=plt.gca()
+        #print(xloc, yloc, x_center_other, y_center_other)
+        #plt.scatter(xgrid[inds], ygrid[inds], color='m', marker='x')
+        #plt.scatter(xloc, yloc, color='g')
+        #ax.set_aspect('equal')
+        #plt.show()
+        #a=input('continue')
+
+        return xgrid[inds], ygrid[inds]
+
 class RayTrace(object):
 
     def __init__(self, xsrc=float, ysrc=float, multiplane=False, res=0.001, source_shape='',
-                 polar_grid=False, polar_q = 1, minimum_image_sep = None, **kwargs):
+                 polar_grid=False, polar_q = 1, minimum_image_sep = None, adaptive_grid=True,
+                 grid_rmax_scale=1, **kwargs):
 
         """
         :param xsrc: x coordinate for grid center (arcseconds)
@@ -27,41 +83,21 @@ class RayTrace(object):
 
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
-        elif source_shape == 'TORUS':
-            self.source = TORUS(x=xsrc,y=ysrc,inner=kwargs['inner_radius'],outer=kwargs['outer'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['outer'],res,minimum_image_sep)
-        elif source_shape == 'GAUSSIAN_TORUS':
-            self.source = GAUSSIAN_TORUS(x=xsrc, y=ysrc, width=kwargs['source_size'],inner=kwargs['inner_radius'],outer=kwargs['outer_radius'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
-        elif source_shape == 'SERSIC':
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['r_half']*1.5,res,minimum_image_sep)
-            self.source = SERSIC(x=xsrc,y=ysrc,r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
-        elif source_shape == 'GAUSSIAN_SERSIC':
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res,minimum_image_sep)
-            self.source = GAUSSIAN_SERSIC(x=xsrc,y=ysrc,width=kwargs['source_size'],r_half=kwargs['r_half'],n_sersic=kwargs['n_sersic'])
+            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
         else:
             raise ValueError('other source models not yet implemented')
 
-        if 'grid_rmax' in kwargs:
-            self.grid_rmax = kwargs['grid_rmax']
+        self.grid_rmax *= grid_rmax_scale
 
-        self.x_grid_0, self.y_grid_0 = np.meshgrid(
-            np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1),
-            np.linspace(-self.grid_rmax, self.grid_rmax, 2 * self.grid_rmax * res ** -1))
+        if adaptive_grid is False:
+            if minimum_image_sep is not None:
+                self.grid_rmax = min(0.5 * minimum_image_sep, self.grid_rmax)
 
-        if polar_grid:
-            self.polar_q = polar_q
-            self.x_grid_0 = self.x_grid_0.ravel()
-            self.y_grid_0 = self.y_grid_0.ravel()
+        self.grid = RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)
 
-    def _grid_rmax(self,size_asec,res,img_sep):
-
-        if img_sep is None:
-            img_sep = 10000
+    def _grid_rmax(self,size_asec,res):
 
         if size_asec < 0.0005:
-            res = 0.0075
             s = 0.03
         elif size_asec < 0.001:
             s = 0.08
@@ -75,9 +111,7 @@ class RayTrace(object):
         else:
             s = 0.48
 
-        size = min(0.5*img_sep,s)
-        
-        return size,res
+        return s,res
 
     def get_images(self,xpos,ypos,lensModel,kwargs_lens,return_image=False):
 
@@ -89,7 +123,12 @@ class RayTrace(object):
             xpos,ypos = self._get_grids(xpos,ypos,len(xpos))
         #del kwargs_lens[0]['source_size_kpc']
         img = self.rayshoot(xpos,ypos,lensModel,kwargs_lens)
-
+        #try:
+        #    n = int(len(img) ** 0.5)
+        #    plt.imshow(img.reshape(n,n)); plt.show()
+        #    a=input('continue')
+        #except:
+        #    pass
         if return_image:
             return np.sum(img)*self.res**2,array2image(img)
         else:
@@ -110,12 +149,12 @@ class RayTrace(object):
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
             n = int(np.sqrt(len(image)))
-            blended = flux_at_edge(image.reshape(n,n))
+            #blended = flux_at_edge(image.reshape(n,n))
             #blended = False
-            if blended:
-                flux.append(np.nan)
-            else:
-                flux.append(np.sum(image*self.res**2))
+            #if blended:
+            #    flux.append(np.nan)
+            #else:
+            flux.append(np.sum(image*self.res**2))
 
             #plt.imshow(image.reshape(n,n))
             #plt.show()
@@ -131,21 +170,22 @@ class RayTrace(object):
 
         return beta
 
-    def _get_grids(self,xpos,ypos,Nimg):
+    def _get_grids(self, xpos, ypos, nimg):
 
-        x_loc,y_loc = [],[]
-        for i in range(0,Nimg):
+        xgrid, ygrid = [], []
 
-            if self.polar_grid:
-                #ellipse_inds = np.where(np.sqrt(self.x_grid_0 ** 2 + self.y_grid_0 ** 2) <= self.grid_rmax)
-                ellipse_inds = ellipse_coordinates(self.x_grid_0, self.y_grid_0, self.grid_rmax,q=self.polar_q,
-                                                   theta=np.arctan2(ypos[i], xpos[i])+0.5*np.pi)
-                x_loc.append(xpos[i] + self.x_grid_0[ellipse_inds])
-                y_loc.append(ypos[i] + self.y_grid_0[ellipse_inds])
+        for i, (xi, yi) in enumerate(zip(xpos, ypos)):
 
-            else:
-                x_loc.append(xpos[i] + self.x_grid_0)
-                y_loc.append(ypos[i] + self.y_grid_0)
-        return x_loc,y_loc
+            xother, yother = [], []
+            for j in range(0, len(xpos)):
+                if j != i:
+                    xother.append(xpos[j])
+                    yother.append(ypos[j])
 
+            xg, yg = self.grid.grid_at_xy(xi, yi, xother, yother)
+
+            xgrid.append(xg)
+            ygrid.append(yg)
+
+        return xgrid, ygrid
 

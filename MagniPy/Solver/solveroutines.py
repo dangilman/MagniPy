@@ -24,7 +24,8 @@ class SolveRoutines(Magnipy):
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
                                   min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
-                                  reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None):
+                                  reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None,
+                                  adaptive_grid=False, grid_rmax_scale=1):
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -69,7 +70,7 @@ class SolveRoutines(Magnipy):
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
-                               source_size_kpc, polar_grid)
+                               source_size_kpc, polar_grid, adaptive_grid, grid_rmax_scale)
 
         optimized_data[0].set_mag(fluxes)
         optimized_data[0].sort_by_pos(datatofit.x,datatofit.y)
@@ -98,7 +99,8 @@ class SolveRoutines(Magnipy):
                                    constrain_params=None, pso_convergence_mean=5000,
                                    pso_compute_magnification=200, tol_simplex_params=5e-3, tol_simplex_func = 0.05,
                                    simplex_n_iter=300, LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8,
-                                   chi2_mode='source', tol_image = 0.005, satellites=None, use_finite_source=True):
+                                   chi2_mode='source', tol_image = 0.005, satellites=None, use_finite_source=True,
+                                   adaptive_grid=False, grid_rmax_scale=1):
 
 
         if source_shape is None:
@@ -145,7 +147,7 @@ class SolveRoutines(Magnipy):
                                                                  tol_simplex_params=tol_simplex_params, tol_simplex_func = tol_simplex_func,
                                                                  simplex_n_iter=simplex_n_iter, chi2_mode = chi2_mode, tol_image = tol_image,
                                                                        finite_source_magnification=use_finite_source,
-                                                                       record_satellite_physical=True)
+                                                                       adaptive_grid=adaptive_grid, grid_rmax_scale=grid_rmax_scale)
 
         return optimized_data,model
 
@@ -154,7 +156,7 @@ class SolveRoutines(Magnipy):
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=False, shr_coords=1,
                             brightimg=True, LOS_mass_sheet_back = 6, LOS_mass_sheet_front = 6, centroid_0 = [0, 0],
-                            satellites = None):
+                            satellites = None, adaptive_grid=True):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default
@@ -197,7 +199,7 @@ class SolveRoutines(Magnipy):
                                  srcy=srcy + centroid_0[1],
                                  res=res, source_shape=source_shape, ray_trace=ray_trace,
                                  raytrace_with=raytrace_with, source_size_kpc=source_size_kpc, polar_grid=polar_grid,
-                                 shr_coords=shr_coords,brightimg=brightimg)
+                                 shr_coords=shr_coords,brightimg=brightimg, adaptive_grid=adaptive_grid)
 
         if sort_by_pos is not None:
             data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)
