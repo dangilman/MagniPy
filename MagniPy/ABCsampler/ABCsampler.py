@@ -14,7 +14,7 @@ def initialize_macro(solver,data,init):
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=False, re_optimize=False, particle_swarm=True, restart=1,
-                                                 tol_simplex_func=0.001)
+                                                 tol_simplex_func=0.001, adaptive_grid=False)
 
     return model
 
@@ -59,7 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    readout_steps = 2
     verbose = True
 
     current_best = 1e+6
@@ -109,18 +109,19 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             macromodel = deepcopy(base[0])
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-            #print(chain_keys_run['source_size_kpc'])
+           
             halo_args = halo_model_args(chain_keys_run)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
-            #halo_args['log_m_break'] = 9.9
+
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
+
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
                                        verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                        simplex_n_iter=200, polar_grid=False, grid_res=0.001,
+                                        simplex_n_iter=200, polar_grid=False, grid_res=chain_keys_run['grid_res'],
                                         LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                          LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
                                                                     satellites=chain_keys_run['satellites'])
@@ -280,6 +281,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens2038/', 1)
+#runABC(prefix+'data/lens1422/', 100)
 
 
