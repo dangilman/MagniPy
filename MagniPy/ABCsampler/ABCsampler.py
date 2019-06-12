@@ -109,7 +109,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             macromodel = deepcopy(base[0])
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-           
+
             halo_args = halo_model_args(chain_keys_run)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)

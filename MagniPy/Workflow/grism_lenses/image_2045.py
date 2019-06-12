@@ -3,12 +3,12 @@ from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LightModel.light_model import LightModel
 import matplotlib.pyplot as plt
 
-class Lens0810(object):
+class Lens2045(object):
 
     ################################# DATA #####################################
-    x = np.array([-0.46, -0.373, 0.315, 0.153])
-    y = np.array([-0.15, -0.317, -0.408, 0.439])
-    m = np.array([1., 0.93, 0.48, 0.19])
+    x = np.array([-1.1084, -1.2422, -1.3961, 0.5184])
+    y = np.array([0.8065, 0.5582, 0.0161, -0.1999])
+    m = np.array([1., 0.578, 0.739, 0.102])
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
@@ -16,18 +16,19 @@ class Lens0810(object):
     ######################### One plausible macromodel ################
     # One fairly good solution for 0810
     macromodel_lensmodels = ['SPEMD', 'SHEAR']
-    center_x_src, center_y_src = 0.00555679, -0.01978523
+    center_x_src, center_y_src = -0.6224951, 0.17329766
     e1_max, e2_max = -0.048829664713156945, 0.06937458302941069
-    e1shear, e2shear = -0.08133177714446277, 0.07052845423147165
-    lens_kwargs = [{'e1': -0.21749791537640528, 'e2': 0.25502067960705865, 'gamma': 2.0, 'center_x': 0.007268767874151885,
-     'center_y': 0.04476274548129647, 'theta_E': 0.5042364610565014}, {'e1': e1shear, 'e2': e2shear}]
+    lens_kwargs = [{'e1': 0.1910944347912104, 'e2': -0.1461214261192949,
+                    'gamma': 2.0, 'center_x': 0.018766050610987385,
+                    'center_y': -0.08623258234967904, 'theta_E': 1.162323940212036},
+                   {'e1': -0.05905015649675369, 'e2': 0.07468764718912181}]
     ###########################################################################################
 
     ################################# SOURCE PROPERTIES #####################################
     source_size_pc = 8 # source size in parsecs
     source_axis_ratio = 1
 
-    kpc_per_arcsec = 8.62 # @ z_source = 1.5
+    kpc_per_arcsec = 8.03 # @ z_source = 1.5
     # source size in m.a.s.
     source_size = 0.001 * source_size_pc * kpc_per_arcsec ** -1
     # set grid resolution to resolve source size
@@ -80,7 +81,7 @@ def plot_image(lensmodel_list, kwargs_lens, kwargs_source, image_x, image_y,
     return image, np.sum(image) * deltaPix ** 2
 
 ############ Initialize lens and image sizes ############
-LENS = Lens0810()
+LENS = Lens2045()
 range_arcsec = 0.55
 extent_full = [-range_arcsec, range_arcsec, -range_arcsec, range_arcsec]
 range_arcsec_individual = 0.05
@@ -123,7 +124,7 @@ srcsizes = [2, 8, 12, 20]
 fig = plt.figure(1)
 fig.set_size_inches(8,8)
 counter = 0
-window_size = 0.18*0.5
+window_size = 0.05
 for k, src in enumerate(srcsizes):
 
     kwargs_source[0]['sigma_x'] = src * 0.001
@@ -152,8 +153,7 @@ for k, src in enumerate(srcsizes):
     newax.imshow(full_lens_image, origin='lower', cmap='viridis', extent=extent_full)
     newax.axis('off')
 plt.subplots_adjust(left=0, bottom=0.1, right=1.6, top=0.9, wspace=0.4, hspace=0.5)
-plt.tight_layout()
-plt.savefig('0810_sourcesizes.pdf')
+plt.savefig('2045_sourcesizes.pdf')
 plt.show()
 
 # To change the source size, axis ratio, etc. edit the values in the Lens0810 class
