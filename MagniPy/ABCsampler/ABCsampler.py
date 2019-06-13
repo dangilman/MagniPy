@@ -59,7 +59,11 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 50
+    if 'readout_steps' in keys.keys():
+        readout_steps = keys['readout_steps']
+    else:
+        readout_steps = 50
+
     verbose = True
 
     current_best = 1e+6
