@@ -2,6 +2,7 @@ import numpy as np
 from lenstronomy.LensModel.lens_model import LensModel
 from lenstronomy.LightModel.light_model import LightModel
 import matplotlib.pyplot as plt
+from MagniPy.util import min_img_sep_ranked
 
 class Lens0810(object):
 
@@ -41,6 +42,7 @@ class Lens0810(object):
     source_brightness = 1  # arbitrary normalization
     source_kwargs = [{'amp': source_brightness, 'sigma_x': source_width_x, 'sigma_y': source_width_y,
                       'center_x': center_x_src, 'center_y': center_y_src}]
+
     ###########################################################################################
 
 def raytrace_image(lens_model_list, kwargs_lens):
@@ -66,6 +68,7 @@ def plot_image(lensmodel_list, kwargs_lens, kwargs_source, image_x, image_y,
 
     res = LENS.grid_res  # m.a.s. per pixel
     N = int(range_arcsec * res ** -1)
+
     x = image_x + np.linspace(-image_size_arsec, image_size_arsec, 2 * N)
     y = image_y + np.linspace(-image_size_arsec, image_size_arsec, 2 * N)
     xx, yy = np.meshgrid(x, y)
@@ -124,19 +127,26 @@ fig = plt.figure(1)
 fig.set_size_inches(8,8)
 counter = 0
 window_size = 0.18*0.5
+seps_ranked = min_img_sep_ranked(images_x, images_y)
+window_size = []
+for j in range(0,4):
+
+    window_size.append(0.5*seps_ranked[0][j]*np.cos(abs(seps_ranked[1][j])))
+
 for k, src in enumerate(srcsizes):
 
     kwargs_source[0]['sigma_x'] = src * 0.001
     kwargs_source[0]['sigma_y'] = src * 0.001
     magnifications = []
     axes = []
-    for (xcoord, ycoord) in zip(images_x, images_y):
+    for j, (xcoord, ycoord) in enumerate(zip(images_x, images_y)):
         index = k + counter + 1
         newax = plt.subplot(4,5,index)
         axes.append(newax)
-        image, mag = plot_image(model_list, kwargs_lens, kwargs_source, xcoord, ycoord, window_size)
+        image, mag = plot_image(model_list, kwargs_lens, kwargs_source, xcoord, ycoord,
+                                window_size[j])
 
-        newax.imshow(image, origin='lower', cmap='viridis',
+        newax.imshow(np.log10(image), origin='lower', cmap='viridis',
                    extent=extent_individual)
         newax.annotate('source size:\n'+str(src)+' pc', xy=(0.55,0.8), color='w', xycoords='axes fraction', fontsize=6)
         magnifications.append(mag)
@@ -149,11 +159,11 @@ for k, src in enumerate(srcsizes):
     full_lens_image = plot_full_lens(model_list, kwargs_lens, kwargs_source)
     index = k + counter + 1
     newax = plt.subplot(4, 5, index)
-    newax.imshow(full_lens_image, origin='lower', cmap='viridis', extent=extent_full)
+    newax.imshow(np.log10(full_lens_image), origin='lower', cmap='viridis', extent=extent_full)
     newax.axis('off')
 plt.subplots_adjust(left=0, bottom=0.1, right=1.6, top=0.9, wspace=0.4, hspace=0.5)
 plt.tight_layout()
-plt.savefig('0810_sourcesizes.pdf')
+#plt.savefig('0810_sourcesizes.pdf')
 plt.show()
 
 # To change the source size, axis ratio, etc. edit the values in the Lens0810 class
