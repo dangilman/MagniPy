@@ -2,6 +2,19 @@ import numpy as np
 from MagniPy.paths import *
 from MagniPy.util import create_directory, copy_directory, read_data
 
+def make_samples_histogram(data, ranges, nbins, weights):
+    density = np.histogramdd(data, range=ranges, density=True, bins=nbins,
+                                weights=weights)[0]
+    return density
+
+
+def make_histograms(data_list, ranges, nbins, weights_list):
+    density = 0
+    for (data, weights) in zip(data_list, weights_list):
+        density += make_samples_histogram(data, ranges, nbins, weights)
+
+    return density
+
 def transform_ellip(ellip):
 
     return ellip * (2 - ellip) ** -1
@@ -40,7 +53,7 @@ def extract_chain(name, sim_name, start_idx=1):
 
     init = True
     #for i in range(start,end):
-    for i in range(start_idx+1, end+1):
+    for i in range(start_idx+1, end):
         folder_name = chain_file_path + str(i)+'/'
         #print(folder_name)
         try:
@@ -49,6 +62,7 @@ def extract_chain(name, sim_name, start_idx=1):
             obs_data = read_data(folder_name + '/lensdata.txt')
             observed_fluxes = obs_data[0].m
             params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
+            params = np.delete(params, 1, 1)
             macro_model = np.loadtxt(folder_name + '/macro.txt')
 
             macro_model[:,3] = transform_ellip(macro_model[:,3])
@@ -87,13 +101,74 @@ def extract_chain(name, sim_name, start_idx=1):
 
     return lens_fluxes[:,order],observed_fluxes.reshape(1,4),lens_params,lens_all,params_header
 
-def process_raw(name, sim_name='grism_quads'):
+def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds):
+
+    sample_inds = []
+
+    for k in range(1, N_pert + 1):
+
+        perturbed_fluxes = np.empty((np.shape(fluxes)[0], len(keep_inds)))
+
+        for i, ind in enumerate(keep_inds):
+
+            perturbed_fluxes[:,i] = np.random.normal(fluxes[:,ind], sigmas[ind])
+
+        ncols = len(keep_inds) - 1
+        nrows = np.shape(fluxes)[0]
+        perturbed_ratios = np.empty((nrows,ncols))
+        norm = perturbed_fluxes[:,0]
+        for col in range(0,len(keep_inds)-1):
+            perturbed_ratios[:,col] = fluxes[:,col+1] * norm ** -1
+
+        obs_flux = [fluxes_obs[index] for index in keep_inds]
+        obs_normed = np.array(obs_flux)/obs_flux[0]
+        obs_ratios = obs_normed[1:]
+
+        diff = (perturbed_ratios - obs_ratios)**2
+        summary_statistic = np.sqrt(np.sum(diff, 1))
+
+        ordered_inds = np.argsort(summary_statistic)
+
+        sample_inds.append(ordered_inds)
+
+    return sample_inds
+
+def keyword_parse(shorthand_labels):
+
+    labels_short = ['re', 'gx', 'gy', 'eps', 'epstheta', 'shear', 'sheartheta', 'gmacro', 'srcsize',
+                    'sigmasub', 'deltalos', 'mparent', 'alpha', 'mhm']
+    labels = [r'$\theta_E$', r'$G1_x$', r'$G1_y$', r'$\epsilon$',
+              r'$\theta_{\epsilon}$', r'$\gamma_{\rm{ext}}$', r'$\theta_{\rm{ext}}$', r'$\gamma_{\rm{macro}}$',
+              r'$\sigma_{\rm{src}}$',
+              r'$\Sigma_{\rm{sub}}$', r'$\delta_{\rm{los}}$', r'$\log M_{\rm{halo}}$', r'$\alpha$', 'log_m_break']
+
+    new_labs = []
+    column_inds = []
+
+    for lab in shorthand_labels:
+        for i, label in enumerate(labels_short):
+            if lab == label:
+                new_labs.append(labels[i])
+                column_inds.append(i)
+                break
+    return new_labs, column_inds
+
+def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
 
     """
     coverts output from cluster into single files for each lens
     """
 
-    fluxes,fluxes_obs,parameters,all,header = extract_chain(name, sim_name)
+    header = 're gx gy eps epstheta shear sheartheta gmacro srcsize sigmasub deltalos mparent alpha mhm'
+    if name=='lens1422':
+        sigmas = [0.01, 0.01, 0.006]
+        keep_inds = [0,1,2]
+
+    sigmas = np.array(sigmas)
+
+    print('loading chains... ')
+    fluxes,fluxes_obs,parameters,all,_ = extract_chain(name, sim_name)
+    print('done.')
 
     all = np.squeeze(all)
     fluxes, fluxes_obs = np.squeeze(fluxes), np.squeeze(fluxes_obs)
@@ -102,9 +177,13 @@ def process_raw(name, sim_name='grism_quads'):
     if ~os.path.exists(chain_file_path):
         create_directory(chain_file_path)
 
-    np.savetxt(chain_file_path + 'modelfluxes' + '.txt', fluxes, fmt='%.6f')
-    np.savetxt(chain_file_path + 'observedfluxes' + '.txt', fluxes_obs, fmt='%.6f')
-    np.savetxt(chain_file_path + 'samples.txt', parameters, fmt='%.5f', header=header)
-    np.savetxt(chain_file_path + 'all_samples.txt', all, fmt='%.5f')
+    print('sampling flux uncertainties... ')
+    inds_to_keep_list = add_flux_perturbations(fluxes, fluxes_obs, sigmas, Npert,
+                                               keep_inds)
+    print('done.')
 
-process_raw('lens1422')
+    for i, indexes in enumerate(inds_to_keep_list):
+
+        np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', all[indexes[0:keep_N],:], fmt='%.5f', header=header)
+
+#process_raw('lens1422', 10)

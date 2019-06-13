@@ -338,8 +338,6 @@ class KernelDensity2D(object):
 
         assert len(xpoints) == len(ypoints)
 
-        xx, yy = np.meshgrid(xpoints, ypoints)
-
         x_center, y_center = np.mean(pranges[0]), np.mean(pranges[1])
         estimate = self._convolve_2d(data, len(xpoints), xpoints, ypoints,
                                      x_center, y_center, weights)

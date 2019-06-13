@@ -147,7 +147,8 @@ class TriPlot(object):
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
-                     transpose_idx=None, bandwidth_scale=0.7, label_scale=1):
+                     transpose_idx=None, bandwidth_scale=0.7, label_scale=1, tick_label_font=12,
+                     xtick_label_rotate=0):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -165,8 +166,8 @@ class TriPlot(object):
         self._auto_scale = []
         for i in range(self._nchains):
             self._make_triplot_i(axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
-                                 fig_size, truths, load_from_file=load_from_file,
-                                 transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale,
+                                 fig_size, truths, load_from_file=load_from_file, tick_label_font=tick_label_font,
+                                 transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale, xtick_label_rotate=xtick_label_rotate,
                                  label_scale=label_scale, cmap=self.cmap_call)
 
         for k in range(len(param_names)):
@@ -177,10 +178,10 @@ class TriPlot(object):
             axes[int((len(param_names) + 1) * k)].set_ylim(0, maxh)
 
         self._auto_scale = []
-        plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
-                            right=1 - self.spacing[2] * self.spacing_scale,
-                            top=1 - self.spacing[3] * self.spacing_scale,
-                            wspace=self.spacing[4] * self.spacing_scale, hspace=self.spacing[5] * self.spacing_scale)
+        #plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
+        #                    right=1 - self.spacing[2] * self.spacing_scale,
+        #                    top=1 - self.spacing[3] * self.spacing_scale,
+        #                    wspace=self.spacing[4] * self.spacing_scale, hspace=self.spacing[5] * self.spacing_scale)
 
         return axes
 
@@ -358,7 +359,7 @@ class TriPlot(object):
 
     def _make_triplot_i(self, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
-                        truths=None, labsize=15, tick_label_font=14,
+                        truths=None, labsize=15, tick_label_font=14, xtick_label_rotate=0,
                         load_from_file=True, transpose_idx=None,
                         bandwidth_scale=0.7, label_scale=None, cmap=None):
 
@@ -396,7 +397,8 @@ class TriPlot(object):
                     if row == n_subplots - 1:
 
                         axes[plot_index].set_xticks(xtick_locs)
-                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=rotation)
+                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font,
+                                                         rotation=xtick_label_rotate)
 
                         if col == 0:
                             axes[plot_index].set_yticks(ytick_locs)
@@ -651,6 +653,11 @@ class TriPlot(object):
 
         rotation = 0
         if pname == 'a0_area':
+            name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
+            tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
+            tick_locs = np.array([0, 0.9, 1.8, 2.7, 3.6, 4.5]) * 0.01
+            rotation = 45
+        elif pname == r'$\Sigma_{\rm{sub}}$':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
             tick_locs = np.array([0, 0.9, 1.8, 2.7, 3.6, 4.5]) * 0.01
