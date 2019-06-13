@@ -161,12 +161,13 @@ class Magnipy:
 
         source_scale = self.cosmo.kpc_per_asec(self.zsrc)
         source_size = source_size_kpc * source_scale ** -1
-        img_sep_small = min_img_sep(ximg, yimg)
+        #img_sep_small = min_img_sep(ximg, yimg)
+        img_seps, theta_img = min_img_sep_ranked(ximg, yimg)
 
         raytracing = raytrace.RayTrace(xsrc=xsrc, ysrc=ysrc, multiplane=multiplane,
                                        res=resolution, source_shape=source_shape, polar_grid=polar_grid,
                                        source_size=source_size,
-                                       minimum_image_sep=img_sep_small, adaptive_grid=adaptive_grid,
+                                       minimum_image_sep=[img_seps, theta_img], adaptive_grid=adaptive_grid,
                                        grid_rmax_scale=grid_rmax_scale)
 
         fluxes = raytracing.magnification(ximg, yimg, lensModel, kwargs_lens)

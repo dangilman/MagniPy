@@ -5,7 +5,8 @@ class GAUSSIAN:
 
     def __init__(self,x,y,width):
 
-        self.xcenter,self.ycenter,self.width = x,y,width
+        self.xcenter, self.ycenter = x, y
+        self.width = width * 2.355 ** -1
 
     def __call__(self,betax,betay):
 

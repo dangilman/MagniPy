@@ -5,15 +5,19 @@ import matplotlib.pyplot as plt
 
 class RayShootingGrid(object):
 
-    def __init__(self, side_length, grid_res, adaptive):
+    def __init__(self, side_length, grid_res, adaptive, rot=0):
+
+        N = 2*side_length*grid_res**-1
 
         self.x_grid_0, self.y_grid_0 = np.meshgrid(
-            np.linspace(-side_length, side_length, 2 * side_length * grid_res ** -1),
-            np.linspace(-side_length, side_length, 2 * side_length * grid_res ** -1))
+            np.linspace(-side_length+grid_res, side_length-grid_res, N),
+            np.linspace(-side_length+grid_res, side_length-grid_res, N))
 
         self.radius = side_length
 
         self._adaptive = adaptive
+
+        self._rot = rot
 
     @property
     def grid_at_xy_unshifted(self):
@@ -25,12 +29,18 @@ class RayShootingGrid(object):
 
     def grid_at_xy(self, xloc, yloc, x_other_list, y_other_list):
 
+        theta = self._rot
+
+        cos_phi, sin_phi = np.cos(theta), np.sin(theta)
+
         gridx0, gridy0 = self.grid_at_xy_unshifted
 
         #ellipse_inds = ellipse_coordinates(gridx0, ygrid0, self.radius, q=1,
         #                                   theta=np.arctan2(xloc, yloc) + 0.5 * np.pi)
 
-        xgrid, ygrid = gridx0 + xloc, gridy0 + yloc
+        _xgrid, _ygrid = (cos_phi * gridx0 + sin_phi * gridy0), (-sin_phi * gridx0 + cos_phi * gridy0)
+        xgrid, ygrid = _xgrid + xloc, _ygrid + yloc
+
         xgrid, ygrid = xgrid.ravel(), ygrid.ravel()
 
         if self._adaptive:
@@ -89,11 +99,24 @@ class RayTrace(object):
 
         self.grid_rmax *= grid_rmax_scale
 
-        if adaptive_grid is False:
-            if minimum_image_sep is not None:
-                self.grid_rmax = min(0.5 * minimum_image_sep, self.grid_rmax)
+        if adaptive_grid is True:
+            print('warning: adaptive grid not yet implemented')
+            adaptive_grid = False
 
-        self.grid = RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)
+        if adaptive_grid is False:
+            self.grid = []
+
+            if minimum_image_sep is not None:
+                for j in range(0,len(minimum_image_sep[0])):
+                    sep = minimum_image_sep[0][j]
+                    theta = minimum_image_sep[1][j]
+                    #L = 0.5*sep*np.cos(abs(theta))
+                    L = 0.5*sep
+                    self.grid.append(RayShootingGrid(min(self.grid_rmax, L), self.res, adaptive_grid, rot=theta))
+        else:
+            self.grid = [RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)]*4
+
+        self._adaptive_grid = adaptive_grid
 
     def _grid_rmax(self,size_asec,res):
 
@@ -124,9 +147,10 @@ class RayTrace(object):
         #del kwargs_lens[0]['source_size_kpc']
         img = self.rayshoot(xpos,ypos,lensModel,kwargs_lens)
         #try:
-        #    n = int(len(img) ** 0.5)
-        #    plt.imshow(img.reshape(n,n)); plt.show()
-        #    a=input('continue')
+        #n = int(len(img) ** 0.5)
+        #print('npixels: ' , n)
+        #plt.imshow(img.reshape(n,n)); plt.show()
+        #a=input('continue')
         #except:
         #    pass
         if return_image:
@@ -148,7 +172,11 @@ class RayTrace(object):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            n = int(np.sqrt(len(image)))
+            #n = int(np.sqrt(len(image)))
+
+            #print('npixels: ' , n)
+            #plt.imshow(image.reshape(n,n)); plt.show()
+            #a=input('continue')
             #blended = flux_at_edge(image.reshape(n,n))
             #blended = False
             #if blended:
@@ -182,7 +210,7 @@ class RayTrace(object):
                     xother.append(xpos[j])
                     yother.append(ypos[j])
 
-            xg, yg = self.grid.grid_at_xy(xi, yi, xother, yother)
+            xg, yg = self.grid[i].grid_at_xy(xi, yi, xother, yother)
 
             xgrid.append(xg)
             ygrid.append(yg)

@@ -59,7 +59,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     N_computed = 0
     init_macro = False
     t0 = time.time()
-    readout_steps = 2
+    readout_steps = 50
     verbose = True
 
     current_best = 1e+6
@@ -115,6 +115,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
+
+            if 'rescale_source' in chain_keys_run.keys():
+                chain_keys_run['source_size_kpc'] *= 2.355
 
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
@@ -281,6 +284,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens1422/', 100)
+#runABC(prefix+'data/lens0435/', 1)
 
 
