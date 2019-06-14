@@ -5,13 +5,15 @@ import numpy as np
 from MagniPy.Analysis.KDE.kde import KDE_nD
 
 
-class TriPlot(object):
+class TriPlot2(object):
+
     cmap = 'gist_heat'
 
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
-    _default_contour_colors = [(colors.cnames['dodgerblue'], colors.cnames['blue'], 'k'),
+    _default_contour_colors = [(colors.cnames['darkslategrey'], colors.cnames['black'], 'k'),
+                               (colors.cnames['dodgerblue'], colors.cnames['blue'], 'k'),
                                (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
-                               (colors.cnames['darkslategrey'], colors.cnames['black'], 'k')]
+                               ]
 
     truth_color = 'g'
 
@@ -21,8 +23,7 @@ class TriPlot(object):
     cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
 
-    def __init__(self, parameter_names, parameter_ranges, density_fpaths=None, samples_list=None,
-                 weights_list=None, nbins=12, use_kde=False):
+    def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges):
 
         """
         :param parameter_names: param names (dictionary)
@@ -35,89 +36,30 @@ class TriPlot(object):
         """
 
         self.param_names = parameter_names
-        self.parameter_ranges = parameter_ranges
+        self._nchains = len(NDdensity_instance_list)
 
-        self._density_fpaths = density_fpaths
-        self._prange_list = []
-        for i, pname in enumerate(self.param_names):
-            self._prange_list.append(self.parameter_ranges[pname])
+        if isinstance(parameter_ranges, list):
+            self._prange_list = parameter_ranges
+            self.parameter_ranges = {}
+            for i, pname in enumerate(self.param_names):
+                self.parameter_ranges.update({pname:parameter_ranges[i]})
+        elif isinstance(parameter_ranges, dict):
+            self.parameter_ranges = parameter_ranges
+            self._prange_list = []
+            for pi in self.param_names:
+                self._prange_list.append(self.parameter_ranges[pi])
 
-        if samples_list is None:
-            self._nchains = len(density_fpaths)
-            self._pnames_ordered, self.density = self._load_density(density_fpaths)
-        else:
-            self._nchains = len(samples_list)
-            self.density = self._compute_density(samples_list, weights_list, nbins, use_kde)
-            self._pnames_ordered = parameter_names
+        self._NDdensity_list = NDdensity_instance_list
 
-    def _compute_density(self, samples_list, weights_list, nbins, use_kde):
-        h = []
-        if weights_list is None:
-            weights_list = [None] * len(samples_list)
-        for samples, weights in zip(samples_list, weights_list):
-            if use_kde:
-                kernel = KDE_nD(0.8)
-                points = [np.linspace(self.parameter_ranges[pi][0], self.parameter_ranges[pi][1], nbins)
-                          for pi in self.param_names]
-                H = kernel(samples, points, self._prange_list, weights=weights)
-                h.append(H)
-
-            else:
-                H, _ = np.histogramdd(samples, bins=nbins, weights=weights)
-                h.append(H.T)
-        return h
-
-    def reset(self):
-
-        self._pnames_ordered, self.density = self._load_density(self._density_fpaths)
+        #self.set_cmap(self.cmap)
 
     def _load_projection_1D(self, pname, idx):
 
-        sum_inds = []
-        for i, name in enumerate(self._pnames_ordered):
-            if pname != name:
-                sum_inds.append(len(self._pnames_ordered) - (i + 1))
-
-        projection = np.sum(self.density[idx], tuple(sum_inds))
-
-        return projection
+        return self._NDdensity_list[idx].projection_1D(pname)
 
     def _load_projection_2D(self, p1, p2, idx):
 
-        sum_inds = []
-        for i, name in enumerate(self._pnames_ordered):
-            if p1 != name and p2 != name:
-                sum_inds.append(len(self._pnames_ordered) - (i + 1))
-
-        tpose = False
-        for name in self._pnames_ordered:
-            if name == p1:
-                break
-            elif name == p2:
-                tpose = True
-                break
-
-        projection = np.sum(self.density[idx], tuple(sum_inds))
-        if tpose:
-            projection = projection.T
-
-        return projection
-
-    def _load_density(self, chain_paths):
-
-        density = []
-        for paths in chain_paths:
-            with open(paths[0], 'r') as f:
-                lines = f.readlines()
-
-            pnames_ordered = lines[0].split(' ')
-            nbins = int(pnames_ordered[-1])
-            pnames_ordered = pnames_ordered[0:-1]
-
-            shape = [nbins] * len(pnames_ordered)
-            density.append(np.loadtxt(paths[1]).reshape(tuple(shape)))
-
-        return pnames_ordered, density
+        return self._NDdensity_list[idx].projection_2D(p1, p2)
 
     def set_cmap(self, newcmap, color_eval=0.9, marginal_col=None):
 
@@ -175,6 +117,7 @@ class TriPlot(object):
             for c in range(0, self._nchains):
                 scales.append(self._auto_scale[c][k])
             maxh = np.max(scales) * 1.1
+            print(maxh)
             axes[int((len(param_names) + 1) * k)].set_ylim(0, maxh)
 
         self._auto_scale = []

@@ -213,17 +213,15 @@ class ChainFromSamples(object):
                  save_to_file = True, smooth_KDE = True, filename = '',
                  weights_global = None, weights_single = None):
 
-        if not hasattr(self, '_kernel'):
-
-            self._kernel = KDE_nD(bandwidth_scale)
-
         posteriors = self.get_posteriors(tol)
 
-        points = []
         ranges = []
         for i, pi in enumerate(self.params_varied):
-            points.append(np.linspace(self.pranges[pi][0], self.pranges[pi][1], nkde_bins))
             ranges.append(self.pranges[pi])
+
+        if not hasattr(self, '_kernel'):
+
+            self._kernel = KDE_nD(bandwidth_scale, ranges, nkde_bins)
 
         density = np.ones(tuple([nkde_bins]*len(self.params_varied)))
         print_time = True
@@ -270,7 +268,7 @@ class ChainFromSamples(object):
                             params_weights *= new_weight
 
                 if smooth_KDE:
-                    density_n += self._kernel(data, points, ranges, weights=params_weights)
+                    density_n += self._kernel(data, ranges, weights=params_weights)
                 else:
                     density_n += numpy.histogramdd(data, range = ranges,
                                                    density=True, bins=nkde_bins,

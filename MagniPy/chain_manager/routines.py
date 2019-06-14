@@ -63,6 +63,8 @@ def extract_chain(name, sim_name, start_idx=1):
             observed_fluxes = obs_data[0].m
             params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
             params = np.delete(params, 1, 1)
+            params = params[:,0:6]
+
             macro_model = np.loadtxt(folder_name + '/macro.txt')
 
             macro_model[:,3] = transform_ellip(macro_model[:,3])
@@ -87,13 +89,13 @@ def extract_chain(name, sim_name, start_idx=1):
             lens_fluxes = fluxes
             lens_params = params
 
-            lens_all = np.column_stack((macro_model, params))
+            lens_all = np.column_stack((params, macro_model))
 
             init = False
         else:
             lens_fluxes = np.vstack((lens_fluxes,fluxes))
             lens_params = np.vstack((lens_params,params))
-            new = np.column_stack((macro_model, params))
+            new = np.column_stack((params, macro_model))
 
             lens_all = np.vstack((lens_all, new))
 
@@ -133,36 +135,22 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds):
 
     return sample_inds
 
-def keyword_parse(shorthand_labels):
-
-    labels_short = ['re', 'gx', 'gy', 'eps', 'epstheta', 'shear', 'sheartheta', 'gmacro', 'srcsize',
-                    'sigmasub', 'deltalos', 'mparent', 'alpha', 'mhm']
-    labels = [r'$\theta_E$', r'$G1_x$', r'$G1_y$', r'$\epsilon$',
-              r'$\theta_{\epsilon}$', r'$\gamma_{\rm{ext}}$', r'$\theta_{\rm{ext}}$', r'$\gamma_{\rm{macro}}$',
-              r'$\sigma_{\rm{src}}$',
-              r'$\Sigma_{\rm{sub}}$', r'$\delta_{\rm{los}}$', r'$\log M_{\rm{halo}}$', r'$\alpha$', 'log_m_break']
-
-    new_labs = []
-    column_inds = []
-
-    for lab in shorthand_labels:
-        for i, label in enumerate(labels_short):
-            if lab == label:
-                new_labs.append(labels[i])
-                column_inds.append(i)
-                break
-    return new_labs, column_inds
-
 def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
 
     """
     coverts output from cluster into single files for each lens
     """
 
-    header = 're gx gy eps epstheta shear sheartheta gmacro srcsize sigmasub deltalos mparent alpha mhm'
+    header = 'srcsize sigmasub deltalos mparent alpha mhm re gx gy eps epstheta shear sheartheta gmacro'
+    keep_inds = [0,1,2,3]
     if name=='lens1422':
         sigmas = [0.01, 0.01, 0.006]
         keep_inds = [0,1,2]
+    elif name=='lens0435':
+        header += ' satx saty satrein'
+        sigmas = [0.02]*4
+    elif name =='lens2038':
+        sigmas = [0.01, 0.02, 0.02, 0.01]
 
     sigmas = np.array(sigmas)
 
@@ -173,7 +161,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
     all = np.squeeze(all)
     fluxes, fluxes_obs = np.squeeze(fluxes), np.squeeze(fluxes_obs)
     chain_file_path = chainpath_out + 'processed_chains/grism_quads/' + name + '/'
-
+    print('nrealizations: ', fluxes.shape[0])
     if ~os.path.exists(chain_file_path):
         create_directory(chain_file_path)
 
@@ -186,4 +174,4 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
 
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', all[indexes[0:keep_N],:], fmt='%.5f', header=header)
 
-#process_raw('lens1422', 10)
+process_raw('lens2038', 10)
