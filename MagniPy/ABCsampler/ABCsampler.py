@@ -191,6 +191,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
 def runABC(chain_ID='',core_index=int):
 
+    print('trying to read for paramdictionary file... ')
     chain_keys,chain_keys_to_vary,output_path,run, readout_best = initialize(chain_ID,core_index)
 
     if run is False:

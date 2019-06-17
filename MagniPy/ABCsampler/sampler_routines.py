@@ -39,8 +39,11 @@ def write_param_dictionary(fname='', param_dictionary={}):
         f.write(str(param_dictionary))
 
 def read_paraminput(file):
-    with open(file, 'r') as f:
-        vals = f.read()
+    try:
+        with open(file, 'r') as f:
+            vals = f.read()
+    except:
+        raise Exception('could not locate file '+file)
 
     return eval(vals)
 
@@ -351,6 +354,7 @@ def readout_withshear(output_path, fluxes, parameters, param_names_tovary, shear
 
 def get_inputfile_path(chain_ID, core_index):
     info_file = chain_ID + '/paramdictionary_1.txt'
+    print('searching directory '+info_file)
     temp_keys = read_paraminput(info_file)
 
     cores_per_lens = temp_keys['main_keys']['cores_per_lens']
