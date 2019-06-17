@@ -353,6 +353,7 @@ def readout_withshear(output_path, fluxes, parameters, param_names_tovary, shear
 
 
 def get_inputfile_path(chain_ID, core_index):
+
     info_file = chain_ID + '/paramdictionary_1.txt'
     print('searching directory '+info_file)
     temp_keys = read_paraminput(info_file)
@@ -369,6 +370,7 @@ def get_inputfile_path(chain_ID, core_index):
 
     f_index = data_id[core_index - 1]
 
+    print('executing commands from: ', chain_ID + 'paramdictionary_' + str(f_index) + '.txt')
     return chain_ID + 'paramdictionary_' + str(f_index) + '.txt'
 
 
