@@ -76,7 +76,7 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
                     keyi = r'$\log_{10} \left(m_{\rm{hm}}\right)$' + ' ' + build_latex(mean, sigma)
                 elif keyi == 'source_size_kpc':
                     sigma, mean = int(sigma*1000), int(mean*1000)
-                    keyi = 'source size' + ' ' + build_latex(mean, sigma)
+                    keyi = r'$\sigma_{\rm{src}} \left[\rm{pc}\right]$' + ' ' + build_latex(mean, sigma)
                 elif keyi == 'LOS_normalization':
                     keyi = r'$\delta_{\rm{LOS}}$' + ' ' + build_latex(mean, sigma)
                 weight_string += [keyi]
@@ -91,12 +91,12 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
                                   labelspacing=1.5)
 
     legend2 = axes[ax_idx].legend(weight_lines, weight_string, loc = 'lower left',
-                                  bbox_to_anchor = (xbox-0.35*delta, ybox-0.6*delta), fontsize=15, frameon = False)
+                                  bbox_to_anchor = (xbox-0.35*delta, ybox-delta), fontsize=15, frameon = False)
 
     axes[ax_idx].add_artist(legend1)
 
     #axes[ax_idx].legend(custom_lines, flux_strings, loc = loc, fontsize=14)
-    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+2.5*delta+nsamp_scale), xycoords='axes fraction', fontsize=16)
+    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+3*delta+nsamp_scale-0.5), xycoords='axes fraction', fontsize=16)
 
 
 

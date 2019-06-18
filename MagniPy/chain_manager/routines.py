@@ -1,6 +1,7 @@
 import numpy as np
 from MagniPy.paths import *
 from MagniPy.util import create_directory, copy_directory, read_data
+from copy import deepcopy
 
 def make_samples_histogram(data, ranges, nbins, weights):
     density = np.histogramdd(data, range=ranges, density=True, bins=nbins,
@@ -68,6 +69,13 @@ def extract_chain(name, sim_name, start_idx=1):
             macro_model = np.loadtxt(folder_name + '/macro.txt')
 
             macro_model[:,3] = transform_ellip(macro_model[:,3])
+            macro_model = macro_model[:,0:8]
+
+            macro_normed = deepcopy(macro_model)
+            for col in range(0, macro_normed.shape[1]):
+                macro_normed[:,col] -= np.mean(macro_normed[:,col])
+
+            macro_model = np.column_stack((macro_model, macro_normed))
 
             assert fluxes.shape[0] == params.shape[0]
 
@@ -106,19 +114,21 @@ def extract_chain(name, sim_name, start_idx=1):
 def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds):
 
     sample_inds = []
+    statistics = []
 
     for k in range(1, N_pert + 1):
+
+        ncols = len(keep_inds) - 1
+        nrows = np.shape(fluxes)[0]
+        perturbed_ratios = np.empty((nrows, ncols))
 
         perturbed_fluxes = np.empty((np.shape(fluxes)[0], len(keep_inds)))
 
         for i, ind in enumerate(keep_inds):
+            perturbed_fluxes[:,i] += deepcopy(fluxes[:,ind])+\
+                                     np.random.normal(0, sigmas[ind])
 
-            perturbed_fluxes[:,i] = np.random.normal(fluxes[:,ind], sigmas[ind])
-
-        ncols = len(keep_inds) - 1
-        nrows = np.shape(fluxes)[0]
-        perturbed_ratios = np.empty((nrows,ncols))
-        norm = perturbed_fluxes[:,0]
+        norm = deepcopy(perturbed_fluxes[:,0])
         for col in range(0,len(keep_inds)-1):
             perturbed_ratios[:,col] = fluxes[:,col+1] * norm ** -1
 
@@ -132,24 +142,26 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds):
         ordered_inds = np.argsort(summary_statistic)
 
         sample_inds.append(ordered_inds)
+        statistics.append(summary_statistic[ordered_inds])
 
-    return sample_inds
+    return sample_inds, statistics
 
-def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
+def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
 
     """
     coverts output from cluster into single files for each lens
     """
 
-    header = 'srcsize sigmasub deltalos mparent alpha mhm re gx gy eps epstheta shear sheartheta gmacro'
+    header = 'f1 f2 f3 f4 stat srcsize sigmasub deltalos mparent alpha mhm re gx gy eps epstheta shear sheartheta gmacro'
+    header += ' re_normed gx_normed gy_normed eps_normed epstheta_normed shear_normed sheartheta_normed gmacro_normed'
     keep_inds = [0,1,2,3]
-    if name=='lens1422':
+    if name=='lens1422' or name=='lens1422_highnorm':
         sigmas = [0.01, 0.01, 0.006]
         keep_inds = [0,1,2]
     elif name=='lens0435':
-        header += ' satx saty satrein'
         sigmas = [0.02]*4
-    elif name =='lens2038':
+    elif name =='lens2038' or name=='lens2038_highnorm':
+        #sigmas = [0.01, 0.02, 0.02, 0.01]
         sigmas = [0.01, 0.02, 0.02, 0.01]
 
     sigmas = np.array(sigmas)
@@ -166,12 +178,15 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=2500):
         create_directory(chain_file_path)
 
     print('sampling flux uncertainties... ')
-    inds_to_keep_list = add_flux_perturbations(fluxes, fluxes_obs, sigmas, Npert,
+    inds_to_keep_list, statistics = add_flux_perturbations(fluxes, fluxes_obs, sigmas, Npert,
                                                keep_inds)
     print('done.')
 
     for i, indexes in enumerate(inds_to_keep_list):
 
-        np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', all[indexes[0:keep_N],:], fmt='%.5f', header=header)
+        f = fluxes[indexes[0:keep_N], :]
+        final_fluxes = np.column_stack((f, np.array(statistics[i][indexes[0:keep_N]])))
+        x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
+        np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens2038', 10)
+process_raw('lens0435', 10)

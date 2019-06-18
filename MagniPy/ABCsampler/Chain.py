@@ -229,6 +229,8 @@ class ChainFromSamples(object):
 
         if weights_single is None:
             weights_single = [None] * len(self.lenses)
+        elif len(weights_single) == 1:
+            weights_single = [weights_single]*len(self.lenses)
         else:
             assert len(weights_single) == len(self.lenses)
 
@@ -258,9 +260,10 @@ class ChainFromSamples(object):
                             else:
                                 params_weights *= new_weight
 
-                    if weights_single[n] is not None and pi in weights_single:
-                        diff = data[:,i] - weights_single[pi][0]
-                        sigma = weights_single[pi][1]
+                    if weights_single[n] is not None and pi in weights_single[n]:
+
+                        diff = data[:,i] - weights_single[n][pi][0]
+                        sigma = weights_single[n][pi][1]
                         new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
                         if params_weights is None:
                             params_weights = new_weight

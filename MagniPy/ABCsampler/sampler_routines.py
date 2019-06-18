@@ -406,7 +406,7 @@ def initialize(chain_ID, core_index):
             readout_best = False
 
         if N_lines >= chain_keys['Nsamples']:
-            return False, False, False, False
+            return False, False, False, False, False
         else:
             chain_keys['Nsamples'] = chain_keys['Nsamples'] - N_lines
             chain_keys['write_header'] = False
