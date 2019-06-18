@@ -10,7 +10,7 @@ def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.05,
-                                                 tol_source=1e-5, tol_mag=0.5, tol_centroid=0.03,
+                                                 tol_source=1e-5, tol_mag=None, tol_centroid=0.03,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=False, re_optimize=False, particle_swarm=True, restart=1,
@@ -125,7 +125,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.35,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.5,
                                        verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=chain_keys_run['grid_res'],
@@ -289,6 +289,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/test_lens2033/', 1)
+#runABC(prefix+'data/lens0911/', 1)
 
 
