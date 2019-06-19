@@ -101,10 +101,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
                 opt_routine = 'fixedshearpowerlaw'
                 constrain_params = {'shear': chain_keys_run['shear']}
                 reopt = False
+                tol_mag = None
             else:
                 opt_routine = 'fixed_powerlaw_shear'
                 constrain_params = None
                 reopt = True
+                tol_mag = 0.5
 
             if not init_macro:
                 print('initializing macromodels.... ')
@@ -133,7 +135,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag=0.5,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag=tol_mag,
                                        verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=chain_keys_run['grid_res'],
