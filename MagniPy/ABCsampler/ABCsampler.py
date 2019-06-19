@@ -94,9 +94,17 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
                 chain_keys_run[pname] = samples[i]
 
-                #print(pname, chain_keys_run[pname])
             if 'zlens' in keys_to_vary.keys():
                 halo_constructor = pyHalo(np.round(chain_keys_run['zlens'], 2), np.round(chain_keys_run['zsrc'], 2))
+
+            if 'shear' in keys_to_vary.keys():
+                opt_routine = 'fixedshearpowerlaw'
+                constrain_params = {'shear': chain_keys_run['shear']}
+                reopt = False
+            else:
+                opt_routine = 'fixed_powerlaw_shear'
+                constrain_params = None
+                reopt = True
 
             if not init_macro:
                 print('initializing macromodels.... ')
@@ -125,13 +133,14 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag = 0.5,
-                                       verbose=verbose, re_optimize=True, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
+                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag=0.5,
+                                       verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                         simplex_n_iter=200, polar_grid=False, grid_res=chain_keys_run['grid_res'],
                                         LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                          LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
-                                                                    satellites=chain_keys_run['satellites'])
+                                         satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
+                                                                    constrain_params=constrain_params)
 
                 xfit, yfit = new[0].x, new[0].y
             except:
