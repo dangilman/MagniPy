@@ -5,15 +5,16 @@ from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
 
-class RXJ0911(Quad):
+class Lens1131(Quad):
 
-    x = np.array([0.688, 0.946, 0.672, -2.283])
-    y = np.array([-0.517, -0.112, 0.442, 0.274])
-    m = np.array([0.56, 1., 0.53, 0.24])
-    sigma_x = np.array([0.005]*4)
-    sigma_y = np.array([0.005]*4)
+    x = np.array([2.032, 2.063, 1.444, -1.073])
+    y = np.array([-0.586, 0.601, -1.706, 0.293])
+    m = np.array([1., 0.613497, 0.730061, 0.06135])
+    sigma_x = np.array([0.003]*4)
+    sigma_y = np.array([0.003]*4)
+
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.77, 2.76
+    zlens, zsrc = 0.295, 0.66
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -21,7 +22,7 @@ class RXJ0911(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
-    identifier = 'lens0911'
+    identifier = 'lens1131'
 
     flux_ratio_index = 1
 
@@ -31,18 +32,13 @@ class RXJ0911(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    gamma_min = 1.9
+    has_satellite = False
+
+    gamma_min = 1.95
     gamma_max = 2.2
 
     srcmin = 0.02
     srcmax = 0.05
-    has_satellite = True
-    satellite_mass_model = ['SIS']
-    satellite_redshift = [0.78]
-    satellite_convention = ['phys']
-    satellite_pos_mass = [-0.767, 0.657]
-    # satellite einstein radius from Blackburne et al. 2011
-    satellite_kwargs = [{'theta_E': 0.24, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
@@ -51,13 +47,6 @@ class RXJ0911(Quad):
             del kwargs_fit['datatofit']
         else:
             data = self.data
-
-        satellites = {}
-        satellites['lens_model_name'] = self.satellite_mass_model
-        satellites['z_satellite'] = [self.zlens]
-        satellites['kwargs_satellite'] = self.satellite_kwargs
-
-        kwargs_fit.update({'satellites': satellites})
 
         optdata, optmodel = self._fit(data, self.solver, kwargs_fit, macromodel_init=macro_init)
 

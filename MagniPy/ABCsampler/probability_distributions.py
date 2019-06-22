@@ -20,6 +20,7 @@ def approx_cdf_1d(x_array, pdf_array):
 
 class ProbabilityDistribution(object):
 
+
     def __init__(self,distribution_type='',args={},Nsamples=int,decimals=int,**kwargs):
 
         self.decimals = decimals
@@ -38,13 +39,17 @@ class ProbabilityDistribution(object):
             self.positive_definite = args['positive_definite']
 
         elif distribution_type=='PDF':
-            self.draw = self.InvertCDF
-            sorted=np.argsort(args['values'])
-            args['values'] = args['values'][sorted]
-            args['pdf'] = args['pdf'][sorted]
-            norm = np.max(args['pdf'])
 
-            self.values, self.pdf = args['values'], args['pdf']/norm
+            self.draw = self.InvertCDF
+
+            sorted = np.argsort(args['values'])
+            args['values'] = np.array(args['values'])
+            args['pdf'] = np.array(args['pdf'])
+            values = args['values'][sorted]
+            pdf = args['pdf'][sorted]
+            norm = np.max(pdf)
+
+            self.values, self.pdf = values, pdf/norm
 
         else:
             raise Exception('distribution_type not recognized: ')

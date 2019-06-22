@@ -8,13 +8,14 @@ from MagniPy.util import approx_theta_E
 
 def initialize_macro(solver,data,init):
 
+
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.05,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=False, re_optimize=False, particle_swarm=True, restart=1,
-                                                 tol_simplex_func=0.001, adaptive_grid=False)
+                                                 tol_simplex_func=0.001, adaptive_grid=False, satellites=None)
 
     return model
 
@@ -25,6 +26,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
         #gamma_values = [2.0]
+
         for gi in gamma_values:
             _macro = get_default_SIE(z=chain_keys_run['zlens'])
             _macro.lenstronomy_args['gamma'] = gi
@@ -64,7 +66,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     else:
         readout_steps = 50
 
-    verbose = False
+    verbose = True
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -75,7 +77,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     else:
         save_statistic = False
 
-    if 'zlens' not in keys_to_vary.keys():
+    if 'lens_redshift' not in keys_to_vary.keys():
         halo_constructor = pyHalo(np.round(keys['zlens'], 2), np.round(keys['zsrc'], 2))
 
     while N_computed < keys['Nsamples']:
@@ -94,8 +96,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
                 chain_keys_run[pname] = samples[i]
 
-            if 'zlens' in keys_to_vary.keys():
-                halo_constructor = pyHalo(np.round(chain_keys_run['zlens'], 2), np.round(chain_keys_run['zsrc'], 2))
+            if 'lens_redshift' in keys_to_vary.keys():
+                halo_constructor = pyHalo(np.round(chain_keys_run['lens_redshift'], 2), np.round(chain_keys_run['zsrc'], 2))
 
             if 'shear' in keys_to_vary.keys():
                 opt_routine = 'fixedshearpowerlaw'
@@ -127,6 +129,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
             halo_args = halo_model_args(chain_keys_run)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
+            if 'lens_redshift' in keys_to_vary.keys():
+                chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
@@ -213,6 +217,7 @@ def runABC(chain_ID='',core_index=int):
                      t=chain_keys['t_to_fit'], source=chain_keys['source'])
 
     rein_main = approx_theta_E(datatofit.x, datatofit.y)
+
     chain_keys.update({'R_ein_main': rein_main})
     chain_keys.update({'cone_opening_angle': chain_keys['opening_angle_factor'] * rein_main})
 
@@ -300,6 +305,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens0911/', 1)
+#runABC(prefix+'data/lens1606_highnorm_fixshear/', 1)
 
 

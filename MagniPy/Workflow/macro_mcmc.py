@@ -96,6 +96,7 @@ class MacroMCMC(object):
                             args.update({'constrain_params': {name: fixed_param}})
 
                     elif pname == 'fixed_param_uniform':
+
                         dictionary = tovary['fixed_param_uniform']
                         name = list(dictionary.keys())[0]
                         fixed_low, fixed_high = dictionary[name][0], dictionary[name][1]
@@ -306,6 +307,7 @@ class MacroMCMC(object):
 
         d = self._setup_data()
         run_args.update({'datatofit': d})
+
         out1, out2 = opt_routine(**run_args)
 
         return out1, out2, d

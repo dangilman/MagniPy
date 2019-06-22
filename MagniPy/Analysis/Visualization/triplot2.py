@@ -235,11 +235,15 @@ class TriPlot2(object):
         if truths is not None:
 
             t = deepcopy(truths[p1])
-            pmin, pmax = self._get_param_minmax(p1)
-            if t <= pmin:
-                t = pmin * 1.075
 
-            ax.axvline(t, linestyle='--', color=self.truth_color, linewidth=3)
+            if isinstance(t, float) or isinstance(t, int):
+                pmin, pmax = self._get_param_minmax(p1)
+                if t <= pmin:
+                    t = pmin * 1.075
+
+                ax.axvline(t, linestyle='--', color=self.truth_color, linewidth=3)
+            elif isinstance(t, list):
+                ax.axvspan(t[0], t[1], alpha=0.25, color=self.truth_color)
 
         self._auto_scale.append(autoscale)
 
@@ -296,6 +300,10 @@ class TriPlot2(object):
 
         if truths is not None:
             t1, t2 = truths[p1], truths[p2]
+            if isinstance(t1, list):
+                t1 = 0.5*(t1[0] + t1[1])
+            if isinstance(t2, list):
+                t2 = 0.5*(t2[0] + t2[1])
             ax.scatter(t1, t2, color=self.truth_color, s=50)
             ax.axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
             ax.axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
@@ -393,9 +401,19 @@ class TriPlot2(object):
 
                     if truths is not None:
                         t1, t2 = truths[param_names[col]], truths[param_names[row]]
-                        axes[plot_index].scatter(t1, t2, color=self.truth_color, s=50)
-                        axes[plot_index].axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
-                        axes[plot_index].axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
+                        if isinstance(t1, list):
+                            t_1 = 0.5*(t1[0]+t1[1])
+
+                        else:
+                            t_1 = t1
+                        if isinstance(t2, list):
+                            t_2 = 0.5*(t2[0] + t2[1])
+                        else:
+                            t_2 = t2
+
+                        axes[plot_index].scatter(t_1, t_2, color=self.truth_color, s=50)
+                        axes[plot_index].axvline(t_1, linestyle='--', color=self.truth_color, linewidth=3)
+                        axes[plot_index].axhline(t_2, linestyle='--', color=self.truth_color, linewidth=3)
 
                 elif marg_in_row == col and marg_done is False:
 
@@ -468,10 +486,17 @@ class TriPlot2(object):
 
                         t = deepcopy(truths[param_names[col]])
                         pmin, pmax = self._get_param_minmax(param_names[col])
-                        if t <= pmin:
-                            t = pmin * 1.075
+                        if isinstance(t, float) or isinstance(t, int):
+                            if t <= pmin:
+                                t_ = pmin * 1.075
+                            else:
+                                t_ = t
+                            axes[plot_index].axvline(t_, linestyle='--', color=self.truth_color, linewidth=3)
 
-                        axes[plot_index].axvline(t, linestyle='--', color=self.truth_color, linewidth=3)
+                        else:
+                            t_ = 0.5*(t[0] + t[1])
+                            axes[plot_index].axvline(t_, linestyle='--', color=self.truth_color, linewidth=3)
+                            axes[plot_index].axvspan(t[0], t[1], color=self.truth_color, alpha=0.25)
 
                 else:
                     axes[plot_index].axis('off')

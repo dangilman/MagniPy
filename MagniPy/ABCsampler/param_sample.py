@@ -10,8 +10,8 @@ class ParamSample(object):
     recognized_param_precision['core_ratio'] = 4
     recognized_param_precision['source_size_kpc'] = 6
     recognized_param_precision['SIDMcross'] = 3
-    recognized_param_precision['zlens'] = 2
-    
+    recognized_param_precision['lens_redshift'] = 3
+
     def __init__(self, params_to_vary = {}, Nsamples=int,decimals=5,**kwargs):
         """
 

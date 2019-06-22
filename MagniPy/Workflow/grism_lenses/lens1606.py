@@ -7,14 +7,14 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens1606(Quad):
 
-    x = np.array([ 0.838, -0.784,  0.048, -0.289])
-    y = np.array([ 0.378, -0.211, -0.527,  0.528])
-    m = np.array([1., 1, 0.59, 0.79])
+    x = np.array([0.838, -0.784, 0.048, -0.289])
+    y = np.array([0.378, -0.211, -0.527, 0.528])
+    m = np.array([1., 1., 0.59, 0.79])
 
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.5, 1.5
+    zlens, zsrc = 0.31, 1.7
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -40,6 +40,8 @@ class Lens1606(Quad):
 
     has_satellite = True
     satellite_mass_model = ['SIS']
+    satellite_redshift = [zlens]
+    satellite_convention = ['phys']
     # from mass center
     satellite_pos_mass = np.array([-0.307, -1.153])
     # from light center

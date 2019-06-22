@@ -32,30 +32,24 @@ def execute_mcmc(fname, lens_class, N, optkwargs, to_vary = {}, return_physical_
                     satellite_convention=satellite_convention,satellite_redshift=satellite_redshift,
                     return_physical_positions=return_physical_positions,z_source=lens_class.zsrc)
 
+from MagniPy.Workflow.grism_lenses.rxj0911 import RXJ0911
+from MagniPy.Workflow.grism_lenses.lens1606 import Lens1606
+from MagniPy.Workflow.grism_lenses.b1422 import Lens1422
+from MagniPy.Workflow.grism_lenses.rxj1131 import Lens1131
 
-from MagniPy.Workflow.grism_lenses.he0435 import Lens0435
-
-simple_quads = [Lens0435()]
-N = 500
-
-optimizer_kwargs = [{'tol_mag': 0.3, 'pso_compute_magnification': 1e+2,
+simple_quads = [Lens1131()]
+N=400
+optimizer_kwargs = [{'tol_mag': None, 'pso_compute_magnification': 1e+2,
                     'n_particles': 30, 'verbose': False,
-                    'optimize_routine': 'fixed_powerlaw_shear', 'grid_res': 0.001, 'multiplane': True},
+                    'optimize_routine': 'fixedshearpowerlaw', 'grid_res': 0.001, 'multiplane': True},
                     ]
 
-# 2033: wider prior on power law slope (to smaller values)
+#xsat = simple_quads[0].satellite_kwargs[0]['center_x']
+#ysat = simple_quads[0].satellite_kwargs[0]['center_y']
 
-#For satellites
-# impose Gaussian prior on position
-# wider flat prior on Einstein radius
+varyparams = [{'fixed_param_uniform': {'shear':[0.09,0.17]}}]
 
-xsat = simple_quads[0].satellite_kwargs[0]['center_x']
-ysat = simple_quads[0].satellite_kwargs[0]['center_y']
-
-varyparams = [{'satellite_theta_E_1': [0., 0.6], 'satellite_x_1': [-2.37, 0.05],
-               'satellite_y_1': [2.08, 0.05]}]
-
-fnames = ['./quad_mcmc/0435_samples_physicalcorrected.txt']
+fnames = ['./quad_mcmc/1131_samples_fixshear.txt']
 
 for fname, lens, opt_kwargs_i, to_vary_i in \
         zip(fnames, simple_quads, optimizer_kwargs, varyparams):
