@@ -7,14 +7,14 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens0414(Quad):
 
-    x = np.array([-0.2046459, -0.1066459, 0.3153541, -0.0966459])
-    y = np.array([0.10689306, 0.20089306, -0.06510694, -0.14310694])
-    m = np.array([1., 0.584, 0.52, 0.506])
+    x = np.array([1.071, 1.2042, 0.4834, -0.8774])
+    y = np.array([-0.663, -0.2587, 1.2711, -0.3637])
+    m = np.array([1., 0.9027, 0.389, 0.1446])
 
     sigma_x = np.array([0.003]*4)
     sigma_y = np.array([0.003]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 1.145, 3.12
+    zlens, zsrc = 0.96, 2.64
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -23,6 +23,16 @@ class Lens0414(Quad):
                          sigma_m=sigma_m)
 
     identifier = 'lens0414'
+    has_satellite=True
+
+    satellite_mass_model = ['SIS']
+    satellite_redshift = [zlens]
+    satellite_convention = ['phys']
+    # from mass center
+    satellite_pos_mass = np.array([-0.386, 1.459])
+    # from light center
+    # satellite_pos_light = [-0.1255, -1.3517]
+    satellite_kwargs = [{'theta_E': 0.2, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     flux_ratio_index = 0
 
@@ -35,8 +45,8 @@ class Lens0414(Quad):
     gamma_min = 1.95
     gamma_max = 2.2
 
-    srcmin = 0.01
-    srcmax = 0.03
+    srcmin = 0.005
+    srcmax = 0.025
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 

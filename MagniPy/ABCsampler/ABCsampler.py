@@ -66,7 +66,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
     else:
         readout_steps = 50
 
-    verbose = True
+    verbose = False
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -130,7 +130,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
             if 'lens_redshift' in keys_to_vary.keys():
-                chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
+                if chain_keys_run['satellites'] is not None:
+                    chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
@@ -305,6 +306,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens1606_highnorm_fixshear/', 1)
+#runABC(prefix+'data/lens2033/', 1)
 
 

@@ -23,6 +23,7 @@ class Lens0128(Quad):
                          sigma_m=sigma_m)
 
     identifier = 'lens0128'
+    has_satellite = False
 
     flux_ratio_index = 0
 
@@ -35,8 +36,8 @@ class Lens0128(Quad):
     gamma_min = 1.95
     gamma_max = 2.2
 
-    srcmin = 0.01
-    srcmax = 0.03
+    srcmin = 0.005
+    srcmax = 0.025
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 

@@ -120,7 +120,9 @@ class RayTrace(object):
 
     def _grid_rmax(self,size_asec,res):
 
-        if size_asec < 0.0005:
+        if size_asec < 0.0002:
+            s = 0.005
+        elif size_asec < 0.0005:
             s = 0.03
         elif size_asec < 0.001:
             s = 0.08
