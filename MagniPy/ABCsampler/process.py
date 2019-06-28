@@ -219,31 +219,30 @@ def resample_chain_sidm(a0_area=None, SIDMcross=None, errors = [0, 0.02],N_pert=
 
         _resample_chain(name = name, new_name = new_name, which_lens_indexes=which_lens_indexes,
                        parameters_new=params_new)
-
     process_samples(new_name, which_lens_indexes, errors = errors, N_pert=N_pert)
 
     return new_name
 
 def resample_sys(num, process_only):
     num = int(num)
-    errors = [0, 0.02]
-    src_mean = 0.03
+    errors = [0]
+    src_mean = 0.023
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.016, SIDMcross=0.25, SIDMcross_sigma=0.2, src_size = src_mean,
+        resample_chain_sidm(a0_area=0.024, SIDMcross=0.1, SIDMcross_sigma=0.2, src_size = src_mean,
                             errors=errors,
                    N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
-                   which_lens_indexes=np.arange(1, 31))
+                   which_lens_indexes=np.arange(1, 37))
     elif num == 2:
-        resample_chain_sidm(a0_area=0.02, SIDMcross=8, SIDMcross_sigma=0.2, src_size=src_mean,
+        resample_chain_sidm(a0_area=0.024, SIDMcross=9, SIDMcross_sigma=0.2, src_size=src_mean,
                             errors=errors,
                             N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
-                            which_lens_indexes=np.arange(1, 31))
+                            which_lens_indexes=np.arange(1, 37))
     elif num == 3:
-        resample_chain(a0_area=1.8, logmhm=4.95, src_size=src_mean, LOS_norm=1, errors=errors,
-                       N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
-                       which_lens_indexes=np.arange(1, 51))
-
+        resample_chain_sidm(a0_area=0.025, SIDMcross=0.25, SIDMcross_sigma=0.2, src_size=src_mean,
+                            errors=errors,
+                            N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
+                            which_lens_indexes=np.arange(1, 37))
     elif num == 4:
         resample_chain(a0_area=1.8,logmhm=4.95, src_size=src_mean, LOS_norm=1.1, errors=errors,
                    N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
@@ -262,11 +261,17 @@ def resample_sys(num, process_only):
                        N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                        which_lens_indexes=np.arange(1, 51))
 
-
-
-#process_raw('coldSIDM_full', np.arange(1,31))
-#process_samples('coldSIDM_full', np.arange(1,31), 1, [0])
+#process_raw('coldSIDM_full', np.arange(1,37))
+#process_samples('SIDM_sigma0.018_cross0.3', np.arange(1,37), 5, [0.01, 0.02, 0.03])
 #resample_sys(1, False)
+#resample_sys(2, False)
+#resample_sys(1, False)
+resample_sys(1, False)
+#process_samples('SIDM_sigma0.025_cross0.1', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
+process_samples('SIDM_sigma0.024_cross0.1', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
+#process_samples('SIDM_sigma0.025_cross0.25', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
+#process_samples('SIDM_sigma0.015_cross9', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
+#process_samples('SIDM_sigma0.015_cross5', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
 #resample_sys(2, False)
 #resample_sys(1, False)
 #process_raw('hoffman_run2', np.arange(1,11), counter_start=5)
