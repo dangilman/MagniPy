@@ -263,8 +263,12 @@ class ChainFromSamples(object):
                     if weights_single[n] is not None and pi in weights_single[n]:
 
                         diff = data[:,i] - weights_single[n][pi][0]
+
                         sigma = weights_single[n][pi][1]
-                        new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
+                        exp = -0.5*(diff/sigma)**2
+
+                        new_weight = np.exp(exp)
+
                         if params_weights is None:
                             params_weights = new_weight
                         else:

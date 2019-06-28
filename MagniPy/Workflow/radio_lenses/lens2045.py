@@ -14,7 +14,7 @@ class Lens2045(Quad):
     sigma_y = np.array([0.003]*4)
 
     sigma_m = np.zeros_like(sigma_x)
-    zsrc, zlens = 0.77, 2.80
+    zlens, zsrc = 0.77, 2.80
 
     solver = SolveRoutines(zlens, zsrc)
 
@@ -23,7 +23,7 @@ class Lens2045(Quad):
                          sigma_m=sigma_m)
 
     identifier = 'lens2045'
-
+    has_satellite = False
     flux_ratio_index = 0
 
     fluximg = ['A', 'B', 'C', 'D'][flux_ratio_index]
@@ -31,8 +31,6 @@ class Lens2045(Quad):
     _macromodel = get_default_SIE(zlens)
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
-
-    has_satellite = False
 
     gamma_min = 1.95
     gamma_max = 2.2

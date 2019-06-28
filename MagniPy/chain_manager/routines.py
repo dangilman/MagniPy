@@ -20,6 +20,64 @@ def transform_ellip(ellip):
 
     return ellip * (2 - ellip) ** -1
 
+def read_chain_info(fname):
+
+    with open(fname,'r') as f:
+        lines = f.read().splitlines()
+
+    Ncores, cores_per_lens = read_run_partition(fname)
+
+    params_varied = []
+    varyparams_info = {}
+    nextline = False
+
+    for line in lines:
+
+        if line == '# params_varied':
+            nextline = True
+            continue
+
+        if nextline:
+            if len(line)==0:
+                nextline=False
+                break
+            params_varied.append(line)
+
+    for pname in params_varied:
+
+        args = {}
+
+        for line in lines:
+
+            if line == pname+':':
+                nextline=True
+                continue
+
+            if nextline:
+
+                if len(line)==0:
+                    nextline=False
+                    break
+                args[line.split(' ')[0]] = line.split(' ')[1]
+
+            varyparams_info[pname] = args
+
+    truth_dic = {}
+    for line in lines:
+
+        if line == '# truths':
+            nextline = True
+            continue
+
+        if nextline:
+            if len(line)==0:
+                nextline=False
+                break
+
+            truth_dic[line.split(' ')[0]] = float(line.split(' ')[1])
+
+    return params_varied, varyparams_info, Ncores, cores_per_lens
+
 def read_run_partition(fname):
 
     with open(fname, 'r') as f:
@@ -28,12 +86,13 @@ def read_run_partition(fname):
     Ncores = int(lines[1])
     cores_per_lens = int(lines[4])
 
-    return Ncores, cores_per_lens, int(Ncores * cores_per_lens ** -1)
+    return Ncores, cores_per_lens
 
-def extract_chain(name, sim_name, start_idx=1):
+def extract_chain(name, sim_name, start_idx=1, zlens=None):
 
     chain_info_path = chainpath_out + 'raw_chains/' + name + '/simulation_info.txt'
-    Ncores, cores_per_lens, Nlens = read_run_partition(chain_info_path)
+
+    params_varied, varyparams_info, Ncores, cores_per_lens = read_chain_info(chain_info_path)
 
     #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
@@ -53,7 +112,7 @@ def extract_chain(name, sim_name, start_idx=1):
     end = int(start_idx + cores_per_lens)
 
     init = True
-    #for i in range(start,end):
+
     for i in range(start_idx+1, end):
         folder_name = chain_file_path + str(i)+'/'
         #print(folder_name)
@@ -63,19 +122,44 @@ def extract_chain(name, sim_name, start_idx=1):
             obs_data = read_data(folder_name + '/lensdata.txt')
             observed_fluxes = obs_data[0].m
             params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
+            zd, sat=None, None
+            if 'lens_redshift' in params_varied:
+                col = params_varied.index('lens_redshift')
+                zd = params[:, col]
+            else:
+                assert zlens is not None
+                zd = np.array([zlens]*np.shape(params)[0])
+
+            if 'satellite_thetaE' in params_varied:
+                col = params_varied.index('satellite_thetaE')
+                sat = params[:,col:(col+3)]
+            if 'satellite_thetaE_1' in params_varied:
+                col = params_varied.index('satellite_thetaE_1')
+                sat = params[:,col:(col+6)]
+
+            # shear
+            params = np.delete(params, 7, 1)
+            # SIE_gamma
             params = np.delete(params, 1, 1)
+
             params = params[:,0:6]
 
             macro_model = np.loadtxt(folder_name + '/macro.txt')
 
             macro_model[:,3] = transform_ellip(macro_model[:,3])
-            macro_model = macro_model[:,0:8]
 
-            macro_normed = deepcopy(macro_model)
-            for col in range(0, macro_normed.shape[1]):
-                macro_normed[:,col] -= np.mean(macro_normed[:,col])
+            macro_normed = np.empty((np.shape(macro_model)[0], 8))
 
-            macro_model = np.column_stack((macro_model, macro_normed))
+            for col in range(0, 8):
+
+                macro_normed[:,col] = macro_model[:,col] - np.mean(macro_model[:,col])
+
+            macro_model = np.column_stack((macro_model[:,0:8], macro_normed))
+
+            if zd is not None:
+                macro_model = np.column_stack((macro_model, zd))
+            if sat is not None:
+                macro_model = np.column_stack((macro_model, sat))
 
             assert fluxes.shape[0] == params.shape[0]
 
@@ -111,32 +195,53 @@ def extract_chain(name, sim_name, start_idx=1):
 
     return lens_fluxes[:,order],observed_fluxes.reshape(1,4),lens_params,lens_all,params_header
 
-def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds):
+def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds, uncertainty_in_ratios):
 
     sample_inds = []
     statistics = []
 
     for k in range(1, N_pert + 1):
 
-        ncols = len(keep_inds) - 1
-        nrows = np.shape(fluxes)[0]
-        perturbed_ratios = np.empty((nrows, ncols))
+        if uncertainty_in_ratios:
 
-        perturbed_fluxes = np.empty((np.shape(fluxes)[0], len(keep_inds)))
+            ncols = len(keep_inds)
+            nrows = np.shape(fluxes)[0]
+            perturbed_ratios = np.empty((nrows, ncols))
 
-        for i, ind in enumerate(keep_inds):
-            perturbed_fluxes[:,i] += deepcopy(fluxes[:,ind])+\
-                                     np.random.normal(0, sigmas[ind])
+            norm = deepcopy(fluxes[:, 0])
+            pr = np.empty((nrows, 3))
 
-        norm = deepcopy(perturbed_fluxes[:,0])
-        for col in range(0,len(keep_inds)-1):
-            perturbed_ratios[:,col] = fluxes[:,col+1] * norm ** -1
+            for i in range(0, 3):
+                r = fluxes[:, i + 1] * norm ** -1
+                delta = np.random.normal(0, sigmas[i]*r)
+                pr[:, i] = r + delta
+            for i, idx in enumerate(keep_inds):
+                perturbed_ratios[:, i] = pr[:, idx]
 
-        obs_flux = [fluxes_obs[index] for index in keep_inds]
-        obs_normed = np.array(obs_flux)/obs_flux[0]
-        obs_ratios = obs_normed[1:]
+            ratios_obs = fluxes_obs[1:]/fluxes_obs[0]
+            obs_ratios = [ratios_obs[k] for k in keep_inds]
+            diff = (perturbed_ratios - np.array(obs_ratios)) ** 2
 
-        diff = (perturbed_ratios - obs_ratios)**2
+        else:
+            ncols = len(keep_inds) - 1
+            nrows = np.shape(fluxes)[0]
+            perturbed_ratios = np.empty((nrows, ncols))
+            perturbed_fluxes = np.empty((np.shape(fluxes)[0], len(keep_inds)))
+            for i, ind in enumerate(keep_inds):
+                f = deepcopy(fluxes[:,ind])
+                delta_f = np.random.normal(0, sigmas[ind]*f)
+                perturbed_fluxes[:,i] = f+delta_f
+
+            norm = deepcopy(perturbed_fluxes[:,0])
+            for col in range(0,len(keep_inds)-1):
+                perturbed_ratios[:,col] = fluxes[:,col+1] * norm ** -1
+
+            obs_flux = [fluxes_obs[index] for index in keep_inds]
+            obs_normed = np.array(obs_flux)/obs_flux[0]
+            obs_ratios = obs_normed[1:]
+
+            diff = (perturbed_ratios - obs_ratios)**2
+
         summary_statistic = np.sqrt(np.sum(diff, 1))
 
         ordered_inds = np.argsort(summary_statistic)
@@ -152,22 +257,35 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
     coverts output from cluster into single files for each lens
     """
 
+
     header = 'f1 f2 f3 f4 stat srcsize sigmasub deltalos mparent alpha mhm re gx gy eps epstheta shear sheartheta gmacro'
     header += ' re_normed gx_normed gy_normed eps_normed epstheta_normed shear_normed sheartheta_normed gmacro_normed'
+    header += ' lens_redshift'
     keep_inds = [0,1,2,3]
-    if name=='lens1422' or name=='lens1422_highnorm':
-        sigmas = [0.01, 0.01, 0.006]
+    uncertainty_in_ratios=False
+    zlens = None
+
+    if name[0:8] == 'lens1422':
+        zlens=0.36
+        sigmas = [0.011, 0.01, 0.013]
         keep_inds = [0,1,2]
-    elif name=='lens0435':
-        sigmas = [0.02]*4
-    elif name =='lens2038' or name=='lens2038_highnorm':
-        #sigmas = [0.01, 0.02, 0.02, 0.01]
-        sigmas = [0.01, 0.02, 0.02, 0.01]
+    elif name[0:8]=='lens0435':
+        zlens=0.45
+        header += ' satellite_thetaE satellite_x satellite_y'
+        sigmas = [0.05, 0.049, 0.048, 0.056]
+    elif name[0:8]=='lens2038':
+        sigmas = [0.01, 0.017, 0.022, 0.022]
+    elif name[0:8]=='lens1606':
+        header +=' satellite_thetaE satellite_x satellite_y'
+        sigmas = [0.03, 0.03, 0.02/0.59, 0.02/0.79]
+        #sigmas = [0.00001]*4
+    elif name[0:8]=='lens0405':
+        sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
 
     sigmas = np.array(sigmas)
 
     print('loading chains... ')
-    fluxes,fluxes_obs,parameters,all,_ = extract_chain(name, sim_name)
+    fluxes,fluxes_obs,parameters,all,_ = extract_chain(name, sim_name, zlens=zlens)
     print('done.')
 
     all = np.squeeze(all)
@@ -179,14 +297,17 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
 
     print('sampling flux uncertainties... ')
     inds_to_keep_list, statistics = add_flux_perturbations(fluxes, fluxes_obs, sigmas, Npert,
-                                               keep_inds)
+                                               keep_inds, uncertainty_in_ratios)
     print('done.')
 
     for i, indexes in enumerate(inds_to_keep_list):
 
         f = fluxes[indexes[0:keep_N], :]
-        final_fluxes = np.column_stack((f, np.array(statistics[i][indexes[0:keep_N]])))
+
+        final_fluxes = np.column_stack((f, np.array(statistics[i][0:keep_N])))
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens0435', 10)
+process_raw('lens1422', 10)
+#process_raw('lens2038_highnorm', 10)
+#process_raw('lens1422_highnorm_fixshear', 10)

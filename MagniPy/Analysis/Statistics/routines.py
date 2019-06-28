@@ -65,7 +65,7 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
 
             for keyi in weight_params.keys():
 
-                mean, sigma = weight_params[keyi]['mean'][0], weight_params[keyi]['sigma'][0]
+                mean, sigma = weight_params[keyi]['mean'], weight_params[keyi]['sigma']
 
                 if keyi=='SIE_gamma':
                     mean = r'$\gamma_{i}$'
@@ -91,12 +91,12 @@ def legend_info(params, Nlenses, errors, colors, weighted, axes, weight_params=N
                                   labelspacing=1.5)
 
     legend2 = axes[ax_idx].legend(weight_lines, weight_string, loc = 'lower left',
-                                  bbox_to_anchor = (xbox-0.35*delta, ybox-delta), fontsize=15, frameon = False)
+                                  bbox_to_anchor = (xbox-0.35*delta, ybox-0.5*delta), fontsize=15, frameon = False)
 
     axes[ax_idx].add_artist(legend1)
 
     #axes[ax_idx].legend(custom_lines, flux_strings, loc = loc, fontsize=14)
-    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+3*delta+nsamp_scale-0.5), xycoords='axes fraction', fontsize=16)
+    axes[ax_idx].annotate(nlens_string, xy=(xbox+0.1*delta,ybox+1.75*delta+nsamp_scale-0.5), xycoords='axes fraction', fontsize=16)
 
 
 

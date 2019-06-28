@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from MagniPy.Analysis.KDE.kde import *
 import numpy as np
 from MagniPy.Analysis.KDE.kde import KDE_nD
+import matplotlib.gridspec as gridspec
 
 
 class TriPlot(object):
@@ -156,9 +157,13 @@ class TriPlot(object):
         axes = []
         counter = 1
         n_subplots = len(param_names)
+        gs1 = gridspec.GridSpec(n_subplots, n_subplots)
+        gs1.update(wspace=0.15, hspace=0.15)
+
         for row in range(n_subplots):
             for col in range(n_subplots):
-                axes.append(plt.subplot(n_subplots, n_subplots, counter))
+                # axes.append(plt.subplot(n_subplots, n_subplots, counter))
+                axes.append(plt.subplot(gs1[counter - 1]))
                 counter += 1
 
         if contour_colors is None:
@@ -502,17 +507,26 @@ class TriPlot(object):
                     # axes[plot_index].set_ylim(0, hmax * 1.1 * self._hmax_scale)
                     axes[plot_index].set_yticks([])
 
+                    low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
+                    high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
                     low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
                     high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
-                    if param_names[col] == 'log_m_break':
-                        print(low95, high95)
 
-                    if low95 is not None:
-                        axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
-                                                 alpha=0.8, linewidth=2.5, linestyle='-.')
-                    if high95 is not None:
-                        axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
-                                                 alpha=0.8, linewidth=2.5, linestyle='-.')
+                    if param_names[col] == 'SIDMcross':
+                        print(str(32)+': ', low68)
+                        print(str(68) + ': ', high68)
+                        print(str(5) + ': ', low95)
+                        print(str(95) + ': ', high95)
+
+                    #axes[plot_index].axvline(low68, color=contour_colors[color_index][1],
+                    #                             alpha=0.8, linewidth=2.5, linestyle='-')
+                    #axes[plot_index].axvline(high68, color=contour_colors[color_index][1],
+                    #                         alpha=0.8, linewidth=2.5, linestyle='-')
+                    axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
+                                             alpha=0.8, linewidth=2.5, linestyle=':')
+                    axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
+                                             alpha=0.8, linewidth=2.5, linestyle=':')
+
 
                     if col != n_subplots - 1:
                         axes[plot_index].set_xticks([])

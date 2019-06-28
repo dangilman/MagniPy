@@ -52,7 +52,7 @@ def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
     return macro_list[index]
 
-def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
+def run_lenstronomy(data, prior, keys, keys_to_vary,
                     output_path, write_header, readout_best):
 
     chaindata = []
@@ -79,6 +79,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
     if 'lens_redshift' not in keys_to_vary.keys():
         halo_constructor = pyHalo(np.round(keys['zlens'], 2), np.round(keys['zsrc'], 2))
+        solver = SolveRoutines(zlens=keys['zlens'], zsrc=keys['zsrc'],
+                           temp_folder=keys['scratch_file'], clean_up=True)
 
     while N_computed < keys['Nsamples']:
 
@@ -98,6 +100,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             if 'lens_redshift' in keys_to_vary.keys():
                 halo_constructor = pyHalo(np.round(chain_keys_run['lens_redshift'], 2), np.round(chain_keys_run['zsrc'], 2))
+                solver = SolveRoutines(zlens=np.round(chain_keys_run['lens_redshift'], 2), zsrc=np.round(chain_keys_run['zsrc'], 2),
+                                       temp_folder=keys['scratch_file'], clean_up=True)
 
             if 'shear' in keys_to_vary.keys():
                 opt_routine = 'fixedshearpowerlaw'
@@ -130,6 +134,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary, solver,
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
             if 'lens_redshift' in keys_to_vary.keys():
+                macromodel.lens_components[0].redshift = np.round(chain_keys_run['lens_redshift'],2)
+                macromodel.zmain = chain_keys_run['lens_redshift']
                 if chain_keys_run['satellites'] is not None:
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
@@ -231,9 +237,6 @@ def runABC(chain_ID='',core_index=int):
     if run is False:
         return
 
-    solver = SolveRoutines(zlens=chain_keys['zlens'], zsrc=chain_keys['zsrc'],
-                           temp_folder=chain_keys['scratch_file'], clean_up=True)
-
     param_names_tovary = chain_keys_to_vary.keys()
     write_info_file(chainpath + chain_keys['output_folder'] + 'simulation_info.txt',
                     chain_keys, chain_keys_to_vary, param_names_tovary)
@@ -241,7 +244,7 @@ def runABC(chain_ID='',core_index=int):
 
     prior = ParamSample(params_to_vary=chain_keys_to_vary, Nsamples=1)
 
-    run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, solver, output_path,
+    run_lenstronomy(datatofit, prior, chain_keys, chain_keys_to_vary, output_path,
                         chain_keys['write_header'], readout_best)
 
 def write_params(params,fname,header, mode='append'):
@@ -306,6 +309,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens2033/', 1)
+#runABC(prefix+'data/lens2026/', 1)
 
 

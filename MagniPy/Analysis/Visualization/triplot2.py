@@ -2,7 +2,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 from MagniPy.Analysis.KDE.kde import *
 import numpy as np
-from MagniPy.Analysis.KDE.kde import KDE_nD
+import matplotlib.gridspec as gridspec
 
 
 class TriPlot2(object):
@@ -18,7 +18,8 @@ class TriPlot2(object):
     truth_color = 'g'
 
     spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
-    spacing_scale = 1
+    #spacing = np.array([0.49, 0.49, 0.5, 0.5, 0., 0.0])
+    spacing_scale = 1.
 
     cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
@@ -93,14 +94,20 @@ class TriPlot2(object):
                      xtick_label_rotate=0):
 
         self.fig = plt.figure(1)
+
         self._init(fig_size)
 
         axes = []
         counter = 1
         n_subplots = len(param_names)
+
+        gs1 = gridspec.GridSpec(n_subplots, n_subplots)
+        gs1.update(wspace=0.15, hspace=0.15)
+
         for row in range(n_subplots):
             for col in range(n_subplots):
-                axes.append(plt.subplot(n_subplots, n_subplots, counter))
+                #axes.append(plt.subplot(n_subplots, n_subplots, counter))
+                axes.append(plt.subplot(gs1[counter-1]))
                 counter += 1
 
         if contour_colors is None:
@@ -212,7 +219,7 @@ class TriPlot2(object):
         low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
         high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
 
-        low68 = self._confidence_int(bar_centers, bar_heights, 0.22)
+        low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
         high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
 
         print('low/high68:' + str(low68) + ' ' + str(high68))
@@ -465,6 +472,10 @@ class TriPlot2(object):
 
                     low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
                     high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+
+                    low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
+                    high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
+
                     if param_names[col] == 'log_m_break':
                         print(low95, high95)
 
@@ -475,11 +486,12 @@ class TriPlot2(object):
                         axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
                                                  alpha=0.8, linewidth=2.5, linestyle='-.')
 
+
                     if col != n_subplots - 1:
                         axes[plot_index].set_xticks([])
                     else:
                         axes[plot_index].set_xticks(xtick_locs)
-                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font)
+                        axes[plot_index].set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=xtick_label_rotate)
                         axes[plot_index].set_xlabel(xlabel, fontsize=labsize * label_scale)
 
                     if truths is not None:
@@ -627,17 +639,17 @@ class TriPlot2(object):
             rotation = 45
         elif pname == r'$\Sigma_{\rm{sub}}$':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
-            tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
-            tick_locs = np.array([0, 0.9, 1.8, 2.7, 3.6, 4.5]) * 0.01
+            tick_labels = [0, 2, 4, 6, 8, 10]
+            tick_locs = np.array([0, 2, 4, 6, 8, 10]) * 0.01
             rotation = 45
         elif pname == 'SIE_gamma':
             name = r'$\gamma_{\rm{macro}}$'
             tick_labels = [2, 2.05, 2.1, 2.15, 2.2]
             tick_locs = [2, 2.05, 2.1, 2.15, 2.2]
             rotation = 45
-        elif pname == 'source_size_kpc':
+        elif pname == 'source_size_kpc' or pname == r'$\sigma_{\rm{src}}$':
             name = r'$\sigma_{\rm{src}} \ \left[\rm{pc}\right]$'
-            tick_labels = [15, 20, 25, 30, 35, 40]
+            tick_labels = [30, 40, 50, 60]
             tick_locs = np.array(tick_labels) * 0.001
         elif pname == 'log_m_break':
             name = r'$\log_{10}{m_{\rm{hm}}}$'
