@@ -274,6 +274,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         header += ' satellite_thetaE satellite_x satellite_y'
         sigmas = [0.05, 0.049, 0.048, 0.056]
     elif name[0:8]=='lens2038':
+        zlens=0.23
         sigmas = [0.01, 0.017, 0.022, 0.022]
     elif name[0:8]=='lens1606':
         header +=' satellite_thetaE satellite_x satellite_y'
@@ -308,6 +309,6 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens1422', 10)
+process_raw('lens2038', 10)
 #process_raw('lens2038_highnorm', 10)
 #process_raw('lens1422_highnorm_fixshear', 10)

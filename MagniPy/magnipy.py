@@ -297,7 +297,7 @@ class Magnipy:
 
     def _solve_4imgs(self, lens_systems=None, method=str, identifier='', srcx=None, srcy=None,
                      res=0.001, source_shape='GAUSSIAN', ray_trace=True, source_size_kpc=float, print_mag=False,
-                     raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1,brightimg=None, adaptive_grid=None):
+                     raytrace_with='', polar_grid=True, arrival_time=False, shr_coords=1,brightimg=None, adaptive_grid=False):
 
         lenstronomywrap = LenstronomyWrap(cosmo=self.cosmo.astropy,z_source=self.zsrc)
 
@@ -368,7 +368,7 @@ class Magnipy:
 
                 source_scale = self.cosmo.kpc_per_asec(self.zsrc)
                 source_size = source_size_kpc * source_scale ** -1
-                min_img_separation = min_img_sep(x_image, y_image)
+                min_img_separation = min_img_sep_ranked(x_image, y_image)
 
                 raytracing = raytrace.RayTrace(xsrc=srcx, ysrc=srcy,
                                                multiplane=system.multiplane, source_size=source_size,

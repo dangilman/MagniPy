@@ -156,7 +156,7 @@ class SolveRoutines(Magnipy):
                             source_shape='GAUSSIAN', source_size_kpc=None, sort_by_pos=None, filter_subhalos=False,
                             filter_by_pos=False, filter_kwargs={}, raytrace_with=None, polar_grid=False, shr_coords=1,
                             brightimg=True, LOS_mass_sheet_back = 6, LOS_mass_sheet_front = 6, centroid_0 = [0, 0],
-                            satellites = None, adaptive_grid=True):
+                            satellites = None, adaptive_grid=False):
 
         if raytrace_with is None:
             raytrace_with = raytrace_with_default

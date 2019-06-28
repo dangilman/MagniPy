@@ -234,7 +234,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 def foreground_mass_filters(m_ref, LOS_mass_sheet):
 
     if m_ref < 7:
-        foreground_aperture_masses = [8, 7, 0]
+        foreground_aperture_masses = [LOS_mass_sheet, 7, 0]
         foreground_globalmin_masses = [LOS_mass_sheet, LOS_mass_sheet, LOS_mass_sheet]
         foreground_filters = [10, 0.3, 0.05]
         reoptimize_scale = [1, 0.5, 0.5]
@@ -261,10 +261,10 @@ def background_mass_filters(m_ref, LOS_mass_sheet):
     particle_swarm_reopt = [True]
     optimize_iteration = [True]
 
-    rung_1_mass = 7.5
+    rung_1_mass = 7.4
     rung_2_mass = 6
     rung_3_mass = 0
-    rung_1_window = 0.3
+    rung_1_window = 0.4
     rung_2_window = 0.075
     rung_3_window = 0.05
 
