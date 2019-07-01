@@ -7,12 +7,25 @@ from MagniPy.MassModels.SIE import *
 import matplotlib.pyplot as plt
 from MagniPy.LensBuild.defaults import *
 from MagniPy.Solver.analysis import Analysis
-from MagniPy.util import min_img_sep
+from MagniPy.util import min_img_sep, flux_at_edge
 from MagniPy.paths import *
 from scipy.optimize import minimize
 
 cosmo = Cosmology()
 arcsec = 206265  # arcsec per radian
+
+def get_density():
+    quad_imgsep, quad_vdis, _, quad_zlens, quad_zsrc = np.loadtxt(prefix + '/data/quad_info.txt', unpack=True)
+    data = np.vstack((quad_imgsep, quad_vdis))
+    data = np.vstack((data, quad_zlens))
+    data = np.vstack((data, quad_zsrc))
+    kde = gaussian_kde(data)
+    return kde
+
+def get_strides():
+    return np.loadtxt(prefix + '/data/quad_info.txt', unpack=True)
+
+strides_kde_density = get_density()
 
 def matching(want_config, config):
     if want_config == 'cross':
@@ -85,51 +98,35 @@ def get_info_string(halo_args, lens_args):
 
     return x
 
-def flux_at_edge(image):
-
-    maxbright = np.max(image)
-    edgebright = [image[0,:],image[-1,:],image[:,0],image[:,-1]]
-
-    for edge in edgebright:
-        if any(edge > maxbright * 0.01):
-            return True
-    else:
-        return False
-
 def imgFinder(startmod,realization,xs,ys,multiplane,solver,analysis,source_size_kpc,print_things = False):
     if print_things: print('finding images....')
     xcrit = None
 
     while True:
 
-        data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
-                                                    multiplane=True, method='lenstronomy', source_size_kpc=source_size_kpc,
-                                                    polar_grid=False, brightimg=True, res=0.001, LOS_mass_sheet_back = 6,
-                                                    LOS_mass_sheet_front = 6)
-
-        if xcrit is None:
-            xcrit, ycrit, xcaus, ycaus = analysis.critical_cruves_caustics(main=startmod,
-                                                                           multiplane=multiplane, grid_scale=0.01,
-                                                                           compute_window=3)
-        if data_withhalos[0].nimg == 4:
-
-            if print_things: print('done finding images.')
-            return data_withhalos, xcaus, ycaus, xs, ys
         try:
-            xs, ys = guess_source(xcaus, ycaus)
+            data_withhalos = solver.solve_lens_equation(macromodel=startmod, realizations=realization, srcx=xs, srcy=ys,
+                                                        multiplane=True, method='lenstronomy', source_size_kpc=source_size_kpc,
+                                                        polar_grid=False, brightimg=True, res=0.001, LOS_mass_sheet_back = 6,
+                                                        LOS_mass_sheet_front = 6)
+
+            if xcrit is None:
+                xcrit, ycrit, xcaus, ycaus = analysis.critical_cruves_caustics(main=startmod,
+                                                                               multiplane=multiplane, grid_scale=0.01,
+                                                                               compute_window=3)
+            if data_withhalos[0].nimg == 4:
+
+                if print_things: print('done finding images.')
+                return data_withhalos, xcaus, ycaus, xs, ys
+            try:
+                xs, ys = guess_source(xcaus, ycaus)
+            except:
+                xs, ys = np.random.uniform(-0.15, 0.15), np.random.uniform(-0.15, 0.15)
         except:
-            xs, ys = np.random.uniform(-0.1, 0.1), np.random.uniform(-0.1, 0.1)
+            xs, ys = np.random.uniform(-0.15, 0.15), np.random.uniform(-0.15, 0.15)
 
 
 def sample_from_strides(nsamples):
-
-    def get_density():
-        quad_imgsep, quad_vdis, _, quad_zlens, quad_zsrc = np.loadtxt(prefix + '/data/quad_info.txt', unpack=True)
-        data = np.vstack((quad_imgsep, quad_vdis))
-        data = np.vstack((data, quad_zlens))
-        data = np.vstack((data, quad_zsrc))
-        kde = gaussian_kde(data)
-        return kde
 
     def cuts(imgsep, vdis, zlens, zsrc, imgsep_min=1,
              vdis_min=230, vdis_max = 310, zlens_min=0.2, zlens_max=0.8, zsrc_max=3.5):
@@ -151,7 +148,7 @@ def sample_from_strides(nsamples):
     image_sep, v_dis, zd, zsrc = [], [], [], []
 
     while len(image_sep) < nsamples:
-        kde = get_density()
+        kde = strides_kde_density
         values = resample(kde)
         if values[0] is not None:
             image_sep.append(values[0])
@@ -167,7 +164,6 @@ def sample_from_strides(nsamples):
         image_sep, v_dis, zd, zsrc = image_sep[0], v_dis[0], zd[0], zsrc[0]
 
     return 0.5 * image_sep, v_dis, zd, zsrc
-
 
 def draw_vdis(mean=260, sigma=15):
     return np.random.normal(mean, sigma)
@@ -338,7 +334,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                                                              multiplane=multiplane,
                                                              srcx=data_withhalos[0].srcx, srcy=data_withhalos[0].srcy, res=0.01,
                                                              method='lenstronomy', source_shape='GAUSSIAN',
-                                                             source_size_kpc=src_size_mean)
+                                                             source_size_kpc=src_size_mean,
+                                                             minimgsep=min_img_sep_ranked(data_withhalos[0].x, data_withhalos[0].y))
 
 
             if flux_at_edge(image):
@@ -396,19 +393,18 @@ if True:
     M_halo = 10 ** 13
     logmhm = 0
     r_tidal = '0.5Rs'
-    src_size_mean = 0.02
+    src_size_mean = 0.025
     src_size_sigma = 0.0001
     log_ml, log_mh = 6, 10
     break_index = -1.3
     core_ratio = 0.01
     z_src_max = 2.5
-    z_lens_max = 0.6
-    rein_max = 1.3
+    z_lens_max = 0.7
+    rein_max = 1.4
     nav = prefix
     mass_def = 'TNFW'
 
-
-    dpath_base = nav + '/mock_data/CDMsrc20/lens_'
+    dpath_base = nav + '/mock_data/coldSIDM_2/lens_'
 
     #run(0, 0, 1, 1)
     #run(0, 1, 0, 1)

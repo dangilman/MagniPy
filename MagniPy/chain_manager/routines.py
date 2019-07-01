@@ -289,6 +289,10 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         sigmas = [0.03, 0.03/0.65, 0.04, 0.02/0.53]
     elif name[0:8]=='lens2026':
         sigmas = [0.02, 0.02/0.75, 0.01/0.31, 0.01/0.28]
+    elif name[0:8]=='lens0911':
+        header += ' satellite_thetaE satellite_x satellite_y'
+        zlens=0.77
+        sigmas = [0.04/0.56, 0.05, 0.04/0.53, 0.04/0.24]
     elif name[0:8] == 'lens0128':
         zlens=1.145
         uncertainty_in_ratios=True
@@ -331,6 +335,6 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens0414', 10)
+process_raw('lens0911', 10)
 #process_raw('lens2038_highnorm', 10)
 #process_raw('lens1422_highnorm_fixshear', 10)

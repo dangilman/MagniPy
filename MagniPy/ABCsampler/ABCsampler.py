@@ -144,8 +144,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
             if 'rescale_source' in chain_keys_run.keys():
                 chain_keys_run['source_size_kpc'] *= 2.355
 
-            try:
-                new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+            #try:
+            new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                        realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag=tol_mag,
                                        verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                        pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
@@ -155,9 +155,9 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                                          satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
                                                                     constrain_params=constrain_params)
 
-                xfit, yfit = new[0].x, new[0].y
-            except:
-                xfit = yfit = np.array([1000, 1000, 1000, 1000])
+            xfit, yfit = new[0].x, new[0].y
+            #except:
+            #    xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
             if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
                 if verbose: print(new[0].m[0], np.isfinite(new[0].m[0]))
