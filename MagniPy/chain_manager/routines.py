@@ -219,6 +219,7 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds, uncert
                 perturbed_ratios[:, i] = pr[:, idx]
 
             ratios_obs = fluxes_obs[1:]/fluxes_obs[0]
+
             obs_ratios = [ratios_obs[k] for k in keep_inds]
             diff = (perturbed_ratios - np.array(obs_ratios)) ** 2
 
@@ -282,6 +283,27 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         #sigmas = [0.00001]*4
     elif name[0:8]=='lens0405':
         sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
+    elif name[0:8] == 'lens2033':
+        header += ' satellite_thetaE_1 satellite_x_1 satellite_y_1 satellite_thetaE_2 satellite_x_2 satellite_y_2'
+        zlens=0.66
+        sigmas = [0.03, 0.03/0.65, 0.04, 0.02/0.53]
+    elif name[0:8]=='lens2026':
+        sigmas = [0.02, 0.02/0.75, 0.01/0.31, 0.01/0.28]
+    elif name[0:8] == 'lens0128':
+        zlens=1.145
+        uncertainty_in_ratios=True
+        keep_inds = [0,1,2]
+        sigmas = [0.029, 0.029, 0.032]
+    elif name[0:8] == 'lens1115':
+        zlens=0.31
+        uncertainty_in_ratios=True
+        keep_inds = [0,1,2]
+        sigmas = [0.05, 0.05, 0.05]
+    elif name[0:8] == 'lens0414':
+        zlens=0.96
+        uncertainty_in_ratios=True
+        keep_inds = [0,1,2]
+        sigmas = [0.1]*3
 
     sigmas = np.array(sigmas)
 
@@ -309,6 +331,6 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens2038', 10)
+process_raw('lens0414', 10)
 #process_raw('lens2038_highnorm', 10)
 #process_raw('lens1422_highnorm_fixshear', 10)

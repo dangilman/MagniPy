@@ -66,7 +66,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     else:
         readout_steps = 50
 
-    verbose = True
+    verbose = False
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -309,6 +309,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/lens2038/', 1)
+#runABC(prefix+'data/lens0911/', 1)
 
 
