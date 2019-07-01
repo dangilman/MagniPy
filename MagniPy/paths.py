@@ -1,17 +1,13 @@
 import os
-import shutil
 
 homedir = os.getenv('HOME')+'/'
 
 if homedir == '/u/home/g/gilmanda/':
     prefix = '/u/flashscratch/g/gilmanda/'
-
     try:
         IO_directory = os.getenv('TMPDIR') + '/'
     except:
         IO_directory = os.getenv('SCRATCH')+ '/'
-
-    #IO_directory = os.getenv('NEWSCRATCH')+ '/'
 
     lensmodel_location = homedir+'/Code/lensmodel_folder/'
     path_2_lensmodel = IO_directory
@@ -43,6 +39,20 @@ elif homedir == '/home/gilmanda/':
     IO_directory = prefix
     path_2_lensmodel = homedir
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
+
+# change this to your home directory on the cluster
+elif homedir == 'benson/cluster/homedirectory':
+
+    # enter the path to the storage space on the cluster
+    # insde the directory prefix, create the directories ./data/ABC_chains/
+    prefix = '/path_to/storage/oncluster/'
+
+    IO_directory = prefix
+
+    # ignore these lines
+    lensmodel_location = homedir + '/'
+    path_2_lensmodel = homedir + '/'
+    gravlens_input_path = IO_directory + 'gravlens_input/'
 
 else:
     raise Exception('You seem to be using a different computer. The home directory '+str(homedir)+' is not found.')
