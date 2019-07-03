@@ -8,7 +8,6 @@ from MagniPy.util import approx_theta_E
 
 def initialize_macro(solver,data,init):
 
-
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.05,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
@@ -28,7 +27,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
         #gamma_values = [2.0]
 
         for gi in gamma_values:
-            _macro = get_default_SIE(z=chain_keys_run['zlens'])
+            _macro = get_default_SIE(z=solver.zmain)
             _macro.lenstronomy_args['gamma'] = gi
             macro_i = initialize_macro(solver, data, _macro)
             #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
@@ -36,7 +35,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     else:
         gamma_values = [chain_keys_run['SIE_gamma']]
-        _macro = get_default_SIE(z=chain_keys_run['zlens'])
+        _macro = get_default_SIE(z=solver.zmain)
         _macro.update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
         #macro_i = initialize_macro(solver, data, _macro)
         #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
@@ -79,7 +78,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
     if 'lens_redshift' not in keys_to_vary.keys():
         halo_constructor = pyHalo(np.round(keys['zlens'], 2), np.round(keys['zsrc'], 2))
-        solver = SolveRoutines(zlens=keys['zlens'], zsrc=keys['zsrc'],
+        solver = SolveRoutines(zlens=np.round(keys['zlens'], 2), zsrc=np.round(keys['zsrc'], 2),
                            temp_folder=keys['scratch_file'], clean_up=True)
 
     while N_computed < keys['Nsamples']:
@@ -308,7 +307,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-
-#runABC(prefix+'data/lens0911/', 1)
+#runABC(prefix+'data/lens2026/', 1)
 
 
