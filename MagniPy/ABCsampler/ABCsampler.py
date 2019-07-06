@@ -9,7 +9,7 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.055,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.0]
+        gamma_values = [2.0]
 
         for gi in gamma_values:
             _macro = get_default_SIE(z=solver.zmain)
@@ -139,7 +139,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
-
+            
             if 'rescale_source' in chain_keys_run.keys():
                 chain_keys_run['source_size_kpc'] *= 2.355
 
@@ -307,6 +307,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens2026/', 1)
+#runABC(prefix+'data/SIDMsim/', 1)
 
 
