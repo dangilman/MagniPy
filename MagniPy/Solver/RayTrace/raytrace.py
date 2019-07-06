@@ -175,7 +175,6 @@ class RayTrace(object):
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
             #n = int(np.sqrt(len(image)))
-
             #print('npixels: ' , n)
             #plt.imshow(image.reshape(n,n)); plt.show()
             #a=input('continue')

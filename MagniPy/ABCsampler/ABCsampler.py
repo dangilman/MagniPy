@@ -139,7 +139,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
-            
+
             if 'rescale_source' in chain_keys_run.keys():
                 chain_keys_run['source_size_kpc'] *= 2.355
 

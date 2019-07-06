@@ -155,7 +155,7 @@ class LensSystem(object):
             else:
                 self._halo_names, self._halo_redshifts, self._halo_kwargs, self.custom_class = [], [], [], None
 
-        lensed_inds = False
+        lensed_inds = None
         if halos_only is False:
             main_names, main_redshift, main_args = self._unpack_main(self.main)
 
