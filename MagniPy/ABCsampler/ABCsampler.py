@@ -13,7 +13,7 @@ def initialize_macro(solver,data,init):
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=1,
+                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
                                                  tol_simplex_func=0.001, adaptive_grid=False, satellites=None)
 
     return model
@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        gamma_values = [2.0]
+        #gamma_values = [2.0]
 
         for gi in gamma_values:
             _macro = get_default_SIE(z=solver.zmain)
@@ -65,7 +65,27 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     else:
         readout_steps = 50
 
-    verbose = False
+    if 'n_particles' in keys.keys():
+        n_particles = keys['n_particles']
+    else:
+        n_particles = 20
+
+    if 'simplex_n_iter' in keys.keys():
+        simplex_n_iter = keys['simplex_n_iter']
+    else:
+        simplex_n_iter = 200
+
+    if 'n_iterations' in keys.keys():
+        n_iterations = keys['n_iterations']
+    else:
+        n_iterations = 450
+
+    verbose = True
+    if verbose:
+        print('Running with:')
+        print('n_particles: ', n_particles)
+        print('n_iterations: ', n_iterations)
+        print('simplex_iterations: ', simplex_n_iter)
 
     current_best = 1e+6
     best_fluxes = [0,0,0,0]
@@ -111,7 +131,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                 opt_routine = 'fixed_powerlaw_shear'
                 constrain_params = None
                 reopt = True
-                tol_mag = 0.5
+                tol_mag = None
 
             if not init_macro:
                 print('initializing macromodels.... ')
@@ -140,21 +160,19 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
-            if 'rescale_source' in chain_keys_run.keys():
-                chain_keys_run['source_size_kpc'] *= 2.355
-
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                       realizations=halos, multiplane=True, n_particles=20, n_iterations=450, tol_mag=tol_mag,
-                                       verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
-                                       pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                        simplex_n_iter=200, polar_grid=False, grid_res=chain_keys_run['grid_res'],
-                                        LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                         LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
-                                         satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
-                                                                    constrain_params=constrain_params)
+                                   realizations=halos, multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
+                                   verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
+                                   pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
+                                    simplex_n_iter=simplex_n_iter, polar_grid=False, grid_res=chain_keys_run['grid_res'],
+                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
+                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
+                                     satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
+                                                                constrain_params=constrain_params)
 
                 xfit, yfit = new[0].x, new[0].y
+
             except:
                 xfit = yfit = np.array([1000, 1000, 1000, 1000])
 
@@ -173,6 +191,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
         for pname in keys_to_vary.keys():
             samples_array.append(chain_keys_run[pname])
+
+        if 'shear' not in keys_to_vary.keys() and 'save_shear' in keys.keys():
+
+            samples_array.insert(keys['save_shear']['idx'], macro_fit.lens_components[0].shear)
 
         if save_statistic:
             new_statistic = summary_stat_flux(d2fit.m, new[0].m)
@@ -307,6 +329,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/SIDMsim/', 1)
+#runABC(prefix+'data/lens0911/', 1)
 
 

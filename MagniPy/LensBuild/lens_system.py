@@ -141,7 +141,7 @@ class LensSystem(object):
                 inds.append(i+self._nmacro)
 
         if len(inds) == 0:
-            inds = False
+            inds = None
 
         return inds
 
