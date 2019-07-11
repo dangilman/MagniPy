@@ -202,7 +202,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
         if save_statistic:
             new_statistic = summary_stat_flux(d2fit.m, new[0].m)
             #print(new_statistic, current_best)
-            if new_statistic < current_best:
+            if new_statistic < current_best and new_statistic<0.02:
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
                 current_best_fullrealization = \
@@ -332,6 +332,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens2033/', 1)
+#runABC(prefix+'data/lens1606/', 1)
 
 
