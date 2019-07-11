@@ -5,6 +5,7 @@ import copy
 import numpy as np
 from MagniPy.Solver.LenstronomyWrap.lenstronomy_wrap import LenstronomyWrap
 from MagniPy.Solver.hierarchical_optimization import *
+from MagniPy.util import chi_square_img
 
 class SolveRoutines(Magnipy):
 
@@ -25,7 +26,7 @@ class SolveRoutines(Magnipy):
                                   background_aperture_masses=None, background_filters=None,
                                   min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
                                   reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None,
-                                  adaptive_grid=False, grid_rmax_scale=1):
+                                  adaptive_grid=False, grid_rmax_scale=1, check_foreground_fit=False):
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -48,12 +49,19 @@ class SolveRoutines(Magnipy):
         foreground_realization, background_realization = split_realization(datatofit, realizations[0])
 
         if verbose: print('optimizing foreground... ')
-        foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel = optimize_foreground(macromodel,
+        foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel, data_foreground = optimize_foreground(macromodel,
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
                           restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
                             tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet_front, LOS_mass_sheet_back,
-                                  centroid = centroid_0, satellites=satellites)
+                                  centroid = centroid_0, satellites=satellites, check_foreground_fit=check_foreground_fit)
+
+        if data_foreground is None:
+            return None, None, None
+
+        if check_foreground_fit:
+            if chi_square_img(datatofit.x, datatofit.y, data_foreground[0].x, data_foreground[0].y, 0.003) >= 1:
+                return None, None, None
 
         if verbose: print('optimizing background... ')
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,

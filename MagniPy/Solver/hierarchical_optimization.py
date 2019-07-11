@@ -1,4 +1,4 @@
-import inspect
+from MagniPy.util import chi_square_img
 import numpy as np
 
 def split_realization(datatofit, realization):
@@ -19,7 +19,8 @@ def split_realization(datatofit, realization):
 
 def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations,
                  source_shape, source_size_kpc, polar_grid, optimizer_routine, re_optimize, verbose, particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back, centroid, satellites):
+                tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back, centroid, satellites,
+                        check_foreground_fit):
 
     foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
     reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
@@ -105,8 +106,12 @@ def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, 
             model[0].realization = realization_filtered
             foreground_macromodel = model[0].lens_components[0]
 
+        if check_foreground_fit:
 
-    return foreground_rays, foreground_macromodel, [realization_filtered], keywords_lensmodel
+            if chi_square_img(datatofit.x, datatofit.y, optimized_data[0].x, optimized_data[0].y, 0.003) >= 1:
+                return None, None, None, None, None
+
+    return foreground_rays, foreground_macromodel, [realization_filtered], keywords_lensmodel, optimized_data
 
 def optimize_background(macromodel, realization_foreground, realization_background, foreground_rays, datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,
                         n_iterations, source_shape, source_size_kpc, polar_grid, optimizer_routine, re_optimize, verbose,
