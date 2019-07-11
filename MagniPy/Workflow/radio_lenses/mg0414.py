@@ -9,10 +9,10 @@ class Lens0414(Quad):
 
     x = np.array([1.071, 1.2042, 0.4834, -0.8774])
     y = np.array([-0.663, -0.2587, 1.2711, -0.3637])
-    m = np.array([1., 0.9027, 0.389, 0.1446])
+    m = np.array([1, 0.83, 0.36, 0.16])
 
-    sigma_x = np.array([0.003]*4)
-    sigma_y = np.array([0.003]*4)
+    sigma_x = np.array([0.0003]*4)
+    sigma_y = np.array([0.0003]*4)
     sigma_m = np.zeros_like(sigma_x)
     zlens, zsrc = 0.96, 2.64
 
