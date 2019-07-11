@@ -71,9 +71,9 @@ class TriPlot2(object):
         self._marginal_col = marginal_col
 
     def make_joint(self, p1, p2, contour_colors=None, levels=[0.05, 0.22, 1],
-                   filled_contours=True, contour_alpha=0.6, param_names=None,
-                   fig_size=8, truths=None, load_from_file=True,
-                   transpose_idx=None, bandwidth_scale=0.7):
+                   filled_contours=True, contour_alpha=0.6,
+                   fig_size=8, label_scale=1, tick_label_font=12,
+                     xtick_label_rotate=0, show_contours=True):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -83,15 +83,17 @@ class TriPlot2(object):
             contour_colors = self._default_contour_colors
 
         for i in range(self._nchains):
-            self._make_joint_i(p1, p2, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
-                               fig_size, truths, load_from_file=load_from_file,
-                               transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale)
+            axes = self._make_joint_i(p1, p2, ax, i, contour_colors=contour_colors, levels=levels,
+                      filled_contours=filled_contours, contour_alpha=contour_alpha,
+                      labsize=15*label_scale, tick_label_font=tick_label_font,
+                               xtick_label_rotate=xtick_label_rotate, show_contours=show_contours)
+        return axes
 
     def make_triplot(self, contour_colors=None, levels=[0.05, 0.22, 1],
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
                      transpose_idx=None, bandwidth_scale=0.7, label_scale=1, tick_label_font=12,
-                     xtick_label_rotate=0):
+                     xtick_label_rotate=0, show_contours=False):
 
         self.fig = plt.figure(1)
 
@@ -113,11 +115,12 @@ class TriPlot2(object):
         if contour_colors is None:
             contour_colors = self._default_contour_colors
         self._auto_scale = []
+
         for i in range(self._nchains):
-            self._make_triplot_i(axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+            axes.append(self._make_triplot_i(axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file=load_from_file, tick_label_font=tick_label_font,
                                  transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale, xtick_label_rotate=xtick_label_rotate,
-                                 label_scale=label_scale, cmap=self.cmap_call)
+                                 label_scale=label_scale, cmap=self.cmap_call, show_contours=show_contours))
 
         for k in range(len(param_names)):
             scales = []
@@ -138,7 +141,9 @@ class TriPlot2(object):
     def make_marginal(self, p1, contour_colors=None, levels=[0.05, 0.22, 1],
                       filled_contours=True, contour_alpha=0.6, param_names=None,
                       fig_size=8, truths=None, load_from_file=True,
-                      transpose_idx=None, bandwidth_scale=0.7, label_scale=1, cmap=None):
+                      transpose_idx=None, bandwidth_scale=0.7, label_scale=1,
+                      cmap=None, xticklabel_rotate=0, bar_alpha=0.7, bar_colors=['k','m','g','r'],
+                      height_scale=1.1, show_low=False, show_high=False):
 
         self.fig = plt.figure(1)
         self._init(fig_size)
@@ -149,15 +154,16 @@ class TriPlot2(object):
             contour_colors = self._default_contour_colors
         self._auto_scale = []
         for i in range(self._nchains):
-            self._make_marginal_i(p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
+            out = self._make_marginal_i(p1, ax, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                   fig_size, truths, load_from_file=load_from_file,
                                   transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale,
-                                  label_scale=label_scale, cmap=cmap)
+                                  label_scale=label_scale, cmap=cmap, xticklabel_rotate=xticklabel_rotate,
+                                  bar_alpha=bar_alpha, bar_color=bar_colors[i], show_low=show_low, show_high=show_high)
 
         scales = []
         for c in range(0, self._nchains):
             scales.append(self._auto_scale[c][0])
-        maxh = np.max(scales) * 1.1
+        maxh = np.max(scales) * height_scale
         ax.set_ylim(0, maxh)
         pmin, pmax = self._get_param_minmax(p1)
         asp = maxh * (pmax - pmin) ** -1
@@ -165,11 +171,14 @@ class TriPlot2(object):
 
         self._auto_scale = []
 
+        return out
+
     def _make_marginal_i(self, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                          filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                          truths=None, labsize=15, tick_label_font=14,
                          load_from_file=True, transpose_idx=None,
-                         bandwidth_scale=0.7, label_scale=None, cmap=None):
+                         bandwidth_scale=0.7, label_scale=None, cmap=None, xticklabel_rotate=0,
+                         bar_alpha=0.7, bar_color=None, show_low=False, show_high=False):
 
         autoscale = []
 
@@ -187,30 +196,21 @@ class TriPlot2(object):
 
         max_idx = np.argmax(bar_heights)
         max_h = bar_heights[max_idx]
-        print(bar_centers[max_idx])
-        print('relative likelihood WDM: ' + str(max_h * bar_heights[0] ** -1))
+
+        for bin, bh in enumerate(bar_heights):
+            print('probability '+str(np.round(bar_centers[bin], 3))+': ', np.round(bh/max_h,3))
 
         for i, y in enumerate(bar_heights):
             x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
 
-            if filled_contours:
-                ax.plot([x1, x2], [y, y], color=contour_colors[color_index][1],
-                        alpha=0.6)
-                ax.fill_between([x1, x2], y, color=contour_colors[color_index][1],
-                                alpha=0.6)
-                ax.plot([x1, x1], [0, y], color=contour_colors[color_index][1],
-                        alpha=0.6)
-                ax.plot([x2, x2], [0, y], color=contour_colors[color_index][1],
-                        alpha=0.6)
-            else:
-                ax.plot([x1, x2], [y, y], color=cmap(0.2),
-                        alpha=0.6)
-                ax.fill_between([x1, x2], y, color=cmap(0.2),
-                                alpha=0.6)
-                ax.plot([x1, x1], [0, y], color=cmap(0.2),
-                        alpha=0.6)
-                ax.plot([x2, x2], [0, y], color=cmap(0.2),
-                        alpha=0.6)
+            ax.plot([x1, x2], [y, y], color=bar_color,
+                        alpha=bar_alpha)
+            ax.fill_between([x1, x2], y, color=bar_color,
+                            alpha=0.6)
+            ax.plot([x1, x1], [0, y], color=bar_color,
+                    alpha=bar_alpha)
+            ax.plot([x2, x2], [0, y], color=bar_color,
+                    alpha=bar_alpha)
 
         ax.set_xlim(pmin, pmax)
 
@@ -225,15 +225,15 @@ class TriPlot2(object):
         print('low/high68:' + str(low68) + ' ' + str(high68))
         print('low/high95:' + str(low95) + ' ' + str(high95))
 
-        if low95 is not None:
-            ax.axvline(low95, color=contour_colors[color_index][1],
+        if low95 is not None and show_low:
+            ax.axvline(low95, color=bar_color,
                        alpha=0.8, linewidth=2.5, linestyle='-.')
-        if high95 is not None:
-            ax.axvline(high95, color=contour_colors[color_index][1],
+        if high95 is not None and show_high:
+            ax.axvline(high95, color=bar_color,
                        alpha=0.8, linewidth=2.5, linestyle='-.')
 
         ax.set_xticks(xtick_locs)
-        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font)
+        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=xticklabel_rotate)
         if xlabel == r'$\frac{r_{\rm{core}}}{r_s}$':
             ax.set_xlabel(xlabel, fontsize=40 * label_scale)
         else:
@@ -254,10 +254,11 @@ class TriPlot2(object):
 
         self._auto_scale.append(autoscale)
 
+        return ax
+
     def _make_joint_i(self, p1, p2, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
-                      filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
-                      truths=None, labsize=15, tick_label_font=14,
-                      load_from_file=True, transpose_idx=None, bandwidth_scale=0.7):
+                      filled_contours=True, contour_alpha=0.6, labsize=None, tick_label_font=None,
+                               xtick_label_rotate=None, show_contours=None):
 
         density = self._load_projection_2D(p1, p2, color_index)
 
@@ -272,9 +273,9 @@ class TriPlot2(object):
             coordsx = np.linspace(extent[0], extent[1], density.shape[0])
             coordsy = np.linspace(extent[2], extent[3], density.shape[1])
 
-            ax.imshow(density.T, extent=extent, aspect=aspect,
+            ax.imshow(density, extent=extent, aspect=aspect,
                       origin='lower', cmap=self.cmap, alpha=0)
-            self._contours(coordsx, coordsy, density.T, ax, extent=extent,
+            self._contours(coordsx, coordsy, density, ax, extent=extent,
                            contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
                            levels=levels)
             ax.set_xlim(pmin1, pmax1)
@@ -283,16 +284,17 @@ class TriPlot2(object):
         else:
             coordsx = np.linspace(extent[0], extent[1], density.shape[0])
             coordsy = np.linspace(extent[2], extent[3], density.shape[1])
-            ax.imshow(density.T, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
+            ax.imshow(density, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
                       vmax=np.max(density), aspect=aspect, extent=extent)
-            self._contours(coordsx, coordsy, density.T, ax, extent=extent,
+            if show_contours:
+                self._contours(coordsx, coordsy, density, ax, extent=extent, filled_contours=False,
                            contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
                            levels=levels)
             ax.set_xlim(pmin1, pmax1)
             ax.set_ylim(pmin2, pmax2)
 
         ax.set_xticks(xtick_locs)
-        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=rotation)
+        ax.set_xticklabels(xtick_labels, fontsize=tick_label_font, rotation=xtick_label_rotate)
 
         ax.set_yticks(ytick_locs)
         ax.set_yticklabels(ytick_labels, fontsize=tick_label_font)
@@ -305,21 +307,14 @@ class TriPlot2(object):
             ax.set_xlabel(xlabel, fontsize=labsize)
             ax.set_ylabel(ylabel, fontsize=labsize)
 
-        if truths is not None:
-            t1, t2 = truths[p1], truths[p2]
-            if isinstance(t1, list):
-                t1 = 0.5*(t1[0] + t1[1])
-            if isinstance(t2, list):
-                t2 = 0.5*(t2[0] + t2[1])
-            ax.scatter(t1, t2, color=self.truth_color, s=50)
-            ax.axvline(t1, linestyle='--', color=self.truth_color, linewidth=3)
-            ax.axhline(t2, linestyle='--', color=self.truth_color, linewidth=3)
+        return ax
 
     def _make_triplot_i(self, axes, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                         filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                         truths=None, labsize=15, tick_label_font=14, xtick_label_rotate=0,
                         load_from_file=True, transpose_idx=None,
-                        bandwidth_scale=0.7, label_scale=None, cmap=None):
+                        bandwidth_scale=0.7, label_scale=None, cmap=None,
+                        show_contours=False):
 
         if param_names is None:
             param_names = self.param_names
@@ -403,6 +398,12 @@ class TriPlot2(object):
                     else:
                         axes[plot_index].imshow(density.T, origin='lower', cmap=self.cmap, alpha=1, vmin=0,
                                                 vmax=np.max(density), aspect=aspect, extent=extent)
+                        if show_contours:
+                            coordsx = np.linspace(extent[0], extent[1], density.shape[0])
+                            coordsy = np.linspace(extent[2], extent[3], density.shape[1])
+                            self._contours(coordsx, coordsy, density.T, axes[plot_index], filled_contours=False, extent=extent,
+                                       contour_colors=contour_colors[color_index], contour_alpha=contour_alpha,
+                                       levels=levels)
                         axes[plot_index].set_xlim(pmin1, pmax1)
                         axes[plot_index].set_ylim(pmin2, pmax2)
 
@@ -476,8 +477,14 @@ class TriPlot2(object):
                     low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
                     high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
 
-                    if param_names[col] == 'log_m_break':
+                    if param_names[col] in ['log_m_break',r'$m_{\rm{hm}}$']:
+                        print('half-mode mass: ')
                         print(low95, high95)
+                        print(low68, high68)
+                    if param_names[col] in ['sigma_sub',r'$\Sigma_{\rm{sub}}$']:
+                        print('sigma-sub: ')
+                        print(low95, high95)
+                        print(low68, high68)
 
                     if low95 is not None:
                         axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
@@ -618,7 +625,7 @@ class TriPlot2(object):
 
 
         else:
-            ax.contour(X, Y, grid, extent=extent, colors=contour_colors,
+            ax.contour(X, Y, grid, extent=extent, colors=contour_colors, zorder=1,
                        levels=np.array(levels) * np.max(grid),
                        linewidths=linewidths)
 
@@ -651,8 +658,8 @@ class TriPlot2(object):
             name = r'$\sigma_{\rm{src}} \ \left[\rm{pc}\right]$'
             tick_labels = [30, 40, 50, 60]
             tick_locs = np.array(tick_labels) * 0.001
-        elif pname == 'log_m_break':
-            name = r'$\log_{10}{m_{\rm{hm}}}$'
+        elif pname == 'log_m_break' or pname == r'$m_{\rm{hm}}$':
+            name = r'$\log_{10} \left(m_{\rm{hm}}\right) \left[M_{\odot}\right]$'
             tick_labels = [5, 6, 7, 8, 9, 10]
             tick_locs = tick_labels
         elif pname == 'LOS_normalization':
@@ -667,6 +674,10 @@ class TriPlot2(object):
             name = r'$\sigma_0 \left[\rm{cm^2} \ \rm{g^{-1}}\right]$'
             tick_labels = [0.01, 2, 4, 6, 8, 10]
             tick_locs = [0.01, 2, 4, 6, 8, 10]
+        elif pname == r'$\log M_{\rm{halo}}$':
+            name = r'$\log_{10} M_{\rm{halo}} \left[M_{\odot}\right]$'
+            tick_labels = [12.9, 13.1, 13.3, 13.5]
+            tick_locs = [12.9, 13.1, 13.3, 13.5]
 
         else:
 

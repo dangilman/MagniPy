@@ -27,10 +27,10 @@ def run(savename, chain_name, nlens, error, global_weights = None, single_weight
     elif error == 6:
         n_pert = 5
 
-    bandwidth_scale = 0.75
+    bandwidth_scale = 1
     nkde_bins = 10
-    tol = 400
-    which_lenses = np.arange(25, 36)
+    tol = 450
+    which_lenses = np.arange(1, 36)
     evaluate_denities(chain_name, which_lenses,
                       error, n_pert, nkde_bins, tol, bandwidth_scale, savename,
                       global_weights = global_weights, single_weights = single_weights)
@@ -42,10 +42,10 @@ N = 37
 #    single_weights={'source_size_kpc': [0.018, 0.005]})
 #exit(1)
 
-for ei in [2]:
-    run('noweights_error'+str(ei)+'_', 'SIDM_sigma0.024_cross0.1', N, ei)
-    #run('LOSsrcweights_error'+str(ei)+'_', 'SIDM_sigma0.024_cross9', N, ei, global_weights={'LOS_normalization':[1, 0.05]},
-    #    single_weights={'source_size_kpc': [0.023, 0.005]})
+for ei in [0]:
+    run('noweights_error'+str(ei)+'_', 'SIDM_sigma0.022_cross0.1', N, ei)
+    run('LOSsrcweights_error'+str(ei)+'_', 'SIDM_sigma0.022_cross0.1', N, ei, global_weights={'LOS_normalization':[1, 0.05]},
+        single_weights={'source_size_kpc': [0.023, 0.005]})
 
     #run('noweights_error'+str(ei)+'_', 'SIDM_sigma0.015_cross0.25', N, ei)
     #run('LOSsrcweights_error'+str(ei)+'_', 'SIDM_sigma0.015_cross0.25', N, ei, global_weights={'LOS_normalization':[1, 0.05], 'source_size_kpc': [0.02, 0.005]})

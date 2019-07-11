@@ -88,7 +88,7 @@ def read_run_partition(fname):
 
     return Ncores, cores_per_lens
 
-def extract_chain(name, sim_name, start_idx=1, zlens=None):
+def extract_chain(name, sim_name, start_idx=1, zlens=None, sigmasubmax=None, observed_fluxes=None):
 
     chain_info_path = chainpath_out + 'raw_chains/' + name + '/simulation_info.txt'
 
@@ -119,8 +119,9 @@ def extract_chain(name, sim_name, start_idx=1, zlens=None):
         try:
 
             fluxes = np.loadtxt(folder_name + '/fluxes.txt')
-            obs_data = read_data(folder_name + '/lensdata.txt')
-            observed_fluxes = obs_data[0].m
+            if observed_fluxes is None:
+                obs_data = read_data(folder_name + '/lensdata.txt')
+                observed_fluxes = obs_data[0].m
             params = np.loadtxt(folder_name + '/parameters.txt', skiprows=1)
             zd, sat=None, None
             if 'lens_redshift' in params_varied:
@@ -144,6 +145,12 @@ def extract_chain(name, sim_name, start_idx=1, zlens=None):
 
             params = params[:,0:6]
 
+            if sigmasubmax is not None:
+                keep = np.where(params[:,1] < sigmasubmax)[0]
+
+            else:
+                keep = np.where(params[:,2]<10000)[0]
+
             macro_model = np.loadtxt(folder_name + '/macro.txt')
 
             macro_model[:,3] = transform_ellip(macro_model[:,3])
@@ -161,10 +168,14 @@ def extract_chain(name, sim_name, start_idx=1, zlens=None):
             if sat is not None:
                 macro_model = np.column_stack((macro_model, sat))
 
+            fluxes = fluxes[keep,:]
+            params=params[keep,:]
+            macro_model=macro_model[keep,:]
+
             assert fluxes.shape[0] == params.shape[0]
 
         except:
-            print('didnt find a file... '+str(chain_file_path + str(i)+'/'))
+            #print('didnt find a file... '+str(chain_file_path + str(i)+'/'))
             continue
 
         if params_header is None:
@@ -247,12 +258,17 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds, uncert
 
         ordered_inds = np.argsort(summary_statistic)
 
+        if k == 1:
+            print('N < 0.01: ', np.sum(summary_statistic < 0.01*np.sqrt(3)))
+            print('N < 0.02: ', np.sum(summary_statistic < 0.02*np.sqrt(3)))
+            print('N < 0.03: ', np.sum(summary_statistic < 0.03*np.sqrt(3)))
+
         sample_inds.append(ordered_inds)
         statistics.append(summary_statistic[ordered_inds])
 
     return sample_inds, statistics
 
-def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
+def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000,sigmasubmax=None):
 
     """
     coverts output from cluster into single files for each lens
@@ -265,6 +281,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
     keep_inds = [0,1,2,3]
     uncertainty_in_ratios=False
     zlens = None
+    observed_fluxes = None
 
     if name[0:8] == 'lens1422':
         zlens=0.36
@@ -302,17 +319,18 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         zlens=0.31
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
-        sigmas = [0.05, 0.05, 0.05]
+        sigmas = [0.1, 0.1, 0.1]
     elif name[0:8] == 'lens0414':
+        observed_fluxes = np.array([1, 0.83, 0.36, 0.16])
         zlens=0.96
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
-        sigmas = [0.1]*3
+        sigmas = [0.05, 0.04, 0.04]
 
     sigmas = np.array(sigmas)
 
     print('loading chains... ')
-    fluxes,fluxes_obs,parameters,all,_ = extract_chain(name, sim_name, zlens=zlens)
+    fluxes,fluxes_obs,parameters,all,_ = extract_chain(name, sim_name, zlens=zlens, sigmasubmax=sigmasubmax, observed_fluxes=observed_fluxes)
     print('done.')
 
     all = np.squeeze(all)
@@ -322,7 +340,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
     if ~os.path.exists(chain_file_path):
         create_directory(chain_file_path)
 
-    print('sampling flux uncertainties... ')
+    print('sampling flux uncertainties, lens '+name[0:8]+'... ')
     inds_to_keep_list, statistics = add_flux_perturbations(fluxes, fluxes_obs, sigmas, Npert,
                                                keep_inds, uncertainty_in_ratios)
     print('done.')
@@ -335,6 +353,9 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000):
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-process_raw('lens0911', 10)
+#for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115']:
+#    process_raw('lens'+lensname, 10, sigmasubmax=None)
+process_raw('lens'+'1115', 10)
+#process_raw('lens'+'2026', 10)
 #process_raw('lens2038_highnorm', 10)
 #process_raw('lens1422_highnorm_fixshear', 10)

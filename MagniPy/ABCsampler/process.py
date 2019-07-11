@@ -226,10 +226,10 @@ def resample_chain_sidm(a0_area=None, SIDMcross=None, errors = [0, 0.02],N_pert=
 def resample_sys(num, process_only):
     num = int(num)
     errors = [0]
-    src_mean = 0.023
+    src_mean = 0.021
 
     if num == 1:
-        resample_chain_sidm(a0_area=0.024, SIDMcross=0.1, SIDMcross_sigma=0.2, src_size = src_mean,
+        resample_chain_sidm(a0_area=0.022, SIDMcross=0.1, SIDMcross_sigma=0.2, src_size = src_mean,
                             errors=errors,
                    N_pert=1, process_only=process_only, name='coldSIDM_full', LOS_norm=1.,
                    which_lens_indexes=np.arange(1, 37))
@@ -268,7 +268,7 @@ def resample_sys(num, process_only):
 #resample_sys(1, False)
 resample_sys(1, False)
 #process_samples('SIDM_sigma0.025_cross0.1', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
-process_samples('SIDM_sigma0.024_cross0.1', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
+#process_samples('SIDM_sigma0.024_cross0.1', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
 #process_samples('SIDM_sigma0.025_cross0.25', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
 #process_samples('SIDM_sigma0.015_cross9', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
 #process_samples('SIDM_sigma0.015_cross5', np.arange(1,37), errors = [0.02, 0.04], N_pert=5)
