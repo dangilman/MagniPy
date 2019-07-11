@@ -159,6 +159,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                 if chain_keys_run['satellites'] is not None:
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
+            halo_args['log_m_break'] = 7.7
+            constrain_params['shear'] = 0.1
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
             try:
@@ -170,7 +172,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
                                      satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
-                                                                constrain_params=constrain_params)
+                                     constrain_params=constrain_params, check_foreground_fit=True)
 
                 xfit, yfit = new[0].x, new[0].y
 
@@ -330,6 +332,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens0414/', 1)
+#runABC(prefix+'data/lens2033/', 1)
 
 
