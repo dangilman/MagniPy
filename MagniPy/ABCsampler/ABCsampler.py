@@ -78,7 +78,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     if 'n_iterations' in keys.keys():
         n_iterations = keys['n_iterations']
     else:
-        n_iterations = 450
+        n_iterations = 250
 
     verbose = False
 
@@ -159,7 +159,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                 if chain_keys_run['satellites'] is not None:
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
-            #halo_args['log_m_break'] = 7.7
             #constrain_params['shear'] = 0.1
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
 
@@ -197,7 +196,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
         if 'shear' not in keys_to_vary.keys() and 'save_shear' in keys.keys():
 
-            samples_array.insert(keys['save_shear']['idx'], macro_fit.lens_components[0].shear)
+            samples_array.insert(keys['save_shear']['idx'], np.round(macro_fit.lens_components[0].shear,4))
 
         if save_statistic:
             new_statistic = summary_stat_flux(d2fit.m, new[0].m)

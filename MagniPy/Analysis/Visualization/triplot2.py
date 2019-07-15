@@ -219,11 +219,14 @@ class TriPlot2(object):
         low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
         high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
 
+        mid50 = self._confidence_int(bar_centers, bar_heights, 0.5)
+
         low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
         high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
 
         print('low/high68:' + str(low68) + ' ' + str(high68))
         print('low/high95:' + str(low95) + ' ' + str(high95))
+        print('mean: ', mid50)
 
         if low95 is not None and show_low:
             ax.axvline(low95, color=bar_color,
