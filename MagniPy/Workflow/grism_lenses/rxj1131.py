@@ -32,7 +32,13 @@ class Lens1131(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    has_satellite = False
+    has_satellite = True
+    satellite_mass_model = ['SIS']
+    satellite_redshift = [zlens]
+    satellite_convention = ['phys']
+    satellite_pos_mass = [0.102, 0.554]
+    # satellite einstein radius from Blackburne et al. 2011
+    satellite_kwargs = [{'theta_E': 0.05, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     gamma_min = 1.95
     gamma_max = 2.2
