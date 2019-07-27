@@ -9,6 +9,8 @@ class IndepdendentDensities(object):
 
         :param density_samples_list: a list of DensitySamples instances
         """
+        if not isinstance(density_samples_list, list):
+            raise Exception('must pass in a list of DensitySamples instances.')
         self.densities = density_samples_list
 
     def projection_1D(self, pname):
@@ -40,7 +42,9 @@ class DensitySamples(object):
         for j, (data, weights) in enumerate(zip(data_list, weight_list)):
             self._n += 1
             if from_file is not False:
-                density = np.loadtxt(from_file[j])
+
+                density = np.load(from_file+'_'+str(j+1)+'.npy')
+
             else:
                 density = None
             self.single_densities.append(SingleDensity(data, param_names, param_ranges, weights,
@@ -59,6 +63,14 @@ class DensitySamples(object):
         for den in self.single_densities:
             proj += den.projection_2D(p1, p2)
         return proj
+
+    def save_to_file(self, fname):
+
+        fname_base = fname + '_'
+        for i, single_density in enumerate(self.single_densities):
+            np.save(fname_base+str(i+1), single_density.density)
+            #with open(fname_base+str(i+1)+'.txt', 'w') as f:
+            #    f.write('np.'+str(repr(single_density.density)))
 
 class SingleDensity(object):
 

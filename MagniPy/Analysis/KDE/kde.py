@@ -73,7 +73,11 @@ class KDE_nD(object):
         X = np.meshgrid(*coordinates)
         cc_center = np.vstack([X[i].ravel() - np.mean(ranges[i]) for i in range(len(X))]).T
 
-        dimension = int(np.shape(data)[1])
+        try:
+            dimension = int(np.shape(data)[1])
+        except:
+            dimension = 1
+
         h = self.bandwidth_scale * self._scotts_factor(len(coordinates[0]), dimension)
 
         for i, coord in enumerate(coordinates):
@@ -82,7 +86,12 @@ class KDE_nD(object):
         H = self.NDhistogram(data, weights)
 
         covariance = h * np.cov(data.T)
-        c_inv = np.linalg.inv(covariance)
+
+        if dimension > 1:
+            c_inv = np.linalg.inv(covariance)
+        else:
+            c_inv = covariance ** -1
+
         n = len(coordinates[0])
         gaussian_kernel = self._gaussian_kernel(c_inv, cc_center, dimension, n)
 

@@ -26,15 +26,6 @@ class TriPlot2(object):
 
     def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges):
 
-        """
-        :param parameter_names: param names (dictionary)
-        :param parameter_ranges: parameter limits (dictionary)
-        :param samples: samples that form the probability distribution (numpy array)
-
-        shape is (N_samples (tol), N_parameters (len(parameter_names)),
-        N_realizations (n_pert), N_posteriors (n_lenses))
-
-        """
 
         self.param_names = parameter_names
         self._nchains = len(NDdensity_instance_list)
@@ -93,7 +84,7 @@ class TriPlot2(object):
                      filled_contours=True, contour_alpha=0.6, param_names=None,
                      fig_size=8, truths=None, load_from_file=True,
                      transpose_idx=None, bandwidth_scale=0.7, label_scale=1, tick_label_font=12,
-                     xtick_label_rotate=0, show_contours=False):
+                     xtick_label_rotate=0, show_contours=False, marginal_alpha=0.6, show_intervals=True):
 
         self.fig = plt.figure(1)
 
@@ -120,7 +111,8 @@ class TriPlot2(object):
             axes.append(self._make_triplot_i(axes, i, contour_colors, levels, filled_contours, contour_alpha, param_names,
                                  fig_size, truths, load_from_file=load_from_file, tick_label_font=tick_label_font,
                                  transpose_idx=transpose_idx, bandwidth_scale=bandwidth_scale, xtick_label_rotate=xtick_label_rotate,
-                                 label_scale=label_scale, cmap=self.cmap_call, show_contours=show_contours))
+                                 label_scale=label_scale, cmap=self.cmap_call, show_contours=show_contours,
+                                             marginal_alpha=marginal_alpha, show_intervals=show_intervals))
 
         for k in range(len(param_names)):
             scales = []
@@ -199,6 +191,8 @@ class TriPlot2(object):
 
         for bin, bh in enumerate(bar_heights):
             print('probability '+str(np.round(bar_centers[bin], 3))+': ', np.round(bh/max_h,3))
+        print('value: ', repr(np.round(bar_centers,3)))
+        print('prob: ', repr(np.round(bar_heights/max_h,3)))
 
         for i, y in enumerate(bar_heights):
             x1, x2 = bar_centers[i] - bar_width * .5, bar_centers[i] + bar_width * .5
@@ -219,14 +213,15 @@ class TriPlot2(object):
         low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
         high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
 
-        mid50 = self._confidence_int(bar_centers, bar_heights, 0.5)
-
         low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
         high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
 
         print('low/high68:' + str(low68) + ' ' + str(high68))
         print('low/high95:' + str(low95) + ' ' + str(high95))
-        print('mean: ', mid50)
+        mean_of_distribution = 0
+        for i in range(0, len(bar_heights)):
+            mean_of_distribution += bar_heights[i] * bar_centers[i] / np.sum(bar_heights)
+        print('mean: ', mean_of_distribution)
 
         if low95 is not None and show_low:
             ax.axvline(low95, color=bar_color,
@@ -317,7 +312,7 @@ class TriPlot2(object):
                         truths=None, labsize=15, tick_label_font=14, xtick_label_rotate=0,
                         load_from_file=True, transpose_idx=None,
                         bandwidth_scale=0.7, label_scale=None, cmap=None,
-                        show_contours=False):
+                        show_contours=False, marginal_alpha=0.9, show_intervals=True):
 
         if param_names is None:
             param_names = self.param_names
@@ -330,6 +325,9 @@ class TriPlot2(object):
         self._reference_grid = None
         autoscale = []
 
+        self.triplot_densities = []
+        self.joint_names = []
+
         for row in range(n_subplots):
 
             marg_done = False
@@ -338,6 +336,9 @@ class TriPlot2(object):
                 if col < marg_in_row:
 
                     density = self._load_projection_2D(param_names[row], param_names[col], color_index)
+
+                    self.triplot_densities.append(density)
+                    self.joint_names.append(param_names[row]+'_'+param_names[col])
 
                     if transpose_idx is not None and plot_index in transpose_idx:
                         print(param_names[row], param_names[col])
@@ -449,13 +450,13 @@ class TriPlot2(object):
 
                         if filled_contours:
                             axes[plot_index].plot([x1, x2], [y, y], color=contour_colors[color_index][1],
-                                                  alpha=0.6)
+                                                  alpha=1)
                             axes[plot_index].fill_between([x1, x2], y, color=contour_colors[color_index][1],
-                                                          alpha=0.6)
+                                                          alpha=marginal_alpha)
                             axes[plot_index].plot([x1, x1], [0, y], color=contour_colors[color_index][1],
-                                                  alpha=0.6)
+                                                  alpha=1)
                             axes[plot_index].plot([x2, x2], [0, y], color=contour_colors[color_index][1],
-                                                  alpha=0.6)
+                                                  alpha=1)
                         else:
                             if self._marginal_col is None:
                                 marginal_col = cmap(self._color_eval)
@@ -464,7 +465,7 @@ class TriPlot2(object):
                             axes[plot_index].plot([x1, x2], [y, y], color=marginal_col,
                                                   alpha=1)
                             axes[plot_index].fill_between([x1, x2], y, color=marginal_col,
-                                                          alpha=0.8)
+                                                          alpha=marginal_alpha)
                             axes[plot_index].plot([x1, x1], [0, y], color=marginal_col,
                                                   alpha=1)
                             axes[plot_index].plot([x2, x2], [0, y], color=marginal_col,
@@ -488,11 +489,16 @@ class TriPlot2(object):
                         print('sigma-sub: ')
                         print(low95, high95)
                         print(low68, high68)
+                    if param_names[col] in ['$\\alpha$', 'alpha']:
+                        print('alpha: ')
+                        print(low95, high95)
+                        print(low68, high68)
+                        print(self._confidence_int(bar_centers, bar_heights, 0.5))
 
-                    if low95 is not None:
+                    if low95 is not None and show_intervals:
                         axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
                                                  alpha=0.8, linewidth=2.5, linestyle='-.')
-                    if high95 is not None:
+                    if high95 is not None and show_intervals:
                         axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
                                                  alpha=0.8, linewidth=2.5, linestyle='-.')
 
@@ -679,11 +685,9 @@ class TriPlot2(object):
             tick_locs = [0.01, 2, 4, 6, 8, 10]
         elif pname == r'$\log M_{\rm{halo}}$':
             name = r'$\log_{10} M_{\rm{halo}} \left[M_{\odot}\right]$'
-            tick_labels = [12.9, 13.1, 13.3, 13.5]
-            tick_locs = [12.9, 13.1, 13.3, 13.5]
-
+            tick_labels = [12.9, 13.1, 13.3, 13.5, 13.7]
+            tick_locs = [12.9, 13.1, 13.3, 13.5, 13.7]
         else:
-
             name = pname
 
             tick_locs = np.round(np.linspace(self.parameter_ranges[pname][0], self.parameter_ranges[pname][1], 5), 2)

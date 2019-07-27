@@ -88,7 +88,8 @@ def read_run_partition(fname):
 
     return Ncores, cores_per_lens
 
-def extract_chain(names, sim_name, start_idx=1, zlens=None, sigmasubmax=None, observed_fluxes=None, mhalomin=None):
+def extract_chain(names, sim_name, start_idx=1, zlens=None, sigmasubmax=None, observed_fluxes=None,
+                  mhalomin=None, keep_p=None, mhmmax=None):
 
     if not isinstance(names, list):
         names = [names]
@@ -96,24 +97,35 @@ def extract_chain(names, sim_name, start_idx=1, zlens=None, sigmasubmax=None, ob
     fluxes_out, obs, params_out, full_params_out, head = extract_chain_single(names[0], sim_name, zlens=zlens,
                                                                               sigmasubmax=sigmasubmax,
                                                                               observed_fluxes=observed_fluxes,
-                                                                              mhalomin=mhalomin)
+                                                                              mhalomin=mhalomin,mhmmax=mhmmax)
+
+    if keep_p is True:
+        extended_shape0 = float(params_out.shape[0])
 
     for count, name in enumerate(names):
 
         if count==0:
             continue
+        if count > 1:
+            keep_p=False
 
-        f, _, p, fp, _ = extract_chain_single(name, sim_name, zlens=zlens,
-                                                                           sigmasubmax=sigmasubmax,
-                                                                           observed_fluxes=observed_fluxes,mhalomin=mhalomin)
-        fluxes_out = np.vstack((fluxes_out, f))
-        params_out = np.vstack((params_out, p))
-        full_params_out = np.vstack((full_params_out, fp))
+        f, _, p, fp, _ = extract_chain_single(name, sim_name, zlens=zlens, sigmasubmax=sigmasubmax,
+                                                  observed_fluxes=observed_fluxes,mhalomin=mhalomin,mhmmax=mhmmax)
+        if keep_p is True:
+            keep_percent = extended_shape0 * ((3./7) * p.shape[0])**-1
+
+            nmax = int(keep_percent * p.shape[0])
+        else:
+            nmax = int(p.shape[0])
+
+        fluxes_out = np.vstack((fluxes_out, f[0:nmax,:]))
+        params_out = np.vstack((params_out, p[0:nmax,:]))
+        full_params_out = np.vstack((full_params_out, fp[0:nmax,:]))
 
     return fluxes_out, obs, params_out, full_params_out, head
 
 def extract_chain_single(name, sim_name, start_idx=1, zlens=None, sigmasubmax=None,
-                         observed_fluxes=None, mhalomin=None):
+                         observed_fluxes=None, mhalomin=None, mhmmax=None):
 
     chain_info_path = chainpath_out + 'raw_chains/' + name + '/simulation_info.txt'
 
@@ -166,6 +178,7 @@ def extract_chain_single(name, sim_name, start_idx=1, zlens=None, sigmasubmax=No
             # shear
             params = np.delete(params, 7, 1)
             # SIE_gamma
+
             params = np.delete(params, 1, 1)
 
             params = params[:,0:6]
@@ -205,6 +218,30 @@ def extract_chain_single(name, sim_name, start_idx=1, zlens=None, sigmasubmax=No
             fluxes = fluxes[keep, :]
             params = params[keep, :]
             macro_model = macro_model[keep, :]
+
+            if mhmmax is not None:
+                keep = np.where(params[:, 5] < mhmmax)[0]
+            else:
+                keep = np.where(params[:,5] < 10000)[0]
+
+            fluxes = fluxes[keep, :]
+            params = params[keep, :]
+            macro_model = macro_model[keep, :]
+
+            if name[0:8] == 'lens2038':
+                condition = np.logical_or(macro_model[:, 7] < 2.1, macro_model[:,7] > 2.2)
+
+                for c, bool_value in enumerate(condition):
+                    u = np.random.rand()
+
+                    if u>0.5 and bool_value==False:
+                        condition[c] = True
+
+                keep = np.where(condition)[0]
+
+                params = params[keep, :]
+                fluxes = fluxes[keep, :]
+                macro_model = macro_model[keep, :]
 
             assert fluxes.shape[0] == params.shape[0]
 
@@ -291,6 +328,7 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds, uncert
         ordered_inds = np.argsort(summary_statistic)
 
         if k == 1:
+
             print('N < 0.01: ', np.sum(summary_statistic < 0.01*np.sqrt(3)))
             print('N < 0.02: ', np.sum(summary_statistic < 0.02*np.sqrt(3)))
             print('N < 0.03: ', np.sum(summary_statistic < 0.03*np.sqrt(3)))
@@ -300,12 +338,12 @@ def add_flux_perturbations(fluxes, fluxes_obs, sigmas, N_pert, keep_inds, uncert
 
     return sample_inds, statistics
 
-def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000,sigmasubmax=None,mhalomin=None):
+def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None,mhalomin=None,mhmmax=None,
+                deplete=False):
 
     """
     coverts output from cluster into single files for each lens
     """
-
 
     header = 'f1 f2 f3 f4 stat srcsize sigmasub deltalos mparent alpha mhm re gx gy eps epstheta shear sheartheta gmacro'
     header += ' re_normed gx_normed gy_normed eps_normed epstheta_normed shear_normed sheartheta_normed gmacro_normed'
@@ -315,47 +353,75 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000,sigmasubmax=None
     zlens = None
     observed_fluxes = None
     run_name = deepcopy(name)
+    keep_p = True
+    samples_completed = 500000
 
     if name[0:8] == 'lens1422':
+        run_name = ['lens1422_extended', 'lens1422']
         zlens=0.36
         sigmas = [0.011, 0.01, 0.013]
         keep_inds = [0,1,2]
     elif name[0:8]=='lens0435':
+        run_name = ['lens0435_extended', 'lens0435']
         zlens=0.45
         header += ' satellite_thetaE satellite_x satellite_y'
         sigmas = [0.05, 0.049, 0.048, 0.056]
     elif name[0:8]=='lens2038':
+        run_name = ['lens2038', 'lens2038_highgamma']
+        keep_p = False
         zlens=0.23
         sigmas = [0.01, 0.017, 0.022, 0.022]
     elif name[0:8]=='lens1606':
-        run_name = ['lens1606', 'lens1606_extended']
+        run_name = ['lens1606_extended', 'lens1606']
         header +=' satellite_thetaE satellite_x satellite_y'
         sigmas = [0.03, 0.03, 0.02/0.59, 0.02/0.79]
         #sigmas = [0.00001]*4
     elif name[0:8]=='lens0405':
-        run_name = ['lens0405', 'lens0405_extended']
+        run_name = ['lens0405_extended', 'lens0405', 'lens0405_supplement']
+        if mhmmax is not None:
+            run_name += ['lens0405_CDM']
+        print(run_name)
         sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
     elif name[0:8] == 'lens2033':
+        run_name = ['lens2033_extended', 'lens2033', 'lens2033_supplement_benson']
+        if mhmmax is not None:
+            run_name += ['lens2033_CDM']
         header += ' satellite_thetaE_1 satellite_x_1 satellite_y_1 satellite_thetaE_2 satellite_x_2 satellite_y_2'
         zlens=0.66
-        sigmas = [0.03, 0.03/0.65, 0.04, 0.02/0.53]
+        sigmas = np.array([0.03, 0.03/0.65, 0.02/0.5, 0.02/0.53])
+        #sigmas = [0.1, 0.1*0.65, 0.1*0.5, 0.1*0.53]
+        #sigmas *= 2
+        #sigmas = [0.1, 0.1, 0.1]
+        #keep_inds = [0,1,2]
+        #uncertainty_in_ratios = True
     elif name[0:8]=='lens2026':
+        run_name = ['lens2026_extended', 'lens2026']
         sigmas = [0.02, 0.02/0.75, 0.01/0.31, 0.01/0.28]
     elif name[0:8]=='lens0911':
+        keep_p = False
+        #run_name = ['lens0911_varyshear_extended',]
+        #run_name += ['lens0911_old', 'lens0911_aurora']
+        run_name = ['lens0911_varyshear_hoffman', 'lens0911_varyshear_1',
+                    'lens0911_varyshear_2', 'lens0911_varyshear_hoffman_2']
+        #run_name = ['lens0911_varyshear_hoffman_2']
         header += ' satellite_thetaE satellite_x satellite_y'
         zlens=0.77
         sigmas = [0.04/0.56, 0.05, 0.04/0.53, 0.04/0.24]
     elif name[0:8] == 'lens0128':
+        run_name = ['lens0128_extended', 'lens0128', 'lens0128_extendedgamma', 'lens0128_extendedgamma_2']
         zlens=1.145
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
         sigmas = [0.029, 0.029, 0.032]
     elif name[0:8] == 'lens1115':
+        run_name = ['lens1115_extended', 'lens1115']
         zlens=0.31
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
         sigmas = [0.1, 0.1, 0.1]
     elif name[0:8] == 'lens0414':
+        run_name = ['lens0414_extended', 'lens0414', 'lens0414_supplement_benson',
+                    'lens0414_supplement_benson_2']
         #observed_fluxes = np.array([1, 0.83, 0.36, 0.16])
         sigmas = [0.1, 0.1, 0.1]
 
@@ -370,12 +436,25 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000,sigmasubmax=None
 
     print('loading chains... ')
     fluxes,fluxes_obs,parameters,all,_ = extract_chain(run_name, sim_name, zlens=zlens, sigmasubmax=sigmasubmax,
-                                                       observed_fluxes=observed_fluxes, mhalomin=mhalomin)
+                                                       observed_fluxes=observed_fluxes,
+                                                       mhalomin=mhalomin, keep_p=keep_p, mhmmax=mhmmax)
     print('done.')
 
     all = np.squeeze(all)
     fluxes, fluxes_obs = np.squeeze(fluxes), np.squeeze(fluxes_obs)
-    chain_file_path = chainpath_out + 'processed_chains/grism_quads/' + name + '/'
+
+    if mhmmax is not None:
+        chain_file_path = chainpath_out + 'processed_chains/grism_quads_CDM/' + name + '/'
+
+    elif deplete is True:
+        print(deplete is True)
+        fluxes = fluxes[0::2, :]
+        all = all[0::2, :]
+        chain_file_path = chainpath_out + 'processed_chains/grism_quads_depleted/' + name + '/'
+
+    else:
+        chain_file_path = chainpath_out + 'processed_chains/grism_quads_joint/' + name + '/'
+
     print('nrealizations: ', fluxes.shape[0])
     if ~os.path.exists(chain_file_path):
         create_directory(chain_file_path)
@@ -394,8 +473,20 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=5000,sigmasubmax=None
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
 #for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
-#    process_raw('lens'+lensname, 10, mhalomin=13)
-process_raw('lens'+'0911', 10)
+#    process_raw('lens'+lensname, 10, mhmmax=5.5, keep_N=1000)
+
+#for lensname in ['0911']:
+#    process_raw('lens' + lensname, 10, keep_N=3000)
+process_raw('lens0911', 10)
+#process_raw('lens0911', 10)
+
+#for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
+#    process_raw('lens'+lensname, 10)
+
+#process_raw('lens0911', 10)
+#process_raw('lens0128', 10)
+#process_raw('lens0128', 10)
+#process_raw('lens'+'0911', 10)
 #process_raw('lens'+'0405', 10)
 #process_raw('lens'+'1422', 10, mhalomin=13)
 #process_raw('lens2038_highnorm', 10)

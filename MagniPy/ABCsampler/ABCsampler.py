@@ -9,7 +9,7 @@ from MagniPy.util import approx_theta_E
 def initialize_macro(solver,data,init):
 
     _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.055,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.06,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -184,7 +184,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     break
 
         macro_fit = optmodel[0]
-
+        print(macro_fit.lens_components[0].lenstronomy_args)
         N_computed += 1
         if N_computed%readout_steps == 0 and verbose:
             print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
@@ -255,7 +255,7 @@ def runABC(chain_ID='',core_index=int):
 
     print('lens redshift: ', chain_keys['zlens'])
     print('source redshift: ', chain_keys['zsrc'])
-    print('opening angle: ', 5*approx_theta_E(datatofit.x, datatofit.y))
+    print('opening angle: ', chain_keys['opening_angle_factor']*approx_theta_E(datatofit.x, datatofit.y))
 
     if run is False:
         return
@@ -331,6 +331,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens0911/', 1)
+#runABC(prefix+'data/SIDMsim/', 50001)
 
 
