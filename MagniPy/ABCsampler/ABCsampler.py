@@ -160,7 +160,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
             #constrain_params['shear'] = 0.1
-            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1)
+            if verbose: print('constructing realization... ')
+            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1, verbose=verbose)
 
             try:
                 new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
@@ -331,6 +332,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens1138/', 1)
+#runABC(prefix+'data/lens0435/', 1)
 
 

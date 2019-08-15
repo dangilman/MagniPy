@@ -87,6 +87,14 @@ def halo_model_args(params):
             if name in params.keys():
                 args.update({name: params[name]})
 
+        if 'vary_mass_concentration' in params.keys():
+            mc_args = {}
+            mc_args['custom'] = True
+            mc_args['zeta'] = params['zeta']
+            mc_args['beta'] = params['beta']
+            mc_args['c0'] = params['c0']
+            args.update({'mc_model': mc_args})
+
         args.update({'mass_func_type':mass_func_type})
 
         if 'log_m_parent' in params.keys():
@@ -396,14 +404,21 @@ def initialize(chain_ID, core_index):
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
     chain_keys['write_header'] = True
-    readout_best = True
+    readout_best = False
 
     if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
         values = np.loadtxt(output_path + 'fluxes.txt')
         N_lines = int(np.shape(values)[0])
 
         if N_lines > chain_keys['Nsamples']*0.5:
-            readout_best = False
+            if 'readout_best' in chain_keys.keys():
+                if chain_keys['readout_best']:
+                    readout_best = True
+                else:
+                    readout_best = False
+            else:
+                readout_best = False
+
 
         if N_lines >= chain_keys['Nsamples']:
             return False, False, False, False, False
