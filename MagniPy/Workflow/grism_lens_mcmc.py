@@ -36,20 +36,20 @@ from MagniPy.Workflow.grism_lenses.rxj0911 import RXJ0911
 from MagniPy.Workflow.grism_lenses.lens1606 import Lens1606
 from MagniPy.Workflow.grism_lenses.b1422 import Lens1422
 from MagniPy.Workflow.grism_lenses.rxj1131 import Lens1131
+from MagniPy.Workflow.radio_lenses.lens0128 import Lens0128
+from MagniPy.Workflow.radio_lenses.lens1115 import Lens1115
+from MagniPy.Workflow.radio_lenses.mg0414 import Lens0414
+from MagniPy.Workflow.grism_lenses.lens1413 import Lens1413
 
-simple_quads = [Lens1131()]
-N=400
+simple_quads = [Lens1413()]
+N=300
 optimizer_kwargs = [{'tol_mag': None, 'pso_compute_magnification': 1e+2,
                     'n_particles': 30, 'verbose': False,
-                    'optimize_routine': 'fixedshearpowerlaw', 'grid_res': 0.001, 'multiplane': True},
-                    ]
+                    'optimize_routine': 'fixed_powerlaw_shear', 'grid_res': 0.002, 'multiplane': True}]
 
-#xsat = simple_quads[0].satellite_kwargs[0]['center_x']
-#ysat = simple_quads[0].satellite_kwargs[0]['center_y']
+varyparams = [{}]
 
-varyparams = [{'fixed_param_uniform': {'shear':[0.09,0.17]}}]
-
-fnames = ['./quad_mcmc/1131_samples_fixshear.txt']
+fnames = ['./quad_mcmc/1413_samples_nosatellite.txt']
 
 for fname, lens, opt_kwargs_i, to_vary_i in \
         zip(fnames, simple_quads, optimizer_kwargs, varyparams):

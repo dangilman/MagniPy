@@ -234,6 +234,8 @@ class ChainFromSamples(object):
         else:
             assert len(weights_single) == len(self.lenses)
 
+        data = None
+
         for n in range(len(self.lenses)):
 
             t0 = time()
@@ -243,10 +245,15 @@ class ChainFromSamples(object):
             for p in range(0, self.n_pert):
 
                 params_weights = None
-                data = np.empty(shape = (tol, len(self.params_varied)))
 
                 for i, pi in enumerate(self.params_varied):
-                    data[:,i] = posteriors[n][p].samples[pi]
+                    if data is None:
+                        nrows = len(posteriors[n][p].samples[pi])
+                        ncols = len(self.params_varied)
+                        data = np.empty(shape = (nrows, ncols))
+                        data[:,0] = posteriors[n][p].samples[pi]
+                    else:
+                        data[:,i] = posteriors[n][p].samples[pi]
 
                     if weights_global is not None and n == 0:
 
@@ -641,8 +648,16 @@ class SingleLens(object):
                 #print('keeping ' + str(len(self.parameters[i][pname])) + ' samples')
 
         for i in range(0, len(self.statistic)):
-            inds = numpy.argsort(self.statistic[i])[0:tol]
+            sorted_stats = np.argsort(self.statistic[i])
+            if tol > 1:
+                ind_max = tol
 
+            else:
+                ind_max = np.sum(sorted_stats <= tol)
+                ind_max = min(400, ind_max)
+                ind_max = max(200, ind_max)
+
+            inds = sorted_stats[0:ind_max]
             new_param_dic = {}
 
             for key in self.parameters[i].keys():

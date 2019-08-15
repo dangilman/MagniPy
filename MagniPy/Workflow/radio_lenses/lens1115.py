@@ -7,8 +7,12 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens1115(Quad):
 
-    x = np.array([0.9635, 1.1125, -0.7055, -0.3645])
-    y = np.array([-0.706, -0.248, -0.633, 1.328])
+    #x = np.array([0.9635, 1.1125, -0.7055, -0.3645])
+    #y = np.array([-0.706, -0.248, -0.633, 1.328])
+    #m = np.array([1., 0.93, 0.16, 0.21]
+
+    x = np.array([0.947, 1.096, -0.722, -0.381])
+    y = np.array([-0.69, -0.232, -0.617, 1.344])
     m = np.array([1., 0.93, 0.16, 0.21])
 
     sigma_x = np.array([0.003]*4)

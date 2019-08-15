@@ -13,7 +13,7 @@ def initialize_macro(solver,data,init):
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=False, re_optimize=False, particle_swarm=True, restart=1,
+                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
                                                  tol_simplex_func=0.001, adaptive_grid=False, satellites=None)
 
     return model
@@ -184,7 +184,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     break
 
         macro_fit = optmodel[0]
-        print(macro_fit.lens_components[0].lenstronomy_args)
+        #print(macro_fit.lens_components[0].lenstronomy_args)
         N_computed += 1
         if N_computed%readout_steps == 0 and verbose:
             print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
@@ -331,6 +331,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/SIDMsim/', 50001)
+#runABC(prefix+'data/lens1138/', 1)
 
 

@@ -683,7 +683,7 @@ class TriPlot(object):
             rotation = 45
         elif pname == 'source_size_kpc':
             name = r'$\sigma_{\rm{src}} \ \left[\rm{pc}\right]$'
-            tick_labels = [15, 20, 25, 30, 35, 40]
+            tick_labels = [20, 30, 40, 50, 55]
             tick_locs = np.array(tick_labels) * 0.001
         elif pname == 'log_m_break':
             name = r'$\log_{10}{m_{\rm{hm}}}$'

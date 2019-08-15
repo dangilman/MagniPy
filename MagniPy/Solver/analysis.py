@@ -284,7 +284,7 @@ class Analysis(Magnipy):
 
         trace = RayTrace(xsrc=srcx, ysrc=srcy, multiplane=multiplane, res=res,
                          source_shape=source_shape, source_size=source_size,polar_grid=False,
-                         adaptive_grid=False,minimum_image_sep=minimgsep,grid_rmax_scale=grid_rmax_scale)
+                         adaptive_grid=True,minimum_image_sep=minimgsep,grid_rmax_scale=grid_rmax_scale)
 
         magnifications, image = trace.get_images(xcoord, ycoord, lensmodel, kwargs_lens,
                                                  return_image=True)

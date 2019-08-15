@@ -9,7 +9,7 @@ class J0405(Quad):
 
     x = np.array([0.708, -0.358, 0.363, -0.515])
     y = np.array([-0.244, -0.567, 0.592, 0.454])
-    m = np.array([0.78125, 0.546875, 1., 0.734375])
+    m = np.array([1., 0.65, 1.25, 1.17]) * 1.25**-1
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
@@ -31,8 +31,8 @@ class J0405(Quad):
 
     _macromodel.lenstronomy_args['theta_E'] = approx_theta_E(x, y)
 
-    gamma_min = 1.95
-    gamma_max = 2.3
+    gamma_min = 1.9
+    gamma_max = 2.2
     has_satellite = False
     srcmin = 0.02
     srcmax = 0.05

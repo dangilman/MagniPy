@@ -15,7 +15,7 @@ class RayShootingGrid(object):
 
         self.radius = side_length
 
-        self._adaptive = adaptive
+        self._adaptive = False
 
         self._rot = rot
 
@@ -100,8 +100,9 @@ class RayTrace(object):
         self.grid_rmax *= grid_rmax_scale
 
         if adaptive_grid is True:
-            print('warning: adaptive grid not yet implemented')
-            adaptive_grid = False
+            #print('warning: adaptive grid not yet implemented')
+            pass
+            #adaptive_grid = False
 
         if adaptive_grid is False:
             self.grid = []

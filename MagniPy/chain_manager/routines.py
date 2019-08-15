@@ -127,17 +127,17 @@ def extract_chain(names, sim_name, start_idx=1, zlens=None, sigmasubmax=None, ob
 def extract_chain_single(name, sim_name, start_idx=1, zlens=None, sigmasubmax=None,
                          observed_fluxes=None, mhalomin=None, mhmmax=None):
 
-    chain_info_path = chainpath_out + 'raw_chains/' + name + '/simulation_info.txt'
+    chain_info_path = chainpath_out + 'raw_chains_grism/' + name + '/simulation_info.txt'
 
     params_varied, varyparams_info, Ncores, cores_per_lens = read_chain_info(chain_info_path)
 
     #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
-    chain_file_path = chainpath_out + 'raw_chains/' + name +'/chain'
+    chain_file_path = chainpath_out + 'raw_chains_grism/' + name +'/chain'
 
     params_header = None
     order = None
-
+    print(observed_fluxes)
     if ~os.path.exists(chainpath_out+'processed_chains/' + sim_name + '/'):
         create_directory(chainpath_out+'processed_chains/' + sim_name + '/')
 
@@ -380,8 +380,12 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         run_name = ['lens0405_extended', 'lens0405', 'lens0405_supplement']
         if mhmmax is not None:
             run_name += ['lens0405_CDM']
-        print(run_name)
-        sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
+
+        #sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
+        observed_fluxes = np.array([1., 0.65, 1.25, 1.17]) * 1.25 ** -1
+        sigmas = [0.04*observed_fluxes[0] ** -1, 0.04*observed_fluxes[1] ** -1,
+                  0.03**observed_fluxes[2] ** -1, 0.04*observed_fluxes[3] ** -1]
+
     elif name[0:8] == 'lens2033':
         run_name = ['lens2033_extended', 'lens2033', 'lens2033_supplement_benson']
         if mhmmax is not None:
@@ -389,11 +393,8 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         header += ' satellite_thetaE_1 satellite_x_1 satellite_y_1 satellite_thetaE_2 satellite_x_2 satellite_y_2'
         zlens=0.66
         sigmas = np.array([0.03, 0.03/0.65, 0.02/0.5, 0.02/0.53])
-        #sigmas = [0.1, 0.1*0.65, 0.1*0.5, 0.1*0.53]
-        #sigmas *= 2
-        #sigmas = [0.1, 0.1, 0.1]
-        #keep_inds = [0,1,2]
-        #uncertainty_in_ratios = True
+        #sigmas = np.array([0.2, 0.2/0.65, 0.2/0.5, 0.2/0.53])
+
     elif name[0:8]=='lens2026':
         run_name = ['lens2026_extended', 'lens2026']
         sigmas = [0.02, 0.02/0.75, 0.01/0.31, 0.01/0.28]
@@ -403,6 +404,8 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         #run_name += ['lens0911_old', 'lens0911_aurora']
         run_name = ['lens0911_varyshear_hoffman', 'lens0911_varyshear_1',
                     'lens0911_varyshear_2', 'lens0911_varyshear_hoffman_2']
+        if mhmmax is not None:
+            run_name += ['lens0911_varyshear_CDM']
         #run_name = ['lens0911_varyshear_hoffman_2']
         header += ' satellite_thetaE satellite_x satellite_y'
         zlens=0.77
@@ -418,19 +421,34 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         zlens=0.31
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
-        sigmas = [0.1, 0.1, 0.1]
+        #sigmas = [0.1, 0.1, 0.1]
+        sigmas = [0.1] * 3
+
     elif name[0:8] == 'lens0414':
         run_name = ['lens0414_extended', 'lens0414', 'lens0414_supplement_benson',
                     'lens0414_supplement_benson_2']
         #observed_fluxes = np.array([1, 0.83, 0.36, 0.16])
-        sigmas = [0.1, 0.1, 0.1]
-
+        #sigmas = [0.1, 0.1, 0.1]
+        sigmas = [0.1] * 3
         observed_fluxes = np.array([1, 0.903, 0.389, 0.145])
         #sigmas = [0.05, 0.04, 0.04]
 
         zlens=0.96
         uncertainty_in_ratios=True
         keep_inds = [0,1,2]
+
+    elif name[0:8] == 'lens1138':
+
+        run_name = ['lens1138']
+        observed_fluxes = np.array([0.76, 0.57, 0.57, 1])
+        sigmas = [0.03/0.76, 0.03/0.57, 0.03/0.57, 0.03/0.57]
+        zlens = 0.45
+
+    elif name[0:8] == 'lens1413':
+
+        run_name = ['lens1413']
+        observed_fluxes = np.array([0.93, 0.94, 1, 0.41])
+        sigmas = [0.05/0.93, 0.05/0.94, 0.04, 0.02/0.41]
 
     sigmas = np.array(sigmas)
 
@@ -447,9 +465,11 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         chain_file_path = chainpath_out + 'processed_chains/grism_quads_CDM/' + name + '/'
 
     elif deplete is True:
-        print(deplete is True)
-        fluxes = fluxes[0::2, :]
-        all = all[0::2, :]
+        #print(deplete is True)
+        #fluxes = fluxes[0::2, :]
+        fluxes = np.delete(fluxes, np.arange(0, fluxes.shape[0], 3), axis=0)
+        all = np.delete(all, np.arange(0, all.shape[0], 3), axis=0)
+        #all = all[0::2, :]
         chain_file_path = chainpath_out + 'processed_chains/grism_quads_depleted/' + name + '/'
 
     else:
@@ -467,18 +487,54 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
     for i, indexes in enumerate(inds_to_keep_list):
 
         f = fluxes[indexes[0:keep_N], :]
-
         final_fluxes = np.column_stack((f, np.array(statistics[i][0:keep_N])))
         x = np.column_stack((final_fluxes, all[indexes[0:keep_N],:]))
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
-#for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
-#    process_raw('lens'+lensname, 10, mhmmax=5.5, keep_N=1000)
+#if False:
+#    process_raw('lens1115', 10, keep_N=2000)
+#    process_raw('lens1115', 10, mhmmax=5.1)
+#    process_raw('lens0414', 10, keep_N=2000)
+#    process_raw('lens0414', 10, mhmmax=5.1)
+#process_raw('lens2033', 10, keep_N=1000)
+process_raw('lens1413', 10, keep_N=1000)
 
-#for lensname in ['0911']:
-#    process_raw('lens' + lensname, 10, keep_N=3000)
-process_raw('lens0911', 10)
-#process_raw('lens0911', 10)
+if False:
+    for lensname in ['1422','2038','0435']:
+        process_raw('lens'+lensname, 10, mhmmax=5.5, keep_N=500)
+
+    for lensname in ['1606','2026','0128', '0414', '1115']:
+        process_raw('lens' + lensname, 10, mhmmax=5.5, keep_N=500)
+
+    for lensname in ['2033', '0911', '0405']:
+        process_raw('lens' + lensname, 10, mhmmax=5.6, keep_N=500)
+
+if False:
+    for lensname in ['1422','2038','0435']:
+        process_raw('lens'+lensname, 10, mhmmax=5.1, keep_N=500)
+
+    #for lensname in ['1606','2026','0128', '0414', '1115']:
+    #    process_raw('lens' + lensname, 10, mhmmax=5.1, keep_N=500)
+
+    #for lensname in ['2033', '0911', '0405']:
+    #    process_raw('lens' + lensname, 10, mhmmax=5.5, keep_N=500)
+
+#process_raw('lens0414', 10)
+#process_raw('lens0414', 10, mhmmax=5.5)
+#process_raw('lens0911', 10, keep_N=1000, mhmmax=5.5)
+#for lensname in ['1422','2038','0435']:
+#    process_raw('lens'+lensname, 10, keep_N=1500, mhmmax=5.3)
+
+#for lensname in ['1606','2026','0128', '0414', '1115']:
+#    process_raw('lens' + lensname, 10, keep_N=1500, deplete=True)
+
+#for lensname in ['2033', '0911', '0405']:
+#    process_raw('lens' + lensname, 10, keep_N=1500, deplete=True)
+
+#for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
+#    process_raw('lens' + lensname, 10, keep_N=3000, mhmmax=5.6)
+#process_raw('lens0405', 10, mhmmax=5.8)
+#process_raw('lens0405', 10)
 
 #for lensname in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
 #    process_raw('lens'+lensname, 10)

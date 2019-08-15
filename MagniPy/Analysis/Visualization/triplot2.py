@@ -655,8 +655,11 @@ class TriPlot2(object):
             rotation = 45
         elif pname == r'$\Sigma_{\rm{sub}}$':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
-            tick_labels = [0, 2, 4, 6, 8, 10]
-            tick_locs = np.array([0, 2, 4, 6, 8, 10]) * 0.01
+            #tick_labels = [0, 2, 4, 6, 8, 10]
+            tick_locs = np.array([0.2, 1.8, 3.4, 5., 6.6, 8.2, 9.8]) * 0.01
+            tick_labels = np.array([0.2, 1.8, 3.4, 5., 6.6, 8.2, 9.8])
+            #tick_labels = [0.2, 2, 4, 6, 8, 10]
+
             rotation = 45
         elif pname == 'SIE_gamma':
             name = r'$\gamma_{\rm{macro}}$'

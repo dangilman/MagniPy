@@ -90,7 +90,10 @@ def add_flux_perturbations(name, which_lens, parameters, fluxes_obs, fluxes, err
             #print('warning: not sorting summary statistics')
             #ordered_inds = np.arange(0,keep_n)
             ordered_inds = np.argsort(summary_statistic)[0:keep_n]
-
+            print('lens # ', which_lens)
+            print('N < 0.01: ', np.sum(summary_statistic < 0.01))
+            print('N < 0.02: ', np.sum(summary_statistic < 0.02))
+            print('N < 0.03: ', np.sum(summary_statistic < 0.03))
             np.savetxt(perturbed_path + 'statistic_' + str(int(error * 100)) + 'error_' + str(k) + '.txt',
                        X=summary_statistic[ordered_inds], fmt=('%.4f'))
             if parameters.shape[1] == 5:
@@ -134,12 +137,12 @@ def extract_chain_fromprocessed(chain_name = '', which_lens = None):
 
 def extract_chain(chain_name='',which_lens = None):
 
-    chain_info_path = chainpath_out + 'raw_chains/' + chain_name + '/simulation_info.txt'
+    chain_info_path = chainpath_out + 'raw_chains_sidm/' + chain_name + '/simulation_info.txt'
     Ncores, cores_per_lens, Nlens = read_run_partition(chain_info_path)
 
     #lens_config, lens_R_index = read_R_index(chainpath_out+chain_name+'/R_index_config.txt',0)
 
-    chain_file_path = chainpath_out + 'raw_chains/' + chain_name +'/chain'
+    chain_file_path = chainpath_out + 'raw_chains_sidm/' + chain_name +'/chain'
 
     params_header = None
     order = None
