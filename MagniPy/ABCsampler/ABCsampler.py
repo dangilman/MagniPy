@@ -80,7 +80,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     else:
         n_iterations = 250
 
-    verbose = False
+    verbose = keys['verbose']
 
     if verbose:
         print('Running with:')
@@ -332,6 +332,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens2033_mcrelation/', 1)
+#runABC(prefix+'data/lens2033_mcrelation_test/', 1)
 
 
