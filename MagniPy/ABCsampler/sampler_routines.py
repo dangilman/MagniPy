@@ -68,7 +68,7 @@ def build_dictionary_list(paramnames=[], values=[], dictionary_to_duplicate=None
 
     return params
 
-def halo_model_args(params):
+def halo_model_args(params, verbose):
 
     args = {}
 
@@ -122,6 +122,11 @@ def halo_model_args(params):
         if 'SIDMcross' in params.keys():
             args.update({'SIDMcross': params['SIDMcross']})
             args.update({'vpower': params['vpower']})
+
+    if verbose:
+        print('model parameters: ')
+        for ki in params.keys():
+            print(ki, params[ki])
 
     return args
 
