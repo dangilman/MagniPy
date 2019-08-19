@@ -60,6 +60,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     N_computed = 0
     init_macro = False
     t0 = time.time()
+
     if 'readout_steps' in keys.keys():
         readout_steps = keys['readout_steps']
     else:
@@ -79,6 +80,11 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
         n_iterations = keys['n_iterations']
     else:
         n_iterations = 250
+
+    if 'check_foreground_fit' in keys.keys():
+        check_foreground = keys['check_foreground_fit']
+    else:
+        check_foreground = False
 
     verbose = keys['verbose']
 
@@ -150,7 +156,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
             macromodel = deepcopy(base[0])
             macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
 
-            halo_args = halo_model_args(chain_keys_run)
+            halo_args = halo_model_args(chain_keys_run, verbose)
 
             chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
             if 'lens_redshift' in keys_to_vary.keys():
@@ -172,7 +178,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                                     LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
                                      LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
                                      satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
-                                     constrain_params=constrain_params, check_foreground_fit=True)
+                                     constrain_params=constrain_params, check_foreground_fit=check_foreground)
 
                 xfit, yfit = new[0].x, new[0].y
 
@@ -332,6 +338,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens2033_mcrelation_test/', 1)
+#runABC(prefix+'data/lens0128_varymlow/', 1)
 
 
