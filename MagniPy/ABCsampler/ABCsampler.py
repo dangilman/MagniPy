@@ -86,7 +86,10 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     else:
         check_foreground = False
 
-    verbose = keys['verbose']
+    if 'verbose' in keys.keys():
+        verbose = keys['verbose']
+    else:
+        verbose = False
 
     if verbose:
         print('Running with:')
@@ -338,6 +341,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens0128_varymlow/', 1)
+#runABC(prefix+'data/lens1422_varymlow_test/', 1)
 
 
