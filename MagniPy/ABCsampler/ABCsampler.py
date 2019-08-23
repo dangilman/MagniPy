@@ -90,7 +90,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
         verbose = keys['verbose']
     else:
         verbose = False
-    
+
     if verbose:
         print('Running with:')
         print('n_particles: ', n_particles)
@@ -341,6 +341,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens0405_varymlow/', 1)
+#runABC(prefix+'data/lens0911_mcrelation/', 1)
 
 
