@@ -13,6 +13,14 @@ class IndepdendentDensities(object):
             raise Exception('must pass in a list of DensitySamples instances.')
         self.densities = density_samples_list
 
+    @property
+    def product(self):
+
+        prod = 1
+        for di in self.densities:
+            prod *= di.averaged
+        return prod * np.max(prod) ** -1
+
     def projection_1D(self, pname):
 
         proj = 1
@@ -63,6 +71,13 @@ class DensitySamples(object):
         for den in self.single_densities:
             proj += den.projection_2D(p1, p2)
         return proj
+
+    @property
+    def averaged(self):
+        avg = 0
+        for di in self.single_densities:
+            avg += di.density
+        return avg
 
     def save_to_file(self, fname):
 

@@ -119,8 +119,11 @@ class TriPlot2(object):
             for c in range(0, self._nchains):
                 scales.append(self._auto_scale[c][k])
             maxh = np.max(scales) * 1.1
-            print(maxh)
-            axes[int((len(param_names) + 1) * k)].set_ylim(0, maxh)
+            try:
+                axes[int((len(param_names) + 1) * k)].set_ylim(0, maxh)
+            except:
+                maxh = 1
+                axes[int((len(param_names) + 1) * k)].set_ylim(0, maxh)
 
         self._auto_scale = []
         plt.subplots_adjust(left=self.spacing[0] * self.spacing_scale, bottom=self.spacing[1] * self.spacing_scale,
@@ -210,11 +213,14 @@ class TriPlot2(object):
 
         ax.set_yticks([])
 
-        low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
-        high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+        mean_of_distribution, [low68, high68] = self._confidence_int(pmin, pmax, bar_centers, bar_heights, 1)
+        mean_of_distribution, [low95, high95] = self._confidence_int(pmin, pmax, bar_centers, bar_heights, 2)
 
-        low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
-        high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
+        #low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
+        #high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
+
+        #low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
+        #high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
 
         print('low/high68:' + str(low68) + ' ' + str(high68))
         print('low/high95:' + str(low95) + ' ' + str(high95))
@@ -475,11 +481,14 @@ class TriPlot2(object):
                     # axes[plot_index].set_ylim(0, hmax * 1.1 * self._hmax_scale)
                     axes[plot_index].set_yticks([])
 
-                    low95 = self._confidence_int(bar_centers, bar_heights, 0.05)
-                    high95 = self._confidence_int(bar_centers, bar_heights, 0.95)
+                    mean_of_distribution, [low68, high68] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,1)
+                    mean_of_distribution, [low95, high95] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,2)
 
-                    low68 = self._confidence_int(bar_centers, bar_heights, 0.32)
-                    high68 = self._confidence_int(bar_centers, bar_heights, 0.68)
+                    #low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
+                    #high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
+                    #low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
+                    #high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
+                    #mean_of_distribution = self._confidence_int_old(bar_centers, bar_heights, 0.5)
 
                     if param_names[col] in ['log_m_break',r'$m_{\rm{hm}}$']:
                         print('half-mode mass: ')
@@ -493,7 +502,12 @@ class TriPlot2(object):
                         print('alpha: ')
                         print(low95, high95)
                         print(low68, high68)
-                        print(self._confidence_int(bar_centers, bar_heights, 0.5))
+                        print(mean_of_distribution)
+                    if param_names[col] in ['$c_0$', 'c0']:
+                        print('c0: ')
+                        print(low95, high95)
+                        print(low68, high68)
+                        print(mean_of_distribution)
 
                     if low95 is not None and show_intervals:
                         axes[plot_index].axvline(low95, color=contour_colors[color_index][1],
@@ -532,7 +546,28 @@ class TriPlot2(object):
                 plot_index += 1
         self._auto_scale.append(autoscale)
 
-    def _confidence_int(self, centers, heights, percentile):
+    def _confidence_int(self, pmin, pmax, centers, heights, num_sigma):
+
+        centers = np.array(centers)
+        heights = np.array(heights)
+        heights *= np.max(heights) ** -1
+        samples = []
+
+        while len(samples)<10000:
+            samp = np.random.uniform(pmin, pmax)
+            u = np.random.uniform(0,1)
+            idx = np.argmin(np.absolute(centers - samp))
+            prob = deepcopy(heights[idx])
+
+            if prob > u:
+                samples.append(samp)
+        print('num sigma:', num_sigma)
+        mu, sigmas = compute_lower_upper_errors(samples, num_sigma)
+
+        return mu, [mu-sigmas[0], mu+sigmas[1]]
+
+
+    def _confidence_int_old(self, centers, heights, percentile):
 
         total = np.sum(heights)
         summ, index = 0, 0
@@ -653,6 +688,19 @@ class TriPlot2(object):
             tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
             tick_locs = np.array([0, 0.9, 1.8, 2.7, 3.6, 4.5]) * 0.01
             rotation = 45
+        elif pname==r'$\zeta$' or pname == 'zeta':
+            name = r'$\zeta$'
+            tick_locs = np.array([-0.35, -0.3, -0.25, -0.2, -0.15])
+            tick_labels = [-0.35, -0.3, -0.25, -0.2, -0.15]
+        elif pname==r'$\beta$' or pname == 'beta':
+            name = r'$\beta$'
+            tick_locs = np.array([0.4, 0.6, 0.8, 1.0, 1.2])
+            tick_labels = [0.4, 0.6, 0.8, 1.0, 1.2]
+        elif pname==r'$c_0$' or pname == 'c0':
+            name = r'$c_0$'
+            tick_locs = np.array([1, 5, 10, 15, 20, 25, 30])
+            tick_labels = [1, 5, 10, 15, 20, 25, 30]
+
         elif pname == r'$\Sigma_{\rm{sub}}$':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             #tick_labels = [0, 2, 4, 6, 8, 10]
@@ -697,3 +745,29 @@ class TriPlot2(object):
             tick_labels = tick_locs
 
         return tick_locs, tick_labels, name, rotation
+
+def compute_lower_upper_errors(sample, num_sigma):
+    """
+    computes the upper and lower sigma from the median value.
+    This functions gives good error estimates for skewed pdf's
+    :param sample: 1-D sample
+    :return: median, lower_sigma, upper_sigma
+    """
+    if num_sigma > 3:
+        raise ValueError("Number of sigma-constraints restricted to three. %s not valid" % num_sigma)
+    num = len(sample)
+    median = np.median(sample)
+    sorted_sample = np.sort(sample)
+
+    num_threshold1 = int(round((num-1)*0.841345))
+    num_threshold2 = int(round((num-1)*0.977249868))
+    num_threshold3 = int(round((num-1)*0.998650102))
+
+    if num_sigma == 1:
+        upper_sigma1 = sorted_sample[num_threshold1 - 1]
+        lower_sigma1 = sorted_sample[num - num_threshold1 - 1]
+        return median, [median-lower_sigma1, upper_sigma1-median]
+    if num_sigma == 2:
+        upper_sigma2 = sorted_sample[num_threshold2 - 1]
+        lower_sigma2 = sorted_sample[num - num_threshold2 - 1]
+        return median, [median-lower_sigma2, upper_sigma2-median]

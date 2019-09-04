@@ -462,7 +462,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
     fluxes, fluxes_obs = np.squeeze(fluxes), np.squeeze(fluxes_obs)
 
     if mhmmax is not None:
-        chain_file_path = chainpath_out + 'processed_chains/grism_quads_CDM/' + name + '/'
+        chain_file_path = chainpath_out + 'processed_chains/grism_quads_CDM_test/' + name + '/'
 
     elif deplete is True:
         #print(deplete is True)
@@ -499,15 +499,15 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
 #process_raw('lens2033', 10, keep_N=1000)
 process_raw('lens1413', 10, keep_N=1000)
 
-if False:
+if True:
     for lensname in ['1422','2038','0435']:
-        process_raw('lens'+lensname, 10, mhmmax=5.5, keep_N=500)
+        process_raw('lens'+lensname, 10, mhmmax=5., keep_N=500)
 
     for lensname in ['1606','2026','0128', '0414', '1115']:
-        process_raw('lens' + lensname, 10, mhmmax=5.5, keep_N=500)
+        process_raw('lens' + lensname, 10, mhmmax=5., keep_N=500)
 
     for lensname in ['2033', '0911', '0405']:
-        process_raw('lens' + lensname, 10, mhmmax=5.6, keep_N=500)
+        process_raw('lens' + lensname, 10, mhmmax=5.2, keep_N=500)
 
 if False:
     for lensname in ['1422','2038','0435']:

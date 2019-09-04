@@ -123,3 +123,6 @@ class KDE_nD(object):
 
         return density
 
+from scipy.stats.kde import gaussian_kde
+
+kde = gaussian_kde
