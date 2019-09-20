@@ -23,6 +23,7 @@ class TriPlot2(object):
 
     cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
+    show_intervals_68 = False
 
     def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges):
 
@@ -515,6 +516,13 @@ class TriPlot2(object):
                     if high95 is not None and show_intervals:
                         axes[plot_index].axvline(high95, color=contour_colors[color_index][1],
                                                  alpha=0.8, linewidth=2.5, linestyle='-.')
+
+                    if low68 is not None and self.show_intervals_68:
+                        axes[plot_index].axvline(low68, color=contour_colors[color_index][1],
+                                                 alpha=0.8, linewidth=2.5, linestyle=':')
+                    if high68 is not None and self.show_intervals_68:
+                        axes[plot_index].axvline(high68, color=contour_colors[color_index][1],
+                                                 alpha=0.8, linewidth=2.5, linestyle=':')
 
 
                     if col != n_subplots - 1:

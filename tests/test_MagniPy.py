@@ -149,7 +149,7 @@ def test_solving_leq_single_plane():
 
     from MagniPy.magnipy import Magnipy
     from MagniPy.lensdata import Data
-    from MagniPy.LensBuild.lens_assemble import Deflector
+    from MagniPy.LensBuild.main_deflector import Deflector
     from MagniPy.MassModels import SIE
     from MagniPy.Solver.solveroutines import SolveRoutines
     import matplotlib.pyplot as plt

@@ -24,7 +24,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.0]
+        #gamma_values = [2.1]
 
         for gi in gamma_values:
             _macro = get_default_SIE(z=solver.zmain)
@@ -341,6 +341,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens0405_varymlow_test/', 1)
+#runABC(prefix+'data/lens1422_varymlow_saverealizations/', 1)
 
 

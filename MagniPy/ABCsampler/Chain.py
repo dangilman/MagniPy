@@ -5,6 +5,9 @@ from MagniPy.Analysis.KDE.kde import KDE_nD
 from MagniPy.Analysis.KDE.kde_util import NDgaussian
 from time import time
 
+HIGH_KEEP = 700
+LOW_KEEP = 200
+
 class JointDensity(object):
 
     def __init__(self, param_x, param_y, array):
@@ -211,7 +214,7 @@ class ChainFromSamples(object):
 
     def eval_KDE(self, bandwidth_scale = 1, tol = 2500, nkde_bins = 20,
                  save_to_file = True, smooth_KDE = True, filename = '',
-                 weights_global = None, weights_single = None):
+                 weights_global = None, weights_single = None, compute_inds=None):
 
         posteriors = self.get_posteriors(tol)
 
@@ -236,8 +239,14 @@ class ChainFromSamples(object):
 
         data = None
 
+        if compute_inds is None:
+            compute_inds = np.arange(0, len(self.lenses)+1, 1)
+
         for n in range(len(self.lenses)):
 
+            if n not in compute_inds:
+                continue
+            print('running '+str(n)+'... ')
             t0 = time()
 
             density_n = 0
@@ -259,9 +268,16 @@ class ChainFromSamples(object):
 
                         if pi in weights_global.keys():
 
-                            diff = data[:, i] - weights_global[pi][0]
-                            sigma = weights_global[pi][1]
-                            new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
+                            if 'upper_limit' in weights_global.keys():
+                                ratio = (data[:,i]/weights_global[pi][0])**4
+                                new_weight = np.exp(-ratio)
+                            elif 'Gaussian' in weights_global.keys():
+                                diff = data[:, i] - weights_global[pi][0]
+                                sigma = weights_global[pi][1]
+                                new_weight = np.exp(-0.5 * diff ** 2 * sigma ** -2)
+                            else:
+                                raise Exception('must specify weight type.')
+
                             if params_weights is None:
                                 params_weights = new_weight
                             else:
@@ -288,7 +304,6 @@ class ChainFromSamples(object):
                                                    density=True, bins=nkde_bins,
                                                    weights=params_weights)[0]
 
-
             t_elpased = np.round((time() - t0) * 60 ** -1, 1)
             if print_time:
                 print(str(t_elpased) + ' min per lens.')
@@ -298,6 +313,9 @@ class ChainFromSamples(object):
             counter += 1
             density *= density_n
 
+            savename_density_n = self.chain_file_path + 'computed_densities/' + filename + 'density_'+str(n+1)+'.txt'
+            np.savetxt(savename_density_n, X=density_n.ravel())
+
         self.density = density
 
         if save_to_file:
@@ -305,15 +323,16 @@ class ChainFromSamples(object):
             if not os.path.exists(self.chain_file_path + 'computed_densities/'):
                 create_directory(self.chain_file_path + 'computed_densities/')
 
-            with open(self.chain_file_path + 'computed_densities/'+filename+'pnames_ordered.txt', 'w') as f:
+            savename_pnames = self.chain_file_path + 'computed_densities/'+filename+'pnames_ordered.txt'
+            with open(savename_pnames, 'w') as f:
                 pname_string = ''
                 for param_name in self.params_varied:
                     pname_string += param_name + ' '
                 f.write(pname_string)
                 f.write(str(int(np.shape(self.density)[0])))
 
-            np.savetxt(self.chain_file_path+'computed_densities/'+filename+'_density.txt',
-                       X = self.density.ravel())
+            #np.savetxt(self.chain_file_path+'computed_densities/'+filename+'_density.txt',
+            #           X = self.density.ravel())
 
         #self._density_projections(density, save_to_file, bandwidth_scale)
 
@@ -654,8 +673,8 @@ class SingleLens(object):
 
             else:
                 ind_max = np.sum(sorted_stats <= tol)
-                ind_max = min(400, ind_max)
-                ind_max = max(200, ind_max)
+                ind_max = min(HIGH_KEEP, ind_max)
+                ind_max = max(LOW_KEEP, ind_max)
 
             inds = sorted_stats[0:ind_max]
             new_param_dic = {}

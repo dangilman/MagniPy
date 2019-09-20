@@ -362,6 +362,7 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
     elif name[0:8]=='lens0405':
         run_name = ['lens0405_mcrelation']
         run_name += [run_name[0] + '_extended']
+        run_name += [run_name[0] + '_supplement']
 
         #sigmas = [0.04, 0.03/0.7, 0.04/1.28, 0.05/0.94]
         observed_fluxes = np.array([1., 0.65, 1.25, 1.17]) * 1.25 ** -1

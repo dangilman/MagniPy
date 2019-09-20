@@ -8,6 +8,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+def nonlinear_kappa_maps(realizations, zlens=0.5, zsource=1.5, Npix = 200, s = 1.3):
+    analysis = Analysis(zlens, zsource)
+
+    x, y = np.linspace(-s, s, Npix), np.linspace(-s, s, Npix)
+    deltaPix = 2 * s * Npix ** -1
+    xx, yy = np.meshgrid(x, y)
+
+    macroargs_start = {'theta_E': 1, 'center_x': 0, 'center_y': 0, 'ellip': 0.22, 'ellip_theta': 23, 'shear': 0.065,
+                       'shear_theta': -30,
+                       'gamma': 2.0}
+    macromodel_start = Deflector(redshift=zlens, subclass=SIE(),
+                                 varyflags=['1', '1', '1', '1', '1', '1', '1', '0', '0', '0'], lens_args=None,
+                                 **macroargs_start)
+
+    nonlinear_kappa = []
+    for real in realizations:
+        lens_system_full = analysis.build_system(main=macromodel_start, realization=real, multiplane=True)
+        lens_system_main = analysis.build_system(main=macromodel_start, multiplane=False)
+        convergence_main = analysis.get_kappa(lens_system=lens_system_main, x=xx, y=yy, multiplane=False)
+        convergence_full = analysis.get_kappa(lens_system=lens_system_full, x=xx, y=yy, multiplane=True)
+        nonlinear_kappa.append(convergence_full-convergence_main)
+    return nonlinear_kappa
+
 def make_kappa_maps(realizations, zlens=0.5, zsource=1.5, Npix = 200, s = 1.3):
 
     analysis = Analysis(zlens, zsource)

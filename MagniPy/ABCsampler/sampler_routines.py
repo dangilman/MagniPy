@@ -409,21 +409,17 @@ def initialize(chain_ID, core_index):
 
     output_path = chainpath + chain_keys['output_folder'] + 'chain' + str(core_index) + '/'
     chain_keys['write_header'] = True
+
     readout_best = False
+    if 'readout_best' in chain_keys.keys():
+        if chain_keys['readout_best']:
+            readout_best = True
+        else:
+            readout_best = False
 
     if os.path.exists(output_path + 'fluxes.txt') and os.path.exists(output_path + 'parameters.txt'):
         values = np.loadtxt(output_path + 'fluxes.txt')
         N_lines = int(np.shape(values)[0])
-
-        if N_lines > chain_keys['Nsamples']*0.5:
-            if 'readout_best' in chain_keys.keys():
-                if chain_keys['readout_best']:
-                    readout_best = True
-                else:
-                    readout_best = False
-            else:
-                readout_best = False
-
 
         if N_lines >= chain_keys['Nsamples']:
             return False, False, False, False, False

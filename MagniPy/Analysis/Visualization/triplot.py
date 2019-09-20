@@ -22,8 +22,7 @@ class TriPlot(object):
     cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
 
-    def __init__(self, parameter_names, parameter_ranges, density_fpaths=None, samples_list=None,
-                 weights_list=None, nbins=12, use_kde=False):
+    def __init__(self, parameter_names, parameter_ranges, density_fpaths, index_max_list):
 
         """
         :param parameter_names: param names (dictionary)
@@ -43,13 +42,8 @@ class TriPlot(object):
         for i, pname in enumerate(self.param_names):
             self._prange_list.append(self.parameter_ranges[pname])
 
-        if samples_list is None:
-            self._nchains = len(density_fpaths)
-            self._pnames_ordered, self.density = self._load_density(density_fpaths)
-        else:
-            self._nchains = len(samples_list)
-            self.density = self._compute_density(samples_list, weights_list, nbins, use_kde)
-            self._pnames_ordered = parameter_names
+        self._nchains = len(density_fpaths)
+        self._pnames_ordered, self.density = self._load_density(density_fpaths, index_max_list)
 
     def _compute_density(self, samples_list, weights_list, nbins, use_kde):
         h = []
@@ -104,10 +98,14 @@ class TriPlot(object):
 
         return projection
 
-    def _load_density(self, chain_paths):
+    def _load_density(self, chain_paths, idx_max_list):
 
         density = []
-        for paths in chain_paths:
+
+        for j, paths in enumerate(chain_paths):
+
+            density_i = 1
+
             with open(paths[0], 'r') as f:
                 lines = f.readlines()
 
@@ -116,7 +114,11 @@ class TriPlot(object):
             pnames_ordered = pnames_ordered[0:-1]
 
             shape = [nbins] * len(pnames_ordered)
-            density.append(np.loadtxt(paths[1]).reshape(tuple(shape)))
+
+            for ni in range(1, idx_max_list[j]+1):
+                density_i *= np.loadtxt(paths[1] + '_'+str(ni)+'.txt').reshape(tuple(shape))
+
+            density.append(density_i)
 
         return pnames_ordered, density
 

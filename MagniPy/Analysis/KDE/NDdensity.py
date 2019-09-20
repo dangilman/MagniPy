@@ -35,7 +35,7 @@ class IndepdendentDensities(object):
             proj *= den.projection_2D(p1, p2)
         return proj * np.max(proj) ** -1
 
-class DensitySamples(object):
+class DensitySamplesNew(object):
 
     def __init__(self, data_list, param_names, param_ranges, weight_list, bwidth_scale=0.7,
                  nbins=12, use_kde=False, from_file=False):
@@ -44,10 +44,7 @@ class DensitySamples(object):
 
         self._n = 0
 
-        if weight_list is None:
-            weight_list = [None] * len(data_list)
-
-        for j, (data, weights) in enumerate(zip(data_list, weight_list)):
+        for j, data in enumerate(data_list):
             self._n += 1
             if from_file is not False:
 
@@ -55,8 +52,19 @@ class DensitySamples(object):
 
             else:
                 density = None
-            self.single_densities.append(SingleDensity(data, param_names, param_ranges, weights,
+
+            w = self._weights(weight_list, j)
+            print(w.shape, data.shape)
+            self.single_densities.append(SingleDensity(data, param_names, param_ranges, w,
                                                        bwidth_scale, nbins, use_kde, density=density))
+
+    def _weights(self, wlist, idx):
+
+        N = len(wlist)
+        w = 1
+        for n in range(0, N):
+            w *= wlist[n][idx]
+        return w
 
     def projection_1D(self, pname):
 
@@ -86,6 +94,8 @@ class DensitySamples(object):
             np.save(fname_base+str(i+1), single_density.density)
             #with open(fname_base+str(i+1)+'.txt', 'w') as f:
             #    f.write('np.'+str(repr(single_density.density)))
+
+
 
 class SingleDensity(object):
 
@@ -140,3 +150,55 @@ class SingleDensity(object):
             projection = projection.T
 
         return projection
+
+class DensitySamples(object):
+
+    def __init__(self, data_list, param_names, param_ranges, weight_list, bwidth_scale=0.7,
+                 nbins=12, use_kde=False, from_file=False):
+
+        self.single_densities = []
+
+        self._n = 0
+
+        if weight_list is None:
+            weight_list = [None] * len(data_list)
+
+        for j, (data, weights) in enumerate(zip(data_list, weight_list)):
+            self._n += 1
+            if from_file is not False:
+
+                density = np.load(from_file+'_'+str(j+1)+'.npy')
+
+            else:
+                density = None
+            self.single_densities.append(SingleDensity(data, param_names, param_ranges, weights,
+                                                       bwidth_scale, nbins, use_kde, density=density))
+
+    def projection_1D(self, pname):
+
+        proj = 0
+        for den in self.single_densities:
+            proj += den.projection_1D(pname)
+        return proj * np.max(proj) ** -1
+
+    def projection_2D(self, p1, p2):
+
+        proj = 0
+        for den in self.single_densities:
+            proj += den.projection_2D(p1, p2)
+        return proj
+
+    @property
+    def averaged(self):
+        avg = 0
+        for di in self.single_densities:
+            avg += di.density
+        return avg
+
+    def save_to_file(self, fname):
+
+        fname_base = fname + '_'
+        for i, single_density in enumerate(self.single_densities):
+            np.save(fname_base+str(i+1), single_density.density)
+            #with open(fname_base+str(i+1)+'.txt', 'w') as f:
+            #    f.write('np.'+str(repr(single_density.density)))
