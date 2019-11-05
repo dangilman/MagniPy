@@ -26,7 +26,10 @@ class SolveRoutines(Magnipy):
                                   background_aperture_masses=None, background_filters=None,
                                   min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
                                   reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None,
-                                  adaptive_grid=False, grid_rmax_scale=1, check_foreground_fit=False):
+                                  adaptive_grid=False, grid_rmax_scale=1, check_foreground_fit=False,
+                                  foreground_aperture_masses=None,foreground_globalmin_masses=None,foreground_filters=None,
+                                  reoptimize_scale_filters=None, particle_swarm_reopt_filters=None,
+                                  reoptimize_scale_background=None,particle_swarm_reopt_background=None,optimize_iteration_background=None):
 
         if source_shape is None:
             source_shape = default_source_shape
@@ -49,12 +52,28 @@ class SolveRoutines(Magnipy):
         foreground_realization, background_realization = split_realization(datatofit, realizations[0])
 
         if verbose: print('optimizing foreground... ')
+
+        if foreground_aperture_masses is not None:
+            assert foreground_globalmin_masses is not None
+            assert foreground_filters is not None
+            assert reoptimize_scale_filters is not None
+            assert particle_swarm_reopt_filters is not None
+            assert len(foreground_aperture_masses) == len(foreground_globalmin_masses)
+            assert len(reoptimize_scale_filters) == len(foreground_globalmin_masses)
+            assert len(particle_swarm_reopt_filters) == len(reoptimize_scale_filters)
+
+        else:
+            foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
+            reoptimize_scale_filters, particle_swarm_reopt_filters = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
+
+
         foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel, data_foreground = optimize_foreground(macromodel,
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
                           restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
                             tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet_front, LOS_mass_sheet_back,
-                                  centroid = centroid_0, satellites=satellites, check_foreground_fit=check_foreground_fit)
+                                  centroid_0, satellites, check_foreground_fit,foreground_aperture_masses, foreground_globalmin_masses,
+                                                                                                                            foreground_filters, reoptimize_scale_filters, particle_swarm_reopt_filters)
 
         if data_foreground is None:
             return None, None, None
@@ -64,6 +83,22 @@ class SolveRoutines(Magnipy):
                 return None, None, None
 
         if verbose: print('optimizing background... ')
+
+        if background_aperture_masses is not None:
+            assert background_globalmin_masses is not None
+            assert background_filters is not None
+            assert reoptimize_scale_background is not None
+            assert particle_swarm_reopt_background is not None
+            assert optimize_iteration_background is not None
+            assert len(background_aperture_masses) == len(background_globalmin_masses)
+            assert len(reoptimize_scale_background) == len(background_aperture_masses)
+            assert len(particle_swarm_reopt_background) == len(optimize_iteration_background)
+
+        else:
+            background_aperture_masses, background_globalmin_masses, background_filters, \
+            reoptimize_scale_background, particle_swarm_reopt_background, optimize_iteration_background = background_mass_filters(m_ref,
+                                                                                             LOS_mass_sheet_back)
+
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
                       datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,  n_iterations,
                       source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose,
@@ -71,9 +106,9 @@ class SolveRoutines(Magnipy):
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
                         background_globalmin_masses = background_globalmin_masses,
                          background_aperture_masses = background_aperture_masses, background_filters = background_filters,
-                        reoptimize_scale = reoptimize_scale, particle_swarm_reopt = particle_swarm_reopt,
+                        reoptimize_scale = reoptimize_scale_background, particle_swarm_reopt = particle_swarm_reopt_background,
                          LOS_mass_sheet_front = LOS_mass_sheet_front, LOS_mass_sheet_back = LOS_mass_sheet_back,
-                          optimize_iteration=optimize_iteration, centroid = centroid_0, satellites=satellites)
+                          optimize_iteration=optimize_iteration_background, centroid = centroid_0, satellites=satellites)
 
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
@@ -97,7 +132,7 @@ class SolveRoutines(Magnipy):
                 model[0]._satellite_physical_location = np.array([keywords_lensmodel['kwargs_lens'][2]['center_x'],
                                                           keywords_lensmodel['kwargs_lens'][2]['center_y']])
 
-        return optimized_data, model, outputs
+        return optimized_data, model, outputs, keywords_lensmodel
 
     def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],

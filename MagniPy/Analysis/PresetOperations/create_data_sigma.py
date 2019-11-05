@@ -228,9 +228,6 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         if done_cusp and done_cross and done_fold:
             break
-        zsrc = 500
-        zlens = 500
-        rein = 400
 
         while True:
             rein, vdis, zlens, zsrc = sample_from_strides(1)
@@ -262,10 +259,9 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         solver = SolveRoutines(zlens, zsrc)
         analysis = Analysis(zlens, zsrc)
         #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
-        m_args = {'custom': True, 'c0': c0, 'beta': beta, 'zeta': zeta}
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'parent_m200': M_halo, 'parent_c': 4, 'r_tidal': r_tidal,
-                     'R_ein_main': rein, 'mc_model': m_args}
+                     'R_ein_main': rein}
 
         real = pyhalo.render(model_type, halo_args)
 
@@ -389,24 +385,21 @@ if True:
     model_type = 'composite_powerlaw'
     multiplane = True
 
-    sigma_sub = 0.35
+    sigma_sub = 0.03
     M_halo = 10 ** 13
     logmhm = 0
     r_tidal = '0.5Rs'
-    src_size_mean = 0.04
+    src_size_mean = 0.03
     src_size_sigma = 0.0001
     log_ml, log_mh = 6, 10
-    c0 = 15
-    beta = 0.8
-    zeta = -0.1
 
     z_src_max = 2.2
-    z_lens_max = 0.5
+    z_lens_max = 0.6
     rein_max = 1.
     nav = prefix
     mass_def = 'TNFW'
 
-    dpath_base = nav + '/mock_data/vary_mc/lens_'
+    dpath_base = nav + '/mock_data/CDM/lens_'
 
     #run(0, 0, 1, 1)
     #run(0, 1, 0, 1)

@@ -173,7 +173,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
             halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1, verbose=verbose)
 
             try:
-                new, optmodel, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
+                new, optmodel, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
                                    realizations=halos, multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
                                    verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                    pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],

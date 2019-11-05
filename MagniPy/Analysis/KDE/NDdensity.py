@@ -202,3 +202,4 @@ class DensitySamples(object):
             np.save(fname_base+str(i+1), single_density.density)
             #with open(fname_base+str(i+1)+'.txt', 'w') as f:
             #    f.write('np.'+str(repr(single_density.density)))
+

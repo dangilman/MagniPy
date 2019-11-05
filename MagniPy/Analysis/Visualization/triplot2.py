@@ -485,11 +485,11 @@ class TriPlot2(object):
                     mean_of_distribution, [low68, high68] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,1)
                     mean_of_distribution, [low95, high95] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,2)
 
-                    #low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
-                    #high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
-                    #low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
-                    #high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
-                    #mean_of_distribution = self._confidence_int_old(bar_centers, bar_heights, 0.5)
+                    low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
+                    high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
+                    low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
+                    high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
+                    mean_of_distribution = self._confidence_int_old(bar_centers, bar_heights, 0.5)
 
                     if param_names[col] in ['log_m_break',r'$m_{\rm{hm}}$']:
                         print('half-mode mass: ')

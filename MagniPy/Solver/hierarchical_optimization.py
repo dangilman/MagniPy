@@ -20,10 +20,11 @@ def split_realization(datatofit, realization):
 def optimize_foreground(macromodel, realizations, datatofit,tol_source,tol_mag, tol_centroid, centroid_0, n_particles, n_iterations,
                  source_shape, source_size_kpc, polar_grid, optimizer_routine, re_optimize, verbose, particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
                 tol_simplex_func, simplex_n_iter, m_ref, solver_class, LOS_mass_sheet_front, LOS_mass_sheet_back, centroid, satellites,
-                        check_foreground_fit):
+                        check_foreground_fit, foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
+    reoptimize_scale, particle_swarm_reopt):
 
-    foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
-    reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
+    #foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
+    #reoptimize_scale, particle_swarm_reopt = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
 
     for h in range(0, len(foreground_filters)):
 
@@ -119,15 +120,11 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                         tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, solver_class,
                         background_globalmin_masses = None, background_aperture_masses = None, background_filters = None,
                         reoptimize_scale = None, optimize_iteration = None, particle_swarm_reopt = None,
-                        LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, centroid = None, satellites = None):
+                        LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, centroid = None, satellites = None,
+                        ):
 
-    if background_globalmin_masses is None or background_aperture_masses is None:
-
-        background_aperture_masses, background_globalmin_masses, background_filters, \
-        reoptimize_scale, particle_swarm_reopt, optimize_iteration = background_mass_filters(m_ref, LOS_mass_sheet_back)
-    else:
-        assert len(background_filters) == len(background_aperture_masses)
-        assert len(background_globalmin_masses) == len(background_filters)
+    assert len(background_filters) == len(background_aperture_masses)
+    assert len(background_globalmin_masses) == len(background_filters)
 
     N_iterations = len(background_filters)
     backx, backy, background_Tzs, background_zs, reoptimized_realizations = [], [], [], [], []
@@ -231,6 +228,7 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 
     else:
         model[0].realization = realization_filtered
+        reoptimized_realizations.append(realization_filtered)
 
 
     return optimized_data, model, \
@@ -241,7 +239,7 @@ def foreground_mass_filters(m_ref, LOS_mass_sheet):
     if m_ref < 7:
         foreground_aperture_masses = [LOS_mass_sheet, 7, 0]
         foreground_globalmin_masses = [LOS_mass_sheet, LOS_mass_sheet, LOS_mass_sheet]
-        foreground_filters = [10, 0.3, 0.05]
+        foreground_filters = [10, 0.4, 0.05]
         reoptimize_scale = [1, 0.5, 0.5]
         particle_swarm_reopt = [True, True, False]
     else:
@@ -266,11 +264,11 @@ def background_mass_filters(m_ref, LOS_mass_sheet):
     particle_swarm_reopt = [True]
     optimize_iteration = [True]
 
-    rung_1_mass = 7.4
-    rung_2_mass = 6
+    rung_1_mass = 7.7
+    rung_2_mass = 7
     rung_3_mass = 0
     rung_1_window = 0.4
-    rung_2_window = 0.075
+    rung_2_window = 0.25
     rung_3_window = 0.05
 
     if m_ref < 6:

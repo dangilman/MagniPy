@@ -464,5 +464,5 @@ def process_raw(name, Npert, sim_name='grism_quads',keep_N=3000,sigmasubmax=None
         np.savetxt(chain_file_path + 'samples'+str(i+1)+'.txt', x, fmt='%.5f', header=header)
 
 # 1422 2038 1606 0405 2033 2026 0435 0414 0128 1115 0911
-for lens in ['0405']:
-    process_raw('lens'+lens, 10, keep_N=1000)
+for lens in ['1422','2038','0435','0405','1606','2026','2033','0128', '0414', '1115', '0911']:
+    process_raw('lens'+lens, 10, keep_N=1000,deplete=True)
