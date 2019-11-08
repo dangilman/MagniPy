@@ -124,12 +124,25 @@ class Magnipy:
 
                 if return_ray_path:
 
-                    x_path, y_path, redshifts, Tzlist = lensModel._full_lensmodel.\
-                        lens_model.ray_shooting_partial_steps(np.zeros_like(x_opt), np.zeros_like(y_opt),x_opt,
-                                       y_opt, 0, self.zsrc, kwargs_lens)
+                    xpath, ypath = [], []
+                    for xi, yi in zip(x_opt, y_opt):
+                        _x, _y, redshifts, Tzlist = lensModel._full_lensmodel.\
+                        lens_model.ray_shooting_partial_steps(0, 0, xi,
+                                       yi, 0, self.zsrc, kwargs_lens)
 
-                    optimizer_kwargs.update({'path_x': x_path})
-                    optimizer_kwargs.update({'path_y': y_path})
+                        xpath.append(_x)
+                        ypath.append(_y)
+                    nplanes = len(xpath[0])
+                    x_path, y_path = [], []
+                    for ni in range(0, nplanes):
+
+                        arrx = np.array([xpath[0][ni], xpath[1][ni], xpath[2][ni], xpath[3][ni]])
+                        arry = np.array([ypath[0][ni], ypath[1][ni], ypath[2][ni], ypath[3][ni]])
+                        x_path.append(arrx)
+                        y_path.append(arry)
+
+                    optimizer_kwargs.update({'path_x': np.array(x_path)})
+                    optimizer_kwargs.update({'path_y': np.array(y_path)})
                     optimizer_kwargs.update({'path_Tzlist': Tzlist})
                     optimizer_kwargs.update({'path_redshifts': redshifts})
                 else:
@@ -154,7 +167,8 @@ class Magnipy:
             data.append(new_data)
             opt_sys.append(optimized_sys)
 
-        return data, opt_sys, optimizer_kwargs, {'kwargs_lens': kwargs_lens, 'lensModel': lensModel}
+        return data, opt_sys, optimizer_kwargs, {'kwargs_lens': kwargs_lens, 'lensModel': lensModel,
+                                                 'source_x': xsrc, 'source_y': ysrc}
 
     def _ray_trace_finite(self, ximg, yimg, xsrc, ysrc, multiplane, lensModel, kwargs_lens, resolution, source_shape,
                           source_size_kpc, polar_grid, adaptive_grid, grid_rmax_scale):

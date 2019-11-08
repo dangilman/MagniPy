@@ -13,7 +13,7 @@ class SolveRoutines(Magnipy):
     This class uses the routines set up in MagniPy to solve the lens equation in various ways with lenstronomy or lensmodel
     """
 
-    def hierarchical_optimization(self, datatofit=None, macromodel=None, realizations=None, multiplane=True,
+    def hierarchical_optimization(self, datatofit=None, macromodel=None, realization=None, multiplane=True,
                                   source_shape='GAUSSIAN',
                                   source_size_kpc=None, grid_res=None, tol_source=1e-5, tol_mag=0.2, tol_centroid=0.05,
                                   centroid_0=[0, 0],
@@ -24,8 +24,7 @@ class SolveRoutines(Magnipy):
                                   pso_compute_magnification=200, tol_simplex_params=1e-3, tol_simplex_func=0.01,
                                   simplex_n_iter=300, background_globalmin_masses=None,
                                   background_aperture_masses=None, background_filters=None,
-                                  min_mass=6, m_break=0, particle_swarm_reopt=True, optimize_iteration = None,
-                                  reoptimize_scale=None,LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None,
+                                  min_mass=6, m_break=0, LOS_mass_sheet_front = 7.7, LOS_mass_sheet_back = 8, satellites=None,
                                   adaptive_grid=False, grid_rmax_scale=1, check_foreground_fit=False,
                                   foreground_aperture_masses=None,foreground_globalmin_masses=None,foreground_filters=None,
                                   reoptimize_scale_filters=None, particle_swarm_reopt_filters=None,
@@ -41,15 +40,11 @@ class SolveRoutines(Magnipy):
         assert multiplane is True
 
         if centroid_0[0] != 0 or centroid_0[1] != 0:
-            realizations[0] = realizations[0].shift_centroid(centroid_0)
+            realization = realization.shift_centroid(centroid_0)
 
         assert isinstance(source_size_kpc, float) or isinstance(source_size_kpc, int)
-        m_ref = max(m_break, min_mass)
 
-        if centroid_0[0] != 0 or centroid_0[1] != 0:
-            realizations[0] = realizations[0].shift_centroid(centroid_0)
-
-        foreground_realization, background_realization = split_realization(datatofit, realizations[0])
+        foreground_realization, background_realization = split_realization(datatofit, realization)
 
         if verbose: print('optimizing foreground... ')
 
@@ -64,14 +59,14 @@ class SolveRoutines(Magnipy):
 
         else:
             foreground_aperture_masses, foreground_globalmin_masses, foreground_filters, \
-            reoptimize_scale_filters, particle_swarm_reopt_filters = foreground_mass_filters(m_ref, LOS_mass_sheet_front)
+            reoptimize_scale_filters, particle_swarm_reopt_filters = foreground_mass_filters(foreground_realization, LOS_mass_sheet_front)
 
 
         foreground_rays, foreground_macromodel, foreground_halos, keywords_lensmodel, data_foreground = optimize_foreground(macromodel,
                               [foreground_realization], datatofit, tol_source, tol_mag, tol_centroid, centroid_0,  n_particles,
                               n_iterations, source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose, particle_swarm,
                           restart, constrain_params, pso_convergence_mean, pso_compute_magnification, tol_simplex_params,
-                            tol_simplex_func, simplex_n_iter, m_ref, self, LOS_mass_sheet_front, LOS_mass_sheet_back,
+                            tol_simplex_func, simplex_n_iter, self, LOS_mass_sheet_front, LOS_mass_sheet_back,
                                   centroid_0, satellites, check_foreground_fit,foreground_aperture_masses, foreground_globalmin_masses,
                                                                                                                             foreground_filters, reoptimize_scale_filters, particle_swarm_reopt_filters)
 
@@ -81,6 +76,9 @@ class SolveRoutines(Magnipy):
         if check_foreground_fit:
             if chi_square_img(datatofit.x, datatofit.y, data_foreground[0].x, data_foreground[0].y, 0.003) >= 1:
                 return None, None, None
+
+        #if np.sum(realization.redshifts > self.zmain) == 0:
+        #    return data_foreground, foreground_macromodel, None, keywords_lensmodel
 
         if verbose: print('optimizing background... ')
 
@@ -96,20 +94,19 @@ class SolveRoutines(Magnipy):
 
         else:
             background_aperture_masses, background_globalmin_masses, background_filters, \
-            reoptimize_scale_background, particle_swarm_reopt_background, optimize_iteration_background = background_mass_filters(m_ref,
+            reoptimize_scale_background, particle_swarm_reopt_background, optimize_iteration_background = background_mass_filters(background_realization,
                                                                                              LOS_mass_sheet_back)
 
         optimized_data, model, outputs, keywords_lensmodel = optimize_background(foreground_macromodel, foreground_halos[0], background_realization, foreground_rays,
-                      datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,  n_iterations,
+                      keywords_lensmodel['source_x'], keywords_lensmodel['source_y'], datatofit, tol_source, tol_mag, tol_centroid, centroid_0, n_particles,  n_iterations,
                       source_shape, source_size_kpc, polar_grid, optimize_routine, re_optimize, verbose,
                         particle_swarm, restart, constrain_params, pso_convergence_mean, pso_compute_magnification,
-                        tol_simplex_params, tol_simplex_func, simplex_n_iter, m_ref, self,
+                        tol_simplex_params, tol_simplex_func, simplex_n_iter, self,
                         background_globalmin_masses = background_globalmin_masses,
                          background_aperture_masses = background_aperture_masses, background_filters = background_filters,
                         reoptimize_scale = reoptimize_scale_background, particle_swarm_reopt = particle_swarm_reopt_background,
                          LOS_mass_sheet_front = LOS_mass_sheet_front, LOS_mass_sheet_back = LOS_mass_sheet_back,
                           optimize_iteration=optimize_iteration_background, centroid = centroid_0, satellites=satellites)
-
 
         fluxes = self._ray_trace_finite(optimized_data[0].x, optimized_data[0].y, optimized_data[0].srcx, optimized_data[0].srcy, True,
                                keywords_lensmodel['lensModel'], keywords_lensmodel['kwargs_lens'], grid_res, source_shape,
@@ -134,7 +131,7 @@ class SolveRoutines(Magnipy):
 
         return optimized_data, model, outputs, keywords_lensmodel
 
-    def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realizations=None, multiplane=None, source_shape='GAUSSIAN',
+    def optimize_4imgs_lenstronomy(self, lens_systems=None, datatofit=None, macromodel=None, realization=None, multiplane=None, source_shape='GAUSSIAN',
                                    source_size_kpc=None, grid_res = None, tol_source=1e-5, tol_mag = 0.2, tol_centroid = 0.05, centroid_0=[0, 0],
                                    n_particles = 50, n_iterations = 250, polar_grid = False,
                                    optimize_routine = 'fixed_powerlaw_shear', verbose=False, re_optimize=False,
@@ -159,23 +156,14 @@ class SolveRoutines(Magnipy):
 
             lens_systems = []
 
-            if isinstance(macromodel,list):
-
-                assert len(macromodel) == len(realizations), 'if macromodel is a list, must have same number of elements as realizations'
-
-                for macro,real in zip(macromodel,realizations):
-                    lens_systems.append(self.build_system(main=macro, realization=real, multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                          LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
+            if realization is not None:
+                lens_systems.append(self.build_system(main=macromodel, realization=realization,
+                                                          multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                      LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
             else:
-                if realizations is not None:
-                    for real in realizations:
-                        lens_systems.append(self.build_system(main=macromodel, realization=real,
-                                                              multiplane=multiplane,LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                          LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
-                else:
 
-                    lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                          LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
+                lens_systems.append(self.build_system(main=copy.deepcopy(macromodel),multiplane=multiplane, LOS_mass_sheet_front=LOS_mass_sheet_front,
+                                                      LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
 
 
         optimized_data, model, _, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
@@ -191,6 +179,7 @@ class SolveRoutines(Magnipy):
                                                                  simplex_n_iter=simplex_n_iter, chi2_mode = chi2_mode, tol_image = tol_image,
                                                                        finite_source_magnification=use_finite_source,
                                                                        adaptive_grid=adaptive_grid, grid_rmax_scale=grid_rmax_scale)
+
 
         return optimized_data,model
 
@@ -247,7 +236,6 @@ class SolveRoutines(Magnipy):
         if sort_by_pos is not None:
             data[0].sort_by_pos(sort_by_pos.x,sort_by_pos.y)
         return data
-
 
     def two_step_optimize(self, macromodel=None, datatofit=None, realizations=None, multiplane=False, method=None, ray_trace=None, sigmas=None,
                           identifier=None, srcx=None, srcy=None, res=None,
