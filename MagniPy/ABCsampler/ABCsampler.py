@@ -174,7 +174,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
             try:
                 new, optmodel, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realizations=halos[0], multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
+                                   realization=halos[0], multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
                                    verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                    pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=simplex_n_iter, polar_grid=False, grid_res=chain_keys_run['grid_res'],
@@ -341,6 +341,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens1422_varymlow_saverealizations/', 1)
+#runABC(prefix+'data/lens1422_varymlow_new/', 1)
 
 
