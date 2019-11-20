@@ -1,6 +1,6 @@
 from pyHalo.pyhalo import pyHalo
-from pyHalo.Cosmology.lens_cosmo import LensCosmo
 from pyHalo.Cosmology.cosmology import Cosmology
+from pyHalo.Halos.lens_cosmo import LensCosmo
 from scipy.stats import gaussian_kde
 from MagniPy.Solver.solveroutines import *
 from MagniPy.MassModels.SIE import *
@@ -219,8 +219,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
     lens_idx = int(start_idx) + n_computed
     dpath = dpath_base + str(lens_idx)
-    l = LensCosmo(0.5, 4)
-
+   
     if os.path.exists(dpath + '/lensdata.txt'):
         return
 
@@ -229,38 +228,35 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         if done_cusp and done_cross and done_fold:
             break
 
-        while True:
-            rein, vdis, zlens, zsrc = sample_from_strides(1)
-            if rein <= rein_max:
-                if zlens <= z_lens_max:
-                    if zsrc <= z_src_max:
-                        break
-
+        # while True:
+        #     rein, vdis, zlens, zsrc = sample_from_strides(1)
+        #     if rein <= rein_max:
+        #         if zlens <= z_lens_max:
+        #             if zsrc <= z_src_max:
+        #                 break
+        
+        zlens, zsrc = 0.5, 1.5
+        pyhalo = pyHalo(zlens, zsrc)
+        c = LensCosmo(zlens, zsrc, Cosmology())
+        
+        vdis = np.random.uniform(210, 260)
+        rein = c.vdis_to_Rein(zlens, zsrc, vdis)
+       
         print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
 
         ellip = draw_ellip()
         ellip_theta = draw_ellip_PA()
         shear = draw_shear()
-        #shear_theta = draw_shear_PA()
+        
         shear_theta = draw_shear_PA_correlated(ellip_theta, sigma = 50)
-        #gamma = np.round(np.random.normal(2.08, 0.05), 2)
-        gamma = 2.08
-        #while True:
-        #    source_size_kpc = np.round(np.random.normal(src_size_mean, src_size_sigma), 3)
-        #    if source_size_kpc < 0.01:
-        #        continue
-        #    if source_size_kpc > 0.06:
-        #        continue
-        #    else:
-        #        break
-
-        pyhalo = pyHalo(zlens, zsrc)
-        c = LensCosmo(zlens, zsrc)
+        
+        gamma = 2.0
+       
         solver = SolveRoutines(zlens, zsrc)
         analysis = Analysis(zlens, zsrc)
         #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
-                     'power_law_index': -1.9, 'parent_m200': M_halo, 'parent_c': 4, 'r_tidal': r_tidal,
+                     'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal,
                      'R_ein_main': rein}
 
         real = pyhalo.render(model_type, halo_args)
@@ -399,50 +395,5 @@ if True:
     nav = prefix
     mass_def = 'TNFW'
 
-    dpath_base = nav + '/mock_data/CDM/lens_'
+    dpath_base = nav + '/mock_data/CDM_uniform/lens_'
 
-    #run(0, 0, 1, 1)
-    #run(0, 1, 0, 1)
-
-    #dpath_base = nav + '/data/mock_data/replace_lens/lens_1'
-    #run(0,1,0,1)
-    #import sys
-    #start_idx=int(sys.argv[1])
-
-    #cusps = np.arange(1,60,3)
-    #folds = cusps + 1
-    #crosses = cusps + 2
-    #start_idx = int(sys.argv[1])
-    #if start_idx in cusps:
-    #    print('cusp')
-    #    run(1, 0, 0, start_idx)
-    #elif start_idx in folds:
-    #    print('fold')
-    #    run(0, 1, 0, start_idx)
-    #else:
-    #    print('cross')
-    #    run(0, 0, 1, start_idx)
-
-#cusps = np.arange(1,60,3)
-#folds = cusps + 1
-#crosses = cusps + 2
-#start_idx = 13
-#if start_idx in cusps:
-#    print('cusp')
-#    run(1, 0, 0, start_idx)
-#elif start_idx in folds:
-#    print('fold')
-#    run(0, 1, 0, start_idx)
-#else:
-#    print('cross')
-#    run(0, 0, 1, start_idx)
-
-#run(1,0,0, start_idx=43)
-#if start_idx in folds:
-#run(0,1,0, start_idx=9)
-#if start_idx in crosses:
-#    run(0,0,1, start_idx=sys.argv[1])
-#elif start_idx in folds:
-#    run(0, 1, 0, start_idx=sys.argv[1])
-#else:
-#    run(1, 0, 0, start_idx=sys.argv[1])
