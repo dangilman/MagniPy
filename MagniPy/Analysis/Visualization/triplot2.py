@@ -7,8 +7,6 @@ import matplotlib.gridspec as gridspec
 
 class TriPlot2(object):
 
-    cmap = 'gist_heat'
-
     # default_contour_colors = (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k')
     _default_contour_colors = [(colors.cnames['darkslategrey'], colors.cnames['black'], 'k'),
                                (colors.cnames['dodgerblue'], colors.cnames['blue'], 'k'),
@@ -20,13 +18,12 @@ class TriPlot2(object):
     spacing = np.array([0.1, 0.1, 0.05, 0.05, 0.2, 0.11])
     #spacing = np.array([0.49, 0.49, 0.5, 0.5, 0., 0.0])
     spacing_scale = 1.
-
-    cmap_call = plt.get_cmap(cmap)
+    _tick_rotation = 0
+    #cmap_call = plt.get_cmap(cmap)
     _color_eval = 0.9
     show_intervals_68 = False
 
-    def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges):
-
+    def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges, cmap='gist_heat'):
 
         self.param_names = parameter_names
         self._nchains = len(NDdensity_instance_list)
@@ -44,7 +41,11 @@ class TriPlot2(object):
 
         self._NDdensity_list = NDdensity_instance_list
 
-        #self.set_cmap(self.cmap)
+        self.set_cmap(cmap)
+
+    def set_tick_rotation(self, rot):
+
+        self._tick_rotation = rot
 
     def _load_projection_1D(self, pname, idx):
 
@@ -569,7 +570,7 @@ class TriPlot2(object):
 
             if prob > u:
                 samples.append(samp)
-        print('num sigma:', num_sigma)
+        #print('num sigma:', num_sigma)
         mu, sigmas = compute_lower_upper_errors(samples, num_sigma)
 
         return mu, [mu-sigmas[0], mu+sigmas[1]]
@@ -690,7 +691,8 @@ class TriPlot2(object):
 
     def _ticks_and_labels(self, pname):
 
-        rotation = 0
+        rotation = self._tick_rotation
+
         if pname == 'a0_area':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             tick_labels = [0, 0.9, 1.8, 2.7, 3.6, 4.5]
