@@ -5,6 +5,9 @@ class ParamSample(object):
 
     recognized_param_precision = {}
     recognized_param_precision['a0_area'] = 5
+    recognized_param_precision['sigma_sub'] = 5
+    recognized_param_precision['f_sub'] = 7
+    recognized_param_precision['log_f_sub'] = 2
     recognized_param_precision['logmhm'] = 3
     recognized_param_precision['SIE_gamma'] = 4
     recognized_param_precision['core_ratio'] = 4

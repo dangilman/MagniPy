@@ -104,6 +104,10 @@ def halo_model_args(params, verbose):
             args.update({'a0_area': params['a0_area']})
         elif 'sigma_sub' in params.keys():
             args.update({'sigma_sub': params['sigma_sub']})
+        elif 'log_f_sub' in params.keys():
+            args.update({'log_f_sub': params['log_f_sub']})
+        elif 'f_sub' in params.keys():
+            args.update({'f_sub': params['f_sub']})
 
         if 'zmin' in params.keys():
             args.update({'zmin':params['zmin']})
