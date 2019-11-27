@@ -309,7 +309,7 @@ def background_mass_filters(realization, LOS_mass_sheet):
         particle_swarm_reopt += [False, False, False]
         optimize_iteration += [True, True, False]
 
-    elif nhalos_large > 60:
+    else :
         background_aperture_masses += [rung_2_mass, rung_3_mass]
         background_globalmin_masses += [rung_0_mass, rung_0_mass]
         background_filters += [rung_1_window, rung_2_window]
@@ -317,13 +317,6 @@ def background_mass_filters(realization, LOS_mass_sheet):
         particle_swarm_reopt += [False, False]
         optimize_iteration += [True, False]
 
-    else:
-        background_aperture_masses += [rung_1_mass, rung_3_mass]
-        background_globalmin_masses += [rung_0_mass, rung_0_mass]
-        background_filters += [rung_1_window, rung_3_window]
-        reoptimize_scale += [1, 0.3]
-        particle_swarm_reopt += [True, False]
-        optimize_iteration += [True, False]
 
     return background_aperture_masses, background_globalmin_masses, background_filters, \
     reoptimize_scale, particle_swarm_reopt, optimize_iteration
