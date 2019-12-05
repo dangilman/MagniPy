@@ -44,7 +44,7 @@ class Deflector(object):
 
         else:
 
-            self.shear_args = {'e1':1e-10,'e2':1e-10}
+            self.shear_args = {'gamma1':1e-10,'gamma2':1e-10}
 
     def update_lenstronomy_args(self,newargs):
 
@@ -71,7 +71,7 @@ class Deflector(object):
 
         self.shear = newshear
         e1,e2 = polar_to_cart(self.shear,self.shear_theta)
-        self.shear_args = {'e1':e1,'e2':e2}
+        self.shear_args = {'gamma1':e1,'gamma2':e2}
 
     def ellip_PA_phiq(self):
 
@@ -97,7 +97,7 @@ class Deflector(object):
 
             if is_shear:
 
-                s, spa = cart_to_polar(newparams['e1'], newparams['e2'])
+                s, spa = cart_to_polar(newparams['gamma1'], newparams['gamma2'])
 
                 self.shear_theta = spa
 

@@ -6,21 +6,26 @@ from pyHalo.pyhalo import pyHalo
 import time
 from MagniPy.util import approx_theta_E
 
-def initialize_macro(solver,data,init):
+def initialize_macro(solver,data,init,satellites):
 
-    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
+    _, model, info = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
                                                  source_shape='GAUSSIAN', source_size_kpc=0.06,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
                                                  verbose=True, re_optimize=False, particle_swarm=True, restart=1,
-                                                 tol_simplex_func=0.001, adaptive_grid=False, satellites=None)
+                                                 tol_simplex_func=0.001, adaptive_grid=False, satellites=satellites)
 
-    return model
+    return model, (info['source_x'], info['source_y'])
 
 def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
 
     macromodels_init = []
+
+    if 'satellites' in chain_keys_run.keys():
+        satellites = chain_keys_run['satellites']
+    else:
+        satellites = None
 
     if 'SIE_gamma' in keys_to_vary:
         gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
@@ -29,7 +34,7 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
         for gi in gamma_values:
             _macro = get_default_SIE(z=solver.zmain)
             _macro.lenstronomy_args['gamma'] = gi
-            macro_i = initialize_macro(solver, data, _macro)
+            macro_i, source = initialize_macro(solver, data, _macro, satellites)
             #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
             macromodels_init.append(macro_i)
 
@@ -39,9 +44,11 @@ def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
         _macro.update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
         #macro_i = initialize_macro(solver, data, _macro)
         #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
-        macromodels_init.append(initialize_macro(solver, data, _macro))
+        macro_i, source = initialize_macro(solver, data, _macro, satellites)
+        macromodels_init.append(macro_i)
 
-    return macromodels_init, gamma_values
+    source_estimate = {'x': source[0], 'y': source[1]}
+    return macromodels_init, gamma_values, source_estimate
 
 def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
 
@@ -145,7 +152,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
             if not init_macro:
                 print('initializing macromodels.... ')
-                macro_list, gamma_values = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
+
+                macro_list, gamma_values, source_estimate = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
                 init_macro = True
 
             if 'SIE_gamma' in keys_to_vary:
@@ -168,13 +176,14 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                 if chain_keys_run['satellites'] is not None:
                     chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
 
-            #constrain_params['shear'] = 0.1
             if verbose: print('constructing realization... ')
-            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1, verbose=verbose)
+            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1, verbose=verbose)[0]
+
+            halos = halos.shift_background_to_source(source_estimate['x'], source_estimate['y'])
 
             try:
                 new, optmodel, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realization=halos[0], multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
+                                   realization=halos, multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
                                    verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
                                    pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
                                     simplex_n_iter=simplex_n_iter, polar_grid=False, grid_res=chain_keys_run['grid_res'],
@@ -215,7 +224,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                 current_best = new_statistic
                 current_best_realization = optmodel[0]
                 current_best_fullrealization = \
-                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos[0],
+                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos,
                                         multiplane=True, satellites=chain_keys_run['satellites'])
                 params_best = samples_array
                 best_fluxes = new[0].m
@@ -341,6 +350,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/lens1422_varymlow_new/', 1)
+#runABC(prefix+'data/lens2033_CDM/', 1)
 
 

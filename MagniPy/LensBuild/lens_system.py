@@ -190,7 +190,7 @@ class LensSystem(object):
             names = ['SPEMD','SHEAR']
             shear_e1, shear_e2 = polar_to_cart(main.shear, main.shear_theta)
             kwargs = [main.lenstronomy_args]
-            kwargs.append({'e1': shear_e1, 'e2': shear_e2})
+            kwargs.append({'gamma1': shear_e1, 'gamma2': shear_e2})
             self._nmacro = 2
 
         elif main.parameterization == 'SERSIC_NFW':

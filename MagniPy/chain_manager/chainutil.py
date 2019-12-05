@@ -1,3 +1,45 @@
+class KeywordParseCustom(object):
+
+    def __init__(self, shorthand_labels, plot_labels, parameter_ranges):
+
+        assert len(shorthand_labels) == len(plot_labels)
+        self._shorthand_labels = shorthand_labels
+        self._plot_labels = plot_labels
+
+        if isinstance(parameter_ranges, dict):
+            self._ranges_type = 'dict'
+        else:
+            self._ranges_type = 'list'
+
+        self._parameter_ranges = parameter_ranges
+
+    def __call__(self, param_names):
+
+        labs, pranges, column_inds = [], [], []
+
+        for idx, label_short in enumerate(self._shorthand_labels):
+
+            if label_short in param_names:
+
+                labs.append(self._plot_labels[idx])
+                column_inds.append(idx)
+
+                if self._ranges_type == 'dict':
+                    pranges.append(self._parameter_ranges[label_short])
+                else:
+                    pranges.append(self._parameter_ranges[idx])
+
+            else:
+
+                continue
+
+        if len(labs) == 0:
+            raise Exception('no parameter names in the list '+
+                            str(param_names) + ' were recognized!')
+
+        return labs, pranges, column_inds
+
+
 class KeywordParse2033(object):
 
     labels_short = ['f1','f2','f3','f4','stat','srcsize', 'sigmasub', 'deltalos', 'mparent', 'alpha', 'mhm', 're',

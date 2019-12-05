@@ -166,7 +166,7 @@ class SolveRoutines(Magnipy):
                                                       LOS_mass_sheet_back=LOS_mass_sheet_back, satellites=satellites))
 
 
-        optimized_data, model, _, _ = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
+        optimized_data, model, _, info = self._optimize_4imgs_lenstronomy(lens_systems, data2fit=datatofit, tol_source=tol_source,
                                                                  tol_mag=tol_mag, tol_centroid=tol_centroid, centroid_0=centroid_0,
                                                                  n_particles=n_particles, n_iterations=n_iterations,
                                                                  res=grid_res, source_shape=source_shape,
@@ -181,7 +181,7 @@ class SolveRoutines(Magnipy):
                                                                        adaptive_grid=adaptive_grid, grid_rmax_scale=grid_rmax_scale)
 
 
-        return optimized_data,model
+        return optimized_data, model, info
 
     def solve_lens_equation(self, full_system=None, macromodel=None, realizations=None, multiplane=None, method=None,
                             ray_trace=True, identifier=None, srcx=None, srcy=None,  res=None,

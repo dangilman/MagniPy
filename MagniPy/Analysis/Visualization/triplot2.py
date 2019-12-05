@@ -23,7 +23,8 @@ class TriPlot2(object):
     _color_eval = 0.9
     show_intervals_68 = False
 
-    def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges, cmap='gist_heat'):
+    def __init__(self, NDdensity_instance_list, parameter_names, parameter_ranges, cmap='gist_heat',
+                 custom_ticks=None):
 
         self.param_names = parameter_names
         self._nchains = len(NDdensity_instance_list)
@@ -42,6 +43,8 @@ class TriPlot2(object):
         self._NDdensity_list = NDdensity_instance_list
 
         self.set_cmap(cmap)
+
+        self._custom_ticks = custom_ticks
 
     def set_tick_rotation(self, rot):
 
@@ -181,7 +184,7 @@ class TriPlot2(object):
 
         density = self._load_projection_1D(p1, color_index)
 
-        xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(p1)
+        xtick_locs, xtick_labels, xlabel, rotation = self.ticks_and_labels(p1)
         pmin, pmax = self._get_param_minmax(p1)
 
         coords = np.linspace(pmin, pmax, len(density))
@@ -272,8 +275,8 @@ class TriPlot2(object):
         pmin1, pmax1 = extent[0], extent[1]
         pmin2, pmax2 = extent[2], extent[3]
 
-        xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(p1)
-        ytick_locs, ytick_labels, ylabel, _ = self._ticks_and_labels(p2)
+        xtick_locs, xtick_labels, xlabel, rotation = self.ticks_and_labels(p1)
+        ytick_locs, ytick_labels, ylabel, _ = self.ticks_and_labels(p2)
 
         if filled_contours:
             coordsx = np.linspace(extent[0], extent[1], density.shape[0])
@@ -356,8 +359,8 @@ class TriPlot2(object):
                     pmin1, pmax1 = extent[0], extent[1]
                     pmin2, pmax2 = extent[2], extent[3]
 
-                    xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
-                    ytick_locs, ytick_labels, ylabel, _ = self._ticks_and_labels(param_names[row])
+                    xtick_locs, xtick_labels, xlabel, rotation = self.ticks_and_labels(param_names[col])
+                    ytick_locs, ytick_labels, ylabel, _ = self.ticks_and_labels(param_names[row])
 
                     if row == n_subplots - 1:
 
@@ -444,7 +447,7 @@ class TriPlot2(object):
                     #                               load_from_file)
                     density = self._load_projection_1D(param_names[col], color_index)
 
-                    xtick_locs, xtick_labels, xlabel, rotation = self._ticks_and_labels(param_names[col])
+                    xtick_locs, xtick_labels, xlabel, rotation = self.ticks_and_labels(param_names[col])
                     pmin, pmax = self._get_param_minmax(param_names[col])
                     coords = np.linspace(pmin, pmax, len(density))
 
@@ -688,6 +691,14 @@ class TriPlot2(object):
             return True
         else:
             return False
+
+    def ticks_and_labels(self, pname):
+
+        if self._custom_ticks is not None and pname in self._custom_ticks.keys():
+            tick = self._custom_ticks[pname]
+            return tick['locs'], tick['labels'], tick['name'], tick['rotation']
+        else:
+            return self._ticks_and_labels(pname)
 
     def _ticks_and_labels(self, pname):
 
