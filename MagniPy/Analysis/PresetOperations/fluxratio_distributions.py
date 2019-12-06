@@ -9,17 +9,16 @@ from time import time
 
 def compute_fluxratio_distributions(halo_model='', model_args={},
                                     data2fit=None, Ntotal=int, outfilename='', zlens=None, zsrc=None,
-                                    start_macromodel=None, identifier=None, res=None, sigmas=None,
-                                    source_size_kpc=None, write_to_file=False, filter_halo_positions=False, outfilepath=None, method='lenstronomy',
-                                    mindis_front=0.5, mindis_back=0.3, logmcut_back=None, logmcut_front=None,
+                                    start_macromodel=None, identifier=None, satellites=None,
+                                    source_size_kpc=None, write_to_file=False, outfilepath=None,
                                     n_restart=1, pso_conv_mean = 100,
-                                    srcx = 0, srcy = 0, use_source=True, hierarchical = True, grid_res = 0.001,
+                                    source_x = 0, source_y = 0, grid_res = 0.001,
                                     LOS_mass_sheet_front = 7.7,
                                     LOS_mass_sheet_back = 8,
-                                    multiplane = None, two_halo_term = True, **kwargs):
+                                    multiplane=True, **kwargs):
     tstart = time()
 
-    data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=[srcx, srcy])
+    data = Data(x=data2fit[0],y=data2fit[1],m=data2fit[2],t=data2fit[3],source=[source_x, source_y])
 
     if write_to_file:
         assert outfilepath is not None
@@ -28,109 +27,52 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
         start_macromodel.redshift = zlens
-    if sigmas is None:
-        sigmas = default_sigmas
 
     if start_macromodel is None:
         start_macromodel = get_default_SIE(zlens)
         start_macromodel.redshift = zlens
-    if sigmas is None:
-        sigmas = default_sigmas
-
-    if res is None:
-        res = default_res(source_size_kpc)
 
     solver = SolveRoutines(zlens=zlens, zsrc=zsrc, temp_folder=identifier)
-
-    if multiplane is None:
-        if halo_model == 'main_lens':
-            multiplane = False
-        elif halo_model == 'line_of_sight':
-            multiplane = True
-        elif halo_model == 'delta_LOS':
-            multiplane = True
-        elif halo_model == 'composite_powerlaw':
-            multiplane = True
-    else:
-        print('over-riding default multiplane status, using: ', multiplane)
 
     # initialize macromodel
     fit_fluxes = []
     shears, shear_pa, xcen, ycen = [], [], [], []
-    n = 0
-    init_macromodel = None
 
-    pyhalo = pyHalo(zlens,zsrc,kwargs_massfunc={'two_halo_term': two_halo_term})
+    pyhalo = pyHalo(zlens,zsrc)
 
-    if method=='lenstronomy':
+    while len(fit_fluxes)<Ntotal:
 
-        while len(fit_fluxes)<Ntotal:
+        #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
 
-            Nreal = Ntotal - len(fit_fluxes)
+        realization = pyhalo.render(halo_model,model_args)[0]
 
-            #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
+        realization = realization.shift_background_to_source(source_x, source_y)
 
-            realizations = pyhalo.render(halo_model,model_args)
+        model_data, system, outputs, _ = solver.hierarchical_optimization(datatofit=data, macromodel=start_macromodel,
+                                                                   realization=realization,
+                                                                   multiplane=multiplane, n_particles=20,
+                                                                   simplex_n_iter=400, n_iterations=300,
+                                                                   source_size_kpc=source_size_kpc,
+                                                                   optimize_routine='fixed_powerlaw_shear',
+                                                                   verbose=True, pso_convergence_mean=pso_conv_mean,
+                                                                   re_optimize=False, particle_swarm=True,
+                                                                     pso_compute_magnification=700,
+                                                                   restart=n_restart, grid_res=grid_res,
+                                                                     LOS_mass_sheet_front = LOS_mass_sheet_front,
+                                                                     LOS_mass_sheet_back = LOS_mass_sheet_back, satellites=satellites,
+                                                                     **kwargs)
 
-            if hierarchical:
-                filter_halo_positions = False
-            if filter_halo_positions:
-                if use_source:
-                    use_real = list(real.filter(data.x, data.y, mindis_front = mindis_front, mindis_back = mindis_back,
-                             logmasscut_front = logmcut_front, logmasscut_back = logmcut_back, source_x = data.srcx,
-                                       source_y = data.srcy) for real in realizations)
-                else:
-                    use_real = list(real.filter(data.x, data.y, mindis_front=mindis_front, mindis_back=mindis_back,
-                                                logmasscut_front=logmcut_front, logmasscut_back=logmcut_back) for real in realizations)
-            else:
-                use_real = realizations
+        for sys,dset in zip(system,model_data):
 
-            if hierarchical and multiplane is True:
+            if dset.nimg != data.nimg:
+                continue
 
-                model_data, system, _ = solver.hierarchical_optimization(datatofit=data, macromodel=start_macromodel,
-                                                                       realizations=use_real,
-                                                                       multiplane=multiplane, n_particles=20,
-                                                                       simplex_n_iter=400, n_iterations=300,
-                                                                       source_size_kpc=source_size_kpc,
-                                                                       optimize_routine='fixed_powerlaw_shear',
-                                                                       verbose=True, pso_convergence_mean=pso_conv_mean,
-                                                                       re_optimize=False, particle_swarm=True,
-                                                                         pso_compute_magnification=700,
-                                                                       restart=n_restart, grid_res=grid_res,
-                                                                         LOS_mass_sheet_front = LOS_mass_sheet_front,
-                                                                         LOS_mass_sheet_back = LOS_mass_sheet_back,
-                                                                         **kwargs)
+            astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
 
-            else:
+            if astro_error > 1:
+                continue
 
-                model_data, system = solver.optimize_4imgs_lenstronomy(datatofit=data, macromodel=start_macromodel,
-                                                                       realizations=use_real,
-                                                                       multiplane=multiplane, n_particles=20,
-                                                                       simplex_n_iter=400, n_iterations=300,
-                                                                       pso_compute_magnification=700,
-                                                                       source_size_kpc=source_size_kpc,
-                                                                       optimize_routine='fixed_powerlaw_shear',
-                                                                       verbose=True, pso_convergence_mean=pso_conv_mean,
-                                                                       re_optimize=False, particle_swarm=True,
-                                                                       restart=n_restart, grid_res=grid_res,
-                                                                       LOS_mass_sheet_front=LOS_mass_sheet_front,
-                                                                       LOS_mass_sheet_back=LOS_mass_sheet_back)
-
-            for sys,dset in zip(system,model_data):
-
-                if dset.nimg != data.nimg:
-                    continue
-
-                astro_error = chi_square_img(data.x,data.y,dset.x,dset.y,0.003,reorder=False)
-
-                if astro_error > 2:
-                    continue
-
-                fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=False, index=0))
-                shears.append(sys.lens_components[0].shear)
-                xcen.append(sys.lens_components[0].lenstronomy_args['center_x'])
-                ycen.append(sys.lens_components[0].lenstronomy_args['center_y'])
-                shear_pa.append(sys.lens_components[0].shear_theta)
+            fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=False, index=0))
 
         write_fluxes(fluxratio_data_path+identifier + 'fluxes_'+outfilename+'.txt', fit_fluxes, summed_in_quad=False)
         tend = time()
