@@ -12,7 +12,7 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
                                     start_macromodel=None, identifier=None, satellites=None,
                                     source_size_kpc=None, write_to_file=False, outfilepath=None,
                                     n_restart=1, pso_conv_mean = 100,
-                                    source_x = 0, source_y = 0, grid_res = 0.001,
+                                    source_x = 0, source_y = 0, grid_res = 0.002,
                                     LOS_mass_sheet_front = 7.7,
                                     LOS_mass_sheet_back = 8,
                                     multiplane=True, **kwargs):
@@ -43,9 +43,9 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
     while len(fit_fluxes)<Ntotal:
 
         #print(str(len(fit_fluxes)) +' of '+str(Ntotal))
-
+        print('rendering... ')
         realization = pyhalo.render(halo_model,model_args)[0]
-
+        print('done.')
         realization = realization.shift_background_to_source(source_x, source_y)
 
         model_data, system, outputs, _ = solver.hierarchical_optimization(datatofit=data, macromodel=start_macromodel,
@@ -74,8 +74,8 @@ def compute_fluxratio_distributions(halo_model='', model_args={},
 
             fit_fluxes.append(dset.flux_anomaly(data, sum_in_quad=False, index=0))
 
-        write_fluxes(fluxratio_data_path+identifier + 'fluxes_'+outfilename+'.txt', fit_fluxes, summed_in_quad=False)
-        tend = time()
-        runtime = (tend - tstart)*60**-1
-        with open(fluxratio_data_path+identifier +'runtime_'+outfilename+'.txt', 'a') as f:
-            f.write(str(np.round(runtime, 2))+'\n')
+    write_fluxes(fluxratio_data_path+identifier + 'fluxes_'+outfilename+'.txt', fit_fluxes, summed_in_quad=False)
+    tend = time()
+    runtime = (tend - tstart)*60**-1
+    with open(fluxratio_data_path+identifier +'runtime_'+outfilename+'.txt', 'a') as f:
+        f.write(str(np.round(runtime, 2))+'\n')
