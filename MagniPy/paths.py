@@ -19,6 +19,19 @@ elif homedir == '/Users/danielgilman/':
     path_2_lensmodel = homedir + '/Code/'
     gravlens_input_path = IO_directory + 'data/gravlens_input/'
 
+elif homedir == '/home/users/sibirrer/':
+
+    # wherever the file storage directory is for the stanford cluster.
+    prefix = '/scratch/users/sibirrer/'
+    # insde the directory 'prefix', create the directory structure ./data/ABC_chains/
+    # where the readout will happen
+
+    # ignore these
+    IO_directory = prefix
+    lensmodel_location = homedir + '/Code/lensmodel_folder/'
+    path_2_lensmodel = IO_directory
+    gravlens_input_path = IO_directory + 'gravlens_input/'
+
 elif homedir == '/home/nierenbe/':
 
     # wherever the file storage directory is for the JPL cluster.
@@ -54,23 +67,6 @@ elif homedir == 'benson/cluster/homedirectory':
     path_2_lensmodel = homedir + '/'
     gravlens_input_path = IO_directory + 'gravlens_input/'
 
-elif homedir == 'simons_home_directory_on_stanford_cluster':
-
-    # wherever the file storage directory is for the stanford cluster.
-    prefix = '/path_to_file_storage/'
-    # insde the directory 'prefix', create the directory structure ./data/ABC_chains/
-    # where the readout will happen
-
-    # can make this the same as prefix
-    IO_directory = prefix
-
-    # don't need these ones
-    lensmodel_location = homedir + '/Code/lensmodel_folder/'
-    path_2_lensmodel = IO_directory
-
-    # don't need this one either
-    gravlens_input_path = IO_directory + 'gravlens_input/'
-    
 else:
     raise Exception('You seem to be using a different computer. The home directory '+str(homedir)+' is not found.')
 
