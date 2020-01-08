@@ -10,6 +10,13 @@ class WFI2033(Quad):
     x = np.array([-0.751, -0.039, 1.445, -0.668])
     y = np.array([0.953, 1.068, -0.307, -0.585])
     m = np.array([1., 0.65, 0.5, 0.53])
+
+    time_delay_AB, delta_AB = 0, 100
+    time_delay_AC, delta_AC = -36.2, 0.8
+    time_delay_AD, delta_AD = 23.3, 1.4
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
@@ -103,3 +110,11 @@ class WFI2033(Quad):
         print('flux ratios w.r.t. image '+str(self.fluximg)+':')
         print('observed: ', self.data.compute_flux_ratios(index=self.flux_ratio_index))
         print('recovered: ', optdata.compute_flux_ratios(index=self.flux_ratio_index))
+
+# lens = WFI2033()
+# x, y = lens.x, lens.y
+# col = ['k', 'r', 'm', 'g']
+# import matplotlib.pyplot as plt
+# for l in range(0, 4):
+#     plt.scatter(-x[l], y[l], color=col[l])
+# plt.show()

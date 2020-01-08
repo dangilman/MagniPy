@@ -13,6 +13,12 @@ class Lens1131(Quad):
     sigma_x = np.array([0.003]*4)
     sigma_y = np.array([0.003]*4)
 
+    time_delay_AB, delta_AB = 0.7, 1.2
+    time_delay_AC, delta_AC = 1.1, 1.5
+    time_delay_AD, delta_AD = -90.6, 1.4
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    relative_arrival_times = -np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
     sigma_m = np.zeros_like(sigma_x)
     zlens, zsrc = 0.295, 0.66
 

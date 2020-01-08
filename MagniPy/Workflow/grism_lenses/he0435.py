@@ -11,6 +11,12 @@ class Lens0435(Quad):
     y = np.array([0.156, -1.092, -0.636, 1.026])
     m = np.array([0.96, 0.976, 1., 0.65])
 
+    time_delay_AB, delta_AB = -8.8, 0.8
+    time_delay_AC, delta_AC = -1.1, 0.7
+    time_delay_AD, delta_AD = -13.8, 0.9
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+
+    relative_arrival_times = -np.array([time_delay_AB, time_delay_AC, time_delay_AD])
     sigma_x = np.array([0.008]*4)
     sigma_y = np.array([0.008]*4)
     sigma_m = np.zeros_like(sigma_x)

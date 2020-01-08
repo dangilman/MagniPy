@@ -153,8 +153,8 @@ class SingleDensity(object):
 
 class DensitySamples(object):
 
-    def __init__(self, data_list, param_names, param_ranges, weight_list, bwidth_scale=0.7,
-                 nbins=12, use_kde=False, from_file=False):
+    def __init__(self, data_list, param_names, weight_list, param_ranges=None, bwidth_scale=0.7,
+                 nbins=12, use_kde=False, from_file=False, param_ranges_compute_idx=0, samples_width_scale=4):
 
         self.single_densities = []
 
@@ -162,6 +162,11 @@ class DensitySamples(object):
 
         if weight_list is None:
             weight_list = [None] * len(data_list)
+
+        if param_ranges is None:
+            self.param_ranges = self._compute_param_ranges(data_list[param_ranges_compute_idx], samples_width_scale)
+        else:
+            self.param_ranges = param_ranges
 
         for j, (data, weights) in enumerate(zip(data_list, weight_list)):
             self._n += 1
@@ -171,8 +176,27 @@ class DensitySamples(object):
 
             else:
                 density = None
-            self.single_densities.append(SingleDensity(data, param_names, param_ranges, weights,
+
+            self.single_densities.append(SingleDensity(data, param_names, self.param_ranges, weights,
                                                        bwidth_scale, nbins, use_kde, density=density))
+
+    def _compute_param_ranges(self, data, scale):
+
+        param_ranges = []
+
+        for column_idx in range(0, int(data.shape[1])):
+
+            data_mean = np.mean(data[:, column_idx])
+            data_std = np.std(data[:, column_idx])
+            data_low = data_mean - scale * data_std
+            data_max = data_mean + scale * data_std
+            print(data_std)
+            data_low = max(data_low, min(data[:, column_idx]))
+            data_max = min(data_max, max(data[:, column_idx]))
+
+            param_ranges.append([data_low, data_max])
+
+        return param_ranges
 
     def projection_1D(self, pname):
 

@@ -7,13 +7,19 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens1115(Quad):
 
-    #x = np.array([0.9635, 1.1125, -0.7055, -0.3645])
-    #y = np.array([-0.706, -0.248, -0.633, 1.328])
-    #m = np.array([1., 0.93, 0.16, 0.21]
+    # x = np.array([0.947, 1.096, -0.722, -0.381])
+    # y = np.array([-0.69, -0.232, -0.617, 1.344])
+    # m = np.array([1., 0.93, 0.16, 0.21])
 
     x = np.array([0.947, 1.096, -0.722, -0.381])
     y = np.array([-0.69, -0.232, -0.617, 1.344])
     m = np.array([1., 0.93, 0.16, 0.21])
+
+    time_delay_AB, delta_AB = 0, 10
+    time_delay_AC, delta_AC = 8.3, 1.6
+    time_delay_AD, delta_AD = -9.9, 1.1
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 
     sigma_x = np.array([0.003]*4)
     sigma_y = np.array([0.003]*4)

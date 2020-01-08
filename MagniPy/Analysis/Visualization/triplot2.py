@@ -173,6 +173,7 @@ class TriPlot2(object):
 
         return out
 
+
     def _make_marginal_i(self, p1, ax, color_index, contour_colors=None, levels=[0.05, 0.22, 1],
                          filled_contours=True, contour_alpha=0.6, param_names=None, fig_size=8,
                          truths=None, labsize=15, tick_label_font=14,
@@ -556,6 +557,7 @@ class TriPlot2(object):
                     axes[plot_index].axis('off')
 
                 plot_index += 1
+
         self._auto_scale.append(autoscale)
 
     def _confidence_int(self, pmin, pmax, centers, heights, num_sigma):
@@ -620,6 +622,7 @@ class TriPlot2(object):
     def _get_param_minmax(self, pname):
 
         ranges = self.parameter_ranges[pname]
+
         return ranges[0], ranges[1]
 
     def _get_param_inds(self, params):
@@ -696,6 +699,13 @@ class TriPlot2(object):
 
         if self._custom_ticks is not None and pname in self._custom_ticks.keys():
             tick = self._custom_ticks[pname]
+            print(tick)
+            if 'name' not in tick.keys():
+                tick['name'] = pname
+            if 'rotation' not in tick.keys():
+                tick['rotation'] = 0
+            if 'labels' not in tick.keys():
+                tick['labels'] = [str(loc) for loc in tick['locs']]
             return tick['locs'], tick['labels'], tick['name'], tick['rotation']
         else:
             return self._ticks_and_labels(pname)
@@ -761,11 +771,18 @@ class TriPlot2(object):
             tick_locs = [12.9, 13.1, 13.3, 13.5, 13.7]
         else:
             name = pname
-
             tick_locs = np.round(np.linspace(self.parameter_ranges[pname][0], self.parameter_ranges[pname][1], 5), 2)
             tick_labels = tick_locs
 
         return tick_locs, tick_labels, name, rotation
+
+class NamedParameter(object):
+
+    def __init__(self, name, param_min, param_max):
+
+        self.name = name
+        self.param_min = param_min
+        self.param_max = param_max
 
 def compute_lower_upper_errors(sample, num_sigma):
     """
