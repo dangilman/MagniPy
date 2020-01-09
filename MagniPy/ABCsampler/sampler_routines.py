@@ -437,9 +437,4 @@ def initialize(chain_ID, core_index):
     else:
         create_directory(output_path)
 
-    if os.path.exists(path_2_lensmodel + 'lensmodel'):
-        pass
-    else:
-        shutil.copy2(lensmodel_location + 'lensmodel', path_2_lensmodel)
-
     return chain_keys, chain_keys_to_vary, output_path, True, readout_best
