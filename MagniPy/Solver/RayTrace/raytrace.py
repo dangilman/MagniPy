@@ -111,8 +111,7 @@ class RayTrace(object):
                 for j in range(0,len(minimum_image_sep[0])):
                     sep = minimum_image_sep[0][j]
                     theta = minimum_image_sep[1][j]
-                    #L = 0.5*sep*np.cos(abs(theta))
-                    L = 0.5*sep
+                    L = int(0.5*sep)
                     self.grid.append(RayShootingGrid(min(self.grid_rmax, L), self.res, adaptive_grid, rot=theta))
         else:
             self.grid = [RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)]*4
@@ -175,10 +174,10 @@ class RayTrace(object):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            # n = int(np.sqrt(len(image)))
-            # print('npixels: ' , n)
-            # plt.imshow(image.reshape(n,n)); plt.show()
-            # a=input('continue')
+            n = int(np.sqrt(len(image)))
+            print('npixels: ' , n)
+            plt.imshow(image.reshape(n,n)); plt.show()
+            a=input('continue')
             #blended = flux_at_edge(image.reshape(n,n))
             #blended = False
             #if blended:
