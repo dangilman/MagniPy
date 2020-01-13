@@ -9,6 +9,9 @@ class RayShootingGrid(object):
 
         N = int(2*side_length*grid_res**-1)
 
+        if N==0:
+            raise Exception('N cannot be zero (no grid).')
+
         self.x_grid_0, self.y_grid_0 = np.meshgrid(
             np.linspace(-side_length+grid_res, side_length-grid_res, N),
             np.linspace(-side_length+grid_res, side_length-grid_res, N))
@@ -190,7 +193,7 @@ class RayTrace(object):
             #plt.imshow(image.reshape(n,n))
             #plt.show()
             #a=input('continue')
-      
+
         return np.array(flux)
 
     def rayshoot(self,x,y,lensModel,kwargs_lens):
