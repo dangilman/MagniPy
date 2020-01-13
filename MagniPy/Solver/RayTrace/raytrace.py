@@ -8,7 +8,7 @@ class RayShootingGrid(object):
     def __init__(self, side_length, grid_res, adaptive, rot=0):
 
         N = int(2*side_length*grid_res**-1)
-        
+
         self.x_grid_0, self.y_grid_0 = np.meshgrid(
             np.linspace(-side_length+grid_res, side_length-grid_res, N),
             np.linspace(-side_length+grid_res, side_length-grid_res, N))
