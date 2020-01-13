@@ -113,6 +113,7 @@ class RayTrace(object):
                     sep = minimum_image_sep[0][j]
                     theta = minimum_image_sep[1][j]
                     L = 0.5*sep
+
                     self.grid.append(RayShootingGrid(min(self.grid_rmax, L), self.res, adaptive_grid, rot=theta))
         else:
             self.grid = [RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)]*4
@@ -189,7 +190,7 @@ class RayTrace(object):
             #plt.imshow(image.reshape(n,n))
             #plt.show()
             #a=input('continue')
-
+      
         return np.array(flux)
 
     def rayshoot(self,x,y,lensModel,kwargs_lens):
