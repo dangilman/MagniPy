@@ -351,6 +351,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #L = 21
 #index = (L-1)*cpl + 1
 
-#runABC(prefix+'data/SIDM_test/', 2)
+#runABC(prefix+'data/SIDM_test/', 1)
 
 
