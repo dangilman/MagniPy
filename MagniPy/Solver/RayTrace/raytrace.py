@@ -8,10 +8,10 @@ class RayShootingGrid(object):
     def __init__(self, side_length, grid_res, adaptive, rot=0):
 
         N = int(2*side_length*grid_res**-1)
-
+        
         self.x_grid_0, self.y_grid_0 = np.meshgrid(
-            np.linspace(int(-side_length+grid_res), int(side_length-grid_res), N),
-            np.linspace(int(-side_length+grid_res), int(side_length-grid_res), N))
+            np.linspace(-side_length+grid_res, side_length-grid_res, N),
+            np.linspace(-side_length+grid_res, side_length-grid_res, N))
 
         self.radius = side_length
 
@@ -98,7 +98,7 @@ class RayTrace(object):
             raise ValueError('other source models not yet implemented')
 
         self.grid_rmax *= grid_rmax_scale
-        self.grid_rmax = int(self.grid_rmax)
+        self.grid_rmax = self.grid_rmax
 
         if adaptive_grid is True:
             #print('warning: adaptive grid not yet implemented')
@@ -112,8 +112,8 @@ class RayTrace(object):
                 for j in range(0,len(minimum_image_sep[0])):
                     sep = minimum_image_sep[0][j]
                     theta = minimum_image_sep[1][j]
-                    L = int(0.5*sep)
-                    self.grid.append(RayShootingGrid(int(min(self.grid_rmax, L)), self.res, adaptive_grid, rot=theta))
+                    L = 0.5*sep
+                    self.grid.append(RayShootingGrid(min(self.grid_rmax, L), self.res, adaptive_grid, rot=theta))
         else:
             self.grid = [RayShootingGrid(self.grid_rmax, self.res, adaptive_grid)]*4
 
