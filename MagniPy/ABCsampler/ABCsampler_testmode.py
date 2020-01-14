@@ -8,8 +8,8 @@ from MagniPy.util import approx_theta_E
 
 def initialize_macro(solver,data,init):
 
-    _, model = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.05,
+    _, model, _ = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
+                                                 source_shape='GAUSSIAN', source_size_kpc=0.05, grid_res=0.001,
                                                  tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
                                                  centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
                                                  simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
@@ -337,6 +337,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-runABC(prefix+'data/lens0405_fsub/', 1)
+#runABC(prefix+'data/SIDM_runs_birrer/', 1)
 
 
