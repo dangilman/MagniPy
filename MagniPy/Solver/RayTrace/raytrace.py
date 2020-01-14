@@ -154,10 +154,10 @@ class RayTrace(object):
         #del kwargs_lens[0]['source_size_kpc']
         img = self.rayshoot(xpos,ypos,lensModel,kwargs_lens)
         #try:
-        #n = int(len(img) ** 0.5)
-        #print('npixels: ' , n)
-        #plt.imshow(img.reshape(n,n)); plt.show()
-        #a=input('continue')
+        # n = int(len(img) ** 0.5)
+        # print('npixels: ' , n)
+        # plt.imshow(img.reshape(n,n)); plt.show()
+        # a=input('continue')
         #except:
         #    pass
         if return_image:
@@ -179,10 +179,11 @@ class RayTrace(object):
 
             image = self.rayshoot(xgrids[i],ygrids[i],lensModel,kwargs_lens)
 
-            #n = int(np.sqrt(len(image)))
-            #print('npixels: ' , n)
-            #plt.imshow(image.reshape(n,n)); plt.show()
-            #a=input('continue')
+            # n = int(np.sqrt(len(image)))
+            # print('npixels: ' , n)
+            # plt.imshow(image.reshape(n,n))
+            # plt.show()
+            # a=input('continue')
             #blended = flux_at_edge(image.reshape(n,n))
             #blended = False
             #if blended:
