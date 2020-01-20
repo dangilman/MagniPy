@@ -13,7 +13,7 @@ class J0405(Quad):
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.5, 1.5
+    zlens, zsrc = 0.3, 1.71
 
     solver = SolveRoutines(zlens, zsrc)
 
