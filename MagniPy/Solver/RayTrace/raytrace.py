@@ -96,7 +96,9 @@ class RayTrace(object):
 
         if source_shape == 'GAUSSIAN':
             self.source = GAUSSIAN(x=xsrc,y=ysrc,width=kwargs['source_size'])
-            self.grid_rmax, self.res = self._grid_rmax(kwargs['source_size'],res)
+            self.grid_rmax = self._auto_grid_size(kwargs['source_size'])
+            self.res = self._auto_grid_resolution(kwargs['source_size'])
+
         else:
             raise ValueError('other source models not yet implemented')
 
@@ -123,25 +125,29 @@ class RayTrace(object):
 
         self._adaptive_grid = adaptive_grid
 
-    def _grid_rmax(self,size_asec,res):
+    def _auto_grid_resolution(self, source_size):
 
-        if size_asec < 0.0002:
-            s = 0.005
-        elif size_asec < 0.0005:
-            s = 0.03
-        elif size_asec < 0.001:
-            s = 0.08
-        elif size_asec < 0.002:
-            s = 0.2
-        elif size_asec < 0.003:
-            s = 0.28
-        elif size_asec < 0.005:
-            s = 0.35
+        # approx kpc per asec
+        source_size_pc = source_size * 6.2 * 1000
 
-        else:
-            s = 0.48
+        grid_res_0 = 0.000004
+        size_0 = 0.1
+        power = 1
+        grid_res = grid_res_0 * (source_size_pc / size_0) ** power
 
-        return s,res
+        return grid_res
+
+    def _auto_grid_size(self, source_size):
+
+        # approx kpc per asec
+        source_size_pc = source_size * 6.2 * 1000
+
+        grid_size_0 = 0.0002
+        size_0 = 0.1
+        power = 1.15
+        grid_size = grid_size_0 * (source_size_pc / size_0) ** power
+
+        return grid_size
 
     def get_images(self,xpos,ypos,lensModel,kwargs_lens,return_image=False):
 
