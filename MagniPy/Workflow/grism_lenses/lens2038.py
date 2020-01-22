@@ -13,6 +13,13 @@ class Lens2038(Quad):
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
 
+    # TIME DELAYS ESTIMATED FROM A FIT
+    time_delay_AB, delta_AB = -2.6, 1.3
+    time_delay_AC, delta_AC = -5.73, 0.9
+    time_delay_AD, delta_AD = -15.0, 2.5
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
     sigma_m = np.zeros_like(sigma_x)
     zsrc, zlens = 0.78, 0.23
 

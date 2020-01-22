@@ -16,6 +16,12 @@ class Lens1606(Quad):
     sigma_m = np.zeros_like(sigma_x)
     zlens, zsrc = 0.31, 1.7
 
+    time_delay_AB, delta_AB = 5.6, 1.6
+    time_delay_AC, delta_AC = 11.2, 2.6
+    time_delay_AD, delta_AD = 9.2, 2.7
+    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
     solver = SolveRoutines(zlens, zsrc)
 
     data = Data(x, y, m, None, None,
