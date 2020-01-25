@@ -176,16 +176,15 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
 
             filtered_background = realization_background.filter(datatofit.x, datatofit.y, mindis_front=0,
                                           logmasscut_front=12, mindis_back = background_filters[h],
-                                          source_x=source_x, source_y=source_y, logmasscut_back=background_globalmin_masses[h], ray_x=path_x,
-                                          ray_y=path_y, logabsolute_mass_cut_back=background_aperture_masses[h],
-                                          path_redshifts=path_redshifts,
-                                          path_Tzlist=path_Tzlist,
+                                          source_x=source_x, source_y=source_y, logmasscut_back=background_globalmin_masses[h],
+                                          logabsolute_mass_cut_back=background_aperture_masses[h],
                                           logabsolute_mass_cut_front=12, zmin=solver_class.zmain)
 
             realization_filtered = realization_filtered.join(filtered_background)
 
         # realization_filtered = realizations[0].realization_from_indicies(np.squeeze(filter_indicies))
         N_background_halos = len(realization_filtered.masses[np.where(realization_filtered.redshifts > solver_class.zmain)])
+        realization_filtered = realization_filtered.shift_background_to_source(source_x, source_y)
         if verbose:
             print('N foreground halos: ', len(realization_filtered.masses[np.where(realization_filtered.redshifts <= solver_class.zmain)]))
             print('N background halos: ', N_background_halos)
@@ -238,14 +237,14 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                                                                        finite_source_magnification=False,
                                                                                        chi2_mode='source', adaptive_grid=False)
 
-            path_x, path_y, path_redshifts, path_Tzlist = out_kwargs['path_x'], out_kwargs['path_y'], \
-                                                          out_kwargs['path_redshifts'], out_kwargs[
-                                                              'path_Tzlist']
-            source_x, source_y = keywords_lensmodel['source_x'], keywords_lensmodel['source_y']
-            backx.append(path_x)
-            backy.append(path_y)
-            background_Tzs.append(path_Tzlist)
-            background_zs.append(path_redshifts)
+            # path_x, path_y, path_redshifts, path_Tzlist = out_kwargs['path_x'], out_kwargs['path_y'], \
+            #                                               out_kwargs['path_redshifts'], out_kwargs[
+            #                                                   'path_Tzlist']
+            # source_x, source_y = keywords_lensmodel['source_x'], keywords_lensmodel['source_y']
+            # backx.append(path_x)
+            # backy.append(path_y)
+            # background_Tzs.append(path_Tzlist)
+            # background_zs.append(path_redshifts)
             reoptimized_realizations.append(realization_filtered)
             N_background_halos_last = N_background_halos
 
