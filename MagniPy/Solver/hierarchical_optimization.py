@@ -1,5 +1,6 @@
 from MagniPy.util import chi_square_img
 import numpy as np
+from MagniPy.util import interpolate_ray_paths
 
 def split_realization(datatofit, realization):
 
@@ -156,9 +157,22 @@ def optimize_background(macromodel, realization_foreground, realization_backgrou
                                 're_optimize_scale': reoptimize_scale[h],
                                 'precomputed_rays': foreground_rays}
 
+            ray_x_interp, ray_y_interp = \
+                interpolate_ray_paths(datatofit.x, datatofit.y, lens_model, kwargs_lens, zsource)
+            filter_kwargs = {'aperture_radius_front': 10.,
+                             'aperture_radius_back': background_filters[h],
+                             'aperture_front_min_logmass': 10.,
+                             'aperture_back_min_logmass': background_aperture_masses[h],
+                             'global_front_min_logmass': 10.,
+                             'global_back_min_logmass':  background_globalmin_masses[h],
+                             'interpolated_x_angle': ray_x_interp,
+                             'interpolated_y_angle': ray_y_interp,
+                             'zmax': self.zlens
+                             }
+
             filtered_background = realization_background.filter(datatofit.x, datatofit.y, mindis_front=0,
                                           mindis_back=background_filters[h], logmasscut_front=12,
-                                          logabsolute_mass_cut_front = 12, source_x=source_x, source_y=source_y,
+                                          logabsolute_mass_cut_front=12, source_x=source_x, source_y=source_y,
                                           logmasscut_back=background_globalmin_masses[h],
                                           logabsolute_mass_cut_back=background_aperture_masses[h],
                                                                 zmin=solver_class.zmain)
