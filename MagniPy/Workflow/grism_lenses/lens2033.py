@@ -1,6 +1,5 @@
 import numpy as np
 from MagniPy.lensdata import Data
-from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
@@ -22,8 +21,6 @@ class WFI2033(Quad):
     sigma_m = np.zeros_like(sigma_x)
     zsrc, zlens = 1.66, 0.66
     # source redshift from Motta et al
-
-    solver = SolveRoutines(zlens, zsrc)
 
     data = Data(x, y, m, None, None,
                          sigma_x = sigma_x, sigma_y = sigma_y,

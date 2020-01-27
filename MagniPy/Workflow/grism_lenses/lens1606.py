@@ -1,6 +1,5 @@
 import numpy as np
 from MagniPy.lensdata import Data
-from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.LensBuild.defaults import get_default_SIE_random, get_default_SIE
 from MagniPy.util import approx_theta_E
 from MagniPy.Workflow.grism_lenses.quad import Quad
@@ -21,8 +20,6 @@ class Lens1606(Quad):
     time_delay_AD, delta_AD = 9.2, 2.7
     delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
     relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
-
-    solver = SolveRoutines(zlens, zsrc)
 
     data = Data(x, y, m, None, None,
                          sigma_x = sigma_x, sigma_y = sigma_y,
