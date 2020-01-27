@@ -377,18 +377,18 @@ if True:
     logmhm = 0
     r_tidal = '0.5Rs'
     source_size_fwhm_pc = 5.
-    log_ml, log_mh = 7, 10
+    log_ml, log_mh = 6, 10
     gamma = 2.05
 
-    SIDM_cross = 9
-    vpower = 0.75
+    SIDM_cross = 0.01
+    vpower = 0.
 
     z_src_max = 2.5
     z_lens_max = 0.6
     rein_max = 1.4
     rein_min = 0.6
     nav = prefix
-    mass_def = 'TNFW'
+    mass_def = 'SIDM_TNFW'
 
     dpath_base = nav + '/CDM_data/'
     #run(1, 0, 0, 1)
