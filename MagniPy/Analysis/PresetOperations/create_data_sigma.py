@@ -388,7 +388,7 @@ if True:
     rein_max = 1.4
     rein_min = 0.6
     nav = prefix
-    mass_def = 'SIDM_TNFW'
+    mass_def = 'TNFW'
 
     dpath_base = nav + '/CDM_data/'
     #run(1, 0, 0, 1)
