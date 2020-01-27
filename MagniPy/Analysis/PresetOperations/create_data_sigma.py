@@ -14,7 +14,7 @@ from lenstronomywrapper.LensSystem.LensComponents.powerlawshear import PowerLawS
 from lenstronomywrapper.LensSystem.BackgroundSource.quasar import Quasar
 from lenstronomywrapper.LensSystem.LensSystemExtensions.solver import iterative_rayshooting
 from lenstronomywrapper.LensData.lensed_quasar import LensedQuasar
-
+from time import time
 cosmo = Cosmology()
 arcsec = 206265  # arcsec per radian
 
@@ -307,9 +307,12 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 config = 'cusp'
                 if done_cusp:
                     continue
-
+            t0 = time()
             x_image, y_image = iterative_rayshooting(srcx, srcy,
                                                      x_guess, y_guess, lensModel, kwargs_lens)
+            tend = time()
+            dt = np.round(tend - t0, 2)/60
+            print('solved lens equation with '+str(len(realization.halos))+' halos in '+str(dt)+' min.')
             lens_config = identify(x_image, y_image, rein)
             min_sep = min_img_sep(x_image, y_image)
 
