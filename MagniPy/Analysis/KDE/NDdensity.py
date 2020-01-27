@@ -54,7 +54,7 @@ class DensitySamplesNew(object):
                 density = None
 
             w = self._weights(weight_list, j)
-            print(w.shape, data.shape)
+
             self.single_densities.append(SingleDensity(data, param_names, param_ranges, w,
                                                        bwidth_scale, nbins, use_kde, density=density))
 
@@ -180,6 +180,7 @@ class DensitySamples(object):
             self.single_densities.append(SingleDensity(data, param_names, self.param_ranges, weights,
                                                        bwidth_scale, nbins, use_kde, density=density))
 
+
     def _compute_param_ranges(self, data, scale):
 
         param_ranges = []
@@ -190,7 +191,7 @@ class DensitySamples(object):
             data_std = np.std(data[:, column_idx])
             data_low = data_mean - scale * data_std
             data_max = data_mean + scale * data_std
-            print(data_std)
+
             data_low = max(data_low, min(data[:, column_idx]))
             data_max = min(data_max, max(data[:, column_idx]))
 

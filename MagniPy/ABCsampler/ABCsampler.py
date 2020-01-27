@@ -6,57 +6,10 @@ from pyHalo.pyhalo import pyHalo
 import time
 from MagniPy.util import approx_theta_E
 
-def initialize_macro(solver,data,init,satellites):
-
-    _, model, info = solver.optimize_4imgs_lenstronomy(macromodel=init, datatofit=data, multiplane=True,
-                                                 source_shape='GAUSSIAN', source_size_kpc=0.06,
-                                                 tol_source=1e-5, tol_mag=None, tol_centroid=0.05,
-                                                 centroid_0=[0, 0], n_particles=60, n_iterations=400,pso_convergence_mean=5e+4,
-                                                 simplex_n_iter=250, polar_grid=False, optimize_routine='fixed_powerlaw_shear',
-                                                 verbose=True, re_optimize=False, particle_swarm=True, restart=1,
-                                                 tol_simplex_func=0.001, adaptive_grid=False, satellites=satellites)
-
-    return model, (info['source_x'], info['source_y'])
-
-def init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys):
-
-    macromodels_init = []
-
-    if 'satellites' in chain_keys_run.keys():
-        satellites = chain_keys_run['satellites']
-    else:
-        satellites = None
-
-    if 'SIE_gamma' in keys_to_vary:
-        gamma_values = [1.95, 2, 2.04, 2.08, 2.12, 2.16, 2.2]
-        #gamma_values = [2.1]
-
-        for gi in gamma_values:
-            _macro = get_default_SIE(z=solver.zmain)
-            _macro.lenstronomy_args['gamma'] = gi
-            macro_i, source = initialize_macro(solver, data, _macro, satellites)
-            #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
-            macromodels_init.append(macro_i)
-
-    else:
-        gamma_values = [chain_keys_run['SIE_gamma']]
-        _macro = get_default_SIE(z=solver.zmain)
-        _macro.update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
-        #macro_i = initialize_macro(solver, data, _macro)
-        #macro_i[0].lens_components[0].set_varyflags(chain_keys['varyflags'])
-        macro_i, source = initialize_macro(solver, data, _macro, satellites)
-        macromodels_init.append(macro_i)
-
-    source_estimate = {'x': source[0], 'y': source[1]}
-    return macromodels_init, gamma_values, source_estimate
-
-def choose_macromodel_init(macro_list, gamma_values, chain_keys_run):
-
-    dgamma = np.absolute(np.array(gamma_values) - chain_keys_run['SIE_gamma'])
-
-    index = np.argmin(dgamma)
-
-    return macro_list[index]
+from lenstronomywrapper.LensSystem.macrolensmodel import MacroLensModel
+from lenstronomywrapper.LensSystem.LensComponents.powerlawshear import PowerLawShear
+from lenstronomywrapper.LensSystem.LensComponents.satellite import SISsatellite
+from lenstronomywrapper.ModelingWorkflow.flux_ratio_forwardmodel import forward_model
 
 def run_lenstronomy(data, prior, keys, keys_to_vary,
                     output_path, write_header, readout_best):
@@ -65,7 +18,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
     parameters = []
     start = True
     N_computed = 0
-    init_macro = False
     t0 = time.time()
 
     if 'readout_steps' in keys.keys():
@@ -87,11 +39,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
         n_iterations = keys['n_iterations']
     else:
         n_iterations = 250
-
-    if 'check_foreground_fit' in keys.keys():
-        check_foreground = keys['check_foreground_fit']
-    else:
-        check_foreground = False
 
     if 'verbose' in keys.keys():
         verbose = keys['verbose']
@@ -115,8 +62,6 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
     if 'lens_redshift' not in keys_to_vary.keys():
         halo_constructor = pyHalo(np.round(keys['zlens'], 2), np.round(keys['zsrc'], 2))
-        solver = SolveRoutines(zlens=np.round(keys['zlens'], 2), zsrc=np.round(keys['zsrc'], 2),
-                           temp_folder=keys['scratch_file'], clean_up=True)
 
     while N_computed < keys['Nsamples']:
 
@@ -136,74 +81,47 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
             if 'lens_redshift' in keys_to_vary.keys():
                 halo_constructor = pyHalo(np.round(chain_keys_run['lens_redshift'], 2), np.round(chain_keys_run['zsrc'], 2))
-                solver = SolveRoutines(zlens=np.round(chain_keys_run['lens_redshift'], 2), zsrc=np.round(chain_keys_run['zsrc'], 2),
-                                       temp_folder=keys['scratch_file'], clean_up=True)
 
             if 'shear' in keys_to_vary.keys():
                 opt_routine = 'fixedshearpowerlaw'
                 constrain_params = {'shear': chain_keys_run['shear']}
-                reopt = False
-                tol_mag = None
+
             else:
                 opt_routine = 'fixed_powerlaw_shear'
                 constrain_params = None
-                reopt = True
-                tol_mag = None
 
-            if not init_macro:
-                print('initializing macromodels.... ')
+            kwargs_init = [{'theta_E': 1., 'center_x': 0., 'center_y': 0, 'e1': 0.1, 'e2': 0.1,
+                           'gamma': chain_keys_run['SIE_gamma']}, {'gamma1': 0.02, 'gamma2': 0.01}]
 
-                macro_list, gamma_values, source_estimate = init_macromodels(keys_to_vary, chain_keys_run, solver, data, chain_keys_run)
-                init_macro = True
+            lens_main = PowerLawShear(halo_constructor.zlens, kwargs_init)
+            lens_list = [lens_main]
 
-            if 'SIE_gamma' in keys_to_vary:
+            kwargs_realization = halo_model_args(chain_keys_run, verbose)
 
-                base = choose_macromodel_init(macro_list, gamma_values, chain_keys_run)
+            include_satellites = update_satellites(chain_keys_run, keys_to_vary)
 
-            else:
+            if include_satellites is not None:
 
-                base = macro_list[0]
+                kwargs, zsat, nsat = include_satellites[0], include_satellites[1]
+                assert nsat < 3
+                if nsat < 2:
+                    if 'lens_redshift' in keys_to_vary.keys():
+                        raise Exception('must allow for satellite redshift to vary with lens redshift')
+                    satellite = SISsatellite(zsat[0], kwargs[0])
+                    lens_list.append(satellite)
+                if nsat < 3:
+                    satellite = SISsatellite(zsat[1], kwargs[1])
+                    lens_list.append(satellite)
 
-            macromodel = deepcopy(base[0])
-            macromodel.lens_components[0].update_lenstronomy_args({'gamma': chain_keys_run['SIE_gamma']})
+            macromodel = MacroLensModel(lens_list)
 
-            halo_args = halo_model_args(chain_keys_run, verbose)
+            out = forward_model(d2fit.x, d2fit.y, d2fit.m, macromodel, chain_keys_run['source_fwhm_pc'],
+                            halo_constructor, kwargs_realization, chain_keys_run['mass_func_type'],
+                                opt_routine, constrain_params, verbose)
 
-            chain_keys_run['satellites'] = update_satellites(chain_keys_run, keys_to_vary)
-            if 'lens_redshift' in keys_to_vary.keys():
-                macromodel.lens_components[0].redshift = np.round(chain_keys_run['lens_redshift'],2)
-                macromodel.zmain = chain_keys_run['lens_redshift']
-                if chain_keys_run['satellites'] is not None:
-                    chain_keys_run['satellites']['z_satellite'] = [chain_keys_run['lens_redshift']]
+            if np.isfinite(out['summary_stat']):
+                break
 
-            if verbose: print('constructing realization... ')
-            halos = halo_constructor.render(chain_keys_run['mass_func_type'], halo_args, nrealizations=1, verbose=verbose)[0]
-
-            halos = halos.shift_background_to_source(source_estimate['x'], source_estimate['y'])
-
-            try:
-                new, optmodel, _, _ = solver.hierarchical_optimization(macromodel=macromodel.lens_components[0], datatofit=d2fit,
-                                   realization=halos, multiplane=True, n_particles=n_particles, n_iterations=n_iterations, tol_mag=tol_mag,
-                                   verbose=verbose, re_optimize=reopt, restart=1, particle_swarm=True, pso_convergence_mean=3e+5,
-                                   pso_compute_magnification=4e+5, source_size_kpc=chain_keys_run['source_size_kpc'],
-                                    simplex_n_iter=simplex_n_iter, polar_grid=False, grid_res=chain_keys_run['grid_res'],
-                                    LOS_mass_sheet_back=chain_keys_run['LOS_mass_sheet_back'],
-                                     LOS_mass_sheet_front=chain_keys_run['LOS_mass_sheet_front'],
-                                     satellites=chain_keys_run['satellites'], optimize_routine=opt_routine,
-                                     constrain_params=constrain_params, check_foreground_fit=check_foreground)
-
-                xfit, yfit = new[0].x, new[0].y
-
-            except:
-                xfit = yfit = np.array([1000, 1000, 1000, 1000])
-
-            if chi_square_img(d2fit.x,d2fit.y,xfit,yfit,0.003) < 1:
-                if verbose: print(new[0].m[0], np.isfinite(new[0].m[0]))
-                if np.isfinite(new[0].m[0]):
-                    break
-
-        macro_fit = optmodel[0]
-        #print(macro_fit.lens_components[0].lenstronomy_args)
         N_computed += 1
         if N_computed%readout_steps == 0 and verbose:
             print('completed ' + str(N_computed) + ' of '+str(keys['Nsamples'])+'...')
@@ -214,35 +132,32 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
             samples_array.append(chain_keys_run[pname])
 
         if 'shear' not in keys_to_vary.keys() and 'save_shear' in keys.keys():
-
-            samples_array.insert(keys['save_shear']['idx'], np.round(macro_fit.lens_components[0].shear,4))
-
+            samples_array.insert(keys['save_shear']['idx'], np.round(out['external_shear'],4))
+        save_statistic, readout_best = True, True
         if save_statistic:
-            new_statistic = summary_stat_flux(d2fit.m, new[0].m)
+            new_statistic = out['summary_stat']
             #print(new_statistic, current_best)
             if new_statistic < current_best:
                 current_best = new_statistic
-                current_best_realization = optmodel[0]
-                current_best_fullrealization = \
-                    solver.build_system(main=optmodel[0].lens_components[0], realization=halos,
-                                        multiplane=True, satellites=chain_keys_run['satellites'])
+                #current_best_realization = out[]
+                current_best_fullrealization = out['lens_system_optimized']
                 params_best = samples_array
-                best_fluxes = new[0].m
+                best_fluxes = out['magnifications_fit']
 
         if start:
-            macro_array = read_macro_array(macro_fit)
-            chaindata = new[0].m
+            macro_array = out['macromodel_parameters']
+            chaindata = out['magnifications_fit']
             parameters = np.array(samples_array)
         else:
-            macro_array = np.vstack((macro_array, read_macro_array(macro_fit)))
-            chaindata = np.vstack((chaindata,new[0].m))
-            parameters = np.vstack((parameters,np.array(samples_array)))
+            macro_array = np.vstack((macro_array, out['macromodel_parameters']))
+            chaindata = np.vstack((chaindata, out['magnifications_fit']))
+            parameters = np.vstack((parameters, np.array(samples_array)))
 
         if N_computed%readout_steps == 0:
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             if save_statistic and readout_best:
-                readout_realizations(current_best_realization, current_best_fullrealization, output_path, current_best,
+                readout_realizations(current_best_fullrealization, output_path, current_best,
                                      params_best, best_fluxes)
             start = True
             write_header = False
@@ -350,6 +265,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/SIDM_test_2/', 1)
+runABC(prefix+'data/SIDM_test_2/', 1)
 
 
