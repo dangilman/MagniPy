@@ -361,7 +361,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         magnifications = system.quasar_magnification(x_image, y_image, lensModel, kwargs_lens)
         data_with_halos = LensedQuasar(x_image, y_image, magnifications)
 
-        write_data(dpath + '/lensdata.txt', data_with_halos, mode='write')
+        write_data(dpath + '/lensdata.txt', [data_with_halos], mode='write')
 
         to_write = get_info_string(halo_args, other_lens_args)
         write_info(str(to_write), dpath + '/info.txt')
@@ -390,6 +390,6 @@ if True:
     nav = prefix
     mass_def = 'SIDM_TNFW'
 
-    dpath_base = nav + '/mock_data/SIDM_cross9_vpower75/lens_'
-    run(1, 0, 0, 1)
+    dpath_base = nav + '/CDM_data/'
+    #run(1, 0, 0, 1)
 
