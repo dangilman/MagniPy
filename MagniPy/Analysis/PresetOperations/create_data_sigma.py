@@ -250,7 +250,8 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         shear_theta = draw_shear_PA_correlated(ellip_theta, sigma=40)
 
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
-                     'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal,
+                     'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal, 'cone_opening_angle': 5*rein,
+                     'opening_angle_factor': 5,
                      'R_ein_main': rein, 'SIDMcross': SIDM_cross, 'vpower': vpower}
 
         realization = pyhalo.render(model_type, halo_args)[0]
@@ -276,10 +277,10 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         while continue_findimg_loop:
 
-            src_r = np.sqrt(np.random.uniform(0.015**2,0.1 ** 2))
+            src_r = np.sqrt(np.random.uniform(0.01**2,0.1 ** 2))
             src_phi = np.random.uniform(-90, 90)*180/np.pi
             srcx, srcy = src_r*np.cos(src_phi), src_r*np.sin(src_phi)
-            print(srcx, srcy)
+            print(srcx, srcy, np.sqrt(srcx**2 + srcy**2))
             system.update_source_centroid(srcx, srcy)
 
             lens_model_smooth, kwargs_lens_smooth = system.get_lensmodel(False)
