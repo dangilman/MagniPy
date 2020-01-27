@@ -1,15 +1,19 @@
 from pyHalo.pyhalo import pyHalo
 from pyHalo.Cosmology.cosmology import Cosmology
-from pyHalo.Halos.lens_cosmo import LensCosmo
 from scipy.stats import gaussian_kde
-from MagniPy.Solver.solveroutines import *
 from MagniPy.MassModels.SIE import *
 import matplotlib.pyplot as plt
 from MagniPy.LensBuild.defaults import *
 from MagniPy.Solver.analysis import Analysis
 from MagniPy.util import min_img_sep, flux_at_edge
 from MagniPy.paths import *
-from scipy.optimize import minimize
+from lenstronomy.Util.param_util import ellipticity2phi_q, shear_polar2cartesian
+from lenstronomywrapper.LensSystem.macrolensmodel import MacroLensModel
+from lenstronomywrapper.LensSystem.quad_lens import QuadLensSystem
+from lenstronomywrapper.LensSystem.LensComponents.powerlawshear import PowerLawShear
+from lenstronomywrapper.LensSystem.BackgroundSource.quasar import Quasar
+from lenstronomywrapper.LensSystem.LensSystemExtensions.solver import iterative_rayshooting
+from lenstronomywrapper.LensData.lensed_quasar import LensedQuasar
 
 cosmo = Cosmology()
 arcsec = 206265  # arcsec per radian
@@ -228,72 +232,87 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         if done_cusp and done_cross and done_fold:
             break
 
-        # while True:
-        #     rein, vdis, zlens, zsrc = sample_from_strides(1)
-        #     if rein <= rein_max:
-        #         if zlens <= z_lens_max:
-        #             if zsrc <= z_src_max:
-        #                 break
-        
-        zlens, zsrc = 0.5, 1.5
+        while True:
+            rein, vdis, zlens, zsrc = sample_from_strides(1)
+            if rein <= rein_max and rein >= rein_min:
+                if zlens <= z_lens_max:
+                    if zsrc <= z_src_max:
+                        break
+
         pyhalo = pyHalo(zlens, zsrc)
-        c = LensCosmo(zlens, zsrc, Cosmology())
-        
-        vdis = np.random.uniform(210, 260)
-        rein = c.vdis_to_Rein(zlens, zsrc, vdis)
-       
-        print('vdis, rein, zlens, zsrc: ', str(vdis) + ' '+str(rein)+' '+str(zlens) + ' '+str(zsrc))
+
+        print('rein, zlens, zsrc: ', str(rein)+' '+str(zlens) + ' '+str(zsrc))
 
         ellip = draw_ellip()
         ellip_theta = draw_ellip_PA()
         shear = draw_shear()
         
-        shear_theta = draw_shear_PA_correlated(ellip_theta, sigma = 50)
-        
-        gamma = 2.0
-       
-        solver = SolveRoutines(zlens, zsrc)
-        analysis = Analysis(zlens, zsrc)
-        #rein = c.vdis_to_Rein(zlens, zsrc, vdis)
+        shear_theta = draw_shear_PA_correlated(ellip_theta, sigma=40)
+
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal,
-                     'R_ein_main': rein}
+                     'R_ein_main': rein, 'SIDMcross': SIDM_cross, 'vpower': vpower}
 
-        real = pyhalo.render(model_type, halo_args)
+        realization = pyhalo.render(model_type, halo_args)[0]
 
-        lens_args = {'theta_E': c.vdis_to_Rein(zlens, zsrc, vdis), 'center_x': 0, 'center_y': 0, 'ellip': ellip, 'ellip_theta': ellip_theta,
-                     'gamma': gamma, 'shear': shear, 'shear_theta': shear_theta}
-
-        start = Deflector(subclass=SIE(), redshift=zlens, **lens_args)
+        e1, e2 = phi_q2_ellipticity(shear_theta*np.pi/180, 1-ellip)
+        gamma1, gamma2 = shear_polar2cartesian(shear_theta*np.pi/180, shear)
+        kwargs_lens = [{'theta_E': rein, 'center_x': 0, 'center_y': 0,
+                       'e1': e1, 'e2': e2, 'gamma': gamma},
+                       {'gamma1': gamma1, 'gamma2': gamma2}]
+        macromodel = MacroLensModel([PowerLawShear(zlens, kwargs_lens)])
+        source_args = {'center_x': None, 'center_y': None, 'source_fwhm_pc': source_size_fwhm_pc}
+        quasar = Quasar(source_args)
+        system = QuadLensSystem(macromodel, zsrc, quasar, realization, pyhalo._cosmology)
 
         print('zlens: ', zlens)
         print('zsrc: ', zsrc)
-        print('src_size_kpc: ', src_size_mean)
-        print('vdis:', vdis)
+        print('src_size_pc: ', source_size_fwhm_pc)
         print('R_ein:', rein)
         print('shear, ellip: ', shear, ellip)
-        print('nhalos: ', len(real[0].x))
+        print('nhalos: ', len(realization.halos))
 
-        xcaus, ycaus = None, None
         continue_findimg_loop = True
 
         while continue_findimg_loop:
-            
-            if xcaus is not None:
 
-                try:
-                    xs_init, ys_init = guess_source(xcaus, ycaus)
-                except:
-                    xs_init, ys_init = 0.1, -0.005
+            src_r = np.sqrt(np.random.uniform(0.015**2,0.1 ** 2))
+            src_phi = np.random.uniform(-90, 90)*180/np.pi
+            srcx, srcy = src_r*np.cos(src_phi), src_r*np.sin(src_phi)
+            print(srcx, srcy)
+            system.update_source_centroid(srcx, srcy)
+
+            lens_model_smooth, kwargs_lens_smooth = system.get_lensmodel(False)
+            lensModel, kwargs_lens = system.get_lensmodel()
+
+            x_guess, y_guess = system.solve_lens_equation(lens_model_smooth, kwargs_lens_smooth)
+            if len(x_guess) != 4:
+                continue
+
+            min_sep = min_img_sep(x_guess, y_guess)
+            lens_config = identify(x_guess, y_guess, rein)
+
+            if min_sep < 0.2:
+                continue
+            if lens_config == 0:
+                config = 'cross'
+                if done_cross:
+                    continue
+            elif lens_config == 1:
+                config = 'fold'
+                if done_fold:
+                    continue
             else:
-                xs_init, ys_init = 0.06, -0.01
+                config = 'cusp'
+                if done_cusp:
+                    continue
 
-            data_withhalos, xcaus, ycaus, _, _ = imgFinder(start, real, xs_init, ys_init, True, solver, analysis, src_size_mean)
-            lens_config = identify(data_withhalos[0].x, data_withhalos[0].y, c.vdis_to_Rein(zlens, zsrc, vdis))
-            min_sep = min_img_sep(data_withhalos[0].x, data_withhalos[0].y)
-            #print('minimum image separation: ', min_sep)
+            x_image, y_image = iterative_rayshooting(srcx, srcy,
+                                                     x_guess, y_guess, lensModel, kwargs_lens)
+            lens_config = identify(x_image, y_image, rein)
+            min_sep = min_img_sep(x_image, y_image)
 
-            if min_sep < rein * 0.1:
+            if min_sep < 0.2:
                 continue
 
             if lens_config == 0:
@@ -308,92 +327,69 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 config = 'cusp'
                 if done_cusp:
                     continue
+
             print(config)
             other_lens_args = {}
             other_lens_args['zlens'] = zlens
             other_lens_args['zsrc'] = zsrc
             other_lens_args['gamma'] = gamma
             other_lens_args['config'] = config
-            other_lens_args['source_size_kpc'] = src_size_mean
+            other_lens_args['source_fwhm_pc'] = source_size_fwhm_pc
             other_lens_args['rmax2d_asec'] = 3*rein
             continue_findimg_loop = False
 
-        save = True
-        for i in range(0, 4):
-            magnifications, image = analysis.raytrace_images(macromodel=start, xcoord=data_withhalos[0].x[i],
-                                                             ycoord=data_withhalos[0].y[i], realizations=real,
-                                                             multiplane=multiplane,
-                                                             srcx=data_withhalos[0].srcx, srcy=data_withhalos[0].srcy, res=0.01,
-                                                             method='lenstronomy', source_shape='GAUSSIAN',
-                                                             source_size_kpc=src_size_mean,
-                                                             minimgsep=min_img_sep_ranked(data_withhalos[0].x, data_withhalos[0].y))
-
-
-            if flux_at_edge(image):
-                print('images are blended... continuing loop.')
-
-                save = False
-                break
-
-        if save is False:
-            continue
-
+        if lens_config == 0:
+            n_cross += 1
+            if n_cross == Ntotal_cross:
+                done_cross = True
+        elif lens_config ==1:
+            n_fold += 1
+            if n_fold == Ntotal_fold:
+                done_fold = True
         else:
+            n_cusp += 1
+            if n_cusp == Ntotal_cusp:
+                done_cusp = True
 
-            if lens_config == 0:
-                n_cross += 1
-                if n_cross == Ntotal_cross:
-                    done_cross = True
-            elif lens_config ==1:
-                n_fold += 1
-                if n_fold == Ntotal_fold:
-                    done_fold = True
-            else:
-                n_cusp += 1
-                if n_cusp == Ntotal_cusp:
-                    done_cusp = True
+        n_computed += 1
 
-            n_computed += 1
+        create_directory(dpath)
 
-            create_directory(dpath)
+        x_image += np.random.normal(0, 0.005, 4)
+        y_image += np.random.normal(0, 0.005, 4)
 
-            data_withhalos[0].x += np.random.normal(0, 0.003, 4)
-            data_withhalos[0].y += np.random.normal(0, 0.003, 4)
+        magnifications = system.quasar_magnification(x_image, y_image, lensModel, kwargs_lens)
+        data_with_halos = LensedQuasar(x_image, y_image, magnifications)
 
-            write_data(dpath + '/lensdata.txt', data_withhalos, mode='write')
+        write_data(dpath + '/lensdata.txt', data_with_halos, mode='write')
 
-            system = solver.build_system(main=start, realization=real[0], multiplane=True)
-            zlist, lens_list, arg_list, supplement, _ = system.lenstronomy_lists()
-
-            with open(dpath + '/redshifts.txt', 'w') as f:
-                np.savetxt(f, X=zlist)
-            with open(dpath + '/lens_list.txt', 'w') as f:
-                f.write(str(lens_list))
-            with open(dpath + '/lens_args.txt', 'w') as f:
-                f.write(str(arg_list))
-
-            to_write = get_info_string(halo_args, other_lens_args)
-            write_info(str(to_write), dpath + '/info.txt')
-            #write_info(str('R_index: ' + str(None)), dpath + '/R_index.txt')
+        to_write = get_info_string(halo_args, other_lens_args)
+        write_info(str(to_write), dpath + '/info.txt')
+        #write_info(str('R_index: ' + str(None)), dpath + '/R_index.txt')
 
 import sys
 if True:
     model_type = 'composite_powerlaw'
     multiplane = True
 
-    sigma_sub = 0.03
+    sigma_sub = 0.02
     M_halo = 10 ** 13
     logmhm = 0
     r_tidal = '0.5Rs'
-    src_size_mean = 0.03
-    src_size_sigma = 0.0001
-    log_ml, log_mh = 6, 10
+    source_size_fwhm_pc = 5.
+    log_ml, log_mh = 7, 10
+    gamma = 2.05
 
-    z_src_max = 2.2
+    SIDM_cross = 9
+    vpower = 0.75
+
+    z_src_max = 2.5
     z_lens_max = 0.6
-    rein_max = 1.
+    rein_max = 1.4
+    rein_min = 0.6
     nav = prefix
-    mass_def = 'TNFW'
+    mass_def = 'SIDM_TNFW'
 
-    dpath_base = nav + '/mock_data/CDM_uniform/lens_'
+    dpath_base = nav + '/mock_data/SIDM_cross9_vpower75/lens_'
+    run(1, 0, 0, 1)
 
