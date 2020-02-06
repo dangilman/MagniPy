@@ -44,7 +44,8 @@ class Lens0408(Quad):
     has_satellite = True
     satellite_mass_model = ['SIS', 'SIS', 'SIS', 'SIS', 'SIS']
     satellite1_pos_mass = [-1.58, -0.95]
-    satellite2_pos_mass = [1.08, -6.52]
+    #satellite2_pos_mass = [1.08, -6.52] ## the observed location from Shajib et al. 2019
+    satellite2_pos_mass = [-1.157, -7.413]
     satellite3_pos_mass = [-0.40, -13.58]
     satellite4_pos_mass = [5.34, -0.78]
     satellite5_pos_mass = [10.9, 5.53]

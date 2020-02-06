@@ -27,7 +27,7 @@ class Lens1608(Quad):
     relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 
     sigma_m = np.zeros_like(sigma_x)
-    zlens, zsrc = 0.63, 1.14
+    zlens, zsrc = 0.61, 1.4
 
     data = Data(x, y, m, None, None,
                          sigma_x = sigma_x, sigma_y = sigma_y,
