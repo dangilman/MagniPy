@@ -6,8 +6,11 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 
 class Lens1131(Quad):
 
-    x = np.array([2.032, 2.063, 1.444, -1.073])
-    y = np.array([-0.586, 0.601, -1.706, 0.293])
+    # From Suyu et al. 2016
+    # typo in Chen et al. 2016?
+    g1x, g1y = 4.420, 3.932
+    x = np.array([2.383, 2.344, 2.96, 5.494]) - g1x
+    y = np.array([3.412, 4.594, 2.3, 4.288]) - g1y
     m = np.array([1., 0.613497, 0.730061, 0.06135])
     sigma_x = np.array([0.003]*4)
     sigma_y = np.array([0.003]*4)
@@ -39,9 +42,9 @@ class Lens1131(Quad):
     satellite_mass_model = ['SIS']
     satellite_redshift = [zlens]
     satellite_convention = ['phys']
-    satellite_pos_mass = [0.102, 0.554]
-    # satellite einstein radius from Blackburne et al. 2011
-    satellite_kwargs = [{'theta_E': 0.05, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
+    satellite_pos_mass = [4.323-g1x, 4.546-g1y]
+    # satellite einstein radius from Chen et al. 2016
+    satellite_kwargs = [{'theta_E': 0.28, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     gamma_min = 1.95
     gamma_max = 2.2
