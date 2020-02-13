@@ -43,6 +43,15 @@ class Lens1131(Quad):
     satellite_redshift = [zlens]
     satellite_convention = ['phys']
     satellite_pos_mass = [4.323-g1x, 4.546-g1y]
+
+    # From Chen et al. 2016
+    amp_scale = 1000
+    kwargs_lens_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.404, 'n_sersic': 2., 'center_x': 0., 'center_y': 0.}]
+    kwargs_source_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
+                             'e1': -0.2, 'e2': 0.2}]
+    kwargs_satellite_light = [{'amp': amp_scale*69.,'R_sersic': 0.027, 'n_sersic': 0.42,
+                             'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
+
     # satellite einstein radius from Chen et al. 2016
     satellite_kwargs = [{'theta_E': 0.28, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 

@@ -39,6 +39,10 @@ class WFI2033(Quad):
     gamma_min = 1.9
     gamma_max = 2.1
 
+    kwargs_lens_light = [{'amp': 2500, 'R_sersic': 0.2, 'n_sersic': 4., 'center_x': None, 'center_y': None}]
+    kwargs_source_light = [{'amp': 1000, 'R_sersic': 0.08, 'n_sersic': 2.5, 'center_x': None, 'center_y': None,
+                             'e1': 0.01, 'e2': -0.14}]
+
     srcmin = 0.02
     srcmax = 0.05
     has_satellite = True
@@ -51,6 +55,14 @@ class WFI2033(Quad):
     satellite_redshift = [zlens, 0.745]
     satellite_convention = ['phys', 'phys']
     theta_E = (0.389*0.334)**0.5
+
+    kwargs_satellite_light = [{'amp': 800, 'R_sersic': 0.1, 'n_sersic': 3.,
+                               'center_x': satellite1_pos_mass[0],
+                               'center_y': satellite1_pos_mass[1]},
+                              {'amp': 1000, 'R_sersic': 0.1, 'n_sersic': 3.,
+                               'center_x': satellite2_pos_mass_effective[0],
+                               'center_y': satellite2_pos_mass_effective[1]}
+                              ]
 
     satellite_kwargs = [{'theta_E': 0.03, 'center_x': satellite1_pos_mass[0], 'center_y': satellite1_pos_mass[1]},
                         {'theta_E': 0.93, 'center_x': satellite2_pos_mass_effective[0],

@@ -56,6 +56,20 @@ class Lens0408(Quad):
     theta_E_G6 = 0.1
     #satellite2_pos_mass_effective = [-3.63, -0.08]
 
+    amp_scale = 1000
+    kwargs_lens_light = [{'amp': 2500, 'R_sersic': 0.4, 'n_sersic': 3.9, 'center_x': 0., 'center_y': 0.}]
+    kwargs_satellite_light = [{'amp': 1200., 'R_sersic': 0.2, 'n_sersic': 3.5,
+                                'center_x': satellite1_pos_mass[0], 'center_y': satellite1_pos_mass[1]},
+                              {'amp': 1000., 'R_sersic': 0.15, 'n_sersic': 4.0,
+                               'center_x': satellite2_pos_mass[0], 'center_y': satellite2_pos_mass[1]}
+                              ]
+    kwargs_source_light = [{'amp': 1000., 'R_sersic': 0.2, 'n_sersic': 3., 'center_x': None, 'center_y': None,
+                            'e1': -0.2, 'e2': 0.2}]
+
+    # kwargs_sersic_source_2 = [{'amp': 1500, 'R_sersic': 0.1, 'n_sersic': 4., 'center_x': source_x - 0.6,
+    #                            'center_y': source_y + 0.8,
+    #                            'e1': 0.2, 'e2': -0.05}]
+
     satellite_redshift = [zlens, 0.769, 0.771, 1.032, 0.594]
     satellite_convention = ['phys', 'lensed', 'lensed', 'lensed', 'lensed']
 

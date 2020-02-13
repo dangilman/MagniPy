@@ -29,6 +29,17 @@ class Lens1115(Quad):
                          sigma_x = sigma_x, sigma_y = sigma_y,
                          sigma_m=sigma_m)
 
+    # From Chen et al. 2019
+    amp_scale = 1000
+    kwargs_lens_light = [{'amp': 1000, 'R_sersic': 0.2, 'n_sersic': 4., 'center_x': None, 'center_y': None}]
+    kwargs_source_light = [{'amp': 1700, 'R_sersic': 0.125, 'n_sersic': 2., 'center_x': None, 'center_y': None,
+                             'e1': 0.15, 'e2': -0.4}]
+
+    # kwargs_lens_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.404, 'n_sersic': 2., 'center_x': 0., 'center_y': 0.}]
+    # kwargs_source_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
+    #                         'e1': -0.2, 'e2': 0.2}]
+
+
     identifier = 'lens1115'
     has_satellite = False
 

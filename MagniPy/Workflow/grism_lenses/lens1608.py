@@ -27,6 +27,12 @@ class Lens1608(Quad):
     relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 
     sigma_m = np.zeros_like(sigma_x)
+
+    amp_scale = 1000.
+    kwargs_lens_light = [{'amp': amp_scale * 1.2, 'R_sersic': 0.4, 'n_sersic': 4., 'center_x': 0., 'center_y': 0.}]
+    kwargs_source_light = [{'amp': amp_scale * 1.1, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
+                            'e1': 0.25, 'e2': 0.3}]
+
     zlens, zsrc = 0.61, 1.4
 
     data = Data(x, y, m, None, None,
@@ -48,6 +54,8 @@ class Lens1608(Quad):
     satellite_redshift = [zlens]
     satellite_convention = ['phys']
     satellite_pos_mass = [g2x, g2y]
+    kwargs_satellite_light = [{'amp': amp_scale * 0.7, 'R_sersic': 0.2, 'n_sersic': 4.,
+                               'center_x': g2x, 'center_y': g2y}]
     # satellite einstein radius from Koopmans et al. 2003
     satellite_kwargs = [{'theta_E': 0.26, 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
