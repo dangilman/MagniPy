@@ -251,7 +251,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal, 'cone_opening_angle': 5*rein,
-                     'opening_angle_factor': 5,
+                     'opening_angle_factor': 5, 'subtract_subhalo_mass_sheet': True, 'subhalo_mass_sheet_scale': 1.,
                      'R_ein_main': rein, 'SIDMcross': SIDM_cross, 'vpower': vpower}
 
         realization = pyhalo.render(model_type, halo_args)[0]
@@ -278,6 +278,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         while continue_findimg_loop:
 
             src_r = np.sqrt(np.random.uniform(0.01**2,0.1 ** 2))
+
             src_phi = np.random.uniform(-90, 90)*180/np.pi
             srcx, srcy = src_r*np.cos(src_phi), src_r*np.sin(src_phi)
             print(srcx, srcy, np.sqrt(srcx**2 + srcy**2))
@@ -307,6 +308,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 config = 'cusp'
                 if done_cusp:
                     continue
+            print('solving lens equation with halos... ')
             t0 = time()
             x_image, y_image = iterative_rayshooting(srcx, srcy,
                                                      x_guess, y_guess, lensModel, kwargs_lens)
@@ -332,6 +334,14 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 if done_cusp:
                     continue
 
+            images = system.background_quasar.get_images(x_image, y_image, lensModel, kwargs_lens)
+
+            break_loop = False
+            for img in images:
+                if flux_at_edge(img):
+                    break_loop = True
+
+            if break_loop: continue
             print(config)
             other_lens_args = {}
             other_lens_args['zlens'] = zlens
@@ -380,20 +390,35 @@ if True:
     M_halo = 10 ** 13
     logmhm = 0
     r_tidal = '0.5Rs'
-    source_size_fwhm_pc = 5.
+    source_size_fwhm_pc = 35.
     log_ml, log_mh = 6, 10
     gamma = 2.05
 
     SIDM_cross = 0.01
     vpower = 0.
 
-    z_src_max = 2.5
-    z_lens_max = 0.6
-    rein_max = 1.4
+    z_src_max = 3.
+    z_lens_max = 0.8
+    rein_max = 1.3
     rein_min = 0.6
     nav = prefix
-    mass_def = 'SIDM_TNFW'
+    mass_def = 'TNFW'
 
-    dpath_base = nav + '/CDM_data/'
+    dpath_base = nav + 'data/mock_data/CDM_data/'
+
+    # cusps = np.arange(1, 98, 3)
+    # folds = cusps + 1
+    # crosses = cusps + 2
+    # start_ind = int(sys.argv[1])
+    # if start_ind in cusps:
+    #     print('cusp')
+    #     run(1, 0, 0, start_ind)
+    # elif start_ind in folds:
+    #     print('fold')
+    #     run(0, 1, 0, start_ind)
+    # else:
+    #     print('cross')
+    #     run(0, 0, 1, start_ind)
+
     #run(1, 0, 0, 1)
 
