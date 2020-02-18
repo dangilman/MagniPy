@@ -232,54 +232,9 @@ def read_macro_array(lens_system):
     else:
         return np.array([rein, cenx, ceny, ellip, ellipPA, shear, shearPA, gamma])
 
-def readout_realizations(optimized_lens_model, full_lens_model, outputpath, statistic, params, fluxes):
+def readout_realizations(full_lens_model, outputpath, statistic, params, fluxes):
 
-    zlist, lens_list, arg_list, _, _ = optimized_lens_model.lenstronomy_lists()
-    zlistfull, lens_listfull, arg_listfull, _, _ = full_lens_model.lenstronomy_lists()
-
-    full_masses = []
-    full_c = []
-    full_x = []
-    full_y = []
-    full_z = []
-
-    for halo in full_lens_model.realization.halos:
-        full_masses.append(halo.mass)
-        full_c.append(halo.mass_def_arg[0])
-        full_x.append(halo.x)
-        full_y.append(halo.y)
-        full_z.append(halo.z)
-
-    full_masses = np.log10(full_masses)
-    full_c = np.array(full_c)
-    full_x = np.array(full_x)
-    full_y = np.array(full_y)
-    full_z = np.array(full_z)
-
-    full = np.column_stack((full_masses, full_c))
-    full = np.column_stack((full, full_x))
-    full = np.column_stack((full, full_y))
-    full = np.column_stack((full, full_z))
-
-    masses = []
-    c = []
-    x, y, z = [], [], []
-
-    for halo in optimized_lens_model.realization.halos:
-        masses.append(halo.mass)
-        c.append(halo.mass_def_arg[0])
-        x.append(halo.x)
-        y.append(halo.y)
-        z.append(halo.z)
-
-    masses = np.log10(masses)
-    c = np.array(c)
-    x, y, z = np.array(x), np.array(y), np.array(z)
-
-    partial = np.column_stack((masses, c))
-    partial = np.column_stack((partial, x))
-    partial = np.column_stack((partial, y))
-    partial = np.column_stack((partial, z))
+    zlistfull, lens_listfull, arg_listfull, _, _ = full_lens_model.get_lenstronomy_args()
 
     with open(outputpath+'best_params.txt', 'w') as f:
         f.write(str(statistic)+'\n')
@@ -288,15 +243,6 @@ def readout_realizations(optimized_lens_model, full_lens_model, outputpath, stat
         f.write('\n')
         for pi in params:
             f.write(str(pi)+' ')
-
-    with open(outputpath + 'best_realization.txt', 'w') as f:
-
-        f.write('redshifts = '+str(repr(list(zlist)))+'\n\n')
-        f.write('lens_model_list = '+str(repr(lens_list)) + '\n\n')
-        f.write('lens_model_args = '+str(repr(arg_list)) + '\n\n')
-
-    np.savetxt(outputpath + 'best_mc.txt', X=partial, fmt='%.3f')
-    np.savetxt(outputpath + 'best_mc_full.txt', X=full, fmt='%.3f')
 
     with open(outputpath + 'best_fullrealization.txt', 'w') as f:
 

@@ -1,4 +1,3 @@
-from MagniPy.Solver.solveroutines import SolveRoutines
 from MagniPy.ABCsampler.sampler_routines import *
 from copy import deepcopy,copy
 from MagniPy.paths import *
@@ -117,7 +116,7 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
             out = forward_model(d2fit.x, d2fit.y, d2fit.m, macromodel, chain_keys_run['source_fwhm_pc'],
                             halo_constructor, kwargs_realization, chain_keys_run['mass_func_type'],
-                                opt_routine, constrain_params, verbose)
+                                opt_routine, constrain_params, verbose, test_mode=False)
 
             if np.isfinite(out['summary_stat']):
                 break
@@ -133,14 +132,12 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
 
         if 'shear' not in keys_to_vary.keys() and 'save_shear' in keys.keys():
             samples_array.insert(keys['save_shear']['idx'], np.round(out['external_shear'],4))
-        save_statistic, readout_best = True, True
+
         if save_statistic:
             new_statistic = out['summary_stat']
             #print(new_statistic, current_best)
             if new_statistic < current_best:
                 current_best = new_statistic
-                #current_best_realization = out[]
-                current_best_fullrealization = out['lens_system_optimized']
                 params_best = samples_array
                 best_fluxes = out['magnifications_fit']
 
@@ -157,7 +154,8 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
             readout_macro(output_path, macro_array, write_header)
             readout(output_path, chaindata, parameters, list(keys_to_vary.keys()), write_header)
             if save_statistic and readout_best:
-                readout_realizations(current_best_fullrealization, output_path, current_best,
+
+                readout_realizations(out['lens_system_optimized'], output_path, current_best,
                                      params_best, best_fluxes)
             start = True
             write_header = False
@@ -265,6 +263,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-runABC(prefix+'data/SIDM_test_2/', 1)
+#runABC(prefix+'data/test_run/', 1)
 
 
