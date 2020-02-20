@@ -11,18 +11,17 @@ class Lens1608(Quad):
 
     g2x -= g1x
     g2y -= g1y
-
+    # from Fassnacht et al. 2002
     x = np.array([-0.000, -0.738, -0.7446, 1.1284]) - g1x
     y = np.array([0.000, -1.961, -0.4537, -1.2565]) - g1y
     m = np.array([1., 0.5, 0.51, 0.35])
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
 
-    dt_ba, dt_cb, dt_db = 31.5, 36, 77
     # from Koopmans et al. 2003
-    time_delay_AB, delta_AB = -dt_ba, 1.5
-    time_delay_AC, delta_AC = dt_cb - dt_ba, 1.5
-    time_delay_AD, delta_AD = dt_db - dt_ba, 2.
+    time_delay_AB, delta_AB = -31.5, 1.5
+    time_delay_AC, delta_AC = 4.5, 1.5
+    time_delay_AD, delta_AD = 45.5, 2.
     delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
     relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 

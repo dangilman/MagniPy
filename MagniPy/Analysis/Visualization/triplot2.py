@@ -11,7 +11,7 @@ class TriPlot2(object):
     _default_contour_colors = [(colors.cnames['darkslategrey'], colors.cnames['black'], 'k'),
                                (colors.cnames['dodgerblue'], colors.cnames['blue'], 'k'),
                                (colors.cnames['orchid'], colors.cnames['darkviolet'], 'k'),
-                               ]
+                               (colors.cnames['lightcoral'], colors.cnames['red'], 'k')]
 
     truth_color = 'g'
 
@@ -49,6 +49,52 @@ class TriPlot2(object):
     def set_tick_rotation(self, rot):
 
         self._tick_rotation = rot
+
+    def get_parameter_confidence_interval(self, parameter, clevel, chain_num=None):
+
+        print('parameter name: ', parameter)
+        print('68% confidence intervals: \nformat: median (lower, upper)\n')
+
+        for idx in range(0, self._nchains):
+
+            if chain_num is not None:
+                if idx != chain_num:
+                    continue
+
+            samples = self._load_projection_1D(parameter, idx)
+            pmin, pmax = self._get_param_minmax(parameter)
+
+            coords = np.linspace(pmin, pmax, len(samples))
+            bar_centers, bar_widths, bar_heights = self._bar_plot_heights(samples, coords, None)
+
+            median, [lower, upper] = self._confidence_int(pmin, pmax, bar_centers, bar_heights, clevel)
+
+            print('SAMPLES '+str(idx+1)+':')
+            print(str(median) + ' ('+str(lower)+', '+str(upper)+')' + ' ('+str(lower-median)+', '+str(upper-median)+')')
+            print('width: '+str(upper - lower))
+            print('\n')
+
+    def get_parameter_standard_deviations(self, parameter, chain_num):
+
+        standard_dev = []
+
+        for idx in range(0, self._nchains):
+
+            if chain_num is not None:
+                if idx != chain_num:
+                    continue
+
+            samples = self._load_projection_1D(parameter, idx)
+            pmin, pmax = self._get_param_minmax(parameter)
+
+            coords = np.linspace(pmin, pmax, len(samples))
+            bar_centers, bar_widths, bar_heights = self._bar_plot_heights(samples, coords, None)
+
+            median, [lower, upper] = self._confidence_int(pmin, pmax, bar_centers, bar_heights, 1.)
+
+            standard_dev.append(0.5*(upper - lower))
+
+        return np.array(standard_dev)
 
     def _load_projection_1D(self, pname, idx):
 
@@ -490,10 +536,10 @@ class TriPlot2(object):
                     mean_of_distribution, [low68, high68] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,1)
                     mean_of_distribution, [low95, high95] = self._confidence_int(pmin, pmax, bar_centers, bar_heights,2)
 
-                    low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
-                    high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
-                    low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
-                    high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
+                    # low95 = self._confidence_int_old(bar_centers, bar_heights, 0.05)
+                    # high95 = self._confidence_int_old(bar_centers, bar_heights, 0.95)
+                    # low68 = self._confidence_int_old(bar_centers, bar_heights, 0.32)
+                    # high68 = self._confidence_int_old(bar_centers, bar_heights, 0.68)
                     mean_of_distribution = self._confidence_int_old(bar_centers, bar_heights, 0.5)
 
                     if param_names[col] in ['log_m_break',r'$m_{\rm{hm}}$']:
@@ -576,7 +622,7 @@ class TriPlot2(object):
             if prob > u:
                 samples.append(samp)
         #print('num sigma:', num_sigma)
-        mu, sigmas = compute_lower_upper_errors(samples, num_sigma)
+        mu, sigmas = compute_confidence_intervals(samples, num_sigma)
 
         return mu, [mu-sigmas[0], mu+sigmas[1]]
 
@@ -784,7 +830,33 @@ class NamedParameter(object):
         self.param_min = param_min
         self.param_max = param_max
 
-def compute_lower_upper_errors(sample, num_sigma):
+def compute_confidence_intervals_histogram(sample, num_sigma):
+    """
+    computes the upper and lower sigma from the median value.
+    This functions gives good error estimates for skewed pdf's
+    :param sample: 1-D sample
+    :return: median, lower_sigma, upper_sigma
+    """
+    if num_sigma > 3:
+        raise ValueError("Number of sigma-constraints restricted to three. %s not valid" % num_sigma)
+    num = len(sample)
+    median = np.median(sample)
+    sorted_sample = np.sort(sample)
+
+    num_threshold1 = int(round((num-1)*0.841345))
+    num_threshold2 = int(round((num-1)*0.977249868))
+    num_threshold3 = int(round((num-1)*0.998650102))
+
+    if num_sigma == 1:
+        upper_sigma1 = sorted_sample[num_threshold1 - 1]
+        lower_sigma1 = sorted_sample[num - num_threshold1 - 1]
+        return median, [median-lower_sigma1, upper_sigma1-median]
+    if num_sigma == 2:
+        upper_sigma2 = sorted_sample[num_threshold2 - 1]
+        lower_sigma2 = sorted_sample[num - num_threshold2 - 1]
+        return median, [median-lower_sigma2, upper_sigma2-median]
+
+def compute_confidence_intervals(sample, num_sigma):
     """
     computes the upper and lower sigma from the median value.
     This functions gives good error estimates for skewed pdf's

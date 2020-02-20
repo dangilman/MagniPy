@@ -14,7 +14,7 @@ class Lens1115(Quad):
     y = np.array([-0.69, -0.232, -0.617, 1.344])
     m = np.array([1., 0.93, 0.16, 0.21])
 
-    time_delay_AB, delta_AB = 0, 10
+    time_delay_AB, delta_AB = 0.01, 10
     time_delay_AC, delta_AC = 8.3, 1.6
     time_delay_AD, delta_AD = -9.9, 1.1
     delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
