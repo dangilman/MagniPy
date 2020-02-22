@@ -41,10 +41,15 @@ class Lens0435(Quad):
     srcmin = 0.02
     srcmax = 0.05
 
+    kwargs_lens_init = [
+        {'theta_E': 1.1799904704894828, 'center_x': -0.027761883063647543, 'center_y': 0.028234836497328546,
+         'e1': -0.07893816329423219, 'e2': -0.05862085515658613, 'gamma': 1.93},
+        {'gamma1': 0.032278274647919124, 'gamma2': -0.00025758619456583254}]
+
     amp_scale = 1000
     kwargs_lens_light = [{'amp': amp_scale * 1.4, 'R_sersic': 0.4, 'n_sersic': 4., 'center_x': 0., 'center_y': 0.}]
     kwargs_source_light = [
-        {'amp': amp_scale * 1.2, 'R_sersic': 0.08, 'n_sersic': 3., 'center_x': None, 'center_y': None,
+        {'amp': amp_scale * 1.6, 'R_sersic': 0.08, 'n_sersic': 3., 'center_x': None, 'center_y': None,
          'e1': -0.25, 'e2': 0.1}]
 
     has_satellite = True
@@ -55,8 +60,7 @@ class Lens0435(Quad):
     # from mass center
     satellite_pos_mass_observed = np.array([-2.911, 2.339])
     satellite_pos_mass = np.array([-2.37, 2.08])
-    kwargs_satellite_light = [{'amp': amp_scale * 1.2, 'R_sersic': 0.2, 'n_sersic': 4.,
-                               'center_x': satellite_pos_mass_observed[0], 'center_y': satellite_pos_mass_observed[1]}]
+    kwargs_satellite_light = [None]
     # from light center
     #satellite_pos_light = [-0.1255, -1.3517]
     satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass_observed[0],

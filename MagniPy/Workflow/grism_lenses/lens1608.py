@@ -27,10 +27,13 @@ class Lens1608(Quad):
 
     sigma_m = np.zeros_like(sigma_x)
 
+    kwargs_lens_init = [{'theta_E': 0.9036453181989341, 'center_x': 0.007600860009089998, 'center_y': -0.057685769153856994, 'e1': 0.33480085295892065, 'e2': -0.05097223221504117, 'gamma': 2.08},
+                        {'gamma1': 0.06096918564904592, 'gamma2': 0.07721907911829631}]
+
     amp_scale = 1000.
-    kwargs_lens_light = [{'amp': amp_scale * 1.2, 'R_sersic': 0.4, 'n_sersic': 4., 'center_x': 0., 'center_y': 0.}]
-    kwargs_source_light = [{'amp': amp_scale * 1.1, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
-                            'e1': 0.25, 'e2': 0.3}]
+    kwargs_lens_light = [{'amp': amp_scale * 1.1, 'R_sersic': 0.4, 'n_sersic': 4., 'center_x': 0., 'center_y': 0.}]
+    kwargs_source_light = [{'amp': amp_scale * 1.6, 'R_sersic': 0.12, 'n_sersic': 3., 'center_x': None, 'center_y': None,
+                            'e1': -0.1, 'e2': 0.3}]
 
     zlens, zsrc = 0.61, 1.4
 

@@ -21,6 +21,9 @@ class Lens1131(Quad):
     delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
     relative_arrival_times = -np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 
+    kwargs_lens_init = [{'theta_E': 1.58460356403038, 'center_x': -0.005270348888552784, 'center_y': -0.029873551296941633, 'e1': 0.028027358886809944, 'e2': 0.0693670602615151, 'gamma': 1.98},
+                        {'gamma1': -0.11734572581060929, 'gamma2': -0.03232611049507928}]
+
     sigma_m = np.zeros_like(sigma_x)
     zlens, zsrc = 0.3, 0.66
 
@@ -47,9 +50,9 @@ class Lens1131(Quad):
     # From Chen et al. 2016
     amp_scale = 1000
     kwargs_lens_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.404, 'n_sersic': 2., 'center_x': 0., 'center_y': 0.}]
-    kwargs_source_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
+    kwargs_source_light = [{'amp': amp_scale * 4, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
                              'e1': -0.2, 'e2': 0.2}]
-    kwargs_satellite_light = [{'amp': amp_scale*69.,'R_sersic': 0.027, 'n_sersic': 0.42,
+    kwargs_satellite_light = [{'amp': amp_scale*30,'R_sersic': 0.05, 'n_sersic': 1.,
                              'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     # satellite einstein radius from Chen et al. 2016

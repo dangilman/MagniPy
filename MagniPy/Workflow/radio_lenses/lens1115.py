@@ -14,6 +14,11 @@ class Lens1115(Quad):
     y = np.array([-0.69, -0.232, -0.617, 1.344])
     m = np.array([1., 0.93, 0.16, 0.21])
 
+    # from Impey et al. 1998
+    # minus sign is correct
+    group_r, group_theta = 10, (-113+90)*np.pi/180
+    group_x, group_y = -group_r * np.cos(group_theta), group_r*np.sin(group_theta)
+
     time_delay_AB, delta_AB = 0.01, 10
     time_delay_AC, delta_AC = 8.3, 1.6
     time_delay_AD, delta_AD = -9.9, 1.1
@@ -35,14 +40,19 @@ class Lens1115(Quad):
     kwargs_source_light = [{'amp': 1700, 'R_sersic': 0.125, 'n_sersic': 2., 'center_x': None, 'center_y': None,
                              'e1': 0.15, 'e2': -0.4}]
 
-    # kwargs_lens_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.404, 'n_sersic': 2., 'center_x': 0., 'center_y': 0.}]
-    # kwargs_source_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
-    #                         'e1': -0.2, 'e2': 0.2}]
-
+    kwargs_lens_init = [{'theta_E': 1.0505876627617852, 'center_x': 0.0015838433690165622, 'center_y': 0.0039075583507097575, 'e1': -0.002140732329506273, 'e2': -0.0017325116179204988, 'gamma': 2.2},
+     {'gamma1': -0.010208269559630813, 'gamma2': -0.025988491812216158}]
 
     identifier = 'lens1115'
-    has_satellite = False
+    has_satellite = True
+    satellite_mass_model = ['SIS']
+    satellite_redshift = [zlens]
+    satellite_convention = ['phys']
+    satellite_pos_mass = [group_x, group_y]
+    # From Impey et al. 1998 "Einstein ring in..."
+    satellite_kwargs = [{'theta_E': 2., 'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
+    kwargs_satellite_light = [None]
     flux_ratio_index = 0
 
     fluximg = ['A', 'B', 'C', 'D'][flux_ratio_index]

@@ -781,8 +781,8 @@ class TriPlot2(object):
         elif pname == r'$\Sigma_{\rm{sub}}$':
             name = r'$\Sigma_{\rm{sub}}\times 10^{2} \ \left[kpc^{-2}\right]$'
             #tick_labels = [0, 2, 4, 6, 8, 10]
-            tick_locs = np.array([0.2, 1.8, 3.4, 5., 6.6, 8.2, 9.8]) * 0.01
-            tick_labels = np.array([0.2, 1.8, 3.4, 5., 6.6, 8.2, 9.8])
+            tick_locs = np.array([0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08])
+            tick_labels = np.round(tick_locs*100, 1)
             #tick_labels = [0.2, 2, 4, 6, 8, 10]
 
             rotation = 45
@@ -794,7 +794,11 @@ class TriPlot2(object):
         elif pname == 'source_size_kpc' or pname == r'$\sigma_{\rm{src}}$':
             name = r'$\sigma_{\rm{src}} \ \left[\rm{pc}\right]$'
             tick_labels = [30, 40, 50, 60]
-            tick_locs = np.array(tick_labels) * 0.001
+            tick_locs = np.array(tick_labels)
+        elif pname == r'$\log M_{\rm{min}}$':
+            name = r'$\log M{\rm{min}}$'
+            tick_labels = [6, 7, 8, 9]
+            tick_locs = np.array(tick_labels)
         elif pname == 'log_m_break' or pname == r'$m_{\rm{hm}}$':
             name = r'$\log_{10} \left(m_{\rm{hm}}\right) \left[M_{\odot}\right]$'
             tick_labels = [5, 6, 7, 8, 9, 10]
