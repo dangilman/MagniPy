@@ -252,7 +252,7 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
         halo_args = {'mdef_main': mass_def, 'mdef_los': mass_def, 'sigma_sub': sigma_sub, 'log_mlow': log_ml, 'log_mhigh': log_mh,
                      'power_law_index': -1.9, 'parent_m200': M_halo, 'r_tidal': r_tidal, 'cone_opening_angle': 5*rein,
                      'opening_angle_factor': 5, 'subtract_subhalo_mass_sheet': True, 'subhalo_mass_sheet_scale': 1.,
-                     'R_ein_main': rein, 'SIDMcross': SIDM_cross, 'vpower': vpower}
+                     'R_ein_main': rein, 'LOS_normalization': LOSnorm}
 
         realization = pyhalo.render(model_type, halo_args)[0]
 
@@ -277,9 +277,9 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         while continue_findimg_loop:
 
-            src_r = np.sqrt(np.random.uniform(0.01**2,0.1 ** 2))
+            src_r = np.random.uniform(0.01, 0.1)
 
-            src_phi = np.random.uniform(-90, 90)*180/np.pi
+            src_phi = np.random.uniform(-np.pi, np.pi)
             srcx, srcy = src_r*np.cos(src_phi), src_r*np.sin(src_phi)
             print(srcx, srcy, np.sqrt(srcx**2 + srcy**2))
             system.update_source_centroid(srcx, srcy)
@@ -310,8 +310,10 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                     continue
             print('solving lens equation with halos... ')
             t0 = time()
-            x_image, y_image = iterative_rayshooting(srcx, srcy,
-                                                     x_guess, y_guess, lensModel, kwargs_lens)
+            #x_image, y_image = iterative_rayshooting(srcx, srcy,
+            #                                         x_guess, y_guess, lensModel, kwargs_lens)
+
+            x_image, y_image = system.solve_lens_equation(lensModel, kwargs_lens, 10**-6)
             tend = time()
             dt = np.round(tend - t0, 2)/60
             print('solved lens equation with '+str(len(realization.halos))+' halos in '+str(dt)+' min.')
@@ -341,7 +343,9 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
                 if flux_at_edge(img):
                     break_loop = True
 
-            if break_loop: continue
+            if break_loop:
+                print('flux at edge... ')
+                continue
             print(config)
             other_lens_args = {}
             other_lens_args['zlens'] = zlens
@@ -371,10 +375,12 @@ def run(Ntotal_cusp, Ntotal_fold, Ntotal_cross, start_idx):
 
         x_image += np.random.normal(0, 0.005, 4)
         y_image += np.random.normal(0, 0.005, 4)
-
         magnifications = system.quasar_magnification(x_image, y_image, lensModel, kwargs_lens)
         data_with_halos = LensedQuasar(x_image, y_image, magnifications)
-
+        data_with_halos.nimg = 4
+        data_with_halos.srcx = 0.
+        data_with_halos.srcy = 0.
+        data_with_halos.t = [0., 0., 0., 0.]
         write_data(dpath + '/lensdata.txt', [data_with_halos], mode='write')
 
         to_write = get_info_string(halo_args, other_lens_args)
@@ -386,14 +392,14 @@ if True:
     model_type = 'composite_powerlaw'
     multiplane = True
 
-    sigma_sub = 0.02
+    sigma_sub = 0.03
     M_halo = 10 ** 13
     logmhm = 0
     r_tidal = '0.5Rs'
-    source_size_fwhm_pc = 35.
-    log_ml, log_mh = 6, 10
+    source_size_fwhm_pc = 40.
+    log_ml, log_mh = 6.0, 10
     gamma = 2.05
-
+    LOSnorm = 0.8
     SIDM_cross = 0.01
     vpower = 0.
 
@@ -404,7 +410,7 @@ if True:
     nav = prefix
     mass_def = 'TNFW'
 
-    dpath_base = nav + 'data/mock_data/CDM_data/'
+    dpath_base = nav + '/mock_data/CDM_data_bensonmfunc_longsolver/lens_'
 
     # cusps = np.arange(1, 98, 3)
     # folds = cusps + 1
@@ -421,4 +427,5 @@ if True:
     #     run(0, 0, 1, start_ind)
 
     #run(1, 0, 0, 1)
+
 
