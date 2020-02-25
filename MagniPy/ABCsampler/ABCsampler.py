@@ -113,11 +113,13 @@ def run_lenstronomy(data, prior, keys, keys_to_vary,
                     lens_list.append(satellite)
 
             macromodel = MacroLensModel(lens_list)
-
             out = forward_model(d2fit.x, d2fit.y, d2fit.m, macromodel, chain_keys_run['source_fwhm_pc'],
                             halo_constructor, kwargs_realization, chain_keys_run['mass_func_type'],
                                 opt_routine, constrain_params, verbose, test_mode=False)
-
+            blended = out['blended']
+            if blended:
+                print('images blended together')
+                continue
             if np.isfinite(out['summary_stat']):
                 break
 
@@ -263,6 +265,6 @@ def write_info_file(fpath,keys,keys_to_vary,pnames_vary):
 #cpl = 2000
 #L = 21
 #index = (L-1)*cpl + 1
-#runABC(prefix+'data/test_run/', 1)
+#runABC(prefix+'data/forecast/', 31)
 
-
+# 31
