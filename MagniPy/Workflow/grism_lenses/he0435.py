@@ -29,8 +29,8 @@ class Lens0435(Quad):
 
     flux_ratio_index = 0
 
-    kwargs_lens_init = [{'theta_E': 1.1799904704894828, 'center_x': -0.027761883063647543, 'center_y': 0.028234836497328546, 'e1': -0.07893816329423219, 'e2': -0.05862085515658613, 'gamma': 1.93},
-                        {'gamma1': 0.032278274647919124, 'gamma2': -0.00025758619456583254}]
+    kwargs_lens_init = [{'theta_E': 1.1695276026313663, 'center_x': -0.018181247306480245, 'center_y': 0.019397076231183395, 'e1': -0.0334362651181225, 'e2': -0.011254590955755551, 'gamma': 1.93},
+                        {'gamma1': 0.0451624454972574, 'gamma2': 0.016066946017755886}]
 
     fluximg = ['A', 'B', 'C', 'D'][flux_ratio_index]
 
@@ -57,11 +57,12 @@ class Lens0435(Quad):
     satellite_convention = ['phys']
     # from mass center
     satellite_pos_mass_observed = np.array([-2.911, 2.339])
-    satellite_pos_mass = np.array([-2.37, 2.08])
+    satellite_pos_mass = np.array([-2.27, 1.98])
+
     kwargs_satellite_light = [None]
     # from light center
     #satellite_pos_light = [-0.1255, -1.3517]
-    satellite_kwargs = [{'theta_E': 0.37, 'center_x': satellite_pos_mass[0],
+    satellite_kwargs = [{'theta_E': 0.35, 'center_x': satellite_pos_mass[0],
                          'center_y': satellite_pos_mass[1]}]
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
