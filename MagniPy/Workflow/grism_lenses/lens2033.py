@@ -13,8 +13,11 @@ class WFI2033(Quad):
     time_delay_AB, delta_AB = 0, 100
     time_delay_AC, delta_AC = -36.2, 0.8
     time_delay_AD, delta_AD = 23.3, 1.4
-    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
-    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+    # delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
+    # relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
+    relative_arrival_times = np.array([0.01, 36.2, 23.3 + 36.2])
+    delta_time_delay = np.array([delta_AB, delta_AC, np.sqrt(delta_AC**2 + delta_AD**2)])
 
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
@@ -67,6 +70,13 @@ class WFI2033(Quad):
     satellite_kwargs = [{'theta_E': 0.03, 'center_x': satellite1_pos_mass[0], 'center_y': satellite1_pos_mass[1]},
                         {'theta_E': 0.93, 'center_x': satellite2_pos_mass_effective[0],
                          'center_y': satellite2_pos_mass_effective[1]}]
+
+    @staticmethod
+    def relative_time_delays(arrival_times):
+
+        trel = arrival_times[1:] - arrival_times[0]
+        trel = [abs(trel[0]), abs(trel[1]), abs(trel[1]) + abs(trel[2])]
+        return np.array(trel)
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 

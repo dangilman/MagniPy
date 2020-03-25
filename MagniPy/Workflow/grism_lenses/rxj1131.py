@@ -64,6 +64,13 @@ class Lens1131(Quad):
     srcmin = 0.02
     srcmax = 0.05
 
+    @staticmethod
+    def relative_time_delays(arrival_times):
+
+        trel = arrival_times[1:] - arrival_times[0]
+
+        return np.array(trel)
+
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
         if 'datatofit' in kwargs_fit.keys():

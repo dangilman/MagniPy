@@ -22,8 +22,9 @@ class Lens1115(Quad):
     time_delay_AB, delta_AB = 0.01, 10
     time_delay_AC, delta_AC = 8.3, 1.6
     time_delay_AD, delta_AD = -9.9, 1.1
-    delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
-    relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
+
+    relative_arrival_times = np.array([0.01, 9.9, 18.8])
+    delta_time_delay = np.array([10, 1.1, 1.6])
 
     sigma_x = np.array([0.003]*4)
     sigma_y = np.array([0.003]*4)
@@ -66,6 +67,13 @@ class Lens1115(Quad):
 
     srcmin = 0.005
     srcmax = 0.025
+
+    @staticmethod
+    def relative_time_delays(arrival_times):
+
+        trel = arrival_times[1:] - arrival_times[0]
+        trel = [trel[0], abs(trel[2]), trel[1] + abs(trel[2])]
+        return np.array(trel)
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 

@@ -65,6 +65,12 @@ class Lens0435(Quad):
     satellite_kwargs = [{'theta_E': 0.35, 'center_x': satellite_pos_mass[0],
                          'center_y': satellite_pos_mass[1]}]
 
+    @staticmethod
+    def relative_time_delays(arrival_times):
+
+        trel = arrival_times[1:] - arrival_times[0]
+        return np.array(trel)
+
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
         if 'datatofit' in kwargs_fit.keys():

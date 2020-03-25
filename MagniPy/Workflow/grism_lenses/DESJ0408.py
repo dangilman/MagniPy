@@ -10,10 +10,11 @@ class Lens0408(Quad):
     y = np.array([-1.495, 0.369, -0.854, 1.466])
     m = np.array([1, 0.7, 0.5, 0.4])
 
-    time_delay_AB, delta_AB = 112, 2.6
+    time_delay_AB, delta_AB = 112, 2.1
     time_delay_AC, delta_AC = 155.5, 12.8
     time_delay_BD = 42.4
     time_delay_AD, delta_AD = time_delay_AB + time_delay_BD, np.sqrt(17.6 ** 2 + 2.1**2)
+
     delta_time_delay = np.array([delta_AB, delta_AC, delta_AD])
     relative_arrival_times = np.array([time_delay_AB, time_delay_AC, time_delay_AD])
 
@@ -80,6 +81,13 @@ class Lens0408(Quad):
                         {'theta_E': theta_E_G4, 'center_x': satellite3_pos_mass[0], 'center_y': satellite3_pos_mass[1]},
                         {'theta_E': theta_E_G5, 'center_x': satellite4_pos_mass[0], 'center_y': satellite4_pos_mass[1]},
                         {'theta_E': theta_E_G6, 'center_x': satellite5_pos_mass[0], 'center_y': satellite5_pos_mass[1]}]
+
+    @staticmethod
+    def relative_time_delays(arrival_times):
+
+        trel = arrival_times[1:] - arrival_times[0]
+        #trel = [abs(trel[0]), abs(trel[1]), abs(trel[0]) + abs(trel[1])]
+        return np.array(trel)
 
     def optimize_fit(self, kwargs_fit={}, macro_init = None, print_output = False):
 
