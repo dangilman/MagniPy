@@ -266,9 +266,9 @@ def resample_sys(num, process_only):
                        N_pert=25, process_only=process_only, name='WDM_7.7_sigma0.012_srcsize35',
                        which_lens_indexes=np.arange(1, 51))
 
-#process_raw('SIDMsim', np.arange(1,51))
+process_raw('forecast_benson', np.arange(1,2))
 #process_samples('SIDMsim', np.arange(1,51), 5, [0.02])
-resample_sys(1, True)
+#resample_sys(1, True)
 #resample_sys(2, False)
 #resample_sys(1, False)
 #resample_sys(1, False)
