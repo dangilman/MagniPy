@@ -46,9 +46,8 @@ class Lens0435(Quad):
 
     amp_scale = 1000
     kwargs_lens_light = [{'amp': amp_scale * 1.4, 'R_sersic': 0.4, 'n_sersic': 4., 'center_x': 0., 'center_y': 0.}]
-    kwargs_source_light = [
-        {'amp': amp_scale * 1.6, 'R_sersic': 0.08, 'n_sersic': 3., 'center_x': None, 'center_y': None,
-         'e1': -0.25, 'e2': 0.1}]
+    kwargs_source_light = [{'amp': 1000 * 1.6, 'R_sersic': 0.08, 'n_sersic': 3., 'center_x': None, 'center_y': None,
+         'e1': -0.25, 'e2': -0.2}]
 
     has_satellite = True
     satellite_mass_model = ['SIS']
