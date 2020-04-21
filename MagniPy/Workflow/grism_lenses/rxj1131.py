@@ -52,7 +52,7 @@ class Lens1131(Quad):
     kwargs_lens_light = [{'amp': amp_scale * 1.5, 'R_sersic': 0.404, 'n_sersic': 2., 'center_x': 0., 'center_y': 0.}]
     kwargs_source_light = [{'amp': amp_scale * 4, 'R_sersic': 0.1, 'n_sersic': 2., 'center_x': None, 'center_y': None,
                              'e1': -0.2, 'e2': 0.2}]
-    kwargs_satellite_light = [{'amp': amp_scale*30,'R_sersic': 0.05, 'n_sersic': 1.,
+    kwargs_satellite_light = [{'amp': amp_scale*2,'R_sersic': 0.05, 'n_sersic': 2.,
                              'center_x': satellite_pos_mass[0], 'center_y': satellite_pos_mass[1]}]
 
     # satellite einstein radius from Chen et al. 2016
