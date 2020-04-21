@@ -43,51 +43,42 @@ class Lens0408(Quad):
     has_satellite = True
     satellite_mass_model = ['SIS', 'SIS', 'SIS', 'SIS', 'SIS']
 
-    sat_1_z, sat_2_z, sat_3_z = zlens, 0.769, 0.771
+    sat_1_z, sat_2_z = zlens, 0.769
     sat_1_x, sat_1_y = -1.58, -0.95
 
     # Satellite Einstein radii
     sat_1_thetaE = 0.22
     sat_2_thetaE = 0.77
-    sat_3_thetaE = 0.35
 
     # OBSERVED SATELLITE POSITIONS
-    sat_2_x, sat_2_y = 1.08, -6.52
-    sat_3_x, sat_3_y = 0.4, -13.58
+    #sat_2_x, sat_2_y = 1.08, -6.52
 
     # PHYSICAL SATELLITE POSITIONS
-    sat_2_x, sat_2_y = -1.217290979780006, -8.45455526004745
-    sat_3_x, sat_3_y = -0.17688153447395566, -13.174462624479268
+    sat_2_x, sat_2_y = 1.13, -7.45
 
     #satellite2_pos_mass_effective = [-3.63, -0.08]
 
-    kwargs_lens_init = [{'theta_E': 1.6505089867735476, 'center_x': 0.07844230420105297, 'center_y': 0.07350067295546753, 'e1': 0.1446127021752195, 'e2': 0.2846086633583131, 'gamma': 1.91894095496809},
-                        {'gamma1': 0.054373867051579455, 'gamma2': 0.08263478227451557}]
+    kwargs_lens_init = [{'theta_E': 1.7220357060940006, 'center_x': 0.1445702226010889, 'center_y': -3.0844186207127455e-06, 'e1': 0.16516965529124017, 'e2': 0.17318780467502645, 'gamma': 1.91894095496809}, {'gamma1': 0.10994375051894104, 'gamma2': 0.018505364037691943},
+                        {'theta_E': 0.22, 'center_x': -1.58, 'center_y': -0.95},
+                        {'theta_E': 0.77, 'center_x': 1.13, 'center_y': -7.45}]
 
     amp_scale = 1000
     kwargs_lens_light = [{'amp': 2500, 'R_sersic': 0.4, 'n_sersic': 3.9, 'center_x': 0., 'center_y': 0.}]
-    kwargs_satellite_light = [{'amp': 1200., 'R_sersic': 0.2, 'n_sersic': 3.5,
+    kwargs_satellite_light = [{'amp': 700., 'R_sersic': 0.15, 'n_sersic': 3.,
                                 'center_x': sat_1_x, 'center_y': sat_1_y},
                               None,
                               None]
 
     #kwargs_source_light = [{'amp': 1000., 'R_sersic': 0.2, 'n_sersic': 3., 'center_x': None, 'center_y': None,
     #                        'e1': -0.2, 'e2': 0.2}]
-    kwargs_source_light = [{'R_sersic': 0.08, 'n_sersic': 4.8543099834988, 'center_x': 0.23488884098845353,
-      'center_y': -2.3045182715727157, 'amp': 1000, 'e1': 0.0436615282105248, 'e2': -0.0901697188034828}]
+    kwargs_source_light = [{'R_sersic': 0.08, 'n_sersic': 4.9, 'center_x': None,
+                            'center_y': None, 'amp': 1400, 'e1': 0.045, 'e2': -0.09}]
 
-    # kwargs_sersic_source_2 = [{'amp': 2000, 'R_sersic': 0.03, 'n_sersic': 1.5, 'center_x': source_x - 0.65,
-    #                            'center_y': source_y + 0.65, 'e1': 0.12, 'e2': -0.05}]
-    # kwargs_sersic_source_3 = [{'amp': 1000, 'R_sersic': 0.07, 'n_sersic': 2., 'center_x': source_x + 0.2,
-    #                            'center_y': source_y + 1.,
-    #                            'e1': 0.1, 'e2': 0.35}]
-
-    satellite_redshift = [zlens, 0.769, 0.771]
-    satellite_convention = ['phys', 'phys', 'phys']
+    satellite_redshift = [zlens, 0.769]
+    satellite_convention = ['phys', 'phys']
 
     satellite_kwargs = [{'theta_E': sat_1_thetaE, 'center_x': sat_1_x, 'center_y': sat_1_y},
                         {'theta_E': sat_2_thetaE, 'center_x': sat_2_x, 'center_y': sat_2_y},
-                        {'theta_E': sat_3_thetaE, 'center_x': sat_3_x, 'center_y': sat_3_y},
                         ]
 
     @staticmethod
