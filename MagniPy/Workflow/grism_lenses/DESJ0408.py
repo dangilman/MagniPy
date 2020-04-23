@@ -66,7 +66,6 @@ class Lens0408(Quad):
     kwargs_lens_light = [{'amp': 2500, 'R_sersic': 0.4, 'n_sersic': 3.9, 'center_x': 0., 'center_y': 0.}]
     kwargs_satellite_light = [{'amp': 700., 'R_sersic': 0.15, 'n_sersic': 3.,
                                 'center_x': sat_1_x, 'center_y': sat_1_y},
-                              None,
                               None]
 
     #kwargs_source_light = [{'amp': 1000., 'R_sersic': 0.2, 'n_sersic': 3., 'center_x': None, 'center_y': None,
