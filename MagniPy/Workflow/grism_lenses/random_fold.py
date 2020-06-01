@@ -7,7 +7,7 @@ from MagniPy.Workflow.grism_lenses.quad import Quad
 class MockFold(Quad):
 
     x = np.array([0.71293773,  1.11756729,  0.35865728, - 0.96765226])
-    y = np.array([-0.98422971 -0.36175659,  1.35996094 -0.2777054])
+    y = np.array([-0.98422971, -0.36175659,  1.35996094, -0.2777054])
     m = np.array([1.,        0.98428725, 0.39814757, 0.2427231 ])
     sigma_x = np.array([0.005]*4)
     sigma_y = np.array([0.005]*4)
