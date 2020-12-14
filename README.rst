@@ -19,6 +19,7 @@ MagniPy
 
 
 A gravitational lensing package
+Note: This is deprecated, most of these routines will probably not work with pyHalo, the package used to add dark matter halos to the lens mdoel. The updated version of this package is called lenstronomywrapper 
 
 
 * Free software: MIT license
